@@ -1,1 +1,1 @@
-# kinopub-apple-client
+# kino.pub Apple cross-platform client
