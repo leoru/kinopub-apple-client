@@ -1,24 +1,21 @@
-// swift-tools-version: 5.8
+// swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
-    name: "KinoPubUI",
+    name: "KinoPubLogging",
     platforms: [.macOS(.v13), .iOS(.v16)],
     products: [
         .library(
-            name: "KinoPubUI",
-            targets: ["KinoPubUI"]),
-    ],
-    dependencies: [
+            name: "KinoPubLogging",
+            targets: ["KinoPubLogging"]),
     ],
     targets: [
         .target(
-            name: "KinoPubUI",
-            dependencies: []),
+            name: "KinoPubLogging"),
         .testTarget(
-            name: "KinoPubUITests",
-            dependencies: ["KinoPubUI"]),
+            name: "KinoPubLoggingTests",
+            dependencies: ["KinoPubLogging"]),
     ]
 )
