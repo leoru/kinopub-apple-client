@@ -30,7 +30,7 @@ internal class RequestBuilder {
       switch endpoint.method {
       case "GET":
         var components = URLComponents(url: url, resolvingAgainstBaseURL: true)!
-        components.queryItems = parameters.map { (key, value) in
+        components.queryItems = parameters.sorted(by: { $0.key < $1.key }).map { (key, value) in
           return URLQueryItem(name: key, value: "\(value)")
         }
         request.url = components.url
