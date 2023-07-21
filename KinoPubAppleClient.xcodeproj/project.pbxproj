@@ -15,6 +15,7 @@
 
 /* Begin PBXFileReference section */
 		CC676BC52A6ADBEE00B8AC66 /* KinoPubLogging */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubLogging; path = Packages/KinoPubLogging; sourceTree = "<group>"; };
+		CC71E6EC2A6B2FBE004AFB3F /* KinoPubKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubKit; path = Packages/KinoPubKit; sourceTree = "<group>"; };
 		CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KinoPubAppleClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KinoPubAppleClientApp.swift; sourceTree = "<group>"; };
 		CC88E1E62A6586E600E9387F /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -92,6 +93,7 @@
 		CC88E1F52A6589DC00E9387F /* Packages */ = {
 			isa = PBXGroup;
 			children = (
+				CC71E6EC2A6B2FBE004AFB3F /* KinoPubKit */,
 				CC676BC52A6ADBEE00B8AC66 /* KinoPubLogging */,
 				CC88E1F62A6589DC00E9387F /* KinoPubBackend */,
 				CC88E1F72A65A42B00E9387F /* KinoPubUI */,

@@ -15,6 +15,7 @@ enum LoggingCategory: String {
   case analytics    // Represents logging related to analytics events or data
   case backend      // Represents logging related to backend interactions and responses
   case app          // Represents general application-level logging
+  case kit          // Represents logging related to kit
 }
 
 public extension Logger {
@@ -33,4 +34,7 @@ public extension Logger {
   
   /// Logger instance specific to general `app` logging.
   static let app = Logger(subsystem: subsystem, category: LoggingCategory.app.rawValue)
+  
+  /// Logger instance specific to general `kit` logging.
+  static let kit = Logger(subsystem: subsystem, category: LoggingCategory.kit.rawValue)
 }
