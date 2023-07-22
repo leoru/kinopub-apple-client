@@ -13,3 +13,5 @@ public struct DownloadedFileInfo: Codable {
   public let downloadDate: Date
 }
 
+extension DownloadedFileInfo: Equatable {}
+

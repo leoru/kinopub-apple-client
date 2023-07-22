@@ -16,9 +16,14 @@ public protocol DownloadManaging {
 }
 
 public class DownloadManager: NSObject, URLSessionDownloadDelegate, DownloadManaging {
-  static let shared = DownloadManager()
+  public var activeDownloads: [URL: Download] = [:]
+  private var fileSaver: FileSaving
+  private var downloadedFilesDatabase: DownloadedFilesDataWriting
   
-  private var activeDownloads: [URL: Download] = [:]
+  init(fileSaver: FileSaving, downloadedFilesDatabase: DownloadedFilesDataWriting) {
+    self.fileSaver = fileSaver
+    self.downloadedFilesDatabase = downloadedFilesDatabase
+  }
   
   lazy public var session: URLSession = {
     let identifier = "com.kinopub.backgroundDownloadSession"
@@ -43,7 +48,6 @@ public class DownloadManager: NSObject, URLSessionDownloadDelegate, DownloadMana
     guard let sourceURL = downloadTask.originalRequest?.url else { return }
     Logger.kit.debug("Download finished: \(location)")
     
-    let fileSaver = FileSaver()
     let destinationURL = fileSaver.getDocumentsDirectoryURL(forFilename: sourceURL.lastPathComponent)
     
     do {
@@ -51,9 +55,7 @@ public class DownloadManager: NSObject, URLSessionDownloadDelegate, DownloadMana
       Logger.kit.info("File: \(location) moved to documents folder")
       
       let fileInfo = DownloadedFileInfo(originalURL: sourceURL, localFilename: sourceURL.lastPathComponent, downloadDate: Date())
-      let database = DownloadedFilesDatabase(fileSaver: fileSaver)
-      database.save(fileInfo: fileInfo)
-      
+      downloadedFilesDatabase.save(fileInfo: fileInfo)
     } catch {
       Logger.kit.error("Error during moving file: \(error)")
     }
