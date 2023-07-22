@@ -1,7 +1,28 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Hello, world!" : {
+    "Bookmarks" : {
+
+    },
+    "Downloads" : {
+
+    },
+    "Main" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Главная" : {
+
+    },
+    "Загрузки" : {
+
+    },
+    "Закладки" : {
+
+    },
+    "Настройки" : {
 
     }
   },
