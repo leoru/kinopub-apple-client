@@ -6,9 +6,19 @@
 //
 
 import SwiftUI
+import FirebaseCore
 
 @main
 struct KinoPubAppleClientApp: App {
+  
+  #if os(iOS)
+  @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+  #endif
+  
+  #if os(macOS)
+  @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+  #endif
+  
   var body: some Scene {
     WindowGroup {
       RootView()

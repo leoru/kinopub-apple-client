@@ -18,6 +18,19 @@
 		CC71E7062A6DD119004AFB3F /* KinoPubKit in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7052A6DD119004AFB3F /* KinoPubKit */; };
 		CC71E7082A6DD119004AFB3F /* KinoPubLogging in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7072A6DD119004AFB3F /* KinoPubLogging */; };
 		CC71E70A2A6DD119004AFB3F /* KinoPubUI in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7092A6DD119004AFB3F /* KinoPubUI */; };
+		CC71E70D2A6DD56A004AFB3F /* SkeletonUI in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E70C2A6DD56A004AFB3F /* SkeletonUI */; };
+		CC71E70F2A6DD5B1004AFB3F /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = CC71E70E2A6DD5B1004AFB3F /* GoogleService-Info.plist */; };
+		CC71E7122A6DD62E004AFB3F /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7112A6DD62E004AFB3F /* FirebaseAnalytics */; };
+		CC71E7142A6DD62E004AFB3F /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7132A6DD62E004AFB3F /* FirebaseCrashlytics */; };
+		CC71E7162A6DD62E004AFB3F /* FirebaseInstallations in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7152A6DD62E004AFB3F /* FirebaseInstallations */; };
+		CC71E7182A6DD62E004AFB3F /* FirebaseMLModelDownloader in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7172A6DD62E004AFB3F /* FirebaseMLModelDownloader */; };
+		CC71E71A2A6DD62E004AFB3F /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7192A6DD62E004AFB3F /* FirebaseMessaging */; };
+		CC71E71C2A6DD62E004AFB3F /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E71B2A6DD62E004AFB3F /* FirebasePerformance */; };
+		CC71E71E2A6DD62E004AFB3F /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E71D2A6DD62E004AFB3F /* FirebaseRemoteConfig */; };
+		CC71E7202A6DD62E004AFB3F /* FirebaseRemoteConfigSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E71F2A6DD62E004AFB3F /* FirebaseRemoteConfigSwift */; };
+		CC71E7222A6DD62E004AFB3F /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7212A6DD62E004AFB3F /* FirebaseStorage */; };
+		CC71E7242A6DD62E004AFB3F /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7232A6DD62E004AFB3F /* FirebaseStorageCombine-Community */; };
+		CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E7252A6DD643004AFB3F /* AppDelegate.swift */; };
 		CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */; };
 		CC88E1E72A6586E600E9387F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E62A6586E600E9387F /* RootView.swift */; };
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
@@ -34,6 +47,8 @@
 		CC71E6FB2A6C0678004AFB3F /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		CC71E6FE2A6C069D004AFB3F /* DownloadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsView.swift; sourceTree = "<group>"; };
 		CC71E7002A6DD043004AFB3F /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		CC71E70E2A6DD5B1004AFB3F /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		CC71E7252A6DD643004AFB3F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KinoPubAppleClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KinoPubAppleClientApp.swift; sourceTree = "<group>"; };
 		CC88E1E62A6586E600E9387F /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -49,10 +64,21 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CC71E71C2A6DD62E004AFB3F /* FirebasePerformance in Frameworks */,
+				CC71E70D2A6DD56A004AFB3F /* SkeletonUI in Frameworks */,
 				CC71E7082A6DD119004AFB3F /* KinoPubLogging in Frameworks */,
+				CC71E71E2A6DD62E004AFB3F /* FirebaseRemoteConfig in Frameworks */,
+				CC71E71A2A6DD62E004AFB3F /* FirebaseMessaging in Frameworks */,
+				CC71E7122A6DD62E004AFB3F /* FirebaseAnalytics in Frameworks */,
+				CC71E7162A6DD62E004AFB3F /* FirebaseInstallations in Frameworks */,
+				CC71E7242A6DD62E004AFB3F /* FirebaseStorageCombine-Community in Frameworks */,
+				CC71E7142A6DD62E004AFB3F /* FirebaseCrashlytics in Frameworks */,
 				CC71E7062A6DD119004AFB3F /* KinoPubKit in Frameworks */,
+				CC71E7182A6DD62E004AFB3F /* FirebaseMLModelDownloader in Frameworks */,
 				CC71E7042A6DD119004AFB3F /* KinoPubBackend in Frameworks */,
+				CC71E7222A6DD62E004AFB3F /* FirebaseStorage in Frameworks */,
 				CC71E70A2A6DD119004AFB3F /* KinoPubUI in Frameworks */,
+				CC71E7202A6DD62E004AFB3F /* FirebaseRemoteConfigSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -62,12 +88,12 @@
 		CC71E6F12A6C04AE004AFB3F /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				CC71E6FD2A6C0691004AFB3F /* Downloads */,
-				CC71E6F62A6C0600004AFB3F /* Settings */,
 				CC71E6F52A6C05BF004AFB3F /* Auth */,
 				CC71E6F42A6C05B9004AFB3F /* Bookmarks */,
+				CC71E6FD2A6C0691004AFB3F /* Downloads */,
 				CC71E6F32A6C05B4004AFB3F /* Main */,
 				CC71E6F22A6C04B5004AFB3F /* Root */,
+				CC71E6F62A6C0600004AFB3F /* Settings */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -167,6 +193,7 @@
 		CC88E1F32A6587BB00E9387F /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				CC71E70E2A6DD5B1004AFB3F /* GoogleService-Info.plist */,
 				CC88E1EA2A6586E700E9387F /* KinoPubAppleClient.entitlements */,
 				CC88E1E82A6586E700E9387F /* Assets.xcassets */,
 				CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */,
@@ -179,6 +206,7 @@
 			isa = PBXGroup;
 			children = (
 				CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */,
+				CC71E7252A6DD643004AFB3F /* AppDelegate.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -215,6 +243,17 @@
 				CC71E7052A6DD119004AFB3F /* KinoPubKit */,
 				CC71E7072A6DD119004AFB3F /* KinoPubLogging */,
 				CC71E7092A6DD119004AFB3F /* KinoPubUI */,
+				CC71E70C2A6DD56A004AFB3F /* SkeletonUI */,
+				CC71E7112A6DD62E004AFB3F /* FirebaseAnalytics */,
+				CC71E7132A6DD62E004AFB3F /* FirebaseCrashlytics */,
+				CC71E7152A6DD62E004AFB3F /* FirebaseInstallations */,
+				CC71E7172A6DD62E004AFB3F /* FirebaseMLModelDownloader */,
+				CC71E7192A6DD62E004AFB3F /* FirebaseMessaging */,
+				CC71E71B2A6DD62E004AFB3F /* FirebasePerformance */,
+				CC71E71D2A6DD62E004AFB3F /* FirebaseRemoteConfig */,
+				CC71E71F2A6DD62E004AFB3F /* FirebaseRemoteConfigSwift */,
+				CC71E7212A6DD62E004AFB3F /* FirebaseStorage */,
+				CC71E7232A6DD62E004AFB3F /* FirebaseStorageCombine-Community */,
 			);
 			productName = KinoPubAppleClient;
 			productReference = CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */;
@@ -244,6 +283,10 @@
 				Base,
 			);
 			mainGroup = CC88E1D82A6586E600E9387F;
+			packageReferences = (
+				CC71E70B2A6DD56A004AFB3F /* XCRemoteSwiftPackageReference "SkeletonUI" */,
+				CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			productRefGroup = CC88E1E22A6586E600E9387F /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -260,6 +303,7 @@
 			files = (
 				CC71E6EE2A6BF92D004AFB3F /* Launch Screen.storyboard in Resources */,
 				CC88E1ED2A6586E700E9387F /* Preview Assets.xcassets in Resources */,
+				CC71E70F2A6DD5B1004AFB3F /* GoogleService-Info.plist in Resources */,
 				CC71E6F02A6C048C004AFB3F /* Localizable.xcstrings in Resources */,
 				CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */,
 			);
@@ -272,6 +316,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */,
 				CC71E7012A6DD043004AFB3F /* AuthView.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */,
 				CC88E1E72A6586E600E9387F /* RootView.swift in Sources */,
@@ -505,6 +550,25 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		CC71E70B2A6DD56A004AFB3F /* XCRemoteSwiftPackageReference "SkeletonUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/CSolanaM/SkeletonUI.git";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+		CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.12.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		CC71E7032A6DD119004AFB3F /* KinoPubBackend */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -521,6 +585,61 @@
 		CC71E7092A6DD119004AFB3F /* KinoPubUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = KinoPubUI;
+		};
+		CC71E70C2A6DD56A004AFB3F /* SkeletonUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC71E70B2A6DD56A004AFB3F /* XCRemoteSwiftPackageReference "SkeletonUI" */;
+			productName = SkeletonUI;
+		};
+		CC71E7112A6DD62E004AFB3F /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		CC71E7132A6DD62E004AFB3F /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		CC71E7152A6DD62E004AFB3F /* FirebaseInstallations */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseInstallations;
+		};
+		CC71E7172A6DD62E004AFB3F /* FirebaseMLModelDownloader */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMLModelDownloader;
+		};
+		CC71E7192A6DD62E004AFB3F /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		CC71E71B2A6DD62E004AFB3F /* FirebasePerformance */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebasePerformance;
+		};
+		CC71E71D2A6DD62E004AFB3F /* FirebaseRemoteConfig */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfig;
+		};
+		CC71E71F2A6DD62E004AFB3F /* FirebaseRemoteConfigSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfigSwift;
+		};
+		CC71E7212A6DD62E004AFB3F /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		CC71E7232A6DD62E004AFB3F /* FirebaseStorageCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseStorageCombine-Community";
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

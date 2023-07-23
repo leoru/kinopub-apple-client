@@ -345,6 +345,21 @@
                   endingLineNumber = "41"
                   offsetFromSymbolStart = "1044">
                </Location>
+               <Location
+                  uuid = "AF0A3EDD-AA2D-4963-B4B3-3C139B5AC3DB - b4ee5587a919f3"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for KinoPubBackend.APIClient.performRequest&lt;&#x3c4;_0_0 where &#x3c4;_0_0: Swift.Decodable&gt;(with: KinoPubBackend.Endpoint, decodingType: &#x3c4;_0_0.Type) async throws -&gt; &#x3c4;_0_0"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/Packages/KinoPubBackend/Sources/KinoPubBackend/Client/APIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "41"
+                  endingLineNumber = "41"
+                  offsetFromSymbolStart = "1084">
+               </Location>
             </Locations>
          </BreakpointContent>
       </BreakpointProxy>
@@ -361,6 +376,38 @@
             startingLineNumber = "17"
             endingLineNumber = "17"
             landmarkName = "data(for:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "919BEC5A-D02A-4616-BF03-113B571F0FF0"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/App/AppDelegate.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "15"
+            endingLineNumber = "15"
+            landmarkName = "application(_:didFinishLaunchingWithOptions:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "B7C7642D-A70F-4CA0-95F6-D6C03F701006"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/App/AppDelegate.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "16"
+            endingLineNumber = "16"
+            landmarkName = "application(_:didFinishLaunchingWithOptions:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
