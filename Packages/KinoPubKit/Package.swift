@@ -4,18 +4,24 @@
 import PackageDescription
 
 let package = Package(
-    name: "KinoPubKit",
-    platforms: [.macOS(.v13), .iOS(.v16)],
-    products: [
-        .library(
-            name: "KinoPubKit",
-            targets: ["KinoPubKit"]),
-    ],
-    targets: [
-        .target(
-            name: "KinoPubKit"),
-        .testTarget(
-            name: "KinoPubKitTests",
-            dependencies: ["KinoPubKit"]),
-    ]
+  name: "KinoPubKit",
+  platforms: [.macOS(.v13), .iOS(.v16)],
+  products: [
+    .library(
+      name: "KinoPubKit",
+      targets: ["KinoPubKit"]),
+  ],
+  dependencies: [
+    .package(name: "KinoPubLogging", path: "../KinoPubLogging"),
+  ],
+  targets: [
+    .target(
+      name: "KinoPubKit",
+      dependencies: [
+        .product(name: "KinoPubLogging", package: "KinoPubLogging"),
+      ]),
+      .testTarget(
+        name: "KinoPubKitTests",
+        dependencies: ["KinoPubKit"]),
+  ]
 )

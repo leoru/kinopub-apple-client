@@ -13,6 +13,11 @@
 		CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6F92A6C0655004AFB3F /* BookmarksView.swift */; };
 		CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6FB2A6C0678004AFB3F /* MainView.swift */; };
 		CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6FE2A6C069D004AFB3F /* DownloadsView.swift */; };
+		CC71E7012A6DD043004AFB3F /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E7002A6DD043004AFB3F /* AuthView.swift */; };
+		CC71E7042A6DD119004AFB3F /* KinoPubBackend in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7032A6DD119004AFB3F /* KinoPubBackend */; };
+		CC71E7062A6DD119004AFB3F /* KinoPubKit in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7052A6DD119004AFB3F /* KinoPubKit */; };
+		CC71E7082A6DD119004AFB3F /* KinoPubLogging in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7072A6DD119004AFB3F /* KinoPubLogging */; };
+		CC71E70A2A6DD119004AFB3F /* KinoPubUI in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7092A6DD119004AFB3F /* KinoPubUI */; };
 		CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */; };
 		CC88E1E72A6586E600E9387F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E62A6586E600E9387F /* RootView.swift */; };
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
@@ -28,6 +33,7 @@
 		CC71E6F92A6C0655004AFB3F /* BookmarksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksView.swift; sourceTree = "<group>"; };
 		CC71E6FB2A6C0678004AFB3F /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		CC71E6FE2A6C069D004AFB3F /* DownloadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsView.swift; sourceTree = "<group>"; };
+		CC71E7002A6DD043004AFB3F /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KinoPubAppleClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KinoPubAppleClientApp.swift; sourceTree = "<group>"; };
 		CC88E1E62A6586E600E9387F /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -43,6 +49,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CC71E7082A6DD119004AFB3F /* KinoPubLogging in Frameworks */,
+				CC71E7062A6DD119004AFB3F /* KinoPubKit in Frameworks */,
+				CC71E7042A6DD119004AFB3F /* KinoPubBackend in Frameworks */,
+				CC71E70A2A6DD119004AFB3F /* KinoPubUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,6 +99,7 @@
 		CC71E6F52A6C05BF004AFB3F /* Auth */ = {
 			isa = PBXGroup;
 			children = (
+				CC71E7002A6DD043004AFB3F /* AuthView.swift */,
 			);
 			path = Auth;
 			sourceTree = "<group>";
@@ -109,12 +120,20 @@
 			path = Downloads;
 			sourceTree = "<group>";
 		};
+		CC71E7022A6DD119004AFB3F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		CC88E1D82A6586E600E9387F = {
 			isa = PBXGroup;
 			children = (
 				CC88E1E32A6586E600E9387F /* KinoPubAppleClient */,
 				CC88E1F52A6589DC00E9387F /* Packages */,
 				CC88E1E22A6586E600E9387F /* Products */,
+				CC71E7022A6DD119004AFB3F /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -191,6 +210,12 @@
 			dependencies = (
 			);
 			name = KinoPubAppleClient;
+			packageProductDependencies = (
+				CC71E7032A6DD119004AFB3F /* KinoPubBackend */,
+				CC71E7052A6DD119004AFB3F /* KinoPubKit */,
+				CC71E7072A6DD119004AFB3F /* KinoPubLogging */,
+				CC71E7092A6DD119004AFB3F /* KinoPubUI */,
+			);
 			productName = KinoPubAppleClient;
 			productReference = CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */;
 			productType = "com.apple.product-type.application";
@@ -247,6 +272,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CC71E7012A6DD043004AFB3F /* AuthView.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */,
 				CC88E1E72A6586E600E9387F /* RootView.swift in Sources */,
 				CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */,
@@ -478,6 +504,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CC71E7032A6DD119004AFB3F /* KinoPubBackend */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KinoPubBackend;
+		};
+		CC71E7052A6DD119004AFB3F /* KinoPubKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KinoPubKit;
+		};
+		CC71E7072A6DD119004AFB3F /* KinoPubLogging */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KinoPubLogging;
+		};
+		CC71E7092A6DD119004AFB3F /* KinoPubUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KinoPubUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CC88E1D92A6586E600E9387F /* Project object */;
 }

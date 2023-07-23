@@ -1,29 +1,103 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Auth_Activate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Активировать"
+          }
+        }
+      }
+    },
+    "Auth_CodeActivationText" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для начала нужно активировать это устройство. Перейдите на сайт и в своём профиле в графе «Активация устройства» введите код и нажмите «Добавить». После этого возвращайтесь в приложение.  Код автоматически копируется в буфер обмена."
+          }
+        }
+      }
+    },
+    "Auth_CodeActivationTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Активация устройства"
+          }
+        }
+      }
+    },
+    "Auth_DeviceCode" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Код устройства"
+          }
+        }
+      }
+    },
     "Bookmarks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Закладки"
+          }
+        }
+      }
+    },
+    "CODE" : {
 
     },
     "Downloads" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загрузки"
+          }
+        }
+      }
     },
     "Main" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Главная"
+          }
+        }
+      }
     },
     "Settings" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Настройки"
+          }
+        }
+      }
     },
     "Главная" : {
-
-    },
-    "Загрузки" : {
-
-    },
-    "Закладки" : {
-
-    },
-    "Настройки" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Главная"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

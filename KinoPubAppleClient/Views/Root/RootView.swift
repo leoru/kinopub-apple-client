@@ -8,25 +8,34 @@
 import SwiftUI
 
 struct RootView: View {
+  
+  @State var showAuth: Bool = false
+  
   var body: some View {
     TabView {
       MainView()
         .tabItem {
-          Label("Главная", systemImage: "house")
+          Label("Main", systemImage: "house")
         }
       BookmarksView()
         .tabItem {
-          Label("Закладки", systemImage: "house")
+          Label("Bookmarks", systemImage: "bookmark")
         }
       DownloadsView()
         .tabItem {
-          Label("Загрузки", systemImage: "house")
+          Label("Downloads", systemImage: "arrow.down.circle")
         }
       SettingsView()
         .tabItem {
-          Label("Настройки", systemImage: "house")
+          Label("Settings", systemImage: "gearshape")
         }
     }
+    .onAppear(perform: {
+      showAuth = true
+    })
+    .sheet(isPresented: $showAuth, content: {
+      AuthView()
+    })
   }
 }
 
