@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import KinoPubUI
 
 struct RootView: View {
   
@@ -17,21 +18,26 @@ struct RootView: View {
         .tabItem {
           Label("Main", systemImage: "house")
         }
+        .toolbarBackground(Color.KinoPub.background, for: .tabBar)
       BookmarksView()
         .tabItem {
           Label("Bookmarks", systemImage: "bookmark")
         }
+        .toolbarBackground(Color.KinoPub.background, for: .tabBar)
       DownloadsView()
         .tabItem {
           Label("Downloads", systemImage: "arrow.down.circle")
         }
+        .toolbarBackground(Color.KinoPub.background, for: .tabBar)
       SettingsView()
         .tabItem {
           Label("Settings", systemImage: "gearshape")
         }
+        .toolbarBackground(Color.KinoPub.background, for: .tabBar)
     }
+    .accentColor(Color.KinoPub.accent)
     .onAppear(perform: {
-      showAuth = true
+      showAuth = false
     })
     .sheet(isPresented: $showAuth, content: {
       AuthView()

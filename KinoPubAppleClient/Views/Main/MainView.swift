@@ -5,10 +5,17 @@
 //  Created by Kirill Kunst on 22.07.2023.
 //
 import SwiftUI
+import KinoPubUI
 
 struct MainView: View {
     var body: some View {
-      Text("Main")
+      NavigationView {
+        VStack {
+          ContentItemsListView()
+        }
+        .navigationTitle("Main")
+        .background(Color.KinoPub.background)
+      }
     }
 }
 

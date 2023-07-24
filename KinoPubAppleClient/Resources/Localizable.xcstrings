@@ -55,6 +55,9 @@
         }
       }
     },
+    "Choose item" : {
+
+    },
     "CODE" : {
 
     },
@@ -74,6 +77,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Главная"
+          }
+        }
+      }
+    },
+    "Movies" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фильмы"
+          }
+        }
+      }
+    },
+    "Series" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сериалы"
           }
         }
       }
