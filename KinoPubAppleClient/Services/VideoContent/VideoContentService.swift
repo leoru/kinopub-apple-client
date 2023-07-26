@@ -12,6 +12,10 @@ protocol VideoContentService {
   func fetchItems() async throws -> [MediaItem]
 }
 
+protocol VideoContentServiceProvider {
+  var contentService: VideoContentService { get set }
+}
+
 struct VideoContentServiceMock: VideoContentService {
   
   func fetchItems() async throws -> [MediaItem] {
@@ -19,3 +23,4 @@ struct VideoContentServiceMock: VideoContentService {
   }
   
 }
+

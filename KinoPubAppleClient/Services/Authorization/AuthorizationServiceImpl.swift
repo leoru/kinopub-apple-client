@@ -12,10 +12,12 @@ final class AuthorizationServiceImpl: AuthorizationService {
   
   private var apiClient: APIClient
   private var configuration: Configuration
+  private var accessTokenService: AccessTokenService
   
-  init(apiClient: APIClient, configuration: Configuration) {
+  init(apiClient: APIClient, configuration: Configuration, accessTokenService: AccessTokenService) {
     self.apiClient = apiClient
     self.configuration = configuration
+    self.accessTokenService = accessTokenService
   }
   
   func fetchDeviceCode() async throws -> VerificationResponse {
@@ -23,14 +25,14 @@ final class AuthorizationServiceImpl: AuthorizationService {
     return try await apiClient.performRequest(with: request, decodingType: VerificationResponse.self)
   }
   
-  func fetchToken(by verification: VerificationResponse) async throws -> TokenResponse {
+  func fetchToken(by verification: VerificationResponse) async throws -> AccessToken {
     let request = DeviceCodeRequest(clientID: configuration.clientID, clientSecret: configuration.clientSecret, code: verification.code)
-    return try await apiClient.performRequest(with: request, decodingType: TokenResponse.self)
+    return try await apiClient.performRequest(with: request, decodingType: AccessToken.self)
   }
   
-  func refreshToken() async throws -> TokenResponse {
+  func refreshToken() async throws -> AccessToken {
     let request = RefreshTokenRequest(clientID: configuration.clientID, clientSecret: configuration.clientSecret, refreshToken: "")
-    return try await apiClient.performRequest(with: request, decodingType: TokenResponse.self)
+    return try await apiClient.performRequest(with: request, decodingType: AccessToken.self)
   }
 
 }

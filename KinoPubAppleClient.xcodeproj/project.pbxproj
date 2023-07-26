@@ -36,16 +36,19 @@
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
 		CC88E1ED2A6586E700E9387F /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1EC2A6586E700E9387F /* Preview Assets.xcassets */; };
 		CCF3881A2A71882300242581 /* AuthorizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388192A71882300242581 /* AuthorizationService.swift */; };
-		CCF3881C2A71884100242581 /* AuthorizationServiceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3881B2A71884100242581 /* AuthorizationServiceProvider.swift */; };
 		CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */; };
 		CCF388212A718ADE00242581 /* VideoContentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388202A718ADE00242581 /* VideoContentService.swift */; };
-		CCF388232A718AE900242581 /* VideoContentServiceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388222A718AE900242581 /* VideoContentServiceProvider.swift */; };
 		CCF388252A718AF300242581 /* VideoContentServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388242A718AF300242581 /* VideoContentServiceImpl.swift */; };
 		CCF388282A718BB600242581 /* AppContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388272A718BB600242581 /* AppContext.swift */; };
 		CCF3882B2A718E6300242581 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3882A2A718E6300242581 /* Configuration.swift */; };
-		CCF3882D2A718E9E00242581 /* ConfigurationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3882C2A718E9E00242581 /* ConfigurationProvider.swift */; };
 		CCF3882F2A718EAA00242581 /* BundleConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3882E2A718EAA00242581 /* BundleConfiguration.swift */; };
 		CCF388322A71C13900242581 /* MediaCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388312A71C13900242581 /* MediaCatalog.swift */; };
+		CCF388352A71C83500242581 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = CCF388342A71C83500242581 /* KeychainAccess */; };
+		CCF388382A71C87E00242581 /* KeychainStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388372A71C87E00242581 /* KeychainStorage.swift */; };
+		CCF3883C2A71C8D600242581 /* KeychainStorageImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3883B2A71C8D600242581 /* KeychainStorageImpl.swift */; };
+		CCF3883F2A71C98C00242581 /* AccessTokenService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3883E2A71C98C00242581 /* AccessTokenService.swift */; };
+		CCF388412A71C9CF00242581 /* AccessTokenServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388402A71C9CF00242581 /* AccessTokenServiceImpl.swift */; };
+		CCF388432A71CB3F00242581 /* AccessTokenPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388422A71CB3F00242581 /* AccessTokenPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -69,17 +72,19 @@
 		CC88E1F62A6589DC00E9387F /* KinoPubBackend */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubBackend; path = Packages/KinoPubBackend; sourceTree = "<group>"; };
 		CC88E1F72A65A42B00E9387F /* KinoPubUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubUI; path = Packages/KinoPubUI; sourceTree = "<group>"; };
 		CCF388192A71882300242581 /* AuthorizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationService.swift; sourceTree = "<group>"; };
-		CCF3881B2A71884100242581 /* AuthorizationServiceProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationServiceProvider.swift; sourceTree = "<group>"; };
 		CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationServiceImpl.swift; sourceTree = "<group>"; };
 		CCF388202A718ADE00242581 /* VideoContentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoContentService.swift; sourceTree = "<group>"; };
-		CCF388222A718AE900242581 /* VideoContentServiceProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoContentServiceProvider.swift; sourceTree = "<group>"; };
 		CCF388242A718AF300242581 /* VideoContentServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoContentServiceImpl.swift; sourceTree = "<group>"; };
 		CCF388272A718BB600242581 /* AppContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContext.swift; sourceTree = "<group>"; };
 		CCF3882A2A718E6300242581 /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
-		CCF3882C2A718E9E00242581 /* ConfigurationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationProvider.swift; sourceTree = "<group>"; };
 		CCF3882E2A718EAA00242581 /* BundleConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleConfiguration.swift; sourceTree = "<group>"; };
 		CCF388302A718FED00242581 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		CCF388312A71C13900242581 /* MediaCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCatalog.swift; sourceTree = "<group>"; };
+		CCF388372A71C87E00242581 /* KeychainStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStorage.swift; sourceTree = "<group>"; };
+		CCF3883B2A71C8D600242581 /* KeychainStorageImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStorageImpl.swift; sourceTree = "<group>"; };
+		CCF3883E2A71C98C00242581 /* AccessTokenService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessTokenService.swift; sourceTree = "<group>"; };
+		CCF388402A71C9CF00242581 /* AccessTokenServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessTokenServiceImpl.swift; sourceTree = "<group>"; };
+		CCF388422A71CB3F00242581 /* AccessTokenPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessTokenPlugin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,6 +104,7 @@
 				CC71E7062A6DD119004AFB3F /* KinoPubKit in Frameworks */,
 				CC71E7182A6DD62E004AFB3F /* FirebaseMLModelDownloader in Frameworks */,
 				CC71E7042A6DD119004AFB3F /* KinoPubBackend in Frameworks */,
+				CCF388352A71C83500242581 /* KeychainAccess in Frameworks */,
 				CC71E7222A6DD62E004AFB3F /* FirebaseStorage in Frameworks */,
 				CC71E70A2A6DD119004AFB3F /* KinoPubUI in Frameworks */,
 				CC71E7202A6DD62E004AFB3F /* FirebaseRemoteConfigSwift in Frameworks */,
@@ -268,9 +274,11 @@
 		CCF388172A7187F900242581 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				CCF388292A718E5700242581 /* Configuration */,
-				CCF3881F2A718AD100242581 /* VideoContent */,
+				CCF3883D2A71C97E00242581 /* AccessToken */,
 				CCF388182A71880100242581 /* Authorization */,
+				CCF388292A718E5700242581 /* Configuration */,
+				CCF388362A71C86900242581 /* KeychainStorage */,
+				CCF3881F2A718AD100242581 /* VideoContent */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -279,7 +287,6 @@
 			isa = PBXGroup;
 			children = (
 				CCF388192A71882300242581 /* AuthorizationService.swift */,
-				CCF3881B2A71884100242581 /* AuthorizationServiceProvider.swift */,
 				CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */,
 			);
 			path = Authorization;
@@ -289,7 +296,6 @@
 			isa = PBXGroup;
 			children = (
 				CCF388202A718ADE00242581 /* VideoContentService.swift */,
-				CCF388222A718AE900242581 /* VideoContentServiceProvider.swift */,
 				CCF388242A718AF300242581 /* VideoContentServiceImpl.swift */,
 			);
 			path = VideoContent;
@@ -307,10 +313,28 @@
 			isa = PBXGroup;
 			children = (
 				CCF3882A2A718E6300242581 /* Configuration.swift */,
-				CCF3882C2A718E9E00242581 /* ConfigurationProvider.swift */,
 				CCF3882E2A718EAA00242581 /* BundleConfiguration.swift */,
 			);
 			path = Configuration;
+			sourceTree = "<group>";
+		};
+		CCF388362A71C86900242581 /* KeychainStorage */ = {
+			isa = PBXGroup;
+			children = (
+				CCF388372A71C87E00242581 /* KeychainStorage.swift */,
+				CCF3883B2A71C8D600242581 /* KeychainStorageImpl.swift */,
+			);
+			path = KeychainStorage;
+			sourceTree = "<group>";
+		};
+		CCF3883D2A71C97E00242581 /* AccessToken */ = {
+			isa = PBXGroup;
+			children = (
+				CCF3883E2A71C98C00242581 /* AccessTokenService.swift */,
+				CCF388402A71C9CF00242581 /* AccessTokenServiceImpl.swift */,
+				CCF388422A71CB3F00242581 /* AccessTokenPlugin.swift */,
+			);
+			path = AccessToken;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -345,6 +369,7 @@
 				CC71E71F2A6DD62E004AFB3F /* FirebaseRemoteConfigSwift */,
 				CC71E7212A6DD62E004AFB3F /* FirebaseStorage */,
 				CC71E7232A6DD62E004AFB3F /* FirebaseStorageCombine-Community */,
+				CCF388342A71C83500242581 /* KeychainAccess */,
 			);
 			productName = KinoPubAppleClient;
 			productReference = CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */;
@@ -377,6 +402,7 @@
 			packageReferences = (
 				CC71E70B2A6DD56A004AFB3F /* XCRemoteSwiftPackageReference "SkeletonUI" */,
 				CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 			);
 			productRefGroup = CC88E1E22A6586E600E9387F /* Products */;
 			projectDirPath = "";
@@ -407,15 +433,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CCF388232A718AE900242581 /* VideoContentServiceProvider.swift in Sources */,
 				CCF388282A718BB600242581 /* AppContext.swift in Sources */,
 				CCF388212A718ADE00242581 /* VideoContentService.swift in Sources */,
-				CCF3881C2A71884100242581 /* AuthorizationServiceProvider.swift in Sources */,
 				CCF3881A2A71882300242581 /* AuthorizationService.swift in Sources */,
 				CCF3882B2A718E6300242581 /* Configuration.swift in Sources */,
 				CCF388252A718AF300242581 /* VideoContentServiceImpl.swift in Sources */,
+				CCF388412A71C9CF00242581 /* AccessTokenServiceImpl.swift in Sources */,
 				CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */,
 				CC71E7012A6DD043004AFB3F /* AuthView.swift in Sources */,
+				CCF388432A71CB3F00242581 /* AccessTokenPlugin.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */,
 				CC88E1E72A6586E600E9387F /* RootView.swift in Sources */,
 				CCF3882F2A718EAA00242581 /* BundleConfiguration.swift in Sources */,
@@ -424,8 +450,10 @@
 				CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */,
 				CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */,
 				CCF388322A71C13900242581 /* MediaCatalog.swift in Sources */,
+				CCF388382A71C87E00242581 /* KeychainStorage.swift in Sources */,
 				CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */,
-				CCF3882D2A718E9E00242581 /* ConfigurationProvider.swift in Sources */,
+				CCF3883F2A71C98C00242581 /* AccessTokenService.swift in Sources */,
+				CCF3883C2A71C8D600242581 /* KeychainStorageImpl.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -671,6 +699,14 @@
 				minimumVersion = 10.12.0;
 			};
 		};
+		CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess.git";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 4.2.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -744,6 +780,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = "FirebaseStorageCombine-Community";
+		};
+		CCF388342A71C83500242581 /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

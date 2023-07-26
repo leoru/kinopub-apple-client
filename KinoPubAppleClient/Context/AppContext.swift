@@ -24,7 +24,11 @@ extension EnvironmentValues {
 
 // MARK: - AppContextProtocol
 
-typealias AppContextProtocol = AuthorizationServiceProvider & VideoContentServiceProvider & ConfigurationProvider
+typealias AppContextProtocol = AuthorizationServiceProvider
+& VideoContentServiceProvider
+& ConfigurationProvider
+& KeychainStorageProvider
+& AccessTokenServiceProvider
 
 // MARK: - AppContext
 
@@ -33,20 +37,31 @@ struct AppContext: AppContextProtocol {
   var configuration: Configuration
   var authService: AuthorizationService
   var contentService: VideoContentService
+  var accessTokenService: AccessTokenService
+  var keychainStorage: KeychainStorage
   
   static let shared: AppContext = {
     let configuration = BundleConfiguration()
-    let apiClient = makeApiClient(with: configuration.baseURL)
+    let keychainStorage = KeychainStorageImpl()
+    let accessTokenService = AccessTokenServiceImpl(storage: keychainStorage)
+    
+    let apiClient = makeApiClient(with: configuration.baseURL, accessTokenService: accessTokenService)
+    
     return AppContext(configuration: configuration,
-                      authService: AuthorizationServiceImpl(apiClient: apiClient, configuration: configuration),
-                      contentService: VideoContentServiceImpl(apiClient: apiClient))
+                      authService: AuthorizationServiceImpl(apiClient: apiClient,
+                                                            configuration: configuration,
+                                                            accessTokenService: accessTokenService),
+                      contentService: VideoContentServiceImpl(apiClient: apiClient),
+                      accessTokenService: accessTokenService,
+                      keychainStorage: keychainStorage)
   }()
   
-  private static func makeApiClient(with baseURL: String) -> APIClient {
+  private static func makeApiClient(with baseURL: String, accessTokenService: AccessTokenService) -> APIClient {
     APIClient(baseUrl: baseURL,
               plugins: [
                 CURLLoggingPlugin(),
-                ResponseLoggingPlugin()
+                ResponseLoggingPlugin(),
+                AccessTokenPlugin(accessTokenService: accessTokenService)
               ])
   }
 }

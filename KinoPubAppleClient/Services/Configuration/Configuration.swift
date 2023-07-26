@@ -12,3 +12,7 @@ protocol Configuration {
   var clientSecret: String { get }
   var baseURL: String { get }
 }
+
+protocol ConfigurationProvider {
+  var configuration: Configuration { get set }
+}
