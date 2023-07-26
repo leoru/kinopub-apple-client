@@ -13,14 +13,14 @@ public class APIClient {
   private let baseUrl: URL
   private var plugins: [APIClientPlugin]
   
-  init(baseUrl: String, plugins: [APIClientPlugin] = [], session: URLSessionProtocol = URLSessionImpl(session: .shared)) {
+  public init(baseUrl: String, plugins: [APIClientPlugin] = [], session: URLSessionProtocol = URLSessionImpl(session: .shared)) {
     self.baseUrl = URL(string: baseUrl)!
     self.plugins = plugins
     self.session = session
     self.requestBuilder = RequestBuilder(baseURL: self.baseUrl)
   }
   
-  func performRequest<T: Decodable>(with requestData: Endpoint, decodingType: T.Type) async throws -> T {
+  public func performRequest<T: Decodable>(with requestData: Endpoint, decodingType: T.Type) async throws -> T {
     guard let request = requestBuilder.build(with: requestData) else {
       throw APIClientError.invalidUrlParams
     }

@@ -10,8 +10,8 @@ import SwiftUI
 
 public struct ContentItemRatingView: View {
   
-  var imdbScore: String
-  var kinopoiskScore: String
+  var imdbScore: Double?
+  var kinopoiskScore: Double?
   
   public var body: some View {
     HStack {
@@ -24,6 +24,11 @@ public struct ContentItemRatingView: View {
     .padding(.vertical, 4)
     .background(Color.KinoPub.selectionBackground)
     .cornerRadius(8)
+    .opacity(isEmpty ? 0 : 1)
+  }
+  
+  var isEmpty: Bool {
+    imdbScore == nil && kinopoiskScore == nil
   }
   
   var imdbImage: some View {
@@ -41,17 +46,17 @@ public struct ContentItemRatingView: View {
   }
   
   var imdbRating: some View {
-    Text(imdbScore)
+    Text("\(imdbScore ?? 0.0)")
       .foregroundColor(.white)
   }
   
   var kpRating: some View {
-    Text(kinopoiskScore)
+    Text("\(kinopoiskScore ?? 0.0)")
       .foregroundColor(.white)
   }
   
 }
 
 #Preview {
-  ContentItemRatingView(imdbScore: "5.0", kinopoiskScore: "7.0")
+  ContentItemRatingView(imdbScore: 5.0, kinopoiskScore: 5.0)
 }

@@ -4,21 +4,24 @@
 import PackageDescription
 
 let package = Package(
-    name: "KinoPubUI",
-    platforms: [.macOS(.v13), .iOS(.v16)],
-    products: [
-        .library(
-            name: "KinoPubUI",
-            targets: ["KinoPubUI"]),
-    ],
-    dependencies: [
-    ],
-    targets: [
-        .target(
-            name: "KinoPubUI",
-            dependencies: []),
-        .testTarget(
-            name: "KinoPubUITests",
-            dependencies: ["KinoPubUI"]),
-    ]
+  name: "KinoPubUI",
+  platforms: [.macOS(.v13), .iOS(.v16)],
+  products: [
+    .library(
+      name: "KinoPubUI",
+      targets: ["KinoPubUI"]),
+  ],
+  dependencies: [
+    .package(name: "KinoPubBackend", path: "../KinoPubBackend"),
+  ],
+  targets: [
+    .target(
+      name: "KinoPubUI",
+      dependencies: [
+        .product(name: "KinoPubBackend", package: "KinoPubBackend"),
+      ]),
+    .testTarget(
+      name: "KinoPubUITests",
+      dependencies: ["KinoPubUI"]),
+  ]
 )

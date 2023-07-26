@@ -7,8 +7,15 @@
 
 import Foundation
 import SwiftUI
+import KinoPubBackend
 
 public struct ContentItemView: View {
+  
+  private var mediaItem: MediaItem
+  
+  init(mediaItem: MediaItem) {
+    self.mediaItem = mediaItem
+  }
   
   public var body: some View {
     VStack(alignment: .leading) {
@@ -16,8 +23,8 @@ public struct ContentItemView: View {
         image
         VStack {
           Spacer()
-          ContentItemRatingView(imdbScore: "6.0",
-                                kinopoiskScore: "6.0")
+          ContentItemRatingView(imdbScore: mediaItem.imdbRating,
+                                kinopoiskScore: mediaItem.kinopoiskRating)
           .padding(.bottom, 8)
         }
       }
@@ -27,28 +34,25 @@ public struct ContentItemView: View {
   }
   
   var image: some View {
-    AsyncImage(url: nil) { image in
+    AsyncImage(url: URL(string: mediaItem.posters.medium)) { image in
       image.resizable()
         .renderingMode(.original)
         .posterStyle(size: .medium)
     } placeholder: {
-      Image("item_placeholder", bundle: .module)
-        .resizable()
-        .renderingMode(.original)
-        .posterStyle(size: .medium)
+      ProgressView()
     }
     .cornerRadius(8)
   }
   
   var title: some View {
-    Text("Кевин Харт: Проверка реальности")
+    Text(mediaItem.title)
       .lineLimit(1)
       .font(.system(size: 16.0, weight: .medium))
       .foregroundStyle(Color.KinoPub.text)
   }
   
   var subtitle: some View {
-    Text("Kevin Hart: Reality Check")
+    Text(mediaItem.title)
       .lineLimit(1)
       .font(.system(size: 14.0, weight: .medium))
       .foregroundStyle(Color.KinoPub.subtitle)
@@ -57,5 +61,5 @@ public struct ContentItemView: View {
 }
 
 #Preview {
-  ContentItemView()
+  ContentItemView(mediaItem: MediaItem.mock())
 }

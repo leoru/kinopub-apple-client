@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>BaseURL</key>
+	<string>https://api.service-kp.com</string>
+	<key>ClientID</key>
+	<string>xbmc</string>
+	<key>ClientSecret</key>
+	<string>cgg3gtifu46urtfp2zp1nqtba0k2ezxh</string>
+</dict>
+</plist>

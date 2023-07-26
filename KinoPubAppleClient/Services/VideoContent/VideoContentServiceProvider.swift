@@ -1,0 +1,12 @@
+//
+//  VideoContentServiceProvider.swift
+//  KinoPubAppleClient
+//
+//  Created by Kirill Kunst on 26.07.2023.
+//
+
+import Foundation
+
+protocol VideoContentServiceProvider {
+  var contentService: VideoContentService { get set }
+}

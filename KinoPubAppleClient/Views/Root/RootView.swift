@@ -11,10 +11,11 @@ import KinoPubUI
 struct RootView: View {
   
   @State var showAuth: Bool = false
+  @Environment(\.appContext) var appContext
   
   var body: some View {
     TabView {
-      MainView()
+      MainView(catalog: MediaCatalog(itemsService: appContext.contentService))
         .tabItem {
           Label("Main", systemImage: "house")
         }

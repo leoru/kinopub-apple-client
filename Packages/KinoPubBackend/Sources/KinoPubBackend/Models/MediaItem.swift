@@ -80,6 +80,9 @@ public struct MediaItem: Codable, Hashable {
     case subscribed = "subscribed"
   }
   
+  public static func mock() -> MediaItem {
+    MediaItem(id: 1, type: "test", subtype: "test", title: "test", year: 0, cast: "test", director: "test", genres: [], countries: [], voice: nil, duration: Duration(average: 0, total: 0), langs: 0, quality: 0, plot: "test", imdb: 0, imdbRating: 0, imdbVotes: 0, kinopoisk: 0, kinopoiskRating: 0, kinopoiskVotes: 0, rating: 0, ratingVotes: 0, ratingPercentage: 0, views: 0, comments: 0, posters: Posters(small: "test", medium: "test", big: "test", wide: "test"), trailer: nil, finished: true, advert: true, poorQuality: true, createdAt: 0, updatedAt: 0, inWatchlist: false, subscribed: false)
+  }
 }
 
 extension MediaItem: Identifiable { }

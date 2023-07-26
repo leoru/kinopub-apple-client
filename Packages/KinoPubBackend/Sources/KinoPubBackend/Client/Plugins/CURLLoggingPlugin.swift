@@ -11,6 +11,8 @@ import KinoPubLogging
 
 public class CURLLoggingPlugin: APIClientPlugin {
   
+  public init() {}
+  
   public func prepare(_ request: URLRequest) -> URLRequest {
     return request
   }

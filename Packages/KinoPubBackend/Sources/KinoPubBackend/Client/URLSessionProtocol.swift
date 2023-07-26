@@ -14,7 +14,7 @@ public protocol URLSessionProtocol {
 public class URLSessionImpl: URLSessionProtocol {
   let session: URLSession
   
-  init(session: URLSession) {
+  public init(session: URLSession) {
     self.session = session
   }
   
