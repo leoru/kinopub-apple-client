@@ -9,16 +9,12 @@ import KinoPubUI
 
 struct MainView: View {
   
-  @ObservedObject private var catalog: MediaCatalog
-  
-  init(catalog: MediaCatalog) {
-    self.catalog = catalog
-  }
+  @StateObject private var catalog: MediaCatalog = MediaCatalog(itemsService: AppContext.shared.contentService)
   
   var body: some View {
     NavigationView {
       VStack {
-        ContentItemsListView()
+        ContentItemsListView(items: $catalog.items)
       }
       .navigationTitle("Main")
       .background(Color.KinoPub.background)
@@ -33,6 +29,6 @@ struct MainView: View {
 
 struct MainView_Previews: PreviewProvider {
   static var previews: some View {
-    MainView(catalog: MediaCatalog(itemsService: VideoContentServiceMock()))
+    MainView()
   }
 }

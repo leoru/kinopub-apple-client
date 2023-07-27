@@ -17,6 +17,9 @@ class AuthModel: ObservableObject {
   @Published var deviceCode: String = ""
   @Published var error: String?
   @Published var showError: Bool = false
+  @Published var close: Bool = false
+  
+  private var tempVerificationResponse: VerificationResponse?
   
   init(authService: AuthorizationService) {
     self.authService = authService
@@ -28,8 +31,8 @@ class AuthModel: ObservableObject {
     Task {
       do {
         let response = try await authService.fetchDeviceCode()
-        objectWillChange.send()
-        deviceCode = response.userCode
+        self.deviceCode = response.userCode
+        self.tempVerificationResponse = response
         scheduleCheck(for: response)
       } catch {
         handleError(error)
@@ -37,9 +40,18 @@ class AuthModel: ObservableObject {
     }
   }
   
+  func openActivationURL() {
+    guard let urlString = tempVerificationResponse?.verificationUri, let url = URL(string: urlString) else {
+      return
+    }
+    
+    UIApplication.shared.open(url)
+  }
+  
   private func requestToken(by response: VerificationResponse) async throws {
     do {
-      _ = try await authService.fetchToken(by: response)
+      try await authService.fetchToken(by: response)
+      close = true
     } catch {
       handleError(error, response: response)
     }
@@ -66,7 +78,6 @@ class AuthModel: ObservableObject {
     self.error = error.description
     self.showError = true
   }
-  
   
 }
 

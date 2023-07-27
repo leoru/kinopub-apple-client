@@ -6,67 +6,87 @@
 //
 import SwiftUI
 import KinoPubUI
-import SimpleToast
+import PopupView
 
 struct AuthView: View {
   
-  @ObservedObject private var model: AuthModel
-  
-  init(model: AuthModel) {
-    self.model = model
-  }
+  @StateObject var model: AuthModel = AuthModel(authService: AppContext.shared.authService)
+  @Environment(\.dismiss) var dismiss
   
   var body: some View {
-    Color.KinoPub.background
-      .edgesIgnoringSafeArea(.all)
+    return VStack(spacing: 50) {
+      titleView
+      deviceCodeView
+      activateButton
+    }
+    .padding(EdgeInsets.init(top: 0, leading: 16, bottom: 0, trailing: 16))
+    .fixedSize(horizontal: false, vertical: true)
+    .edgesIgnoringSafeArea(.all)
+    .background(Color.KinoPub.background)
+    .popup(isPresented: $model.showError) {
+      ToastContentView(text: model.error ?? "")
+        .padding()
+    } customize: {
+      $0
+        .type(.floater())
+        .position(.bottom)
+        .animation(.spring())
+        .closeOnTapOutside(true)
+        .autohideIn(5.0)
+    }
+    .interactiveDismissDisabled(true)
+    .task {
+      model.fetchDeviceCode()
+    }
+    .onReceive(model.$close, perform: { shouldClose in
+      if shouldClose {
+        dismiss()
+      }
+    })
+  }
+  
+  var titleView: some View {
+    VStack(spacing: 20) {
+      Text("Auth_CodeActivationTitle")
+        .font(.system(size: 24, weight: Font.Weight.semibold))
+        .frame(alignment: .leading)
+        .foregroundColor(Color.KinoPub.text)
+      Text("Auth_CodeActivationText")
+        .lineLimit(nil)
+        .font(.system(size: 16, weight: Font.Weight.regular))
+        .foregroundColor(Color.KinoPub.text)
+        .multilineTextAlignment(.center)
+        .padding(.top, 16)
+    }
+    .fixedSize(horizontal: false, vertical: true)
+  }
+  
+  var deviceCodeView: some View {
+    VStack(spacing: 5) {
+      Text(model.deviceCode)
+        .font(.system(size: 40, weight: Font.Weight.bold))
+        .foregroundColor(Color.KinoPub.text)
+        .frame(minHeight: 44, idealHeight: 44, maxHeight: 44)
+      Text("Auth_DeviceCode")
+        .foregroundColor(Color.KinoPub.text)
+        .font(.system(size: 16, weight: Font.Weight.regular))
+    }
+    .fixedSize(horizontal: false, vertical: true)
+  }
+  
+  var activateButton: some View {
+    Button("Auth_Activate", action: { model.openActivationURL() })
+      .foregroundColor(Color.KinoPub.text)
+      .padding(.all, 20.0)
       .overlay(
-        VStack(spacing: 50) {
-          VStack(spacing: 20) {
-            Text("Auth_CodeActivationTitle")
-              .font(.system(size: 20, weight: Font.Weight.semibold))
-              .frame(alignment: .leading)
-              .foregroundColor(Color.KinoPub.text)
-            Text("Auth_CodeActivationText")
-              .lineLimit(nil)
-              .font(.system(size: 14, weight: Font.Weight.regular))
-              .foregroundColor(Color.KinoPub.text)
-              .multilineTextAlignment(.center)
-          }
-          .fixedSize(horizontal: false, vertical: true)
-          VStack(spacing: 5) {
-            Text(model.deviceCode)
-              .font(.system(size: 34, weight: Font.Weight.bold))
-              .foregroundColor(Color.KinoPub.text)
-              .frame(minHeight: 44, idealHeight: 44, maxHeight: 44)
-            Text("Auth_DeviceCode")
-              .foregroundColor(Color.KinoPub.text)
-              .font(.system(size: 14, weight: Font.Weight.regular))
-          }
-          .fixedSize(horizontal: false, vertical: true)
-          Button("Auth_Activate", action: { })
-            .foregroundColor(Color.KinoPub.text)
-            .padding(EdgeInsets.init(top: 16, leading: 16, bottom: 16, trailing: 16))
-            .overlay(
-              RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.KinoPub.text, lineWidth: 2)
-            )
-        }
-          .padding(EdgeInsets.init(top: 0, leading: 16, bottom: 0, trailing: 16))
-          .fixedSize(horizontal: false, vertical: true)
+        RoundedRectangle(cornerRadius: 10)
+          .stroke(Color.KinoPub.text, lineWidth: 2)
       )
-      .interactiveDismissDisabled(true)
-      .simpleToast(isPresented: $model.showError, options: SimpleToastOptions.error, content: {
-        Text(model.error ?? "")
-          .foregroundStyle(Color.white)
-      })
-      .onAppear(perform: {
-        model.fetchDeviceCode()
-      })
   }
 }
 
-//struct AuthView_Previews: PreviewProvider {
-//  static var previews: some View {
-//    AuthView()
-//  }
-//}
+struct AuthView_Previews: PreviewProvider {
+  static var previews: some View {
+    AuthView()
+  }
+}

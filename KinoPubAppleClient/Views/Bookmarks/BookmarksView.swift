@@ -22,7 +22,7 @@ struct BookmarksView: View {
         ZStack {
           topSelector
         }
-        ContentItemsListView()
+//        ContentItemsListView(items: [])
       }
       .navigationTitle("Bookmarks")
       .background(Color.KinoPub.background)

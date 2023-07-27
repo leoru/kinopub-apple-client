@@ -135,223 +135,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "2412AD75-ED5C-4789-B99B-B6C277647CFA"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "KinoPubAppleClient/Views/Auth/AuthModel.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "13"
-            endingLineNumber = "13"
-            landmarkName = "AuthModel"
-            landmarkType = "3">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "CC49D5E6-464E-4392-AFCF-4FD561D14F67"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "KinoPubAppleClient/Views/Auth/AuthModel.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "30"
-            endingLineNumber = "30"
-            landmarkName = "fetchDeviceCode()"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "CC49D5E6-464E-4392-AFCF-4FD561D14F67 - fe2744b95ad6ee9e"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(1) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "26"
-                  endingLineNumber = "26"
-                  offsetFromSymbolStart = "76">
-               </Location>
-               <Location
-                  uuid = "CC49D5E6-464E-4392-AFCF-4FD561D14F67 - afcc3b575788932e"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(2) await resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "26"
-                  endingLineNumber = "26"
-                  offsetFromSymbolStart = "36">
-               </Location>
-               <Location
-                  uuid = "CC49D5E6-464E-4392-AFCF-4FD561D14F67 - 4bb6624721b34aec"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(3) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "26"
-                  endingLineNumber = "26"
-                  offsetFromSymbolStart = "36">
-               </Location>
-               <Location
-                  uuid = "CC49D5E6-464E-4392-AFCF-4FD561D14F67 - 1e7ef0e41bc104f5"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(4) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "26"
-                  endingLineNumber = "26"
-                  offsetFromSymbolStart = "36">
-               </Location>
-               <Location
-                  uuid = "CC49D5E6-464E-4392-AFCF-4FD561D14F67 - fe2744b95ad6ee1a"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(1) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "30"
-                  endingLineNumber = "30"
-                  offsetFromSymbolStart = "76">
-               </Location>
-               <Location
-                  uuid = "CC49D5E6-464E-4392-AFCF-4FD561D14F67 - afcc3b57578893aa"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(2) await resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "30"
-                  endingLineNumber = "30"
-                  offsetFromSymbolStart = "36">
-               </Location>
-               <Location
-                  uuid = "CC49D5E6-464E-4392-AFCF-4FD561D14F67 - 4bb6624721b34a68"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(3) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "30"
-                  endingLineNumber = "30"
-                  offsetFromSymbolStart = "36">
-               </Location>
-               <Location
-                  uuid = "CC49D5E6-464E-4392-AFCF-4FD561D14F67 - 1e7ef0e41bc10471"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(4) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "30"
-                  endingLineNumber = "30"
-                  offsetFromSymbolStart = "64">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "32EE7280-755D-410C-AE8C-B86DAB29A37C"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "KinoPubAppleClient/Views/Auth/AuthModel.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "32"
-            endingLineNumber = "32"
-            landmarkName = "fetchDeviceCode()"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "32EE7280-755D-410C-AE8C-B86DAB29A37C - 4bb6624721b34bf5"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(3) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "33"
-                  endingLineNumber = "33"
-                  offsetFromSymbolStart = "188">
-               </Location>
-               <Location
-                  uuid = "32EE7280-755D-410C-AE8C-B86DAB29A37C - 1e7ef0e41bc105ec"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(4) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "33"
-                  endingLineNumber = "33"
-                  offsetFromSymbolStart = "116">
-               </Location>
-               <Location
-                  uuid = "32EE7280-755D-410C-AE8C-B86DAB29A37C - 4bb6624721b34a2a"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(3) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "32"
-                  endingLineNumber = "32"
-                  offsetFromSymbolStart = "120">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "162F6427-8252-4B00-9BC2-CAAC08F2DAA1"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
@@ -526,54 +309,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "EB3DEDCE-E729-49D5-9022-222D1B2E5401"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "KinoPubAppleClient/Views/Auth/AuthModel.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "35"
-            endingLineNumber = "35"
-            landmarkName = "fetchDeviceCode()"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "EB3DEDCE-E729-49D5-9022-222D1B2E5401 - 1e7ef0e41bc105ae"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(4) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "35"
-                  endingLineNumber = "35"
-                  offsetFromSymbolStart = "112">
-               </Location>
-               <Location
-                  uuid = "EB3DEDCE-E729-49D5-9022-222D1B2E5401 - 1e7ef0e41bc105ae"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(4) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "35"
-                  endingLineNumber = "35"
-                  offsetFromSymbolStart = "244">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "545DF95C-4AE2-4D04-B608-BD7D0698DC00"
             shouldBeEnabled = "No"
             ignoreCount = "0"
@@ -601,54 +336,6 @@
             endingLineNumber = "43"
             landmarkName = "decode(_:from:throwDecodingErrorImmediately:)"
             landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "4EEBDBB9-401D-45EB-AB32-2C343D45ECA0"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "KinoPubAppleClient/Views/Auth/AuthModel.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "44"
-            endingLineNumber = "44"
-            landmarkName = "requestToken(by:)"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "4EEBDBB9-401D-45EB-AB32-2C343D45ECA0 - 368ff171a90342ae"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(4) suspend resume partial function for KinoPubAppleClient.AuthModel.requestToken(by: KinoPubBackend.VerificationResponse) async throws -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "47"
-                  endingLineNumber = "47"
-                  offsetFromSymbolStart = "120">
-               </Location>
-               <Location
-                  uuid = "4EEBDBB9-401D-45EB-AB32-2C343D45ECA0 - 368ff171a90342ae"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(4) suspend resume partial function for KinoPubAppleClient.AuthModel.requestToken(by: KinoPubBackend.VerificationResponse) async throws -&gt; ()"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "47"
-                  endingLineNumber = "47"
-                  offsetFromSymbolStart = "268">
-               </Location>
-            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -775,6 +462,509 @@
             endingLineNumber = "45"
             landmarkName = "decode(_:from:throwDecodingErrorImmediately:)"
             landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "2FE1811F-BB43-44E2-BC82-200CC68A71FD"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Views/Auth/AuthModel.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "34"
+            endingLineNumber = "34"
+            landmarkName = "fetchDeviceCode()"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "2FE1811F-BB43-44E2-BC82-200CC68A71FD - 4bb6624721b34a0b"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "31"
+                  endingLineNumber = "31"
+                  offsetFromSymbolStart = "116">
+               </Location>
+               <Location
+                  uuid = "2FE1811F-BB43-44E2-BC82-200CC68A71FD - 4bb6624721b34a0b"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.AuthModel.fetchDeviceCode() -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Auth/AuthModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "31"
+                  endingLineNumber = "31"
+                  offsetFromSymbolStart = "68">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "9CF39EE4-D2BD-4698-B98F-0F2FA5AD5C2C"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Views/Auth/AuthModel.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "36"
+            endingLineNumber = "36"
+            landmarkName = "fetchDeviceCode()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "3AC707FF-95B5-4E56-97F2-E1B985877FD9"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Views/Root/RootView.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "18"
+            endingLineNumber = "18"
+            landmarkName = "refreshToken()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "2664D34D-B6E5-4380-B96F-8DF335F60B73"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Views/Root/RootView.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "23"
+            endingLineNumber = "23"
+            landmarkName = "refreshToken()"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "2664D34D-B6E5-4380-B96F-8DF335F60B73 - f71ccdc7e41dcd3"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.RootView.refreshToken() -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Root/RootView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "24"
+                  endingLineNumber = "24"
+                  offsetFromSymbolStart = "84">
+               </Location>
+               <Location
+                  uuid = "2664D34D-B6E5-4380-B96F-8DF335F60B73 - b94f4f10e53080f9"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.RootView.refreshToken() -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Root/RootView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "24"
+                  endingLineNumber = "24"
+                  offsetFromSymbolStart = "44">
+               </Location>
+               <Location
+                  uuid = "2664D34D-B6E5-4380-B96F-8DF335F60B73 - dad516f8d02890cd"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.RootView.refreshToken() -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Root/RootView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "24"
+                  endingLineNumber = "24"
+                  offsetFromSymbolStart = "36">
+               </Location>
+               <Location
+                  uuid = "2664D34D-B6E5-4380-B96F-8DF335F60B73 - f436b014aaf254cf"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(5) suspend resume partial function for closure #1 @Sendable () async -&gt; () in KinoPubAppleClient.RootView.refreshToken() -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Root/RootView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "24"
+                  endingLineNumber = "24"
+                  offsetFromSymbolStart = "108">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "1405167E-C598-4C86-B776-B7601857A608"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Services/Authorization/AuthorizationServiceImpl.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "39"
+            endingLineNumber = "39"
+            landmarkName = "refreshToken()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "59DF2886-C1FC-4063-B97F-18F49C7DF093"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Services/Authorization/AuthorizationServiceImpl.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "42"
+            endingLineNumber = "42"
+            landmarkName = "refreshToken()"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "59DF2886-C1FC-4063-B97F-18F49C7DF093 - 3f44db8767869dc7"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for KinoPubAppleClient.AuthorizationServiceImpl.refreshToken() async throws -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/Authorization/AuthorizationServiceImpl.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "40"
+                  endingLineNumber = "40"
+                  offsetFromSymbolStart = "1040">
+               </Location>
+               <Location
+                  uuid = "59DF2886-C1FC-4063-B97F-18F49C7DF093 - 60a3a5defe6999d6"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for KinoPubAppleClient.AuthorizationServiceImpl.refreshToken() async throws -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/Authorization/AuthorizationServiceImpl.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "40"
+                  endingLineNumber = "40"
+                  offsetFromSymbolStart = "44">
+               </Location>
+               <Location
+                  uuid = "59DF2886-C1FC-4063-B97F-18F49C7DF093 - ec088481bc1fc024"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for KinoPubAppleClient.AuthorizationServiceImpl.refreshToken() async throws -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/Authorization/AuthorizationServiceImpl.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "35"
+                  endingLineNumber = "35"
+                  offsetFromSymbolStart = "68">
+               </Location>
+               <Location
+                  uuid = "59DF2886-C1FC-4063-B97F-18F49C7DF093 - ec088481bc1fc1c1"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for KinoPubAppleClient.AuthorizationServiceImpl.refreshToken() async throws -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/Authorization/AuthorizationServiceImpl.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "40"
+                  endingLineNumber = "40"
+                  offsetFromSymbolStart = "108">
+               </Location>
+               <Location
+                  uuid = "59DF2886-C1FC-4063-B97F-18F49C7DF093 - 8275641f2f6c6627"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(4) suspend resume partial function for KinoPubAppleClient.AuthorizationServiceImpl.refreshToken() async throws -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/Authorization/AuthorizationServiceImpl.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "35"
+                  endingLineNumber = "35"
+                  offsetFromSymbolStart = "48">
+               </Location>
+               <Location
+                  uuid = "59DF2886-C1FC-4063-B97F-18F49C7DF093 - 8275641f2f6c67c2"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(4) suspend resume partial function for KinoPubAppleClient.AuthorizationServiceImpl.refreshToken() async throws -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/Authorization/AuthorizationServiceImpl.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "40"
+                  endingLineNumber = "40"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  uuid = "59DF2886-C1FC-4063-B97F-18F49C7DF093 - 8275641f2f6c67c2"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(4) suspend resume partial function for KinoPubAppleClient.AuthorizationServiceImpl.refreshToken() async throws -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/Authorization/AuthorizationServiceImpl.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "40"
+                  endingLineNumber = "40"
+                  offsetFromSymbolStart = "140">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "82118D32-2A9C-48E8-B100-B85AEBE6646B"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Services/Authorization/AuthorizationServiceImpl.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "43"
+            endingLineNumber = "43"
+            landmarkName = "refreshToken()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "F57B6E2B-DBF5-42D2-91CC-470A147FF4B7"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "20"
+            endingLineNumber = "20"
+            landmarkName = "fetchItems()"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "F57B6E2B-DBF5-42D2-91CC-470A147FF4B7 - f5e21dcea89b740c"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for KinoPubAppleClient.VideoContentServiceImpl.fetchItems() async throws -&gt; Swift.Array&lt;KinoPubBackend.MediaItem&gt;"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "20"
+                  endingLineNumber = "20"
+                  offsetFromSymbolStart = "120">
+               </Location>
+               <Location
+                  uuid = "F57B6E2B-DBF5-42D2-91CC-470A147FF4B7 - 61fecbac7bc7646a"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for KinoPubAppleClient.VideoContentServiceImpl.fetchItems() async throws -&gt; Swift.Array&lt;KinoPubBackend.MediaItem&gt;"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "20"
+                  endingLineNumber = "20"
+                  offsetFromSymbolStart = "36">
+               </Location>
+               <Location
+                  uuid = "F57B6E2B-DBF5-42D2-91CC-470A147FF4B7 - 99565ac14270880a"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for KinoPubAppleClient.VideoContentServiceImpl.fetchItems() async throws -&gt; Swift.Array&lt;KinoPubBackend.MediaItem&gt;"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "20"
+                  endingLineNumber = "20"
+                  offsetFromSymbolStart = "36">
+               </Location>
+               <Location
+                  uuid = "F57B6E2B-DBF5-42D2-91CC-470A147FF4B7 - 70edba46f13d6a09"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(4) suspend resume partial function for KinoPubAppleClient.VideoContentServiceImpl.fetchItems() async throws -&gt; Swift.Array&lt;KinoPubBackend.MediaItem&gt;"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "20"
+                  endingLineNumber = "20"
+                  offsetFromSymbolStart = "32">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "C23BEE4B-76CD-4AD0-8C4D-0A81A6B0C69A"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Services/AccessToken/AccessTokenPlugin.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "24"
+            endingLineNumber = "24"
+            landmarkName = "prepare(_:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "5EE3F802-33C9-419D-BBA0-FA1E0E4BB092"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "22"
+            endingLineNumber = "22"
+            landmarkName = "fetchItems()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "4F3B03DB-A0A4-44DA-9732-260E277ACCDE"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "25"
+            endingLineNumber = "25"
+            landmarkName = "fetchItems()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "928DA2C2-1939-4934-91A6-53C7B897E94A"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ContentItemsListView.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "22"
+            endingLineNumber = "22"
+            landmarkName = "init(items:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "9146D292-BE6C-4165-9F5D-1FC147087F7B"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ContentItemsListView.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "28"
+            endingLineNumber = "28"
+            landmarkName = "body"
+            landmarkType = "24">
+            <Locations>
+               <Location
+                  uuid = "9146D292-BE6C-4165-9F5D-1FC147087F7B - 2b0197a332cdde30"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #1 () -&gt; SwiftUI.ForEach&lt;Swift.Array&lt;KinoPubBackend.MediaItem&gt;, Swift.Int, &lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0&gt; in closure #1 () -&gt; &lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0 in KinoPubUI.ContentItemsListView.body.getter : some"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ContentItemsListView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "28"
+                  endingLineNumber = "28"
+                  offsetFromSymbolStart = "168">
+               </Location>
+               <Location
+                  uuid = "9146D292-BE6C-4165-9F5D-1FC147087F7B - 31a490d81fc5c400"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #1 (KinoPubBackend.MediaItem) -&gt; &lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0 in closure #1 () -&gt; SwiftUI.ForEach&lt;Swift.Array&lt;KinoPubBackend.MediaItem&gt;, Swift.Int, &lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0&gt; in closure #1 () -&gt; &lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0 in KinoPubUI.ContentItemsListView.body.getter : some"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ContentItemsListView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "29"
+                  endingLineNumber = "29"
+                  offsetFromSymbolStart = "68">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

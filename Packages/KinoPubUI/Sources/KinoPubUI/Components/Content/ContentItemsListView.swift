@@ -11,18 +11,20 @@ import KinoPubBackend
 
 public struct ContentItemsListView: View {
   
-  private var gridItemLayout = [
+  public static var gridLayout: [GridItem] = [
     GridItem(.flexible()),
     GridItem(.flexible()),
   ]
   
-  @State var items: [MediaItem] = []
+  @Binding public var items: [MediaItem]
   
-  public init() {}
+  public init(items: Binding<[MediaItem]>) {
+    self._items = items
+  }
   
   public var body: some View {
     ScrollView {
-      LazyVGrid(columns: gridItemLayout, content: {
+      LazyVGrid(columns: ContentItemsListView.gridLayout, content: {
         ForEach(items, id: \.id) { item in
           ContentItemView(mediaItem: item)
             .padding(.vertical, 20)
@@ -34,6 +36,6 @@ public struct ContentItemsListView: View {
   
 }
 
-#Preview {
-  ContentItemsListView()
-}
+//#Preview {
+//  ContentItemsListView(items: [])
+//}

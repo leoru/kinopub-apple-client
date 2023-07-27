@@ -13,7 +13,7 @@ class MediaCatalog: ObservableObject {
   
   private var itemsService: VideoContentService
   
-  @Published var items: [MediaItem] = []
+  @Published public var items: [MediaItem] = []
   
   init(itemsService: VideoContentService) {
     self.itemsService = itemsService

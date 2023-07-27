@@ -10,8 +10,8 @@ import KinoPubBackend
 
 protocol AuthorizationService {
   func fetchDeviceCode() async throws -> VerificationResponse
-  func fetchToken(by verification: VerificationResponse) async throws -> AccessToken
-  func refreshToken() async throws -> AccessToken
+  func fetchToken(by verification: VerificationResponse) async throws
+  func refreshToken() async throws
 }
 
 protocol AuthorizationServiceProvider {

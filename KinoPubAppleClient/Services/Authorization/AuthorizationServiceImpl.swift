@@ -25,14 +25,22 @@ final class AuthorizationServiceImpl: AuthorizationService {
     return try await apiClient.performRequest(with: request, decodingType: VerificationResponse.self)
   }
   
-  func fetchToken(by verification: VerificationResponse) async throws -> AccessToken {
+  func fetchToken(by verification: VerificationResponse) async throws {
     let request = DeviceCodeRequest(grantType: .deviceToken, clientID: configuration.clientID, clientSecret: configuration.clientSecret, code: verification.code)
-    return try await apiClient.performRequest(with: request, decodingType: AccessToken.self)
+    let token = try await apiClient.performRequest(with: request, decodingType: AccessToken.self)
+    accessTokenService.set(token: token)
   }
   
-  func refreshToken() async throws -> AccessToken {
-    let request = RefreshTokenRequest(clientID: configuration.clientID, clientSecret: configuration.clientSecret, refreshToken: "")
-    return try await apiClient.performRequest(with: request, decodingType: AccessToken.self)
+  func refreshToken() async throws {
+    guard let token: AccessToken = accessTokenService.token() else {
+      return
+    }
+    
+    let request = RefreshTokenRequest(clientID: configuration.clientID,
+                                      clientSecret: configuration.clientSecret,
+                                      refreshToken: token.refreshToken)
+    let newToken = try await apiClient.performRequest(with: request, decodingType: AccessToken.self)
+    accessTokenService.set(token: newToken)
   }
 
 }

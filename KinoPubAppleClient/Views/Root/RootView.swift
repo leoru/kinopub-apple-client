@@ -19,20 +19,20 @@ struct RootView: View {
       showAuth = true
       return
     }
-    Task {
-      do {
-        try await appContext.authService.refreshToken()
-      } catch {
-        await MainActor.run {
-          showAuth = true
-        }
-      }
-    }
+//    Task {
+//      do {
+//        try await appContext.authService.refreshToken()
+//      } catch {
+//        await MainActor.run {
+//          showAuth = true
+//        }
+//      }
+//    }
   }
   
   var body: some View {
     TabView {
-      MainView(catalog: MediaCatalog(itemsService: appContext.contentService))
+      MainView()
         .tabItem {
           Label("Main", systemImage: "house")
         }
@@ -54,11 +54,12 @@ struct RootView: View {
         .toolbarBackground(Color.KinoPub.background, for: .tabBar)
     }
     .accentColor(Color.KinoPub.accent)
-    .onAppear(perform: {
+    .task {
       refreshToken()
-    })
+    }
     .sheet(isPresented: $showAuth, content: {
-      AuthView(model: AuthModel(authService: appContext.authService))
+      AuthView()
+        .environmentObject(AuthModel(authService: appContext.authService))
     })
   }
 }

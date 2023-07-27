@@ -32,13 +32,12 @@
 		CC71E7242A6DD62E004AFB3F /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7232A6DD62E004AFB3F /* FirebaseStorageCombine-Community */; };
 		CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E7252A6DD643004AFB3F /* AppDelegate.swift */; };
 		CC7FCE872A72ACB700DFC0A9 /* AuthModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */; };
-		CC7FCE8A2A72D09000DFC0A9 /* SimpleToast in Frameworks */ = {isa = PBXBuildFile; productRef = CC7FCE892A72D09000DFC0A9 /* SimpleToast */; };
 		CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */; };
-		CC7FCE8F2A72D3CE00DFC0A9 /* SimpleToast+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE8E2A72D3CE00DFC0A9 /* SimpleToast+Configuration.swift */; };
+		CC7FCE912A730CC000DFC0A9 /* ToastContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE902A730CC000DFC0A9 /* ToastContentView.swift */; };
+		CC7FCE942A730DA400DFC0A9 /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = CC7FCE932A730DA400DFC0A9 /* PopupView */; };
 		CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */; };
 		CC88E1E72A6586E600E9387F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E62A6586E600E9387F /* RootView.swift */; };
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
-		CC88E1ED2A6586E700E9387F /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1EC2A6586E700E9387F /* Preview Assets.xcassets */; };
 		CCF3881A2A71882300242581 /* AuthorizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388192A71882300242581 /* AuthorizationService.swift */; };
 		CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */; };
 		CCF388212A718ADE00242581 /* VideoContentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388202A718ADE00242581 /* VideoContentService.swift */; };
@@ -69,13 +68,12 @@
 		CC71E7252A6DD643004AFB3F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModel.swift; sourceTree = "<group>"; };
 		CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClientError+Description.swift"; sourceTree = "<group>"; };
-		CC7FCE8E2A72D3CE00DFC0A9 /* SimpleToast+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SimpleToast+Configuration.swift"; sourceTree = "<group>"; };
+		CC7FCE902A730CC000DFC0A9 /* ToastContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastContentView.swift; sourceTree = "<group>"; };
 		CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KinoPubAppleClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KinoPubAppleClientApp.swift; sourceTree = "<group>"; };
 		CC88E1E62A6586E600E9387F /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		CC88E1E82A6586E700E9387F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CC88E1EA2A6586E700E9387F /* KinoPubAppleClient.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KinoPubAppleClient.entitlements; sourceTree = "<group>"; };
-		CC88E1EC2A6586E700E9387F /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		CC88E1F62A6589DC00E9387F /* KinoPubBackend */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubBackend; path = Packages/KinoPubBackend; sourceTree = "<group>"; };
 		CC88E1F72A65A42B00E9387F /* KinoPubUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubUI; path = Packages/KinoPubUI; sourceTree = "<group>"; };
 		CCF388192A71882300242581 /* AuthorizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationService.swift; sourceTree = "<group>"; };
@@ -85,7 +83,7 @@
 		CCF388272A718BB600242581 /* AppContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContext.swift; sourceTree = "<group>"; };
 		CCF3882A2A718E6300242581 /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		CCF3882E2A718EAA00242581 /* BundleConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleConfiguration.swift; sourceTree = "<group>"; };
-		CCF388302A718FED00242581 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		CCF388302A718FED00242581 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CCF388312A71C13900242581 /* MediaCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCatalog.swift; sourceTree = "<group>"; };
 		CCF388372A71C87E00242581 /* KeychainStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStorage.swift; sourceTree = "<group>"; };
 		CCF3883B2A71C8D600242581 /* KeychainStorageImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStorageImpl.swift; sourceTree = "<group>"; };
@@ -111,7 +109,7 @@
 				CC71E7062A6DD119004AFB3F /* KinoPubKit in Frameworks */,
 				CC71E7182A6DD62E004AFB3F /* FirebaseMLModelDownloader in Frameworks */,
 				CC71E7042A6DD119004AFB3F /* KinoPubBackend in Frameworks */,
-				CC7FCE8A2A72D09000DFC0A9 /* SimpleToast in Frameworks */,
+				CC7FCE942A730DA400DFC0A9 /* PopupView in Frameworks */,
 				CCF388352A71C83500242581 /* KeychainAccess in Frameworks */,
 				CC71E7222A6DD62E004AFB3F /* FirebaseStorage in Frameworks */,
 				CC71E70A2A6DD119004AFB3F /* KinoPubUI in Frameworks */,
@@ -198,7 +196,7 @@
 			isa = PBXGroup;
 			children = (
 				CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */,
-				CC7FCE8E2A72D3CE00DFC0A9 /* SimpleToast+Configuration.swift */,
+				CC7FCE902A730CC000DFC0A9 /* ToastContentView.swift */,
 			);
 			path = Custom;
 			sourceTree = "<group>";
@@ -224,24 +222,15 @@
 		CC88E1E32A6586E600E9387F /* KinoPubAppleClient */ = {
 			isa = PBXGroup;
 			children = (
-				CC7FCE8D2A72D3BD00DFC0A9 /* Custom */,
 				CCF388302A718FED00242581 /* Info.plist */,
 				CC88E1F42A6587CC00E9387F /* App */,
 				CCF388262A718BAA00242581 /* Context */,
-				CC88E1EB2A6586E700E9387F /* Preview Content */,
+				CC7FCE8D2A72D3BD00DFC0A9 /* Custom */,
 				CC88E1F32A6587BB00E9387F /* Resources */,
 				CCF388172A7187F900242581 /* Services */,
 				CC71E6F12A6C04AE004AFB3F /* Views */,
 			);
 			path = KinoPubAppleClient;
-			sourceTree = "<group>";
-		};
-		CC88E1EB2A6586E700E9387F /* Preview Content */ = {
-			isa = PBXGroup;
-			children = (
-				CC88E1EC2A6586E700E9387F /* Preview Assets.xcassets */,
-			);
-			path = "Preview Content";
 			sourceTree = "<group>";
 		};
 		CC88E1F32A6587BB00E9387F /* Resources */ = {
@@ -389,7 +378,7 @@
 				CC71E7212A6DD62E004AFB3F /* FirebaseStorage */,
 				CC71E7232A6DD62E004AFB3F /* FirebaseStorageCombine-Community */,
 				CCF388342A71C83500242581 /* KeychainAccess */,
-				CC7FCE892A72D09000DFC0A9 /* SimpleToast */,
+				CC7FCE932A730DA400DFC0A9 /* PopupView */,
 			);
 			productName = KinoPubAppleClient;
 			productReference = CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */;
@@ -403,7 +392,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1430;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					CC88E1E02A6586E600E9387F = {
 						CreatedOnToolsVersion = 14.3.1;
@@ -423,7 +412,7 @@
 				CC71E70B2A6DD56A004AFB3F /* XCRemoteSwiftPackageReference "SkeletonUI" */,
 				CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
-				CC7FCE882A72D09000DFC0A9 /* XCRemoteSwiftPackageReference "SimpleToast" */,
+				CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */,
 			);
 			productRefGroup = CC88E1E22A6586E600E9387F /* Products */;
 			projectDirPath = "";
@@ -440,7 +429,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				CC71E6EE2A6BF92D004AFB3F /* Launch Screen.storyboard in Resources */,
-				CC88E1ED2A6586E700E9387F /* Preview Assets.xcassets in Resources */,
 				CC71E70F2A6DD5B1004AFB3F /* GoogleService-Info.plist in Resources */,
 				CC71E6F02A6C048C004AFB3F /* Localizable.xcstrings in Resources */,
 				CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */,
@@ -464,9 +452,9 @@
 				CC71E7012A6DD043004AFB3F /* AuthView.swift in Sources */,
 				CCF388432A71CB3F00242581 /* AccessTokenPlugin.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */,
-				CC7FCE8F2A72D3CE00DFC0A9 /* SimpleToast+Configuration.swift in Sources */,
 				CC88E1E72A6586E600E9387F /* RootView.swift in Sources */,
 				CCF3882F2A718EAA00242581 /* BundleConfiguration.swift in Sources */,
+				CC7FCE912A730CC000DFC0A9 /* ToastContentView.swift in Sources */,
 				CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */,
 				CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */,
 				CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */,
@@ -517,9 +505,11 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -577,9 +567,11 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -606,7 +598,8 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"KinoPubAppleClient/Preview Content\"";
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = Z9BGBYPL8S;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -649,7 +642,8 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"KinoPubAppleClient/Preview Content\"";
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = Z9BGBYPL8S;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -723,12 +717,12 @@
 				minimumVersion = 10.12.0;
 			};
 		};
-		CC7FCE882A72D09000DFC0A9 /* XCRemoteSwiftPackageReference "SimpleToast" */ = {
+		CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sanzaru/SimpleToast.git";
+			repositoryURL = "https://github.com/exyte/PopupView.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.7.2;
+				minimumVersion = 2.6.0;
 			};
 		};
 		CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
@@ -813,10 +807,10 @@
 			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = "FirebaseStorageCombine-Community";
 		};
-		CC7FCE892A72D09000DFC0A9 /* SimpleToast */ = {
+		CC7FCE932A730DA400DFC0A9 /* PopupView */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = CC7FCE882A72D09000DFC0A9 /* XCRemoteSwiftPackageReference "SimpleToast" */;
-			productName = SimpleToast;
+			package = CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */;
+			productName = PopupView;
 		};
 		CCF388342A71C83500242581 /* KeychainAccess */ = {
 			isa = XCSwiftPackageProductDependency;

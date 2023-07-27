@@ -91,21 +91,21 @@
       }
     },
     {
+      "identity" : "popupview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/exyte/PopupView.git",
+      "state" : {
+        "revision" : "68349a0ae704b9a7041f756f3f4f460ddbf7ba8d",
+        "version" : "2.6.0"
+      }
+    },
+    {
       "identity" : "promises",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/promises.git",
       "state" : {
         "revision" : "e70e889c0196c76d22759eb50d6a0270ca9f1d9e",
         "version" : "2.3.1"
-      }
-    },
-    {
-      "identity" : "simpletoast",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/sanzaru/SimpleToast.git",
-      "state" : {
-        "revision" : "7ced9fe877fa1e9aaf9634a611818b84d3317e40",
-        "version" : "0.7.2"
       }
     },
     {
