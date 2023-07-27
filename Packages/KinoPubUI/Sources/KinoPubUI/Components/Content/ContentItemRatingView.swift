@@ -46,12 +46,12 @@ public struct ContentItemRatingView: View {
   }
   
   var imdbRating: some View {
-    Text("\(imdbScore ?? 0.0)")
+    Text("\(imdbScore?.scoreFormatted ?? "0.0")")
       .foregroundColor(.white)
   }
   
   var kpRating: some View {
-    Text("\(kinopoiskScore ?? 0.0)")
+    Text("\(kinopoiskScore?.scoreFormatted ?? "0.0")")
       .foregroundColor(.white)
   }
   

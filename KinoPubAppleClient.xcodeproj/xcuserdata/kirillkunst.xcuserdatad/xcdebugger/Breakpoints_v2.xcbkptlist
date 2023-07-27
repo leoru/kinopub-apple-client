@@ -897,8 +897,8 @@
             filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "25"
-            endingLineNumber = "25"
+            startingLineNumber = "26"
+            endingLineNumber = "26"
             landmarkName = "fetchItems()"
             landmarkType = "7">
          </BreakpointContent>

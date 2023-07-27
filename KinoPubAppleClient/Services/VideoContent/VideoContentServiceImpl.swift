@@ -16,10 +16,10 @@ final class VideoContentServiceImpl: VideoContentService {
     self.apiClient = apiClient
   }
   
-  func fetchItems() async throws -> [MediaItem] {
+  func fetchItems() async throws -> PaginatedData<MediaItem> {
     let response = try await apiClient.performRequest(with: ItemsRequest(),
-                                                      decodingType: PaginatedItemsResponse<MediaItem>.self)
-    return response.items
+                                                      decodingType: PaginatedData<MediaItem>.self)
+    return response
   }
   
 }

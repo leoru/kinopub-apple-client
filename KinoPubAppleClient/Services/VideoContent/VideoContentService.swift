@@ -9,7 +9,7 @@ import Foundation
 import KinoPubBackend
 
 protocol VideoContentService {
-  func fetchItems() async throws -> [MediaItem]
+  func fetchItems() async throws -> PaginatedData<MediaItem>
 }
 
 protocol VideoContentServiceProvider {
@@ -18,8 +18,8 @@ protocol VideoContentServiceProvider {
 
 struct VideoContentServiceMock: VideoContentService {
   
-  func fetchItems() async throws -> [MediaItem] {
-    []
+  func fetchItems() async throws -> PaginatedData<MediaItem> {
+    return PaginatedData.mock(data: [])
   }
   
 }

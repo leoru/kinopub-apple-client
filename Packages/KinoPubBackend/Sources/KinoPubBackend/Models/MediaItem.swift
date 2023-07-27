@@ -86,3 +86,13 @@ public struct MediaItem: Codable, Hashable {
 }
 
 extension MediaItem: Identifiable { }
+
+public extension MediaItem {
+  var originalTitle: String? {
+    title.split(separator: "/").last?.trimmingCharacters(in: .whitespaces)
+  }
+  
+  var localizedTitle: String? {
+    title.split(separator: "/").first?.trimmingCharacters(in: .whitespaces)
+  }
+}

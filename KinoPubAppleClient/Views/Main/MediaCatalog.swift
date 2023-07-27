@@ -14,6 +14,7 @@ class MediaCatalog: ObservableObject {
   private var itemsService: VideoContentService
   
   @Published public var items: [MediaItem] = []
+  @Published public var pagination: Pagination?
   
   init(itemsService: VideoContentService) {
     self.itemsService = itemsService
@@ -21,8 +22,9 @@ class MediaCatalog: ObservableObject {
   
   func fetchItems() async {
     do {
-      let newItems = try await itemsService.fetchItems()
-      self.items.append(contentsOf: newItems)
+      let data = try await itemsService.fetchItems()
+      self.items.append(contentsOf: data.items)
+      pagination = data.pagination
     } catch {
       
     }

@@ -39,20 +39,20 @@ public struct ContentItemView: View {
         .renderingMode(.original)
         .posterStyle(size: .medium)
     } placeholder: {
-      ProgressView()
+      Color.KinoPub.subtitle
     }
     .cornerRadius(8)
   }
   
   var title: some View {
-    Text(mediaItem.title)
+    Text(mediaItem.localizedTitle ?? "")
       .lineLimit(1)
       .font(.system(size: 16.0, weight: .medium))
       .foregroundStyle(Color.KinoPub.text)
   }
   
   var subtitle: some View {
-    Text(mediaItem.title)
+    Text(mediaItem.originalTitle ?? "")
       .lineLimit(1)
       .font(.system(size: 14.0, weight: .medium))
       .foregroundStyle(Color.KinoPub.subtitle)
