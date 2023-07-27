@@ -21,12 +21,12 @@ final class AuthorizationServiceImpl: AuthorizationService {
   }
   
   func fetchDeviceCode() async throws -> VerificationResponse {
-    let request = DeviceCodeRequest(clientID: configuration.clientID, clientSecret: configuration.clientSecret)
+    let request = DeviceCodeRequest(grantType: .deviceCode, clientID: configuration.clientID, clientSecret: configuration.clientSecret)
     return try await apiClient.performRequest(with: request, decodingType: VerificationResponse.self)
   }
   
   func fetchToken(by verification: VerificationResponse) async throws -> AccessToken {
-    let request = DeviceCodeRequest(clientID: configuration.clientID, clientSecret: configuration.clientSecret, code: verification.code)
+    let request = DeviceCodeRequest(grantType: .deviceToken, clientID: configuration.clientID, clientSecret: configuration.clientSecret, code: verification.code)
     return try await apiClient.performRequest(with: request, decodingType: AccessToken.self)
   }
   

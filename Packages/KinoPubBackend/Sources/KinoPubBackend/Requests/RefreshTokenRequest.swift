@@ -39,4 +39,6 @@ public struct RefreshTokenRequest: Endpoint {
   public var headers: [String : String]? {
     nil
   }
+  
+  public var forceSendAsGetParams: Bool { false }
 }

@@ -31,6 +31,10 @@
 		CC71E7222A6DD62E004AFB3F /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7212A6DD62E004AFB3F /* FirebaseStorage */; };
 		CC71E7242A6DD62E004AFB3F /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7232A6DD62E004AFB3F /* FirebaseStorageCombine-Community */; };
 		CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E7252A6DD643004AFB3F /* AppDelegate.swift */; };
+		CC7FCE872A72ACB700DFC0A9 /* AuthModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */; };
+		CC7FCE8A2A72D09000DFC0A9 /* SimpleToast in Frameworks */ = {isa = PBXBuildFile; productRef = CC7FCE892A72D09000DFC0A9 /* SimpleToast */; };
+		CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */; };
+		CC7FCE8F2A72D3CE00DFC0A9 /* SimpleToast+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE8E2A72D3CE00DFC0A9 /* SimpleToast+Configuration.swift */; };
 		CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */; };
 		CC88E1E72A6586E600E9387F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E62A6586E600E9387F /* RootView.swift */; };
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
@@ -63,6 +67,9 @@
 		CC71E7002A6DD043004AFB3F /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		CC71E70E2A6DD5B1004AFB3F /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		CC71E7252A6DD643004AFB3F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModel.swift; sourceTree = "<group>"; };
+		CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClientError+Description.swift"; sourceTree = "<group>"; };
+		CC7FCE8E2A72D3CE00DFC0A9 /* SimpleToast+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SimpleToast+Configuration.swift"; sourceTree = "<group>"; };
 		CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KinoPubAppleClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KinoPubAppleClientApp.swift; sourceTree = "<group>"; };
 		CC88E1E62A6586E600E9387F /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -104,6 +111,7 @@
 				CC71E7062A6DD119004AFB3F /* KinoPubKit in Frameworks */,
 				CC71E7182A6DD62E004AFB3F /* FirebaseMLModelDownloader in Frameworks */,
 				CC71E7042A6DD119004AFB3F /* KinoPubBackend in Frameworks */,
+				CC7FCE8A2A72D09000DFC0A9 /* SimpleToast in Frameworks */,
 				CCF388352A71C83500242581 /* KeychainAccess in Frameworks */,
 				CC71E7222A6DD62E004AFB3F /* FirebaseStorage in Frameworks */,
 				CC71E70A2A6DD119004AFB3F /* KinoPubUI in Frameworks */,
@@ -158,6 +166,7 @@
 			isa = PBXGroup;
 			children = (
 				CC71E7002A6DD043004AFB3F /* AuthView.swift */,
+				CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */,
 			);
 			path = Auth;
 			sourceTree = "<group>";
@@ -185,6 +194,15 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		CC7FCE8D2A72D3BD00DFC0A9 /* Custom */ = {
+			isa = PBXGroup;
+			children = (
+				CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */,
+				CC7FCE8E2A72D3CE00DFC0A9 /* SimpleToast+Configuration.swift */,
+			);
+			path = Custom;
+			sourceTree = "<group>";
+		};
 		CC88E1D82A6586E600E9387F = {
 			isa = PBXGroup;
 			children = (
@@ -206,6 +224,7 @@
 		CC88E1E32A6586E600E9387F /* KinoPubAppleClient */ = {
 			isa = PBXGroup;
 			children = (
+				CC7FCE8D2A72D3BD00DFC0A9 /* Custom */,
 				CCF388302A718FED00242581 /* Info.plist */,
 				CC88E1F42A6587CC00E9387F /* App */,
 				CCF388262A718BAA00242581 /* Context */,
@@ -370,6 +389,7 @@
 				CC71E7212A6DD62E004AFB3F /* FirebaseStorage */,
 				CC71E7232A6DD62E004AFB3F /* FirebaseStorageCombine-Community */,
 				CCF388342A71C83500242581 /* KeychainAccess */,
+				CC7FCE892A72D09000DFC0A9 /* SimpleToast */,
 			);
 			productName = KinoPubAppleClient;
 			productReference = CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */;
@@ -403,6 +423,7 @@
 				CC71E70B2A6DD56A004AFB3F /* XCRemoteSwiftPackageReference "SkeletonUI" */,
 				CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+				CC7FCE882A72D09000DFC0A9 /* XCRemoteSwiftPackageReference "SimpleToast" */,
 			);
 			productRefGroup = CC88E1E22A6586E600E9387F /* Products */;
 			projectDirPath = "";
@@ -443,10 +464,12 @@
 				CC71E7012A6DD043004AFB3F /* AuthView.swift in Sources */,
 				CCF388432A71CB3F00242581 /* AccessTokenPlugin.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */,
+				CC7FCE8F2A72D3CE00DFC0A9 /* SimpleToast+Configuration.swift in Sources */,
 				CC88E1E72A6586E600E9387F /* RootView.swift in Sources */,
 				CCF3882F2A718EAA00242581 /* BundleConfiguration.swift in Sources */,
 				CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */,
 				CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */,
+				CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */,
 				CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */,
 				CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */,
 				CCF388322A71C13900242581 /* MediaCatalog.swift in Sources */,
@@ -454,6 +477,7 @@
 				CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */,
 				CCF3883F2A71C98C00242581 /* AccessTokenService.swift in Sources */,
 				CCF3883C2A71C8D600242581 /* KeychainStorageImpl.swift in Sources */,
+				CC7FCE872A72ACB700DFC0A9 /* AuthModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -699,6 +723,14 @@
 				minimumVersion = 10.12.0;
 			};
 		};
+		CC7FCE882A72D09000DFC0A9 /* XCRemoteSwiftPackageReference "SimpleToast" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sanzaru/SimpleToast.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.7.2;
+			};
+		};
 		CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess.git";
@@ -780,6 +812,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = "FirebaseStorageCombine-Community";
+		};
+		CC7FCE892A72D09000DFC0A9 /* SimpleToast */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC7FCE882A72D09000DFC0A9 /* XCRemoteSwiftPackageReference "SimpleToast" */;
+			productName = SimpleToast;
 		};
 		CCF388342A71C83500242581 /* KeychainAccess */ = {
 			isa = XCSwiftPackageProductDependency;

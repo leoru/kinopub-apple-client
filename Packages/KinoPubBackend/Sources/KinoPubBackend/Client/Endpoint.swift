@@ -12,4 +12,11 @@ public protocol Endpoint {
   var method: String { get }
   var headers: [String: String]? { get }
   var parameters: [String: Any]? { get }
+  var forceSendAsGetParams: Bool { get }
+}
+
+extension Endpoint {
+  var forceSendAsGetParams: Bool {
+    return false
+  }
 }

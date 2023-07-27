@@ -34,11 +34,19 @@ public class APIClient {
     // Notify plugins
     plugins.forEach { $0.didReceive(response, data: data) }
     
+    return try decode(T.self, from: data, throwDecodingErrorImmediately: false)
+  }
+  
+  private func decode<T: Decodable>(_ type: T.Type, from data: Data, throwDecodingErrorImmediately: Bool) throws -> T where T : Decodable {
     do {
       let result = try JSONDecoder().decode(T.self, from: data)
       return result
     } catch {
-      throw APIClientError.decodingError(error)
+      if throwDecodingErrorImmediately {
+        throw APIClientError.decodingError(error)
+      }
+      let result = try decode(BackendError.self, from: data, throwDecodingErrorImmediately: true)
+      throw APIClientError.networkError(result)
     }
   }
 }

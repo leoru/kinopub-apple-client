@@ -29,17 +29,29 @@ internal class RequestBuilder {
     if let parameters = endpoint.parameters {
       switch endpoint.method {
       case "GET":
-        var components = URLComponents(url: url, resolvingAgainstBaseURL: true)!
-        components.queryItems = parameters.sorted(by: { $0.key < $1.key }).map { (key, value) in
-          return URLQueryItem(name: key, value: "\(value)")
-        }
-        request.url = components.url
+        request = convertParamsToURL(for: url, request: request, endpoint: endpoint)
       default:
+        if endpoint.forceSendAsGetParams {
+          request = convertParamsToURL(for: url, request: request, endpoint: endpoint)
+          break
+        }
         let bodyData = try? JSONSerialization.data(withJSONObject: parameters)
         request.httpBody = bodyData
       }
     }
     
+    return request
+  }
+  
+  private func convertParamsToURL(for url: URL, request: URLRequest, endpoint: Endpoint) -> URLRequest {
+    var request = request
+    var components = URLComponents(url: url, resolvingAgainstBaseURL: true)!
+    if let parameters = endpoint.parameters {
+      components.queryItems = parameters.sorted(by: { $0.key < $1.key }).map { (key, value) in
+        return URLQueryItem(name: key, value: "\(value)")
+      }
+    }
+    request.url = components.url
     return request
   }
 }

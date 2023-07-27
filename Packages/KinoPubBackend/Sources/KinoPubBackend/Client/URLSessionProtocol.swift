@@ -19,6 +19,10 @@ public class URLSessionImpl: URLSessionProtocol {
   }
   
   public func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-    try await session.data(for: request)
+    do {
+      return try await session.data(for: request)
+    } catch {
+      throw APIClientError.networkError(error)
+    }
   }
 }

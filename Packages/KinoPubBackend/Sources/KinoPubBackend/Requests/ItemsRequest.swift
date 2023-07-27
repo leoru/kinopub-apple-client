@@ -26,4 +26,6 @@ public struct ItemsRequest: Endpoint {
   public var headers: [String : String]? {
     nil
   }
+  
+  public var forceSendAsGetParams: Bool { false }
 }

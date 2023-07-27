@@ -6,8 +6,15 @@
 //
 import SwiftUI
 import KinoPubUI
+import SimpleToast
 
 struct AuthView: View {
+  
+  @ObservedObject private var model: AuthModel
+  
+  init(model: AuthModel) {
+    self.model = model
+  }
   
   var body: some View {
     Color.KinoPub.background
@@ -27,7 +34,7 @@ struct AuthView: View {
           }
           .fixedSize(horizontal: false, vertical: true)
           VStack(spacing: 5) {
-            Text("CODE")
+            Text(model.deviceCode)
               .font(.system(size: 34, weight: Font.Weight.bold))
               .foregroundColor(Color.KinoPub.text)
               .frame(minHeight: 44, idealHeight: 44, maxHeight: 44)
@@ -48,11 +55,18 @@ struct AuthView: View {
           .fixedSize(horizontal: false, vertical: true)
       )
       .interactiveDismissDisabled(true)
+      .simpleToast(isPresented: $model.showError, options: SimpleToastOptions.error, content: {
+        Text(model.error ?? "")
+          .foregroundStyle(Color.white)
+      })
+      .onAppear(perform: {
+        model.fetchDeviceCode()
+      })
   }
 }
 
-struct AuthView_Previews: PreviewProvider {
-  static var previews: some View {
-    AuthView()
-  }
-}
+//struct AuthView_Previews: PreviewProvider {
+//  static var previews: some View {
+//    AuthView()
+//  }
+//}

@@ -7,11 +7,28 @@
 
 import SwiftUI
 import KinoPubUI
+import KinoPubBackend
 
 struct RootView: View {
   
   @State var showAuth: Bool = false
   @Environment(\.appContext) var appContext
+  
+  private func refreshToken() {
+    guard let _ : AccessToken = appContext.accessTokenService.token() else {
+      showAuth = true
+      return
+    }
+    Task {
+      do {
+        try await appContext.authService.refreshToken()
+      } catch {
+        await MainActor.run {
+          showAuth = true
+        }
+      }
+    }
+  }
   
   var body: some View {
     TabView {
@@ -38,10 +55,10 @@ struct RootView: View {
     }
     .accentColor(Color.KinoPub.accent)
     .onAppear(perform: {
-      showAuth = false
+      refreshToken()
     })
     .sheet(isPresented: $showAuth, content: {
-      AuthView()
+      AuthView(model: AuthModel(authService: appContext.authService))
     })
   }
 }

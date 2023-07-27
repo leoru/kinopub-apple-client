@@ -7,13 +7,20 @@
 
 import Foundation
 
+public enum DeviceCodeGrantType: String {
+  case deviceCode = "device_code"
+  case deviceToken = "device_token"
+}
+
 public struct DeviceCodeRequest: Endpoint {
   
+  public var grantType: DeviceCodeGrantType
   public var clientID: String
   public var clientSecret: String
   public var code: String?
   
-  public init(clientID: String, clientSecret: String, code: String? = nil) {
+  public init(grantType: DeviceCodeGrantType, clientID: String, clientSecret: String, code: String? = nil) {
+    self.grantType = grantType
     self.clientID = clientID
     self.clientSecret = clientSecret
     self.code = code
@@ -29,7 +36,7 @@ public struct DeviceCodeRequest: Endpoint {
   
   public var parameters: [String : Any]? {
     var params = [
-      "grant_type": "device_code",
+      "grant_type": grantType.rawValue,
       "client_id": clientID,
       "client_secret": clientSecret
     ]
@@ -43,5 +50,9 @@ public struct DeviceCodeRequest: Endpoint {
   
   public var headers: [String : String]? {
     nil
+  }
+  
+  public var forceSendAsGetParams: Bool {
+    return true
   }
 }
