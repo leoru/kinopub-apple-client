@@ -18,6 +18,9 @@ extension APIClientError: CustomStringConvertible {
     case .decodingError(let error):
       return "Decoding issue: \(error)"
     case .networkError(let error):
+      if let error = error as? BackendError {
+        return error.errorDescription ?? error.localizedDescription
+      }
       return "Networking issue: \(error)"
     }
   }
@@ -33,4 +36,5 @@ extension APIClientError: CustomStringConvertible {
     }
     return false
   }
+  
 }

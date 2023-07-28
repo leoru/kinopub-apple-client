@@ -56,6 +56,19 @@
       }
     },
     "Choose item" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выберите"
+          }
+        }
+      }
+    },
+    "Choose media type" : {
+
+    },
+    "Choose shortcut" : {
 
     },
     "Downloads" : {
@@ -64,6 +77,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Загрузки"
+          }
+        }
+      }
+    },
+    "Fresh" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Новые"
+          }
+        }
+      }
+    },
+    "Hot" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Горячие"
           }
         }
       }
@@ -85,6 +120,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Фильмы"
+          }
+        }
+      }
+    },
+    "Popular" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Популярные"
           }
         }
       }

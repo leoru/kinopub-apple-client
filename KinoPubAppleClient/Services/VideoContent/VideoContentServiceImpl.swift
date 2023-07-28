@@ -16,8 +16,9 @@ final class VideoContentServiceImpl: VideoContentService {
     self.apiClient = apiClient
   }
   
-  func fetchItems() async throws -> PaginatedData<MediaItem> {
-    let response = try await apiClient.performRequest(with: ItemsRequest(),
+  func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?) async throws -> PaginatedData<MediaItem> {
+    let request = ShortcutItemsRequest(shortcut: shortcut, contentType: contentType, page: page)
+    let response = try await apiClient.performRequest(with: request,
                                                       decodingType: PaginatedData<MediaItem>.self)
     return response
   }

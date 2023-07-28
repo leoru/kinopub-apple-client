@@ -56,6 +56,8 @@ struct AppContext: AppContextProtocol {
                       keychainStorage: keychainStorage)
   }()
   
+  // MARK: - API Client building
+  
   private static func makeApiClient(with baseURL: String, accessTokenService: AccessTokenService) -> APIClient {
     APIClient(baseUrl: baseURL,
               plugins: [

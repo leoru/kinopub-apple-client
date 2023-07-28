@@ -780,84 +780,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "F57B6E2B-DBF5-42D2-91CC-470A147FF4B7"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "20"
-            endingLineNumber = "20"
-            landmarkName = "fetchItems()"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "F57B6E2B-DBF5-42D2-91CC-470A147FF4B7 - f5e21dcea89b740c"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(1) suspend resume partial function for KinoPubAppleClient.VideoContentServiceImpl.fetchItems() async throws -&gt; Swift.Array&lt;KinoPubBackend.MediaItem&gt;"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "20"
-                  endingLineNumber = "20"
-                  offsetFromSymbolStart = "120">
-               </Location>
-               <Location
-                  uuid = "F57B6E2B-DBF5-42D2-91CC-470A147FF4B7 - 61fecbac7bc7646a"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(2) await resume partial function for KinoPubAppleClient.VideoContentServiceImpl.fetchItems() async throws -&gt; Swift.Array&lt;KinoPubBackend.MediaItem&gt;"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "20"
-                  endingLineNumber = "20"
-                  offsetFromSymbolStart = "36">
-               </Location>
-               <Location
-                  uuid = "F57B6E2B-DBF5-42D2-91CC-470A147FF4B7 - 99565ac14270880a"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(3) suspend resume partial function for KinoPubAppleClient.VideoContentServiceImpl.fetchItems() async throws -&gt; Swift.Array&lt;KinoPubBackend.MediaItem&gt;"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "20"
-                  endingLineNumber = "20"
-                  offsetFromSymbolStart = "36">
-               </Location>
-               <Location
-                  uuid = "F57B6E2B-DBF5-42D2-91CC-470A147FF4B7 - 70edba46f13d6a09"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(4) suspend resume partial function for KinoPubAppleClient.VideoContentServiceImpl.fetchItems() async throws -&gt; Swift.Array&lt;KinoPubBackend.MediaItem&gt;"
-                  moduleName = "KinoPubAppleClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "20"
-                  endingLineNumber = "20"
-                  offsetFromSymbolStart = "32">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "C23BEE4B-76CD-4AD0-8C4D-0A81A6B0C69A"
             shouldBeEnabled = "No"
             ignoreCount = "0"
@@ -874,22 +796,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "5EE3F802-33C9-419D-BBA0-FA1E0E4BB092"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "KinoPubAppleClient/Services/VideoContent/VideoContentServiceImpl.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "22"
-            endingLineNumber = "22"
-            landmarkName = "fetchItems()"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "4F3B03DB-A0A4-44DA-9732-260E277ACCDE"
             shouldBeEnabled = "No"
             ignoreCount = "0"
@@ -897,8 +803,8 @@
             filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "26"
-            endingLineNumber = "26"
+            startingLineNumber = "37"
+            endingLineNumber = "37"
             landmarkName = "fetchItems()"
             landmarkType = "7">
          </BreakpointContent>
@@ -913,8 +819,8 @@
             filePath = "Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ContentItemsListView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "22"
-            endingLineNumber = "22"
+            startingLineNumber = "23"
+            endingLineNumber = "23"
             landmarkName = "init(items:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -929,8 +835,8 @@
             filePath = "Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ContentItemsListView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "28"
-            endingLineNumber = "28"
+            startingLineNumber = "30"
+            endingLineNumber = "30"
             landmarkName = "body"
             landmarkType = "24">
             <Locations>
@@ -963,6 +869,101 @@
                   startingLineNumber = "29"
                   endingLineNumber = "29"
                   offsetFromSymbolStart = "68">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "58F620F6-D233-434F-9A5B-F46614634CCA"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "50"
+            endingLineNumber = "50"
+            landmarkName = "loadMoreContent(after:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "E10E6A8D-9305-4241-A5E5-DD7A4F2C1AF5"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "52"
+            endingLineNumber = "52"
+            landmarkName = "loadMoreContent(after:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "CA7C244C-0AE7-4989-A104-2E68E844E3FE"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "67"
+            endingLineNumber = "67"
+            landmarkName = "subscribe()"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "CA7C244C-0AE7-4989-A104-2E68E844E3FE - e2f0697210beb0d"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "KinoPubAppleClient.MediaCatalog.subscribe() -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Main/MediaCatalog.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "63"
+                  endingLineNumber = "63"
+                  offsetFromSymbolStart = "336">
+               </Location>
+               <Location
+                  uuid = "CA7C244C-0AE7-4989-A104-2E68E844E3FE - a41d0da57ff934a5"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #1 (KinoPubBackend.MediaType) -&gt; () in KinoPubAppleClient.MediaCatalog.subscribe() -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Main/MediaCatalog.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "63"
+                  endingLineNumber = "63"
+                  offsetFromSymbolStart = "176">
+               </Location>
+               <Location
+                  uuid = "CA7C244C-0AE7-4989-A104-2E68E844E3FE - a41d0da57ff934a5"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #1 (KinoPubBackend.MediaType) -&gt; () in KinoPubAppleClient.MediaCatalog.subscribe() -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Main/MediaCatalog.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "63"
+                  endingLineNumber = "63"
+                  offsetFromSymbolStart = "64">
                </Location>
             </Locations>
          </BreakpointContent>

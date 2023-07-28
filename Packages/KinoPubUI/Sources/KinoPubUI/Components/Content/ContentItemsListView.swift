@@ -17,9 +17,11 @@ public struct ContentItemsListView: View {
   ]
   
   @Binding public var items: [MediaItem]
+  public var onLoadMoreContent: (MediaItem) -> Void
   
-  public init(items: Binding<[MediaItem]>) {
+  public init(items: Binding<[MediaItem]>, onLoadMoreContent: @escaping (MediaItem) -> Void) {
     self._items = items
+    self.onLoadMoreContent = onLoadMoreContent
   }
   
   public var body: some View {
@@ -28,6 +30,9 @@ public struct ContentItemsListView: View {
         ForEach(items, id: \.id) { item in
           ContentItemView(mediaItem: item)
             .padding(.vertical, 20)
+            .onAppear {
+              onLoadMoreContent(item)
+            }
         }
       })
       .padding(.horizontal, 16)

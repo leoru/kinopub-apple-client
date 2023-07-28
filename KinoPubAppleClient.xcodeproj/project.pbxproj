@@ -38,6 +38,9 @@
 		CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */; };
 		CC88E1E72A6586E600E9387F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E62A6586E600E9387F /* RootView.swift */; };
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
+		CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */; };
+		CCE9C6DC2A73DB87007923C0 /* BookmarksCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */; };
+		CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */; };
 		CCF3881A2A71882300242581 /* AuthorizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388192A71882300242581 /* AuthorizationService.swift */; };
 		CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */; };
 		CCF388212A718ADE00242581 /* VideoContentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388202A718ADE00242581 /* VideoContentService.swift */; };
@@ -76,6 +79,9 @@
 		CC88E1EA2A6586E700E9387F /* KinoPubAppleClient.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KinoPubAppleClient.entitlements; sourceTree = "<group>"; };
 		CC88E1F62A6589DC00E9387F /* KinoPubBackend */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubBackend; path = Packages/KinoPubBackend; sourceTree = "<group>"; };
 		CC88E1F72A65A42B00E9387F /* KinoPubUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubUI; path = Packages/KinoPubUI; sourceTree = "<group>"; };
+		CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemView.swift; sourceTree = "<group>"; };
+		CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksCatalog.swift; sourceTree = "<group>"; };
+		CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutView.swift; sourceTree = "<group>"; };
 		CCF388192A71882300242581 /* AuthorizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationService.swift; sourceTree = "<group>"; };
 		CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationServiceImpl.swift; sourceTree = "<group>"; };
 		CCF388202A718ADE00242581 /* VideoContentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoContentService.swift; sourceTree = "<group>"; };
@@ -125,7 +131,7 @@
 			children = (
 				CC71E6F52A6C05BF004AFB3F /* Auth */,
 				CC71E6F42A6C05B9004AFB3F /* Bookmarks */,
-				CCF388152A71816B00242581 /* ContentItem */,
+				CCF388152A71816B00242581 /* MediaItem */,
 				CC71E6FD2A6C0691004AFB3F /* Downloads */,
 				CC71E6F32A6C05B4004AFB3F /* Main */,
 				CCF388162A71817300242581 /* Player */,
@@ -146,6 +152,7 @@
 		CC71E6F32A6C05B4004AFB3F /* Main */ = {
 			isa = PBXGroup;
 			children = (
+				CCE9C6DD2A73EA11007923C0 /* Shortcut */,
 				CC71E6FB2A6C0678004AFB3F /* MainView.swift */,
 				CCF388312A71C13900242581 /* MediaCatalog.swift */,
 			);
@@ -156,6 +163,7 @@
 			isa = PBXGroup;
 			children = (
 				CC71E6F92A6C0655004AFB3F /* BookmarksView.swift */,
+				CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */,
 			);
 			path = Bookmarks;
 			sourceTree = "<group>";
@@ -196,7 +204,6 @@
 			isa = PBXGroup;
 			children = (
 				CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */,
-				CC7FCE902A730CC000DFC0A9 /* ToastContentView.swift */,
 			);
 			path = Custom;
 			sourceTree = "<group>";
@@ -222,10 +229,11 @@
 		CC88E1E32A6586E600E9387F /* KinoPubAppleClient */ = {
 			isa = PBXGroup;
 			children = (
-				CCF388302A718FED00242581 /* Info.plist */,
 				CC88E1F42A6587CC00E9387F /* App */,
+				CCE9C6D82A73DB4C007923C0 /* Components */,
 				CCF388262A718BAA00242581 /* Context */,
 				CC7FCE8D2A72D3BD00DFC0A9 /* Custom */,
+				CCF388302A718FED00242581 /* Info.plist */,
 				CC88E1F32A6587BB00E9387F /* Resources */,
 				CCF388172A7187F900242581 /* Services */,
 				CC71E6F12A6C04AE004AFB3F /* Views */,
@@ -265,11 +273,28 @@
 			name = Packages;
 			sourceTree = "<group>";
 		};
-		CCF388152A71816B00242581 /* ContentItem */ = {
+		CCE9C6D82A73DB4C007923C0 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				CC7FCE902A730CC000DFC0A9 /* ToastContentView.swift */,
 			);
-			path = ContentItem;
+			path = Components;
+			sourceTree = "<group>";
+		};
+		CCE9C6DD2A73EA11007923C0 /* Shortcut */ = {
+			isa = PBXGroup;
+			children = (
+				CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */,
+			);
+			path = Shortcut;
+			sourceTree = "<group>";
+		};
+		CCF388152A71816B00242581 /* MediaItem */ = {
+			isa = PBXGroup;
+			children = (
+				CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */,
+			);
+			path = MediaItem;
 			sourceTree = "<group>";
 		};
 		CCF388162A71817300242581 /* Player */ = {
@@ -454,11 +479,13 @@
 				CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */,
 				CC88E1E72A6586E600E9387F /* RootView.swift in Sources */,
 				CCF3882F2A718EAA00242581 /* BundleConfiguration.swift in Sources */,
+				CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */,
 				CC7FCE912A730CC000DFC0A9 /* ToastContentView.swift in Sources */,
 				CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */,
 				CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */,
 				CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */,
 				CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */,
+				CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */,
 				CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */,
 				CCF388322A71C13900242581 /* MediaCatalog.swift in Sources */,
 				CCF388382A71C87E00242581 /* KeychainStorage.swift in Sources */,
@@ -466,6 +493,7 @@
 				CCF3883F2A71C98C00242581 /* AccessTokenService.swift in Sources */,
 				CCF3883C2A71C8D600242581 /* KeychainStorageImpl.swift in Sources */,
 				CC7FCE872A72ACB700DFC0A9 /* AuthModel.swift in Sources */,
+				CCE9C6DC2A73DB87007923C0 /* BookmarksCatalog.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

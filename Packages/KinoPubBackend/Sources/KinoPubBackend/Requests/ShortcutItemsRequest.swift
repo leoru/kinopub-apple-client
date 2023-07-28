@@ -1,26 +1,26 @@
 //
-//  ItemsRequest.swift
+//  ShortcutItemsRequest.swift
 //
 //
-//  Created by Kirill Kunst on 26.07.2023.
+//  Created by Kirill Kunst on 28.07.2023.
 //
 
 import Foundation
 
-public struct ItemsRequest: Endpoint {
+public struct ShortcutItemsRequest: Endpoint {
   
+  private var shortcut: MediaShortcut
   private var contentType: MediaType
   private var page: Int?
-  private var query: String?
   
-  init(contentType: MediaType, page: Int? = nil, query: String? = nil) {
+  public init(shortcut: MediaShortcut, contentType: MediaType, page: Int? = nil) {
+    self.shortcut = shortcut
     self.contentType = contentType
     self.page = page
-    self.query = query
   }
   
   public var path: String {
-    "/v1/items"
+    "/v1/items/\(shortcut.rawValue)"
   }
   
   public var method: String {
@@ -34,10 +34,6 @@ public struct ItemsRequest: Endpoint {
     
     if let page = page {
       params["page"] = "\(page)"
-    }
-    
-    if let query = query {
-      params["q"] = query
     }
     
     return params

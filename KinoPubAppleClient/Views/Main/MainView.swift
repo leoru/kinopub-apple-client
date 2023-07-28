@@ -11,17 +11,49 @@ struct MainView: View {
   
   @StateObject private var catalog: MediaCatalog = MediaCatalog(itemsService: AppContext.shared.contentService)
   
+  @State private var showShortCutPicker: Bool = false
+  
   var body: some View {
     NavigationView {
       VStack {
-        ContentItemsListView(items: $catalog.items)
+        ContentItemsListView(items: $catalog.items) { item in
+          catalog.loadMoreContent(after: item)
+        }
       }
-      .navigationTitle("Main")
+      .navigationTitle(catalog.title)
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            
+          } label: {
+            Image(systemName: "magnifyingglass")
+          }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            showShortCutPicker = true
+          } label: {
+            Image(systemName: "arrow.up.arrow.down")
+          }
+        }
+        
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            
+          } label: {
+            Image(systemName: "line.3.horizontal.decrease.circle")
+          }
+        }
+      }
       .background(Color.KinoPub.background)
       .onAppear(perform: {
         Task {
           await catalog.fetchItems()
         }
+      })
+      .sheet(isPresented: $showShortCutPicker, content: {
+        ShortcutSelectionView(shortcut: $catalog.shortcut,
+                              mediaType: $catalog.contentType)
       })
     }
   }
