@@ -45,7 +45,9 @@ class AuthModel: ObservableObject {
       return
     }
     
+    #if os(iOS)
     UIApplication.shared.open(url)
+    #endif
   }
   
   private func requestToken(by response: VerificationResponse) async throws {

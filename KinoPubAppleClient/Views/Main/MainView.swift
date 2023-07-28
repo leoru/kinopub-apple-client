@@ -13,6 +13,14 @@ struct MainView: View {
   
   @State private var showShortCutPicker: Bool = false
   
+  var toolbarItemPlacement: ToolbarItemPlacement {
+    #if os(iOS)
+    .topBarTrailing
+    #elseif os(macOS)
+    .navigation
+    #endif
+  }
+  
   var body: some View {
     NavigationView {
       VStack {
@@ -22,14 +30,14 @@ struct MainView: View {
       }
       .navigationTitle(catalog.title)
       .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarItem(placement: toolbarItemPlacement) {
           Button {
             
           } label: {
             Image(systemName: "magnifyingglass")
           }
         }
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarItem(placement: toolbarItemPlacement) {
           Button {
             showShortCutPicker = true
           } label: {
@@ -37,7 +45,7 @@ struct MainView: View {
           }
         }
         
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarItem(placement: toolbarItemPlacement) {
           Button {
             
           } label: {
