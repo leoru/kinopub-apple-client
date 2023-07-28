@@ -37,7 +37,9 @@ public class APIClient {
     return try decode(T.self, from: data, throwDecodingErrorImmediately: false)
   }
   
-  private func decode<T: Decodable>(_ type: T.Type, from data: Data, throwDecodingErrorImmediately: Bool) throws -> T where T : Decodable {
+  private func decode<T: Decodable>(_ type: T.Type,
+                                    from data: Data,
+                                    throwDecodingErrorImmediately: Bool) throws -> T where T : Decodable {
     do {
       let result = try JSONDecoder().decode(T.self, from: data)
       return result

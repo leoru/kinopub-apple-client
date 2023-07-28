@@ -7,13 +7,16 @@
 
 import Foundation
 import SwiftUI
-import KinoPubUI
 
-struct ToastContentView: View {
+public struct ToastContentView: View {
   
-  var text: String
+  public var text: String
   
-  var body: some View {
+  public init(text: String) {
+    self.text = text
+  }
+  
+  public var body: some View {
     Text(text)
       .padding(.horizontal, 16)
       .padding(.vertical, 16)

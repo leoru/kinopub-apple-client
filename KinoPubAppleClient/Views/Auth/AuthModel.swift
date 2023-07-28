@@ -8,6 +8,8 @@
 import Foundation
 import SwiftUI
 import KinoPubBackend
+import KinoPubLogging
+import OSLog
 
 @MainActor
 class AuthModel: ObservableObject {
@@ -26,6 +28,7 @@ class AuthModel: ObservableObject {
   }
   
   func fetchDeviceCode() {
+    Logger.app.debug("Fetch device code...")
     error = nil
     showError = false
     Task {
@@ -33,6 +36,7 @@ class AuthModel: ObservableObject {
         let response = try await authService.fetchDeviceCode()
         self.deviceCode = response.userCode
         self.tempVerificationResponse = response
+        Logger.app.debug("receive device code: \(response.userCode)")
         scheduleCheck(for: response)
       } catch {
         handleError(error)
@@ -45,15 +49,19 @@ class AuthModel: ObservableObject {
       return
     }
     
+    Logger.app.debug("open activation url: \(url)")
+    
     #if os(iOS)
     UIApplication.shared.open(url)
     #endif
   }
   
   private func requestToken(by response: VerificationResponse) async throws {
+    Logger.app.debug("request token...")
     do {
       try await authService.fetchToken(by: response)
       close = true
+      Logger.app.debug("token requested")
     } catch {
       handleError(error, response: response)
     }
@@ -61,6 +69,8 @@ class AuthModel: ObservableObject {
   
   private func scheduleCheck(for response: VerificationResponse) {
     let timeout = UInt64(response.interval)
+    
+    Logger.app.debug("schedule next token scheck...")
     Task {
       try await Task.sleep(nanoseconds: timeout * 1_000_000_000)
       try await requestToken(by: response)
@@ -68,6 +78,8 @@ class AuthModel: ObservableObject {
   }
   
   private func handleError(_ error: Error, response: VerificationResponse? = nil) {
+    Logger.app.debug("got error: \(error)")
+    
     guard let error = error as? APIClientError else {
       return
     }

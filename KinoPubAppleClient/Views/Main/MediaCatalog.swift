@@ -7,6 +7,8 @@
 
 import Foundation
 import KinoPubBackend
+import OSLog
+import KinoPubLogging
 import Combine
 
 @MainActor
@@ -37,7 +39,7 @@ class MediaCatalog: ObservableObject {
       self.items.append(contentsOf: data.items)
       pagination = data.pagination
     } catch {
-      
+      Logger.app.debug("fetch items error: \(error)")
     }
   }
   
@@ -48,6 +50,7 @@ class MediaCatalog: ObservableObject {
     
     let thresholdIndex = self.items.index(self.items.endIndex, offsetBy: -1)
     if thresholdIndex == self.items.firstIndex(of: item), pagination.current <= pagination.total {
+      Logger.app.debug("load more content after item: \(item.id)")
       Task {
         await fetchItems()
       }
@@ -58,6 +61,7 @@ class MediaCatalog: ObservableObject {
     items.removeAll()
     pagination = nil
     Task {
+      Logger.app.debug("refetch items")
       await fetchItems()
     }
   }
