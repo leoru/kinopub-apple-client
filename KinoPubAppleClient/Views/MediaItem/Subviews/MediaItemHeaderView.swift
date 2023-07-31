@@ -29,6 +29,18 @@ struct MediaItemHeaderView: View {
     ZStack {
       image
         .padding(.top, -200 * headerSize.rawValue)
+      VStack {
+        Spacer()
+        HStack {
+          KinoPubButton(title: "Смотреть", color: .green) {
+            
+          }
+          KinoPubButton(title: "Трейлер", color: .gray) {
+            
+          }
+        }
+        .padding(.all, 16)
+      }
     }
     .frame(height: 200 * headerSize.rawValue)
     .contentShape(Rectangle())

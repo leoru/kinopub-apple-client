@@ -15,7 +15,7 @@ struct MediaItemFieldsCard: View {
   
   var body: some View {
     VStack(alignment: .leading) {
-      Label("MediaItem_Data", systemImage: "book.pages")
+      Label("MediaItem_Description", systemImage: "book.pages")
         .foregroundStyle(Color.KinoPub.text)
         .font(Font.KinoPub.subheader)
       

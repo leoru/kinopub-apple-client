@@ -17,7 +17,7 @@ struct MediaItemDescriptionCard: View {
     VStack(alignment: .leading) {
       Label(mediaItem.localizedTitle ?? "", systemImage: "movieclapper")
         .foregroundStyle(Color.KinoPub.text)
-        .font(Font.KinoPub.subheader)
+        .font(Font.KinoPub.header)
       plot
       metaIcons
         .padding(.top, 8)

@@ -9,12 +9,14 @@ import Foundation
 import SwiftUI
 
 public struct KinoPubButtonStyle: ButtonStyle {
+  
+  var buttonColor: KinoPubButton.ButtonColor
 
   public func makeBody(configuration: Self.Configuration) -> some View {
     configuration.label
       .foregroundColor(.white)
-      .background(Color.KinoPub.accent)
-      .cornerRadius(8.0)
+      .background(buttonColor.color)
+      .cornerRadius(6.0)
   }
 
 }
