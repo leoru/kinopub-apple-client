@@ -10,6 +10,7 @@ import KinoPubBackend
 
 protocol VideoContentService {
   func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?) async throws -> PaginatedData<MediaItem>
+  func fetchDetails(for id: String) async throws -> SingleItemData<MediaItem>
 }
 
 protocol VideoContentServiceProvider {
@@ -20,6 +21,10 @@ struct VideoContentServiceMock: VideoContentService {
   
   func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?) async throws -> PaginatedData<MediaItem> {
     return PaginatedData.mock(data: [])
+  }
+  
+  func fetchDetails(for id: String) async throws -> SingleItemData<MediaItem> {
+    return SingleItemData.mock(data: MediaItem.mock())
   }
   
 }

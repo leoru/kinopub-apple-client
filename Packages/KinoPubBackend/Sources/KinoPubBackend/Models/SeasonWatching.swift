@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct SeasonWatching: Codable {
+public struct SeasonWatching: Codable, Hashable {
   public let status: Int
 }
 

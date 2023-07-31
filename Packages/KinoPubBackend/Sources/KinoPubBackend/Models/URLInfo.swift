@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct URLInfo: Codable {
+public struct URLInfo: Codable, Hashable {
   public let http: String
   public let hls: String
   public let hls4: String

@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct Subtitle: Codable {
+public struct Subtitle: Codable, Hashable {
   public let lang: String
   public let shift: Int
   public let embed: Bool

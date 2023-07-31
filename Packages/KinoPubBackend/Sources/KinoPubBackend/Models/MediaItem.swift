@@ -42,6 +42,10 @@ public struct MediaItem: Codable, Hashable {
   public let updatedAt: Int
   public let inWatchlist: Bool?
   public let subscribed: Bool?
+  public let ac3: Int?
+  public let bookmarks: [TypeClass]?
+  public let seasons: [Season]?
+  public let videos: [Video]?
   
   private enum CodingKeys: String, CodingKey {
     case id = "id"
@@ -78,6 +82,10 @@ public struct MediaItem: Codable, Hashable {
     case updatedAt = "updated_at"
     case inWatchlist = "in_watchlist"
     case subscribed = "subscribed"
+    case bookmarks = "bookmarks"
+    case ac3 = "ac3"
+    case seasons = "seasons"
+    case videos = "videos"
   }
   
   public static func mock() -> MediaItem {
@@ -123,7 +131,11 @@ public struct MediaItem: Codable, Hashable {
               createdAt: 0,
               updatedAt: 0,
               inWatchlist: false,
-              subscribed: false)
+              subscribed: false,
+              ac3: nil,
+              bookmarks: nil,
+              seasons: nil,
+              videos: nil)
   }
 }
 
