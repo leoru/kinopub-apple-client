@@ -8,7 +8,17 @@
 import Foundation
 import SwiftUI
 
-extension Font {
+public extension Font {
+  
+  struct KinoPub {
+    public static var subheader: Font {
+      .system(size: 17.0)
+    }
+    
+    public static var small: Font {
+      .system(size: 14.0)
+    }
+  }
   
 }
 

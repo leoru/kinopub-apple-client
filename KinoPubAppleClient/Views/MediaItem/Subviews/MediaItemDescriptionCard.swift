@@ -17,6 +17,7 @@ struct MediaItemDescriptionCard: View {
     VStack(alignment: .leading) {
       Label("MediaItem_Description", systemImage: "movieclapper")
         .foregroundStyle(Color.KinoPub.text)
+        .font(Font.KinoPub.subheader)
       plot
       metaIcons
         .padding(.top, 8)
@@ -35,7 +36,7 @@ struct MediaItemDescriptionCard: View {
   
   var plot: some View {
     Text(mediaItem.plot)
-      .font(.system(size: 11))
+      .font(Font.KinoPub.small)
       .foregroundStyle(Color.KinoPub.text)
       .padding(.top, 8)
   }

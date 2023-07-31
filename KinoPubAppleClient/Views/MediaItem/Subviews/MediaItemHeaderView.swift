@@ -31,12 +31,13 @@ struct MediaItemHeaderView: View {
         .padding(.top, -200 * headerSize.rawValue)
     }
     .frame(height: 200 * headerSize.rawValue)
+    .contentShape(Rectangle())
   }
   
   var image: some View {
     AsyncImage(url: URL(string: mediaItem.posters.big)) { image in
       image.resizable()
-        .renderingMode(.original)
+        .centerCropped()
     } placeholder: {
       Color.KinoPub.subtitle
     }

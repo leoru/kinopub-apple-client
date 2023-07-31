@@ -17,6 +17,7 @@ struct MediaItemFieldsCard: View {
     VStack(alignment: .leading) {
       Label("MediaItem_Data", systemImage: "book.pages")
         .foregroundStyle(Color.KinoPub.text)
+        .font(Font.KinoPub.subheader)
       
       VStack {
         data(key: "MediaItem_Title", value: "\(mediaItem.originalTitle ?? "")")
@@ -26,7 +27,7 @@ struct MediaItemFieldsCard: View {
         data(key: "MediaItem_Genre", value: "\(mediaItem.genres.compactMap({ $0.title ?? "" }).joined(separator: ","))")
         data(key: "MediaItem_Voice", value: "\(mediaItem.voice ?? "")")
         data(key: "MediaItem_Director", value: "\(mediaItem.director)")
-        data(key: "MediaItem_Actors", value: "\(mediaItem.cast)")
+        data(key: "MediaItem_Cast", value: "\(mediaItem.cast)")
       }.padding(.top, 8)
       
     }
@@ -51,14 +52,14 @@ struct MediaItemFieldsCard: View {
   func dataTitle(text: String) -> some View {
     Text(NSLocalizedString(text, comment: ""))
       .foregroundStyle(Color.KinoPub.subtitle)
-      .font(.system(size: 12))
+      .font(Font.KinoPub.small)
       .padding(.horizontal, 5)
   }
   
   func dataValue(text: String) -> some View {
     Text(text)
       .foregroundStyle(Color.KinoPub.text)
-      .font(.system(size: 12))
+      .font(Font.KinoPub.small)
       .padding(.horizontal, 5)
       .multilineTextAlignment(.trailing)
   }

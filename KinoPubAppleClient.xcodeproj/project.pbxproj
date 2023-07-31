@@ -132,6 +132,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CC0146182A7835A200F858AF /* Subviews */ = {
+			isa = PBXGroup;
+			children = (
+				CCB4879C2A77D8FE00FA4483 /* MediaItemHeaderView.swift */,
+				CCB487A02A77DBC200FA4483 /* MediaItemDescriptionCard.swift */,
+				CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */,
+			);
+			path = Subviews;
+			sourceTree = "<group>";
+		};
 		CC71E6F12A6C04AE004AFB3F /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -298,10 +308,8 @@
 		CCF388152A71816B00242581 /* MediaItem */ = {
 			isa = PBXGroup;
 			children = (
+				CC0146182A7835A200F858AF /* Subviews */,
 				CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */,
-				CCB4879C2A77D8FE00FA4483 /* MediaItemHeaderView.swift */,
-				CCB487A02A77DBC200FA4483 /* MediaItemDescriptionCard.swift */,
-				CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */,
 			);
 			path = MediaItem;
 			sourceTree = "<group>";

@@ -202,7 +202,15 @@
       }
     },
     "MediaItem_Voice" : {
-      "extractionState" : "manual"
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Озвучка"
+          }
+        }
+      }
     },
     "MediaItem_Year" : {
       "extractionState" : "manual",
