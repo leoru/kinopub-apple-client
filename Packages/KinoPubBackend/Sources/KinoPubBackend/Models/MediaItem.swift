@@ -15,7 +15,7 @@ public struct MediaItem: Codable, Hashable {
   public let year: Int
   public let cast: String
   public let director: String
-  public let genres: [Country]
+  public let genres: [TypeClass]
   public let countries: [Country]
   public let voice: String?
   public let duration: Duration
@@ -81,7 +81,49 @@ public struct MediaItem: Codable, Hashable {
   }
   
   public static func mock() -> MediaItem {
-    MediaItem(id: 1, type: "test", subtype: "test", title: "test", year: 0, cast: "test", director: "test", genres: [], countries: [], voice: nil, duration: Duration(average: 0, total: 0), langs: 0, quality: 0, plot: "test", imdb: 0, imdbRating: 0, imdbVotes: 0, kinopoisk: 0, kinopoiskRating: 0, kinopoiskVotes: 0, rating: 0, ratingVotes: 0, ratingPercentage: 0, views: 0, comments: 0, posters: Posters(small: "test", medium: "test", big: "test", wide: "test"), trailer: nil, finished: true, advert: true, poorQuality: true, createdAt: 0, updatedAt: 0, inWatchlist: false, subscribed: false)
+    MediaItem(id: 1, type: "test",
+              subtype: "test",
+              title: "Стражи Галактики. Часть 3 / Guardians of the Galaxy Vol. 3",
+              year: 2023,
+              cast: "Крис Пратт, Зои Салдана, Дэйв Батиста, Карен Гиллан, Пом Клементьефф, Вин Дизель, Брэдли Купер, Уилл Поултер, Шон Ганн, Чукуди Ивуджи, Линда Карделлини, Нэйтан Филлион, Сильвестр Сталлоне",
+              director: "Джеймс Ганн",
+              genres: [
+                TypeClass(id: 1, title: "Comedy", shortTitle: nil),
+                TypeClass(id: 2, title: "Action", shortTitle: nil),
+                TypeClass(id: 3, title: "Fantastic", shortTitle: nil),
+                TypeClass(id: 4, title: "Adventure", shortTitle: nil)
+              ],
+              countries: [
+                Country(id: 1, title: "USA"),
+                Country(id: 1, title: "France"),
+                Country(id: 1, title: "Canada"),
+                Country(id: 1, title: "New Zeland"),
+              ],
+              voice: "Русский. Дубляж. Red Head Sound, Русский. Дубляж. Лицензия",
+              duration: Duration(average: 0, total: 230),
+              langs: 0,
+              quality: 0,
+              plot: "После финальных разборок с Таносом стражи успели прийти в себя, окрепнуть и даже разместить собственный штаб в далёкой-далёкой галактике. Стабильное настоящее, впрочем, не мешает Питеру Квиллу всё чаще возвращаться в прошлое, заливать разбитое гибелью Гаморы сердце дешёвым алкоголем и всячески страдать. Размеренные будни героев, число которых увеличилось за счёт помощника Йонду Краглина и советской собаки Космо, нарушает Адам Уорлок, наёмник некоего Верховного эволюционера. Много лет назад Эволюционер создал генетически модифицированного енота Ракету и сейчас намерен во что бы то ни стало вернуть своё творение обратно.",
+              imdb: 0,
+              imdbRating: 8.100,
+              imdbVotes: 0,
+              kinopoisk: 0,
+              kinopoiskRating: 8.300,
+              kinopoiskVotes: 0,
+              rating: 0,
+              ratingVotes: 0,
+              ratingPercentage: 0,
+              views: 730000,
+              comments: 0,
+              posters: Posters(small: "https://cdn.service-kp.com/poster/item/big/91675.jpg", medium: "https://cdn.service-kp.com/poster/item/big/91675.jpg", big: "https://cdn.service-kp.com/poster/item/big/91675.jpg", wide: "https://cdn.service-kp.com/poster/item/big/91675.jpg"),
+              trailer: nil,
+              finished: true,
+              advert: true,
+              poorQuality: false,
+              createdAt: 0,
+              updatedAt: 0,
+              inWatchlist: false,
+              subscribed: false)
   }
 }
 

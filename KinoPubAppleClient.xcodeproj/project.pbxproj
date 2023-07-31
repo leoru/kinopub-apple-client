@@ -37,6 +37,10 @@
 		CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */; };
 		CC88E1E72A6586E600E9387F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E62A6586E600E9387F /* RootView.swift */; };
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
+		CCB4879D2A77D8FE00FA4483 /* MediaItemHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB4879C2A77D8FE00FA4483 /* MediaItemHeaderView.swift */; };
+		CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */; };
+		CCB487A12A77DBC200FA4483 /* MediaItemDescriptionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB487A02A77DBC200FA4483 /* MediaItemDescriptionCard.swift */; };
+		CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */; };
 		CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */; };
 		CCE9C6DC2A73DB87007923C0 /* BookmarksCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */; };
 		CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */; };
@@ -77,6 +81,10 @@
 		CC88E1EA2A6586E700E9387F /* KinoPubAppleClient.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KinoPubAppleClient.entitlements; sourceTree = "<group>"; };
 		CC88E1F62A6589DC00E9387F /* KinoPubBackend */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubBackend; path = Packages/KinoPubBackend; sourceTree = "<group>"; };
 		CC88E1F72A65A42B00E9387F /* KinoPubUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubUI; path = Packages/KinoPubUI; sourceTree = "<group>"; };
+		CCB4879C2A77D8FE00FA4483 /* MediaItemHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemHeaderView.swift; sourceTree = "<group>"; };
+		CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidthThresholdReader.swift; sourceTree = "<group>"; };
+		CCB487A02A77DBC200FA4483 /* MediaItemDescriptionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDescriptionCard.swift; sourceTree = "<group>"; };
+		CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemFieldsCard.swift; sourceTree = "<group>"; };
 		CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemView.swift; sourceTree = "<group>"; };
 		CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksCatalog.swift; sourceTree = "<group>"; };
 		CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutView.swift; sourceTree = "<group>"; };
@@ -202,6 +210,7 @@
 			isa = PBXGroup;
 			children = (
 				CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */,
+				CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */,
 			);
 			path = Custom;
 			sourceTree = "<group>";
@@ -290,6 +299,9 @@
 			isa = PBXGroup;
 			children = (
 				CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */,
+				CCB4879C2A77D8FE00FA4483 /* MediaItemHeaderView.swift */,
+				CCB487A02A77DBC200FA4483 /* MediaItemDescriptionCard.swift */,
+				CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */,
 			);
 			path = MediaItem;
 			sourceTree = "<group>";
@@ -473,13 +485,17 @@
 				CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */,
 				CC71E7012A6DD043004AFB3F /* AuthView.swift in Sources */,
 				CCF388432A71CB3F00242581 /* AccessTokenPlugin.swift in Sources */,
+				CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */,
 				CC88E1E72A6586E600E9387F /* RootView.swift in Sources */,
 				CCF3882F2A718EAA00242581 /* BundleConfiguration.swift in Sources */,
 				CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */,
+				CCB4879D2A77D8FE00FA4483 /* MediaItemHeaderView.swift in Sources */,
 				CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */,
 				CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */,
 				CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */,
+				CCB487A12A77DBC200FA4483 /* MediaItemDescriptionCard.swift in Sources */,
+				CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */,
 				CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */,
 				CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */,
 				CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */,

@@ -8,8 +8,8 @@
 import Foundation
 import SwiftUI
 
-struct PosterStyle: ViewModifier {
-  enum Size {
+public struct PosterStyle: ViewModifier {
+  public enum Size {
     case small, medium, big
     
     var width: CGFloat {
@@ -30,7 +30,7 @@ struct PosterStyle: ViewModifier {
   
   let size: Size
   
-  func body(content: Content) -> some View {
+  public func body(content: Content) -> some View {
     return content
       .frame(width: size.width, height: size.height)
       .cornerRadius(8)
