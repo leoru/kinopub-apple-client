@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CC01461B2A783DF900F858AF /* NavigationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461A2A783DF900F858AF /* NavigationState.swift */; };
+		CC01461D2A783EEF00F858AF /* NavigationTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461C2A783EEF00F858AF /* NavigationTabs.swift */; };
+		CC01461F2A783F8400F858AF /* Routes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461E2A783F8400F858AF /* Routes.swift */; };
+		CC0146352A78439600F858AF /* NavigationLinkProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0146342A78439600F858AF /* NavigationLinkProvider.swift */; };
 		CC71E6EE2A6BF92D004AFB3F /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */; platformFilter = ios; };
 		CC71E6F02A6C048C004AFB3F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6EF2A6C048C004AFB3F /* Localizable.xcstrings */; };
 		CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6F72A6C0626004AFB3F /* SettingsView.swift */; };
@@ -61,6 +65,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CC01461A2A783DF900F858AF /* NavigationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationState.swift; sourceTree = "<group>"; };
+		CC01461C2A783EEF00F858AF /* NavigationTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationTabs.swift; sourceTree = "<group>"; };
+		CC01461E2A783F8400F858AF /* Routes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Routes.swift; sourceTree = "<group>"; };
+		CC0146342A78439600F858AF /* NavigationLinkProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationLinkProvider.swift; sourceTree = "<group>"; };
 		CC676BC52A6ADBEE00B8AC66 /* KinoPubLogging */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubLogging; path = Packages/KinoPubLogging; sourceTree = "<group>"; };
 		CC71E6EC2A6B2FBE004AFB3F /* KinoPubKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubKit; path = Packages/KinoPubKit; sourceTree = "<group>"; };
 		CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
@@ -140,6 +148,17 @@
 				CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */,
 			);
 			path = Subviews;
+			sourceTree = "<group>";
+		};
+		CC0146192A783DEB00F858AF /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				CC01461A2A783DF900F858AF /* NavigationState.swift */,
+				CC01461C2A783EEF00F858AF /* NavigationTabs.swift */,
+				CC01461E2A783F8400F858AF /* Routes.swift */,
+				CC0146342A78439600F858AF /* NavigationLinkProvider.swift */,
+			);
+			path = Navigation;
 			sourceTree = "<group>";
 		};
 		CC71E6F12A6C04AE004AFB3F /* Views */ = {
@@ -246,6 +265,7 @@
 		CC88E1E32A6586E600E9387F /* KinoPubAppleClient */ = {
 			isa = PBXGroup;
 			children = (
+				CC0146192A783DEB00F858AF /* Navigation */,
 				CC88E1F42A6587CC00E9387F /* App */,
 				CCE9C6D82A73DB4C007923C0 /* Components */,
 				CCF388262A718BAA00242581 /* Context */,
@@ -488,10 +508,13 @@
 				CCF388212A718ADE00242581 /* VideoContentService.swift in Sources */,
 				CCF3881A2A71882300242581 /* AuthorizationService.swift in Sources */,
 				CCF3882B2A718E6300242581 /* Configuration.swift in Sources */,
+				CC01461B2A783DF900F858AF /* NavigationState.swift in Sources */,
 				CCF388252A718AF300242581 /* VideoContentServiceImpl.swift in Sources */,
+				CC0146352A78439600F858AF /* NavigationLinkProvider.swift in Sources */,
 				CCF388412A71C9CF00242581 /* AccessTokenServiceImpl.swift in Sources */,
 				CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */,
 				CC71E7012A6DD043004AFB3F /* AuthView.swift in Sources */,
+				CC01461D2A783EEF00F858AF /* NavigationTabs.swift in Sources */,
 				CCF388432A71CB3F00242581 /* AccessTokenPlugin.swift in Sources */,
 				CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */,
@@ -501,6 +524,7 @@
 				CCB4879D2A77D8FE00FA4483 /* MediaItemHeaderView.swift in Sources */,
 				CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */,
 				CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */,
+				CC01461F2A783F8400F858AF /* Routes.swift in Sources */,
 				CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */,
 				CCB487A12A77DBC200FA4483 /* MediaItemDescriptionCard.swift in Sources */,
 				CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */,

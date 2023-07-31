@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  ContentItemRatingView.swift
 //
 //
 //  Created by Kirill Kunst on 24.07.2023.

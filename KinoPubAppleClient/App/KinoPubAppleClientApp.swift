@@ -11,6 +11,8 @@ import FirebaseCore
 @main
 struct KinoPubAppleClientApp: App {
   
+  @StateObject var navigationState = NavigationState()
+  
   #if os(iOS)
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
   #endif
@@ -23,6 +25,7 @@ struct KinoPubAppleClientApp: App {
     WindowGroup {
       RootView()
         .environment(\.appContext, AppContext.shared)
+        .environmentObject(navigationState)
     }
   }
 }

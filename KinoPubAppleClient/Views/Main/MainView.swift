@@ -6,26 +6,30 @@
 //
 import SwiftUI
 import KinoPubUI
+import KinoPubBackend
 
 struct MainView: View {
+  @EnvironmentObject var navigationState: NavigationState
   
   @StateObject private var catalog: MediaCatalog = MediaCatalog(itemsService: AppContext.shared.contentService)
   
   @State private var showShortCutPicker: Bool = false
   
   var toolbarItemPlacement: ToolbarItemPlacement {
-    #if os(iOS)
+#if os(iOS)
     .topBarTrailing
-    #elseif os(macOS)
+#elseif os(macOS)
     .navigation
-    #endif
+#endif
   }
   
   var body: some View {
-    NavigationView {
+    NavigationStack(path: $navigationState.mainRoutes) {
       VStack {
         ContentItemsListView(items: $catalog.items) { item in
           catalog.loadMoreContent(after: item)
+        } navigationLinkProvider: { item in
+          MainRoutesLinkProvider().link(for: item)
         }
       }
       .navigationTitle(catalog.title)
@@ -63,12 +67,21 @@ struct MainView: View {
         ShortcutSelectionView(shortcut: $catalog.shortcut,
                               mediaType: $catalog.contentType)
       })
+      .navigationDestination(for: MainRoutes.self) { route in
+        switch route {
+        case .details(let item):
+          MediaItemView(mediaItem: item)
+        }
+      }
     }
   }
 }
 
 struct MainView_Previews: PreviewProvider {
+  @StateObject static var navState = NavigationState()
+  
   static var previews: some View {
     MainView()
+      .environmentObject(navState)
   }
 }

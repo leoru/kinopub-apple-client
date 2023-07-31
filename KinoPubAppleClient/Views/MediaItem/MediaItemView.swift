@@ -45,13 +45,12 @@ struct MediaItemView: View {
     }
     .background(Color.KinoPub.background)
     .background()
-    .navigationTitle(mediaItem.localizedTitle ?? "")
     .toolbar {
       ToolbarItem(placement: toolbarItemPlacement) {
         Button {
           
         } label: {
-          Image(systemName: "square.and.arrow.up.fill")
+          Image(systemName: "square.and.arrow.up")
         }
       }
     }

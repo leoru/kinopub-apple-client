@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "200 Wide" : {
+
+    },
     "Auth_Activate" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -112,6 +115,9 @@
           }
         }
       }
+    },
+    "Manually Compact Size Class" : {
+
     },
     "MediaItem_Cast" : {
       "extractionState" : "manual",
@@ -265,6 +271,12 @@
           }
         }
       }
+    },
+    "Standard" : {
+
+    },
+    "X Large Type" : {
+
     },
     "Главная" : {
       "extractionState" : "stale",

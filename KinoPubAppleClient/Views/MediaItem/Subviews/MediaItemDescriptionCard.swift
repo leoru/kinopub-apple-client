@@ -15,7 +15,7 @@ struct MediaItemDescriptionCard: View {
   
   var body: some View {
     VStack(alignment: .leading) {
-      Label("MediaItem_Description", systemImage: "movieclapper")
+      Label(mediaItem.localizedTitle ?? "", systemImage: "movieclapper")
         .foregroundStyle(Color.KinoPub.text)
         .font(Font.KinoPub.subheader)
       plot

@@ -13,6 +13,7 @@ struct RootView: View {
   
   @State var showAuth: Bool = false
   @Environment(\.appContext) var appContext
+  @EnvironmentObject var navigationState: NavigationState
   
   var placement: ToolbarPlacement {
 #if os(iOS)
@@ -41,21 +42,25 @@ struct RootView: View {
   var body: some View {
     TabView {
       MainView()
+        .tag(NavigationTabs.main)
         .tabItem {
           Label("Main", systemImage: "house")
         }
         .toolbarBackground(Color.KinoPub.background, for: placement)
       BookmarksView()
+        .tag(NavigationTabs.bookmarks)
         .tabItem {
           Label("Bookmarks", systemImage: "bookmark")
         }
         .toolbarBackground(Color.KinoPub.background, for: placement)
       DownloadsView()
+        .tag(NavigationTabs.downloads)
         .tabItem {
           Label("Downloads", systemImage: "arrow.down.circle")
         }
         .toolbarBackground(Color.KinoPub.background, for: placement)
       SettingsView()
+        .tag(NavigationTabs.settings)
         .tabItem {
           Label("Settings", systemImage: "gearshape")
         }
@@ -69,6 +74,7 @@ struct RootView: View {
       AuthView()
         .environmentObject(AuthModel(authService: appContext.authService))
     })
+    .environmentObject(navigationState)
   }
 }
 
