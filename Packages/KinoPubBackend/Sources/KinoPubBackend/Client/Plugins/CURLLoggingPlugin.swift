@@ -18,7 +18,7 @@ public class CURLLoggingPlugin: APIClientPlugin {
   }
   
   public func willSend(_ request: URLRequest) {
-    Logger.backend.debug("\(request.curlString)")
+    Logger.backend.debug("\(request.cURL(pretty: true))")
   }
   
   public func didReceive(_ response: URLResponse, data: Data?) {
@@ -27,22 +27,27 @@ public class CURLLoggingPlugin: APIClientPlugin {
 }
 
 extension URLRequest {
-  var curlString: String {
-    guard let url = url else { return "" }
-    var baseCommand = "curl \(url.absoluteString)"
+  public func cURL(pretty: Bool = false) -> String {
+    let newLine = pretty ? "\\\n" : ""
+    let method = (pretty ? "--request " : "-X ") + "\(self.httpMethod ?? "GET") \(newLine)"
+    let url: String = (pretty ? "--url " : "") + "\'\(self.url?.absoluteString ?? "")\' \(newLine)"
     
-    if httpMethod == "POST" {
-      baseCommand = baseCommand.appending(" -X POST")
+    var cURL = "curl "
+    var header = ""
+    var data: String = ""
+    
+    if let httpHeaders = self.allHTTPHeaderFields, httpHeaders.keys.count > 0 {
+      for (key,value) in httpHeaders {
+        header += (pretty ? "--header " : "-H ") + "\'\(key): \(value)\' \(newLine)"
+      }
     }
     
-    allHTTPHeaderFields?.forEach { key, value in
-      baseCommand = baseCommand.appending(" -H '\(key): \(value)'")
+    if let bodyData = self.httpBody, let bodyString = String(data: bodyData, encoding: .utf8),  !bodyString.isEmpty {
+      data = "--data '\(bodyString)'"
     }
     
-    if let body = httpBody, let bodyAsString = String(data: body, encoding: .utf8) {
-      baseCommand = baseCommand.appending(" -d '\(bodyAsString)'")
-    }
+    cURL += method + url + header + data
     
-    return baseCommand
+    return cURL
   }
 }

@@ -27,12 +27,13 @@ struct MainView: View {
     NavigationStack(path: $navigationState.mainRoutes) {
       VStack {
         GeometryReader { geometryProxy in
-          ContentItemsListView(width: geometryProxy.size.width,
-                               items: $catalog.items) { item in
+          ContentItemsListView(width: geometryProxy.size.width, items: $catalog.items, onLoadMoreContent: { item in
             catalog.loadMoreContent(after: item)
-          } navigationLinkProvider: { item in
+          }, onRefresh: {
+            await catalog.refresh()
+          }, navigationLinkProvider: { item in
             MainRoutesLinkProvider().link(for: item)
-          }
+          })
         }
       }
       .navigationTitle(catalog.title)

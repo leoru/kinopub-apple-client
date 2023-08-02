@@ -57,7 +57,7 @@ class MediaCatalog: ObservableObject {
     }
   }
   
-  private func refetchItems() {
+  func refresh() {
     items.removeAll()
     pagination = nil
     Task {
@@ -68,11 +68,11 @@ class MediaCatalog: ObservableObject {
   
   private func subscribe() {
     $contentType.dropFirst().sink { [weak self] item in
-      self?.refetchItems()
+      self?.refresh()
     }.store(in: &bag)
     
     $shortcut.dropFirst().sink { [weak self] _ in
-      self?.refetchItems()
+      self?.refresh()
     }.store(in: &bag)
   }
   

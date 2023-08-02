@@ -14,6 +14,7 @@ public struct ContentItemsListView: View {
   var width: CGFloat
   @Binding public var items: [MediaItem]
   public var onLoadMoreContent: (MediaItem) -> Void
+  public var onRefresh: @Sendable () async -> Void
   public var navigationLinkProvider: (MediaItem) -> any Hashable
   
 #if os(iOS)
@@ -63,9 +64,11 @@ public struct ContentItemsListView: View {
   public init(width: CGFloat,
               items: Binding<[MediaItem]>,
               onLoadMoreContent: @escaping (MediaItem) -> Void,
+              onRefresh: @escaping @Sendable () async -> Void,
               navigationLinkProvider: @escaping (MediaItem) -> any Hashable) {
     self._items = items
     self.width = width
+    self.onRefresh = onRefresh
     self.onLoadMoreContent = onLoadMoreContent
     self.navigationLinkProvider = navigationLinkProvider
   }
@@ -85,6 +88,7 @@ public struct ContentItemsListView: View {
       })
       .padding(.horizontal, 16)
     }
+    .refreshable(action: onRefresh)
   }
   
 }
@@ -106,11 +110,13 @@ struct ContentItemsListView_Previews: PreviewProvider {
     
     var body: some View {
       GeometryReader { geometryProxy in
-        ContentItemsListView(width: geometryProxy.size.width, items: $items) { _ in
+        ContentItemsListView(width: geometryProxy.size.width, items: $items, onLoadMoreContent: { _ in
           
-        } navigationLinkProvider: { _ in
+        }, onRefresh: {
+          
+        }, navigationLinkProvider: { _ in
           return ""
-        }
+        })
       }
     }
   }
