@@ -18,7 +18,7 @@ public struct ContentItemView: View {
   }
   
   public var body: some View {
-    VStack(alignment: .leading) {
+    VStack(alignment: .center) {
       ZStack {
         image
         VStack {
@@ -28,8 +28,10 @@ public struct ContentItemView: View {
           .padding(.bottom, 8)
         }
       }
-      title
-      subtitle
+      VStack(alignment: .center) {
+        title
+        subtitle
+      }
     }
   }
   
@@ -40,6 +42,8 @@ public struct ContentItemView: View {
         .posterStyle(size: .medium)
     } placeholder: {
       Color.KinoPub.subtitle
+        .frame(width: PosterStyle.Size.medium.width,
+               height: PosterStyle.Size.medium.height)
     }
     .cornerRadius(8)
   }

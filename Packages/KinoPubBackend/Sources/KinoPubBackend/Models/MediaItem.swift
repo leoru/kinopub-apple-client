@@ -88,8 +88,8 @@ public struct MediaItem: Codable, Hashable {
     case videos = "videos"
   }
   
-  public static func mock() -> MediaItem {
-    MediaItem(id: 1, type: "test",
+  public static func mock(id: Int = 1) -> MediaItem {
+    MediaItem(id: id, type: "test",
               subtype: "test",
               title: "Стражи Галактики. Часть 3 / Guardians of the Galaxy Vol. 3",
               year: 2023,

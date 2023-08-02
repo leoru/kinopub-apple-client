@@ -11,24 +11,68 @@ import KinoPubBackend
 
 public struct ContentItemsListView: View {
   
-  public static var gridLayout: [GridItem] = [
-    GridItem(.flexible()),
-    GridItem(.flexible()),
-  ]
-  
+  var width: CGFloat
   @Binding public var items: [MediaItem]
   public var onLoadMoreContent: (MediaItem) -> Void
   public var navigationLinkProvider: (MediaItem) -> any Hashable
   
-  public init(items: Binding<[MediaItem]>, onLoadMoreContent: @escaping (MediaItem) -> Void, navigationLinkProvider: @escaping (MediaItem) -> any Hashable) {
+#if os(iOS)
+  @Environment(\.horizontalSizeClass) private var sizeClass
+#endif
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+  
+  var useReducedThumbnailSize: Bool {
+#if os(iOS)
+    if sizeClass == .compact {
+      return true
+    }
+#endif
+    if dynamicTypeSize >= .xxxLarge {
+      return true
+    }
+    
+#if os(iOS)
+    if width <= 390 {
+      return true
+    }
+#elseif os(macOS)
+    if width <= 520 {
+      return true
+    }
+#endif
+    
+    return false
+  }
+  
+  var cellSize: Double {
+    useReducedThumbnailSize ? 140 : 180
+  }
+  
+  var thumbnailSize: Double {
+#if os(iOS)
+    return useReducedThumbnailSize ? 60 : 100
+#else
+    return useReducedThumbnailSize ? 40 : 80
+#endif
+  }
+  
+  var gridLayout: [GridItem] {
+    [GridItem(.adaptive(minimum: cellSize), spacing: 25, alignment: .top)]
+  }
+  
+  public init(width: CGFloat,
+              items: Binding<[MediaItem]>,
+              onLoadMoreContent: @escaping (MediaItem) -> Void,
+              navigationLinkProvider: @escaping (MediaItem) -> any Hashable) {
     self._items = items
+    self.width = width
     self.onLoadMoreContent = onLoadMoreContent
     self.navigationLinkProvider = navigationLinkProvider
   }
   
   public var body: some View {
     ScrollView {
-      LazyVGrid(columns: ContentItemsListView.gridLayout, content: {
+      LazyVGrid(columns: gridLayout, content: {
         ForEach(items, id: \.id) { item in
           NavigationLink(value: navigationLinkProvider(item)) {
             ContentItemView(mediaItem: item)
@@ -45,6 +89,35 @@ public struct ContentItemsListView: View {
   
 }
 
-//#Preview {
-//  ContentItemsListView(items: [])
-//}
+struct ContentItemsListView_Previews: PreviewProvider {
+  
+  struct Preview: View {
+    @State var items: [MediaItem] = [
+      MediaItem.mock(id: 1),
+      MediaItem.mock(id: 2),
+      MediaItem.mock(id: 3),
+      MediaItem.mock(id: 4),
+      MediaItem.mock(id: 5),
+      MediaItem.mock(id: 6),
+      MediaItem.mock(id: 7),
+      MediaItem.mock(id: 8),
+      MediaItem.mock(id: 9)
+    ]
+    
+    var body: some View {
+      GeometryReader { geometryProxy in
+        ContentItemsListView(width: geometryProxy.size.width, items: $items) { _ in
+          
+        } navigationLinkProvider: { _ in
+          return ""
+        }
+      }
+    }
+  }
+  
+  static var previews: some View {
+    NavigationStack {
+      Preview()
+    }
+  }
+}

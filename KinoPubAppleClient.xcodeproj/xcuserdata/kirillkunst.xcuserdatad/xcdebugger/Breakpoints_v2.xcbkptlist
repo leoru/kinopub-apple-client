@@ -94,8 +94,8 @@
             filePath = "Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ContentItemView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "38"
-            endingLineNumber = "38"
+            startingLineNumber = "40"
+            endingLineNumber = "40"
             landmarkName = "image"
             landmarkType = "24">
          </BreakpointContent>
@@ -819,9 +819,9 @@
             filePath = "Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ContentItemsListView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "23"
-            endingLineNumber = "23"
-            landmarkName = "init(items:onLoadMoreContent:)"
+            startingLineNumber = "63"
+            endingLineNumber = "63"
+            landmarkName = "init(width:items:onLoadMoreContent:navigationLinkProvider:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -835,8 +835,8 @@
             filePath = "Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ContentItemsListView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "30"
-            endingLineNumber = "30"
+            startingLineNumber = "74"
+            endingLineNumber = "74"
             landmarkName = "body"
             landmarkType = "24">
             <Locations>
