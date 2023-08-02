@@ -8,16 +8,19 @@
 import Foundation
 import SwiftUI
 import KinoPubBackend
+import SkeletonUI
 
 struct MediaItemDescriptionCard: View {
   
   var mediaItem: MediaItem
+  var isSkeleton: Bool
   
   var body: some View {
     VStack(alignment: .leading) {
       Label(mediaItem.localizedTitle ?? "", systemImage: "movieclapper")
         .foregroundStyle(Color.KinoPub.text)
         .font(Font.KinoPub.header)
+        .skeleton(enabled: isSkeleton)
       plot
       metaIcons
         .padding(.top, 8)
@@ -39,6 +42,8 @@ struct MediaItemDescriptionCard: View {
       .font(Font.KinoPub.small)
       .foregroundStyle(Color.KinoPub.text)
       .padding(.top, 8)
+      .skeleton(with: isSkeleton, animated: nil)
+      .multilineSkeleton(enabled: isSkeleton)
   }
   
   func metaIcon(text: String) -> some View {
@@ -51,18 +56,23 @@ struct MediaItemDescriptionCard: View {
       .foregroundStyle(Color.KinoPub.text)
       .font(.system(size: 12))
       .padding(.horizontal, 5)
+      .skeleton(enabled: isSkeleton, size: CGSize(width: 60, height: 20))
+    
   }
   
   var actionIcons: some View {
     HStack {
       Button(action: {}, label: {
         Image(systemName: "eye").foregroundStyle(Color.KinoPub.text)
+          .skeleton(enabled: isSkeleton, size: CGSize(width: 30, height: 30))
       })
       Button(action: {}, label: {
         Image(systemName: "folder").foregroundStyle(Color.KinoPub.text)
+          .skeleton(enabled: isSkeleton, size: CGSize(width: 30, height: 30))
       })
       Button(action: {}, label: {
         Image(systemName: "bell").foregroundStyle(Color.KinoPub.text)
+          .skeleton(enabled: isSkeleton, size: CGSize(width: 30, height: 30))
       })
     }
     
@@ -72,7 +82,7 @@ struct MediaItemDescriptionCard: View {
 struct MediaItemDescriptionCard_Previews: PreviewProvider {
   struct Preview: View {
     var body: some View {
-      MediaItemDescriptionCard(mediaItem: MediaItem.mock())
+      MediaItemDescriptionCard(mediaItem: MediaItem.mock(), isSkeleton: true)
     }
   }
   

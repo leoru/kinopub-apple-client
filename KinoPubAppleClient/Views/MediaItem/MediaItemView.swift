@@ -9,21 +9,26 @@ import Foundation
 import SwiftUI
 import KinoPubUI
 import KinoPubBackend
+import SkeletonUI
 
 struct MediaItemView: View {
   
-  var mediaItem: MediaItem
+  @StateObject private var itemModel: MediaItemModel
+  
+  init(model: @autoclosure @escaping () -> MediaItemModel) {
+    _itemModel = StateObject(wrappedValue: model())
+  }
   
 #if os(iOS)
   @Environment(\.horizontalSizeClass) private var sizeClass
 #endif
   
   var toolbarItemPlacement: ToolbarItemPlacement {
-    #if os(iOS)
+#if os(iOS)
     .topBarTrailing
-    #elseif os(macOS)
+#elseif os(macOS)
     .navigation
-    #endif
+#endif
   }
   
   var body: some View {
@@ -33,13 +38,13 @@ struct MediaItemView: View {
           headerView
           
           Grid(horizontalSpacing: 12, verticalSpacing: 12) {
-            MediaItemDescriptionCard(mediaItem: mediaItem)
-            MediaItemFieldsCard(mediaItem: mediaItem)
+            MediaItemDescriptionCard(mediaItem: itemModel.mediaItem, isSkeleton: !itemModel.itemLoaded)
+            MediaItemFieldsCard(mediaItem: itemModel.mediaItem, isSkeleton: !itemModel.itemLoaded)
           }
           .containerShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
           .fixedSize(horizontal: false, vertical: true)
           .padding([.horizontal, .bottom], 16)
-          .frame(maxWidth: 1200)
+          .frame(maxWidth: 1200, minHeight: 400)
         }
       }
     }
@@ -54,17 +59,23 @@ struct MediaItemView: View {
         }
       }
     }
+    .task {
+      itemModel.fetchData()
+    }
   }
   
   var headerView: some View {
-    MediaItemHeaderView(size: .standard, mediaItem: mediaItem)
+    MediaItemHeaderView(size: .standard,
+                        mediaItem: itemModel.mediaItem,
+                        isSkeleton: !itemModel.itemLoaded)
   }
 }
 
 struct MediaItemView_Previews: PreviewProvider {
   struct Preview: View {
     var body: some View {
-      MediaItemView(mediaItem: MediaItem.mock())
+      MediaItemView(model: MediaItemModel(mediaItemId: MediaItem.mock().id,
+                                          itemsService: VideoContentServiceMock()))
     }
   }
   static var previews: some View {

@@ -16,5 +16,6 @@ extension Color {
     public static let text = Color("text_color", bundle: .module)
     public static let subtitle = Color("subtitle_text_color", bundle: .module)
     public static let selectionBackground = Color("selection_background_color", bundle: .module)
+    public static let skeleton = Color("skeleton_color", bundle: .module)
   }
 }

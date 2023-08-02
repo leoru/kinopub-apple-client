@@ -41,7 +41,7 @@ struct RootView: View {
   
   var body: some View {
     TabView {
-      MainView()
+      MainView(catalog: MediaCatalog(itemsService: appContext.contentService))
         .tag(NavigationTabs.main)
         .tabItem {
           Label("Main", systemImage: "house")

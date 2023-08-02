@@ -11,6 +11,8 @@
 		CC01461D2A783EEF00F858AF /* NavigationTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461C2A783EEF00F858AF /* NavigationTabs.swift */; };
 		CC01461F2A783F8400F858AF /* Routes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461E2A783F8400F858AF /* Routes.swift */; };
 		CC0146352A78439600F858AF /* NavigationLinkProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0146342A78439600F858AF /* NavigationLinkProvider.swift */; };
+		CC21151D2A7A8FA7001996BD /* MediaItemModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */; };
+		CC21151F2A7A9CCE001996BD /* View+Skeleton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21151E2A7A9CCE001996BD /* View+Skeleton.swift */; };
 		CC71E6EE2A6BF92D004AFB3F /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */; platformFilter = ios; };
 		CC71E6F02A6C048C004AFB3F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6EF2A6C048C004AFB3F /* Localizable.xcstrings */; };
 		CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6F72A6C0626004AFB3F /* SettingsView.swift */; };
@@ -69,6 +71,8 @@
 		CC01461C2A783EEF00F858AF /* NavigationTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationTabs.swift; sourceTree = "<group>"; };
 		CC01461E2A783F8400F858AF /* Routes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Routes.swift; sourceTree = "<group>"; };
 		CC0146342A78439600F858AF /* NavigationLinkProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationLinkProvider.swift; sourceTree = "<group>"; };
+		CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemModel.swift; sourceTree = "<group>"; };
+		CC21151E2A7A9CCE001996BD /* View+Skeleton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Skeleton.swift"; sourceTree = "<group>"; };
 		CC676BC52A6ADBEE00B8AC66 /* KinoPubLogging */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubLogging; path = Packages/KinoPubLogging; sourceTree = "<group>"; };
 		CC71E6EC2A6B2FBE004AFB3F /* KinoPubKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubKit; path = Packages/KinoPubKit; sourceTree = "<group>"; };
 		CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
@@ -240,6 +244,7 @@
 			children = (
 				CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */,
 				CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */,
+				CC21151E2A7A9CCE001996BD /* View+Skeleton.swift */,
 			);
 			path = Custom;
 			sourceTree = "<group>";
@@ -330,6 +335,7 @@
 			children = (
 				CC0146182A7835A200F858AF /* Subviews */,
 				CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */,
+				CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */,
 			);
 			path = MediaItem;
 			sourceTree = "<group>";
@@ -517,9 +523,11 @@
 				CC01461D2A783EEF00F858AF /* NavigationTabs.swift in Sources */,
 				CCF388432A71CB3F00242581 /* AccessTokenPlugin.swift in Sources */,
 				CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */,
+				CC21151D2A7A8FA7001996BD /* MediaItemModel.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */,
 				CC88E1E72A6586E600E9387F /* RootView.swift in Sources */,
 				CCF3882F2A718EAA00242581 /* BundleConfiguration.swift in Sources */,
+				CC21151F2A7A9CCE001996BD /* View+Skeleton.swift in Sources */,
 				CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */,
 				CCB4879D2A77D8FE00FA4483 /* MediaItemHeaderView.swift in Sources */,
 				CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */,

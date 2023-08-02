@@ -10,10 +10,15 @@ import KinoPubBackend
 
 struct MainView: View {
   @EnvironmentObject var navigationState: NavigationState
+  @Environment(\.appContext) var appContext
   
-  @StateObject private var catalog: MediaCatalog = MediaCatalog(itemsService: AppContext.shared.contentService)
+  @StateObject private var catalog: MediaCatalog
   
   @State private var showShortCutPicker: Bool = false
+  
+  init(catalog: @autoclosure @escaping () -> MediaCatalog) {
+    _catalog = StateObject(wrappedValue: catalog())
+  }
   
   var toolbarItemPlacement: ToolbarItemPlacement {
 #if os(iOS)
@@ -74,7 +79,8 @@ struct MainView: View {
       .navigationDestination(for: MainRoutes.self) { route in
         switch route {
         case .details(let item):
-          MediaItemView(mediaItem: item)
+          MediaItemView(model: MediaItemModel(mediaItemId: item.id,
+                                              itemsService: appContext.contentService))
         }
       }
     }
@@ -85,7 +91,7 @@ struct MainView_Previews: PreviewProvider {
   @StateObject static var navState = NavigationState()
   
   static var previews: some View {
-    MainView()
+    MainView(catalog: MediaCatalog(itemsService: VideoContentServiceMock()))
       .environmentObject(navState)
   }
 }
