@@ -34,9 +34,13 @@ struct MediaItemHeaderView: View {
       VStack {
         Spacer()
         HStack {
-          KinoPubButton(title: "Смотреть", color: .green) {
-            
+          
+          NavigationLink(value: MainRoutes.player(mediaItem)) {
+            Text("Смотреть")
           }
+//          KinoPubButton(title: "Смотреть", color: .green) {
+//            
+//          }
           KinoPubButton(title: "Трейлер", color: .gray) {
             
           }

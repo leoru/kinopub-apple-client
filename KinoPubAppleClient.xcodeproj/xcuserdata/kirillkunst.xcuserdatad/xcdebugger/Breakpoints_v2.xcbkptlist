@@ -1494,6 +1494,21 @@
                   endingLineNumber = "31"
                   offsetFromSymbolStart = "280">
                </Location>
+               <Location
+                  uuid = "94E43EA0-FAF2-4E79-9B10-51CD8DE7B798 - 30d4d7a3dade78fc"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "KinoPubAppleClient.AuthState.check() -&gt; ()"
+                  moduleName = "KinoPubAppleClient"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/App/AuthState.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "34"
+                  endingLineNumber = "34"
+                  offsetFromSymbolStart = "1616">
+               </Location>
             </Locations>
          </BreakpointContent>
       </BreakpointProxy>
@@ -1653,6 +1668,22 @@
             startingLineNumber = "31"
             endingLineNumber = "31"
             landmarkName = "fetchToken(by:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "ACA13F5F-0751-4889-BF66-44450006A713"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Views/Player/PlayerManager.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "22"
+            endingLineNumber = "22"
+            landmarkName = "init(mediaItem:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

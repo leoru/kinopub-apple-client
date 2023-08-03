@@ -80,7 +80,10 @@ struct MainView: View {
         case .details(let item):
           MediaItemView(model: MediaItemModel(mediaItemId: item.id,
                                               itemsService: appContext.contentService))
+        case .player(let item):
+          PlayerView(manager: PlayerManager(mediaItem: item))
         }
+      
       }
     }
   }
