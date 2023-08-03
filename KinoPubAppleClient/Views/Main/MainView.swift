@@ -12,9 +12,7 @@ struct MainView: View {
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
-  
   @StateObject private var catalog: MediaCatalog
-  
   @State private var showShortCutPicker: Bool = false
   
   init(catalog: @autoclosure @escaping () -> MediaCatalog) {
@@ -42,15 +40,9 @@ struct MainView: View {
           })
         }
       }
+      .searchable(text: $catalog.query, placement: .automatic)
       .navigationTitle(catalog.title.localized)
       .toolbar {
-        ToolbarItem(placement: toolbarItemPlacement) {
-          Button {
-            
-          } label: {
-            Image(systemName: "magnifyingglass")
-          }
-        }
         ToolbarItem(placement: toolbarItemPlacement) {
           Button {
             showShortCutPicker = true

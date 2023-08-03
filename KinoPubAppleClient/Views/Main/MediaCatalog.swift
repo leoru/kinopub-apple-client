@@ -22,6 +22,7 @@ class MediaCatalog: ObservableObject {
   @Published public var pagination: Pagination?
   @Published public var contentType: MediaType = .movie
   @Published public var shortcut: MediaShortcut = .hot
+  @Published public var query: String = ""
   
   var title: String {
     contentType.title
@@ -42,12 +43,22 @@ class MediaCatalog: ObservableObject {
     
     do {
       let page = pagination != nil ? pagination!.current + 1 : nil
-      let data = try await itemsService.fetch(shortcut: shortcut, contentType: contentType, page: page)
-      self.items.append(contentsOf: data.items)
-      pagination = data.pagination
+      if !query.isEmpty {
+        let data = try await itemsService.search( query: query, page: page)
+        handleData(data)
+      } else {
+        let data = try await itemsService.fetch(shortcut: shortcut, contentType: contentType, page: page)
+        handleData(data)
+      }
+      
     } catch {
       Logger.app.debug("fetch items error: \(error)")
     }
+  }
+  
+  private func handleData(_ data: PaginatedData<MediaItem>) {
+    self.items.append(contentsOf: data.items)
+    pagination = data.pagination
   }
   
   func loadMoreContent(after item: MediaItem) {
@@ -80,6 +91,10 @@ class MediaCatalog: ObservableObject {
     }.store(in: &bag)
     
     $shortcut.dropFirst().sink { [weak self] _ in
+      self?.refresh()
+    }.store(in: &bag)
+    
+    $query.dropFirst().debounce(for: .seconds(0.5), scheduler: DispatchQueue.main).sink { [weak self] _ in
       self?.refresh()
     }.store(in: &bag)
   }

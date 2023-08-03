@@ -12,6 +12,8 @@ import AVKit
 struct PlayerView: View {
   
   @StateObject private var playerManager: PlayerManager
+  @State private var hideNavigationBar = false
+  @State var activeGestures: GestureMask = .subviews
   
   init(manager: @autoclosure @escaping () -> PlayerManager) {
     _playerManager = StateObject(wrappedValue: manager())
@@ -21,10 +23,18 @@ struct PlayerView: View {
     GeometryReader { proxy in
       ZStack {
         VideoPlayer(player: playerManager.player)
-          .frame(width: proxy.size.width, height: proxy.size.height, alignment: .center)
-
+        
       }
-    }.ignoresSafeArea(.all)
-      .toolbar(.hidden, for: .tabBar)
+    }
+    .navigationBarHidden(hideNavigationBar)
+    .navigationBarTitle("", displayMode: .inline)
+    .ignoresSafeArea(.all)
+    .toolbar(.hidden, for: .tabBar)
+    .onAppear(perform: {
+      UIApplication.shared.isIdleTimerDisabled = true
+    })
+    .onDisappear(perform: {
+      UIApplication.shared.isIdleTimerDisabled = false
+    })
   }
 }

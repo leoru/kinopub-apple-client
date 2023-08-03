@@ -23,6 +23,13 @@ final class VideoContentServiceImpl: VideoContentService {
     return response
   }
   
+  func search(query: String?, page: Int?) async throws -> PaginatedData<MediaItem> {
+    let request = SearchItemsRequest(contentType: nil, page: page, query: query)
+    let response = try await apiClient.performRequest(with: request,
+                                                      decodingType: PaginatedData<MediaItem>.self)
+    return response
+  }
+  
   func fetchDetails(for id: String) async throws -> SingleItemData<MediaItem> {
     let request = ItemDetailsRequest(id: id)
     let response = try await apiClient.performRequest(with: request,
