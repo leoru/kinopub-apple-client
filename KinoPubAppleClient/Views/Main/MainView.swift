@@ -10,6 +10,7 @@ import KinoPubBackend
 
 struct MainView: View {
   @EnvironmentObject var navigationState: NavigationState
+  @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
   
   @StateObject private var catalog: MediaCatalog
@@ -41,7 +42,7 @@ struct MainView: View {
           })
         }
       }
-      .navigationTitle(catalog.title)
+      .navigationTitle(catalog.title.localized)
       .toolbar {
         ToolbarItem(placement: toolbarItemPlacement) {
           Button {
@@ -67,11 +68,9 @@ struct MainView: View {
         }
       }
       .background(Color.KinoPub.background)
-      .onAppear(perform: {
-        Task {
-          await catalog.fetchItems()
-        }
-      })
+      .task {
+        await catalog.fetchItems()
+      }
       .sheet(isPresented: $showShortCutPicker, content: {
         ShortcutSelectionView(shortcut: $catalog.shortcut,
                               mediaType: $catalog.contentType)
@@ -91,7 +90,7 @@ struct MainView_Previews: PreviewProvider {
   @StateObject static var navState = NavigationState()
   
   static var previews: some View {
-    MainView(catalog: MediaCatalog(itemsService: VideoContentServiceMock()))
+    MainView(catalog: MediaCatalog(itemsService: VideoContentServiceMock(), authState: AuthState(authService: AuthorizationServiceMock(), accessTokenService: AccessTokenServiceMock())))
       .environmentObject(navState)
   }
 }

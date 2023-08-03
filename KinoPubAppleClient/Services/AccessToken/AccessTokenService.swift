@@ -21,3 +21,15 @@ protocol AccessTokenService {
 protocol AccessTokenServiceProvider {
   var accessTokenService: AccessTokenService { get set }
 }
+
+struct AccessTokenServiceMock: AccessTokenService {
+  
+  func set<T>(token: T) where T : Token {
+    
+  }
+  
+  func token<T>() -> T? where T : Token {
+    nil
+  }
+  
+}

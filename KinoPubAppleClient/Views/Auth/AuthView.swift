@@ -10,8 +10,12 @@ import PopupView
 
 struct AuthView: View {
   
-  @StateObject var model: AuthModel = AuthModel(authService: AppContext.shared.authService)
+  @StateObject var model: AuthModel
   @Environment(\.dismiss) var dismiss
+  
+  init(model: @autoclosure @escaping () -> AuthModel) {
+    _model = StateObject(wrappedValue: model())
+  }
   
   var body: some View {
     return VStack(spacing: 50) {
@@ -58,6 +62,7 @@ struct AuthView: View {
         .multilineTextAlignment(.center)
         .padding(.top, 16)
     }
+    .background(Color.KinoPub.background)
     .fixedSize(horizontal: false, vertical: true)
   }
   
@@ -85,8 +90,8 @@ struct AuthView: View {
   }
 }
 
-struct AuthView_Previews: PreviewProvider {
-  static var previews: some View {
-    AuthView()
-  }
-}
+//struct AuthView_Previews: PreviewProvider {
+//  static var previews: some View {
+//    AuthView()
+//  }
+//}

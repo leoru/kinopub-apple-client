@@ -11,9 +11,9 @@ import KinoPubBackend
 
 struct RootView: View {
   
-  @State var showAuth: Bool = false
   @Environment(\.appContext) var appContext
   @EnvironmentObject var navigationState: NavigationState
+  @EnvironmentObject var authState: AuthState
   
   var placement: ToolbarPlacement {
 #if os(iOS)
@@ -23,25 +23,10 @@ struct RootView: View {
 #endif
   }
   
-  private func refreshToken() {
-    guard let _ : AccessToken = appContext.accessTokenService.token() else {
-      showAuth = true
-      return
-    }
-    //    Task {
-    //      do {
-    //        try await appContext.authService.refreshToken()
-    //      } catch {
-    //        await MainActor.run {
-    //          showAuth = true
-    //        }
-    //      }
-    //    }
-  }
-  
   var body: some View {
     TabView {
-      MainView(catalog: MediaCatalog(itemsService: appContext.contentService))
+      MainView(catalog: MediaCatalog(itemsService: appContext.contentService,
+                                     authState: authState))
         .tag(NavigationTabs.main)
         .tabItem {
           Label("Main", systemImage: "house")
@@ -68,11 +53,10 @@ struct RootView: View {
     }
     .accentColor(Color.KinoPub.accent)
     .task {
-      refreshToken()
+      authState.check()
     }
-    .sheet(isPresented: $showAuth, content: {
-      AuthView()
-        .environmentObject(AuthModel(authService: appContext.authService))
+    .sheet(isPresented: $authState.shouldShowAuthentication, content: {
+      AuthView(model: AuthModel(authService: appContext.authService, authState: authState))
     })
     .environmentObject(navigationState)
   }

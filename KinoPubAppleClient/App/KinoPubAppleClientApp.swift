@@ -12,6 +12,8 @@ import FirebaseCore
 struct KinoPubAppleClientApp: App {
   
   @StateObject var navigationState = NavigationState()
+  @StateObject var authState = AuthState(authService: AppContext.shared.authService,
+                                         accessTokenService: AppContext.shared.accessTokenService)
   
   #if os(iOS)
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
@@ -26,6 +28,7 @@ struct KinoPubAppleClientApp: App {
       RootView()
         .environment(\.appContext, AppContext.shared)
         .environmentObject(navigationState)
+        .environmentObject(authState)
     }
   }
 }

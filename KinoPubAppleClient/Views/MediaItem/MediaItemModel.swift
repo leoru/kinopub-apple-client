@@ -10,7 +10,6 @@ import KinoPubBackend
 import OSLog
 import KinoPubLogging
 
-
 @MainActor
 class MediaItemModel: ObservableObject {
   

@@ -26,7 +26,7 @@ struct ShortcutSelectionView: View {
   var shortcutPicker: some View {
     Picker("Choose shortcut", selection: $shortcut) {
       ForEach(MediaShortcut.allCases) { shortcut in
-        Text(shortcut.title)
+        Text(shortcut.title.localized)
           .tag(shortcut)
       }
     }
@@ -36,7 +36,7 @@ struct ShortcutSelectionView: View {
   var mediaTypesPicker: some View {
     Picker("Choose media type", selection: $mediaType) {
       ForEach(MediaType.allCases) { type in
-        Text(type.title)
+        Text(type.title.localized)
           .tag(type)
       }
     }

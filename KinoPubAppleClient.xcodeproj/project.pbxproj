@@ -11,8 +11,10 @@
 		CC01461D2A783EEF00F858AF /* NavigationTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461C2A783EEF00F858AF /* NavigationTabs.swift */; };
 		CC01461F2A783F8400F858AF /* Routes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461E2A783F8400F858AF /* Routes.swift */; };
 		CC0146352A78439600F858AF /* NavigationLinkProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0146342A78439600F858AF /* NavigationLinkProvider.swift */; };
+		CC09047F2A7BE95D00A71F53 /* AuthState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC09047E2A7BE95D00A71F53 /* AuthState.swift */; };
 		CC21151D2A7A8FA7001996BD /* MediaItemModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */; };
 		CC21151F2A7A9CCE001996BD /* View+Skeleton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21151E2A7A9CCE001996BD /* View+Skeleton.swift */; };
+		CC2115212A7AA6F8001996BD /* String+Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2115202A7AA6F8001996BD /* String+Localization.swift */; };
 		CC71E6EE2A6BF92D004AFB3F /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */; platformFilter = ios; };
 		CC71E6F02A6C048C004AFB3F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6EF2A6C048C004AFB3F /* Localizable.xcstrings */; };
 		CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6F72A6C0626004AFB3F /* SettingsView.swift */; };
@@ -71,8 +73,10 @@
 		CC01461C2A783EEF00F858AF /* NavigationTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationTabs.swift; sourceTree = "<group>"; };
 		CC01461E2A783F8400F858AF /* Routes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Routes.swift; sourceTree = "<group>"; };
 		CC0146342A78439600F858AF /* NavigationLinkProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationLinkProvider.swift; sourceTree = "<group>"; };
+		CC09047E2A7BE95D00A71F53 /* AuthState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthState.swift; sourceTree = "<group>"; };
 		CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemModel.swift; sourceTree = "<group>"; };
 		CC21151E2A7A9CCE001996BD /* View+Skeleton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Skeleton.swift"; sourceTree = "<group>"; };
+		CC2115202A7AA6F8001996BD /* String+Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Localization.swift"; sourceTree = "<group>"; };
 		CC676BC52A6ADBEE00B8AC66 /* KinoPubLogging */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubLogging; path = Packages/KinoPubLogging; sourceTree = "<group>"; };
 		CC71E6EC2A6B2FBE004AFB3F /* KinoPubKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubKit; path = Packages/KinoPubKit; sourceTree = "<group>"; };
 		CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
@@ -170,9 +174,9 @@
 			children = (
 				CC71E6F52A6C05BF004AFB3F /* Auth */,
 				CC71E6F42A6C05B9004AFB3F /* Bookmarks */,
-				CCF388152A71816B00242581 /* MediaItem */,
 				CC71E6FD2A6C0691004AFB3F /* Downloads */,
 				CC71E6F32A6C05B4004AFB3F /* Main */,
+				CCF388152A71816B00242581 /* MediaItem */,
 				CCF388162A71817300242581 /* Player */,
 				CC71E6F22A6C04B5004AFB3F /* Root */,
 				CC71E6F62A6C0600004AFB3F /* Settings */,
@@ -245,6 +249,7 @@
 				CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */,
 				CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */,
 				CC21151E2A7A9CCE001996BD /* View+Skeleton.swift */,
+				CC2115202A7AA6F8001996BD /* String+Localization.swift */,
 			);
 			path = Custom;
 			sourceTree = "<group>";
@@ -272,7 +277,6 @@
 			children = (
 				CC0146192A783DEB00F858AF /* Navigation */,
 				CC88E1F42A6587CC00E9387F /* App */,
-				CCE9C6D82A73DB4C007923C0 /* Components */,
 				CCF388262A718BAA00242581 /* Context */,
 				CC7FCE8D2A72D3BD00DFC0A9 /* Custom */,
 				CCF388302A718FED00242581 /* Info.plist */,
@@ -298,6 +302,7 @@
 		CC88E1F42A6587CC00E9387F /* App */ = {
 			isa = PBXGroup;
 			children = (
+				CC09047E2A7BE95D00A71F53 /* AuthState.swift */,
 				CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */,
 				CC71E7252A6DD643004AFB3F /* AppDelegate.swift */,
 			);
@@ -313,13 +318,6 @@
 				CC88E1F72A65A42B00E9387F /* KinoPubUI */,
 			);
 			name = Packages;
-			sourceTree = "<group>";
-		};
-		CCE9C6D82A73DB4C007923C0 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Components;
 			sourceTree = "<group>";
 		};
 		CCE9C6DD2A73EA11007923C0 /* Shortcut */ = {
@@ -513,6 +511,7 @@
 				CCF388282A718BB600242581 /* AppContext.swift in Sources */,
 				CCF388212A718ADE00242581 /* VideoContentService.swift in Sources */,
 				CCF3881A2A71882300242581 /* AuthorizationService.swift in Sources */,
+				CC09047F2A7BE95D00A71F53 /* AuthState.swift in Sources */,
 				CCF3882B2A718E6300242581 /* Configuration.swift in Sources */,
 				CC01461B2A783DF900F858AF /* NavigationState.swift in Sources */,
 				CCF388252A718AF300242581 /* VideoContentServiceImpl.swift in Sources */,
@@ -546,6 +545,7 @@
 				CCF3883C2A71C8D600242581 /* KeychainStorageImpl.swift in Sources */,
 				CC7FCE872A72ACB700DFC0A9 /* AuthModel.swift in Sources */,
 				CCE9C6DC2A73DB87007923C0 /* BookmarksCatalog.swift in Sources */,
+				CC2115212A7AA6F8001996BD /* String+Localization.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

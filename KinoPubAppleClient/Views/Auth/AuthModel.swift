@@ -15,6 +15,7 @@ import OSLog
 class AuthModel: ObservableObject {
   
   private var authService: AuthorizationService
+  private var authState: AuthState
   
   @Published var deviceCode: String = ""
   @Published var error: String?
@@ -23,8 +24,9 @@ class AuthModel: ObservableObject {
   
   private var tempVerificationResponse: VerificationResponse?
   
-  init(authService: AuthorizationService) {
+  init(authService: AuthorizationService, authState: AuthState) {
     self.authService = authService
+    self.authState = authState
   }
   
   func fetchDeviceCode() {
@@ -60,7 +62,8 @@ class AuthModel: ObservableObject {
     Logger.app.debug("request token...")
     do {
       try await authService.fetchToken(by: response)
-      close = true
+      authState.userState = .authorized
+      authState.shouldShowAuthentication = false
       Logger.app.debug("token requested")
     } catch {
       handleError(error, response: response)

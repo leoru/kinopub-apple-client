@@ -74,6 +74,39 @@
     "Choose shortcut" : {
 
     },
+    "Concert" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Концепты"
+          }
+        }
+      }
+    },
+    "Documental" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Документальные фильмы"
+          }
+        }
+      }
+    },
+    "Documental Series" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Документальные сериалы"
+          }
+        }
+      }
+    },
     "Downloads" : {
       "localizations" : {
         "en" : {
@@ -229,6 +262,17 @@
         }
       }
     },
+    "Movie" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фильмы"
+          }
+        }
+      }
+    },
     "Movies" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -247,6 +291,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Популярные"
+          }
+        }
+      }
+    },
+    "Serial" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сериалы"
           }
         }
       }
@@ -274,6 +329,17 @@
     },
     "Standard" : {
 
+    },
+    "TV Show" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ТВ Шоу"
+          }
+        }
+      }
     },
     "X Large Type" : {
 

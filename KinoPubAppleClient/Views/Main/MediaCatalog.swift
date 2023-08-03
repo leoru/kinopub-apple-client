@@ -14,6 +14,7 @@ import Combine
 @MainActor
 class MediaCatalog: ObservableObject {
   
+  private var authState: AuthState
   private var itemsService: VideoContentService
   private var bag = Set<AnyCancellable>()
   
@@ -26,13 +27,19 @@ class MediaCatalog: ObservableObject {
     contentType.title
   }
   
-  init(itemsService: VideoContentService) {
+  init(itemsService: VideoContentService, authState: AuthState) {
     self.itemsService = itemsService
+    self.authState = authState
     subscribe()
   }
   
   
   func fetchItems() async {
+    guard authState.userState == .authorized else {
+      subscribeForAuth()
+      return
+    }
+    
     do {
       let page = pagination != nil ? pagination!.current + 1 : nil
       let data = try await itemsService.fetch(shortcut: shortcut, contentType: contentType, page: page)
@@ -57,6 +64,7 @@ class MediaCatalog: ObservableObject {
     }
   }
   
+  @MainActor
   func refresh() {
     items.removeAll()
     pagination = nil
@@ -72,6 +80,12 @@ class MediaCatalog: ObservableObject {
     }.store(in: &bag)
     
     $shortcut.dropFirst().sink { [weak self] _ in
+      self?.refresh()
+    }.store(in: &bag)
+  }
+  
+  private func subscribeForAuth() {
+    authState.$userState.filter({ $0 == .authorized }).first().sink { [weak self] _ in
       self?.refresh()
     }.store(in: &bag)
   }
