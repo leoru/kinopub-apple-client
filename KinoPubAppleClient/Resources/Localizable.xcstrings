@@ -10,6 +10,9 @@
     "200 Wide" : {
 
     },
+    "Apply" : {
+
+    },
     "Auth_Activate" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -78,6 +81,9 @@
 
     },
     "Choose shortcut" : {
+
+    },
+    "Clear" : {
 
     },
     "Concert" : {
@@ -295,6 +301,9 @@
           }
         }
       }
+    },
+    "No resuts" : {
+
     },
     "Popular" : {
       "extractionState" : "manual",

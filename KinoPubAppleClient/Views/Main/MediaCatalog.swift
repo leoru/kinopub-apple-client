@@ -18,7 +18,7 @@ class MediaCatalog: ObservableObject {
   private var itemsService: VideoContentService
   private var bag = Set<AnyCancellable>()
   
-  @Published public var items: [MediaItem] = []
+  @Published public var items: [MediaItem] = MediaItem.skeletonMock()
   @Published public var pagination: Pagination?
   @Published public var contentType: MediaType = .movie
   @Published public var shortcut: MediaShortcut = .hot
@@ -57,7 +57,11 @@ class MediaCatalog: ObservableObject {
   }
   
   private func handleData(_ data: PaginatedData<MediaItem>) {
-    self.items.append(contentsOf: data.items)
+    if items.first(where: { $0.skeleton ?? false }) != nil {
+      items = data.items
+    } else {
+      items.append(contentsOf: data.items)
+    }
     pagination = data.pagination
   }
   
@@ -77,7 +81,7 @@ class MediaCatalog: ObservableObject {
   
   @MainActor
   func refresh() {
-    items.removeAll()
+    items = MediaItem.skeletonMock()
     pagination = nil
     Task {
       Logger.app.debug("refetch items")
@@ -95,6 +99,7 @@ class MediaCatalog: ObservableObject {
     }.store(in: &bag)
     
     $query.dropFirst().debounce(for: .seconds(0.5), scheduler: DispatchQueue.main).sink { [weak self] _ in
+      self?.items = MediaItem.skeletonMock()
       self?.refresh()
     }.store(in: &bag)
   }

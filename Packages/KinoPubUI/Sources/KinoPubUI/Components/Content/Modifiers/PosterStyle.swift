@@ -12,14 +12,15 @@ public struct PosterStyle: ViewModifier {
   public enum Size {
     case small, medium, big
     
-    var width: CGFloat {
+    public var width: CGFloat {
       switch self {
       case .small: return 53
       case .medium: return 165
       case .big: return 250
       }
     }
-    var height: CGFloat {
+    
+    public var height: CGFloat {
       switch self {
       case .small: return 80
       case .medium: return 250

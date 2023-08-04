@@ -31,14 +31,10 @@ struct MainView: View {
   var body: some View {
     NavigationStack(path: $navigationState.mainRoutes) {
       VStack {
-        GeometryReader { geometryProxy in
-          ContentItemsListView(width: geometryProxy.size.width, items: $catalog.items, onLoadMoreContent: { item in
-            catalog.loadMoreContent(after: item)
-          }, onRefresh: {
-            await catalog.refresh()
-          }, navigationLinkProvider: { item in
-            MainRoutesLinkProvider().link(for: item)
-          })
+        if catalog.items.isEmpty && !catalog.query.isEmpty {
+          emptyView
+        } else {
+          catalogView
         }
       }
       .searchable(text: $catalog.query, placement: .automatic)
@@ -79,9 +75,27 @@ struct MainView: View {
         case .player(let item):
           PlayerView(manager: PlayerManager(mediaItem: item))
         }
-      
+        
       }
     }
+  }
+  
+  var catalogView: some View {
+    GeometryReader { geometryProxy in
+      ContentItemsListView(width: geometryProxy.size.width, items: $catalog.items, onLoadMoreContent: { item in
+        catalog.loadMoreContent(after: item)
+      }, onRefresh: {
+        await catalog.refresh()
+      }, navigationLinkProvider: { item in
+        MainRoutesLinkProvider().link(for: item)
+      })
+    }
+  }
+  
+  var emptyView: some View {
+    Text("No resuts")
+      .foregroundStyle(Color.KinoPub.text)
+      .font(Font.KinoPub.subheader)
   }
 }
 

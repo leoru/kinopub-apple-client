@@ -7,7 +7,7 @@
 
 import Foundation
 import SwiftUI
-
+import SkeletonUI
 public struct ContentItemRatingView: View {
   
   var imdbScore: Double?

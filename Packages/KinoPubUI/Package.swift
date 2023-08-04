@@ -13,12 +13,14 @@ let package = Package(
   ],
   dependencies: [
     .package(name: "KinoPubBackend", path: "../KinoPubBackend"),
+    .package(url: "https://github.com/CSolanaM/SkeletonUI.git", .branch("master"))
   ],
   targets: [
     .target(
       name: "KinoPubUI",
       dependencies: [
         .product(name: "KinoPubBackend", package: "KinoPubBackend"),
+        .product(name: "SkeletonUI", package: "SkeletonUI"),
       ]),
     .testTarget(
       name: "KinoPubUITests",

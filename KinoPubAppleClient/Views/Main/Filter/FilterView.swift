@@ -19,17 +19,15 @@ struct FilterView: View {
   
   var body: some View {
     NavigationView {
-      
       HStack {
         Spacer()
         Form {
           typePicker
           yearSection
           imdbRatingSection
+          buttonsSection
         }
-        
       }
-      
     }
     .navigationTitle("Filter")
     .navigationBarTitleDisplayMode(.inline)
@@ -44,8 +42,19 @@ struct FilterView: View {
     }
   }
   
+  var buttonsSection: some View {
+    Section {
+      Button("Clear") {
+        
+      }
+      Button("Apply") {
+        
+      }
+    }
+  }
+  
   var yearSection: some View {
-    VStack {
+    Section {
       Toggle("Release Year", isOn: $model.yearFilterEnabled)
       if model.yearFilterEnabled {
         numberPicker(title: "From", from: 1920, to: 2023, currentValue: $model.yearMin)
@@ -55,7 +64,7 @@ struct FilterView: View {
   }
   
   var imdbRatingSection: some View {
-    VStack {
+    Section {
       Toggle("IMDB Rating", isOn: $model.imdbFilterEnabled)
       if model.imdbFilterEnabled {
         numberPicker(title: "From", from: 0, to: 10, currentValue: $model.imdbMin)

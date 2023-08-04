@@ -25,6 +25,7 @@ public struct ContentItemView: View {
           Spacer()
           ContentItemRatingView(imdbScore: mediaItem.imdbRating,
                                 kinopoiskScore: mediaItem.kinopoiskRating)
+          .skeleton(enabled: mediaItem.skeleton ?? false)
           .padding(.bottom, 8)
         }
       }
@@ -41,11 +42,14 @@ public struct ContentItemView: View {
         .renderingMode(.original)
         .posterStyle(size: .medium)
     } placeholder: {
-      Color.KinoPub.subtitle
+      Color.KinoPub.skeleton
         .frame(width: PosterStyle.Size.medium.width,
                height: PosterStyle.Size.medium.height)
     }
     .cornerRadius(8)
+    .skeleton(enabled: mediaItem.skeleton ?? false,
+              size: CGSize(width: PosterStyle.Size.medium.width,
+                           height: PosterStyle.Size.medium.height))
   }
   
   var title: some View {
@@ -53,6 +57,7 @@ public struct ContentItemView: View {
       .lineLimit(1)
       .font(.system(size: 16.0, weight: .medium))
       .foregroundStyle(Color.KinoPub.text)
+      .skeleton(enabled: mediaItem.skeleton ?? false)
   }
   
   var subtitle: some View {
@@ -60,6 +65,7 @@ public struct ContentItemView: View {
       .lineLimit(1)
       .font(.system(size: 14.0, weight: .medium))
       .foregroundStyle(Color.KinoPub.subtitle)
+      .skeleton(enabled: mediaItem.skeleton ?? false)
   }
   
 }

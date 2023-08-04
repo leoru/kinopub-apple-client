@@ -46,6 +46,7 @@ public struct MediaItem: Codable, Hashable {
   public let bookmarks: [TypeClass]?
   public let seasons: [Season]?
   public let videos: [Video]?
+  public let skeleton: Bool?
   
   private enum CodingKeys: String, CodingKey {
     case id = "id"
@@ -86,9 +87,16 @@ public struct MediaItem: Codable, Hashable {
     case ac3 = "ac3"
     case seasons = "seasons"
     case videos = "videos"
+    case skeleton = "skeleton"
   }
   
-  public static func mock(id: Int = 1) -> MediaItem {
+  public static func skeletonMock() -> [MediaItem] {
+    (0..<15).map { id in
+      mock(id: id, skeleton: true)
+    }
+  }
+  
+  public static func mock(id: Int = 1, skeleton: Bool = false) -> MediaItem {
     MediaItem(id: id, type: "test",
               subtype: "test",
               title: "Стражи Галактики. Часть 3 / Guardians of the Galaxy Vol. 3",
@@ -135,7 +143,8 @@ public struct MediaItem: Codable, Hashable {
               ac3: nil,
               bookmarks: nil,
               seasons: nil,
-              videos: nil)
+              videos: nil,
+              skeleton: skeleton)
   }
 }
 

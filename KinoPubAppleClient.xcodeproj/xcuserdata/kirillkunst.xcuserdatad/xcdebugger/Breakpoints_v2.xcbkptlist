@@ -94,8 +94,8 @@
             filePath = "Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ContentItemView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "40"
-            endingLineNumber = "40"
+            startingLineNumber = "41"
+            endingLineNumber = "41"
             landmarkName = "image"
             landmarkType = "24">
          </BreakpointContent>
@@ -832,8 +832,8 @@
             filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "70"
-            endingLineNumber = "70"
+            startingLineNumber = "74"
+            endingLineNumber = "74"
             landmarkName = "loadMoreContent(after:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -848,8 +848,8 @@
             filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "73"
-            endingLineNumber = "73"
+            startingLineNumber = "77"
+            endingLineNumber = "77"
             landmarkName = "loadMoreContent(after:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -864,8 +864,8 @@
             filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "90"
-            endingLineNumber = "90"
+            startingLineNumber = "94"
+            endingLineNumber = "94"
             landmarkName = "subscribe()"
             landmarkType = "7">
             <Locations>
@@ -1005,8 +1005,8 @@
             filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "81"
-            endingLineNumber = "81"
+            startingLineNumber = "85"
+            endingLineNumber = "85"
             landmarkName = "refresh()"
             landmarkType = "7">
          </BreakpointContent>
@@ -1633,8 +1633,8 @@
             filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "104"
-            endingLineNumber = "104"
+            startingLineNumber = "109"
+            endingLineNumber = "109"
             landmarkName = "subscribeForAuth()"
             landmarkType = "7">
          </BreakpointContent>
@@ -1681,8 +1681,8 @@
             filePath = "KinoPubAppleClient/Views/Main/MediaCatalog.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "98"
-            endingLineNumber = "98"
+            startingLineNumber = "103"
+            endingLineNumber = "103"
             landmarkName = "subscribe()"
             landmarkType = "7">
             <Locations>
