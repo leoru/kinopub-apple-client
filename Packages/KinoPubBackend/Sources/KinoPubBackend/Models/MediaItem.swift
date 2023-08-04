@@ -89,14 +89,16 @@ public struct MediaItem: Codable, Hashable {
     case videos = "videos"
     case skeleton = "skeleton"
   }
+}
 
-  public static func skeletonMock() -> [MediaItem] {
+public extension MediaItem {
+  static func skeletonMock() -> [MediaItem] {
     (0..<15).map { id in
       mock(id: id, skeleton: true)
     }
   }
 
-  public static func mock(id: Int = 1, skeleton: Bool = false) -> MediaItem {
+  static func mock(id: Int = 1, skeleton: Bool = false) -> MediaItem {
     MediaItem(id: id, type: "test",
               subtype: "test",
               title: "Стражи Галактики. Часть 3 / Guardians of the Galaxy Vol. 3",

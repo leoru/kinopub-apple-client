@@ -11,6 +11,10 @@ import SwiftUI
 public struct KinoPubButtonStyle: ButtonStyle {
 
   var buttonColor: KinoPubButton.ButtonColor
+  
+  public init(buttonColor: KinoPubButton.ButtonColor) {
+    self.buttonColor = buttonColor
+  }
 
   public func makeBody(configuration: Self.Configuration) -> some View {
     configuration.label

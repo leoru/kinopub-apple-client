@@ -37,13 +37,12 @@ struct MediaItemHeaderView: View {
 
           NavigationLink(value: MainRoutes.player(mediaItem)) {
             Text("Смотреть")
-          }
-//          KinoPubButton(title: "Смотреть", color: .green) {
-//            
-//          }
-          KinoPubButton(title: "Трейлер", color: .gray) {
-
-          }
+              .modifier(KinoPubButtonTextStyle())
+          }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
+          NavigationLink(value: MainRoutes.player(mediaItem)) {
+            Text("Трейлер")
+              .modifier(KinoPubButtonTextStyle())
+          }.buttonStyle(KinoPubButtonStyle(buttonColor: .gray))
         }
         .padding(.all, 16)
       }
