@@ -24,7 +24,7 @@ extension APIClientError: CustomStringConvertible {
       return "Networking issue: \(error)"
     }
   }
-  
+
   var isAuthorizationPending: Bool {
     switch self {
     case .networkError(let error):
@@ -36,5 +36,5 @@ extension APIClientError: CustomStringConvertible {
     }
     return false
   }
-  
+
 }

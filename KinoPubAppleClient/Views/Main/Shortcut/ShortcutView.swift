@@ -12,7 +12,7 @@ import KinoPubBackend
 struct ShortcutSelectionView: View {
   @Binding var shortcut: MediaShortcut
   @Binding var mediaType: MediaType
-  
+
   var body: some View {
     HStack {
       mediaTypesPicker
@@ -22,7 +22,7 @@ struct ShortcutSelectionView: View {
     .presentationDetents([.height(180.0)])
     .presentationDragIndicator(.visible)
   }
-  
+
   var shortcutPicker: some View {
     Picker("Choose shortcut", selection: $shortcut) {
       ForEach(MediaShortcut.allCases) { shortcut in

@@ -12,7 +12,7 @@ import FirebaseCore
 #if os(iOS)
 class AppDelegate: NSObject, UIApplicationDelegate {
   func application(_ application: UIApplication,
-                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
     FirebaseApp.configure()
     return true
   }
@@ -20,8 +20,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 #endif
 
 #if os(macOS)
-class AppDelegate: NSObject,  NSApplicationDelegate {
-  
+class AppDelegate: NSObject, NSApplicationDelegate {
+
   func applicationDidFinishLaunching(_ notification: Notification) {
     FirebaseApp.configure()
   }

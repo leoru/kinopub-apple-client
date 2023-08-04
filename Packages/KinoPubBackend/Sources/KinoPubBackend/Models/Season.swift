@@ -12,7 +12,7 @@ public struct Season: Codable, Hashable {
   public let number: Int
   public let watching: SeasonWatching
   public let episodes: [Episode]
-  
+
   private enum CodingKeys: String, CodingKey {
     case title = "title"
     case number = "number"

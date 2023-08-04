@@ -47,7 +47,7 @@ public struct MediaItem: Codable, Hashable {
   public let seasons: [Season]?
   public let videos: [Video]?
   public let skeleton: Bool?
-  
+
   private enum CodingKeys: String, CodingKey {
     case id = "id"
     case type = "type"
@@ -89,13 +89,13 @@ public struct MediaItem: Codable, Hashable {
     case videos = "videos"
     case skeleton = "skeleton"
   }
-  
+
   public static func skeletonMock() -> [MediaItem] {
     (0..<15).map { id in
       mock(id: id, skeleton: true)
     }
   }
-  
+
   public static func mock(id: Int = 1, skeleton: Bool = false) -> MediaItem {
     MediaItem(id: id, type: "test",
               subtype: "test",
@@ -113,7 +113,7 @@ public struct MediaItem: Codable, Hashable {
                 Country(id: 1, title: "USA"),
                 Country(id: 1, title: "France"),
                 Country(id: 1, title: "Canada"),
-                Country(id: 1, title: "New Zeland"),
+                Country(id: 1, title: "New Zeland")
               ],
               voice: "Русский. Дубляж. Red Head Sound, Русский. Дубляж. Лицензия",
               duration: Duration(average: 0, total: 230),
@@ -154,7 +154,7 @@ public extension MediaItem {
   var originalTitle: String? {
     title.split(separator: "/").last?.trimmingCharacters(in: .whitespaces)
   }
-  
+
   var localizedTitle: String? {
     title.split(separator: "/").first?.trimmingCharacters(in: .whitespaces)
   }

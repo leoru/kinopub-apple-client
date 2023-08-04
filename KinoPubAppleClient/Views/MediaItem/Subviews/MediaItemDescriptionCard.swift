@@ -11,10 +11,10 @@ import KinoPubBackend
 import SkeletonUI
 
 struct MediaItemDescriptionCard: View {
-  
+
   var mediaItem: MediaItem
   var isSkeleton: Bool
-  
+
   var body: some View {
     VStack(alignment: .leading) {
       Label(mediaItem.localizedTitle ?? "", systemImage: "movieclapper")
@@ -26,7 +26,7 @@ struct MediaItemDescriptionCard: View {
         .padding(.top, 8)
     }
   }
-  
+
   var metaIcons: some View {
     HStack(content: {
       metaIcon(text: "1080p")
@@ -36,7 +36,7 @@ struct MediaItemDescriptionCard: View {
       actionIcons
     })
   }
-  
+
   var plot: some View {
     Text(mediaItem.plot)
       .font(Font.KinoPub.small)
@@ -45,7 +45,7 @@ struct MediaItemDescriptionCard: View {
       .skeleton(with: isSkeleton, animated: nil)
       .multilineSkeleton(enabled: isSkeleton)
   }
-  
+
   func metaIcon(text: String) -> some View {
     Text(text)
       .overlay(
@@ -57,9 +57,9 @@ struct MediaItemDescriptionCard: View {
       .font(.system(size: 12))
       .padding(.horizontal, 5)
       .skeleton(enabled: isSkeleton, size: CGSize(width: 60, height: 20))
-    
+
   }
-  
+
   var actionIcons: some View {
     HStack {
       Button(action: {}, label: {
@@ -75,7 +75,7 @@ struct MediaItemDescriptionCard: View {
           .skeleton(enabled: isSkeleton, size: CGSize(width: 30, height: 30))
       })
     }
-    
+
   }
 }
 
@@ -85,7 +85,7 @@ struct MediaItemDescriptionCard_Previews: PreviewProvider {
       MediaItemDescriptionCard(mediaItem: MediaItem.mock(), isSkeleton: true)
     }
   }
-  
+
   static var previews: some View {
     NavigationStack {
       Preview()

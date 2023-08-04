@@ -2,22 +2,22 @@ import XCTest
 @testable import KinoPubBackend
 
 class APIClientTests: XCTestCase {
-  
+
   var apiClient: APIClient!
   var sessionMock: URLSessionMock!
-  
+
   override func setUp() {
     super.setUp()
     sessionMock = URLSessionMock()
     apiClient = APIClient(baseUrl: "https://api.example.com", session: sessionMock)
   }
-  
+
   override func tearDown() {
     apiClient = nil
     sessionMock = nil
     super.tearDown()
   }
-  
+
   func testPerformRequest_ReturnsDecodedData() async {
     // Given
     let json = """
@@ -29,11 +29,11 @@ class APIClientTests: XCTestCase {
         }
         """
     sessionMock.data = json.data(using: .utf8, allowLossyConversion: true)
-    
+
     // When
     do {
       let response: TokenResponse = try await apiClient.performRequest(with: RequestData(path: "/token", method: "GET"), decodingType: TokenResponse.self)
-      
+
       // Then
       XCTAssertEqual(response.accessToken, "testToken")
       XCTAssertEqual(response.tokenType, "bearer")
@@ -43,11 +43,11 @@ class APIClientTests: XCTestCase {
       XCTFail("Expected successful decoding but got error: \(error)")
     }
   }
-  
+
   func testPerformRequest_WhenError_ThrowsError() async {
     // Given
     sessionMock.error = NSError(domain: "Test", code: 1234, userInfo: nil)
-    
+
     // When
     do {
       let _: TokenResponse = try await apiClient.performRequest(with: RequestData(path: "/token", method: "GET"), decodingType: TokenResponse.self)
@@ -56,6 +56,6 @@ class APIClientTests: XCTestCase {
       // Expected behavior
     }
   }
-  
+
   // ... More tests based on different scenarios
 }

@@ -13,13 +13,13 @@ import AVFoundation
 
 @MainActor
 class PlayerManager: ObservableObject {
-  
+
   lazy var player = AVPlayer(url: URL(string: mediaItem.videos?.first?.files.first?.url.hls4 ?? "")!)
-  
+
   var mediaItem: MediaItem
-  
+
   init(mediaItem: MediaItem) {
     self.mediaItem = mediaItem
   }
-  
+
 }

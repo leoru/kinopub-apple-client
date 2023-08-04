@@ -11,11 +11,11 @@ public struct TypeClass: Codable, Hashable {
   public let id: Int
   public let title: String?
   public let shortTitle: String?
-  
+
   private enum CodingKeys: String, CodingKey {
     case id = "id"
     case title = "title"
     case shortTitle = "short_title"
   }
-  
+
 }

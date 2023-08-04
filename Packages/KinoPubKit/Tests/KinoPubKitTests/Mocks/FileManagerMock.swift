@@ -11,14 +11,14 @@ class FileManagerMock: FileManager {
   var shouldThrowError = false
   var didRemoveItem = false
   var didMoveItem = false
-  
+
   override func removeItem(at URL: URL) throws {
     didRemoveItem = true
     if shouldThrowError {
       throw NSError(domain: "FileManagerMockErrorDomain", code: 123, userInfo: nil)
     }
   }
-  
+
   override func moveItem(at srcURL: URL, to dstURL: URL) throws {
     didMoveItem = true
     if shouldThrowError {

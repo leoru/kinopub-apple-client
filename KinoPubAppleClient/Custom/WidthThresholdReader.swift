@@ -20,12 +20,12 @@ struct WidthThresholdReader<Content: View>: View {
     var widthThreshold: Double = 400
     var dynamicTypeThreshold: DynamicTypeSize = .xxLarge
     @ViewBuilder var content: (WidthThresholdProxy) -> Content
-    
+
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var sizeClass
     #endif
     @Environment(\.dynamicTypeSize) private var dynamicType
-    
+
     var body: some View {
         GeometryReader { geometryProxy in
             let compressionProxy = WidthThresholdProxy(
@@ -36,7 +36,7 @@ struct WidthThresholdReader<Content: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
-                
+
     func isCompact(width: Double) -> Bool {
         #if os(iOS)
         if sizeClass == .compact {
@@ -69,7 +69,7 @@ struct WidthThresholdReader_Previews: PreviewProvider {
                 }
             }
             .border(.quaternary)
-            
+
             WidthThresholdReader { proxy in
                 Label {
                     Text("200 Wide")
@@ -79,7 +79,7 @@ struct WidthThresholdReader_Previews: PreviewProvider {
             }
             .frame(width: 200)
             .border(.quaternary)
-            
+
             WidthThresholdReader { proxy in
                 Label {
                     Text("X Large Type")
@@ -89,7 +89,7 @@ struct WidthThresholdReader_Previews: PreviewProvider {
             }
             .dynamicTypeSize(.xxxLarge)
             .border(.quaternary)
-        
+
             #if os(iOS)
             WidthThresholdReader { proxy in
                 Label {
@@ -103,7 +103,7 @@ struct WidthThresholdReader_Previews: PreviewProvider {
             #endif
         }
     }
-    
+
     @ViewBuilder
     static func compactIndicator(proxy: WidthThresholdProxy) -> some View {
         if proxy.isCompact {

@@ -10,19 +10,19 @@ import FirebaseCore
 
 @main
 struct KinoPubAppleClientApp: App {
-  
+
   @StateObject var navigationState = NavigationState()
   @StateObject var authState = AuthState(authService: AppContext.shared.authService,
                                          accessTokenService: AppContext.shared.accessTokenService)
-  
+
   #if os(iOS)
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
   #endif
-  
+
   #if os(macOS)
   @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
   #endif
-  
+
   var body: some Scene {
     WindowGroup {
       RootView()

@@ -11,11 +11,11 @@ public enum MediaShortcut: String, Codable, CaseIterable, Identifiable {
   case hot
   case fresh
   case popular
-  
+
   public var id: Self {
     return self
   }
-  
+
   public var title: String {
     switch self {
     case .hot: return "Hot"

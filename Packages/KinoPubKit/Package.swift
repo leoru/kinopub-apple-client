@@ -9,19 +9,19 @@ let package = Package(
   products: [
     .library(
       name: "KinoPubKit",
-      targets: ["KinoPubKit"]),
+      targets: ["KinoPubKit"])
   ],
   dependencies: [
-    .package(name: "KinoPubLogging", path: "../KinoPubLogging"),
+    .package(name: "KinoPubLogging", path: "../KinoPubLogging")
   ],
   targets: [
     .target(
       name: "KinoPubKit",
       dependencies: [
-        .product(name: "KinoPubLogging", package: "KinoPubLogging"),
+        .product(name: "KinoPubLogging", package: "KinoPubLogging")
       ]),
       .testTarget(
         name: "KinoPubKitTests",
-        dependencies: ["KinoPubKit"]),
+        dependencies: ["KinoPubKit"])
   ]
 )

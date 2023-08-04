@@ -13,7 +13,7 @@ public struct Directory: Codable, Hashable {
   public let views: Int
   public let created: Int
   public let updated: Int
-  
+
   private enum CodingKeys: String, CodingKey {
     case id = "id"
     case title = "title"
@@ -21,7 +21,7 @@ public struct Directory: Codable, Hashable {
     case created = "created"
     case updated = "updated"
   }
-  
+
   public init(id: Int, title: String, views: Int, created: Int, updated: Int) {
     self.id = id
     self.title = title

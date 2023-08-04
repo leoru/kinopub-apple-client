@@ -9,13 +9,13 @@ import Foundation
 import SwiftUI
 
 public struct ToastContentView: View {
-  
+
   public var text: String
-  
+
   public init(text: String) {
     self.text = text
   }
-  
+
   public var body: some View {
     Text(text)
       .padding(.horizontal, 16)

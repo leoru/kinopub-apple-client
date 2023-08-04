@@ -14,7 +14,7 @@ public struct FileInfo: Codable, Hashable {
   public let quality: String
   public let qualityID: Int
   public let url: URLInfo
-  
+
   private enum CodingKeys: String, CodingKey {
     case codec = "codec"
     case w = "w"

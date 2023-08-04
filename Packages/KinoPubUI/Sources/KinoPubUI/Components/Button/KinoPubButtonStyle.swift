@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 public struct KinoPubButtonStyle: ButtonStyle {
-  
+
   var buttonColor: KinoPubButton.ButtonColor
 
   public func makeBody(configuration: Self.Configuration) -> some View {

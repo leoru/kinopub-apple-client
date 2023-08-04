@@ -19,18 +19,18 @@ public protocol DownloadedFilesDataWriting {
 class DownloadedFilesDatabase: DownloadedFilesDataReading, DownloadedFilesDataWriting {
   private let fileSaver: FileSaving
   private let dataFileURL: URL
-  
+
   public init(fileSaver: FileSaving) {
     self.fileSaver = fileSaver
     self.dataFileURL = fileSaver.getDocumentsDirectoryURL(forFilename: "downloadedFiles.plist")
   }
-  
+
   func save(fileInfo: DownloadedFileInfo) {
     var currentData = readData() ?? []
     currentData.append(fileInfo)
     writeData(currentData)
   }
-  
+
   func readData() -> [DownloadedFileInfo]? {
     guard let data = try? Data(contentsOf: dataFileURL),
           let decodedData = try? PropertyListDecoder().decode([DownloadedFileInfo].self, from: data) else {
@@ -38,7 +38,7 @@ class DownloadedFilesDatabase: DownloadedFilesDataReading, DownloadedFilesDataWr
     }
     return decodedData
   }
-  
+
   func writeData(_ files: [DownloadedFileInfo]) {
     if let data = try? PropertyListEncoder().encode(files) {
       try? data.write(to: dataFileURL)

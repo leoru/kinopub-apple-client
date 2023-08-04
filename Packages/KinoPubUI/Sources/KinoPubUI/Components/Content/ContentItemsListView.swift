@@ -10,18 +10,18 @@ import SwiftUI
 import KinoPubBackend
 
 public struct ContentItemsListView: View {
-  
+
   var width: CGFloat
   @Binding public var items: [MediaItem]
   public var onLoadMoreContent: (MediaItem) -> Void
   public var onRefresh: @Sendable () async -> Void
   public var navigationLinkProvider: (MediaItem) -> any Hashable
-  
+
 #if os(iOS)
   @Environment(\.horizontalSizeClass) private var sizeClass
 #endif
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-  
+
   var useReducedThumbnailSize: Bool {
 #if os(iOS)
     if sizeClass == .compact {
@@ -31,7 +31,7 @@ public struct ContentItemsListView: View {
     if dynamicTypeSize >= .xxxLarge {
       return true
     }
-    
+
 #if os(iOS)
     if width <= 390 {
       return true
@@ -41,14 +41,14 @@ public struct ContentItemsListView: View {
       return true
     }
 #endif
-    
+
     return false
   }
-  
+
   var cellSize: Double {
     useReducedThumbnailSize ? 140 : 180
   }
-  
+
   var thumbnailSize: Double {
 #if os(iOS)
     return useReducedThumbnailSize ? 60 : 100
@@ -56,11 +56,11 @@ public struct ContentItemsListView: View {
     return useReducedThumbnailSize ? 40 : 80
 #endif
   }
-  
+
   var gridLayout: [GridItem] {
     [GridItem(.adaptive(minimum: cellSize), spacing: 25, alignment: .top)]
   }
-  
+
   public init(width: CGFloat,
               items: Binding<[MediaItem]>,
               onLoadMoreContent: @escaping (MediaItem) -> Void,
@@ -72,7 +72,7 @@ public struct ContentItemsListView: View {
     self.onLoadMoreContent = onLoadMoreContent
     self.navigationLinkProvider = navigationLinkProvider
   }
-  
+
   public var body: some View {
     ScrollView {
       LazyVGrid(columns: gridLayout, content: {
@@ -90,11 +90,11 @@ public struct ContentItemsListView: View {
     }
     .refreshable(action: onRefresh)
   }
-  
+
 }
 
 struct ContentItemsListView_Previews: PreviewProvider {
-  
+
   struct Preview: View {
     @State var items: [MediaItem] = [
       MediaItem.mock(id: 1),
@@ -107,20 +107,20 @@ struct ContentItemsListView_Previews: PreviewProvider {
       MediaItem.mock(id: 8),
       MediaItem.mock(id: 9)
     ]
-    
+
     var body: some View {
       GeometryReader { geometryProxy in
         ContentItemsListView(width: geometryProxy.size.width, items: $items, onLoadMoreContent: { _ in
-          
+
         }, onRefresh: {
-          
+
         }, navigationLinkProvider: { _ in
           return ""
         })
       }
     }
   }
-  
+
   static var previews: some View {
     NavigationStack {
       Preview()

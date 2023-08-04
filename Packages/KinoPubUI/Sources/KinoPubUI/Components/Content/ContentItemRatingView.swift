@@ -9,10 +9,10 @@ import Foundation
 import SwiftUI
 import SkeletonUI
 public struct ContentItemRatingView: View {
-  
+
   var imdbScore: Double?
   var kinopoiskScore: Double?
-  
+
   public var body: some View {
     HStack {
       imdbImage
@@ -26,11 +26,11 @@ public struct ContentItemRatingView: View {
     .cornerRadius(8)
     .opacity(isEmpty ? 0 : 1)
   }
-  
+
   var isEmpty: Bool {
     imdbScore == nil && kinopoiskScore == nil
   }
-  
+
   var imdbImage: some View {
     Image("imdb", bundle: .module)
       .resizable()
@@ -38,23 +38,23 @@ public struct ContentItemRatingView: View {
       .colorInvert()
       .frame(width: 24, height: 24)
   }
-  
+
   var kpImage: some View {
     Image("kinopoisk", bundle: .module)
       .resizable()
       .frame(width: 20, height: 20)
   }
-  
+
   var imdbRating: some View {
     Text("\(imdbScore?.scoreFormatted ?? "0.0")")
       .foregroundColor(.white)
   }
-  
+
   var kpRating: some View {
     Text("\(kinopoiskScore?.scoreFormatted ?? "0.0")")
       .foregroundColor(.white)
   }
-  
+
 }
 
 #Preview {

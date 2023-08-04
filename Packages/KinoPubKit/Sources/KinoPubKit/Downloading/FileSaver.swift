@@ -14,16 +14,16 @@ public protocol FileSaving {
 
 public class FileSaver: FileSaving {
   private let fileManager: FileManager
-  
+
   init(fileManager: FileManager = .default) {
     self.fileManager = fileManager
   }
-  
+
   public func saveFile(from sourceURL: URL, to destinationURL: URL) throws {
     try? fileManager.removeItem(at: destinationURL)
     try fileManager.moveItem(at: sourceURL, to: destinationURL)
   }
-  
+
   public func getDocumentsDirectoryURL(forFilename filename: String) -> URL {
     let documentsDirectoryURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
     return documentsDirectoryURL.appendingPathComponent(filename)

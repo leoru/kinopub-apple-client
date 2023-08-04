@@ -10,20 +10,20 @@ import SwiftUI
 import AVKit
 
 struct PlayerView: View {
-  
+
   @StateObject private var playerManager: PlayerManager
   @State private var hideNavigationBar = false
   @State var activeGestures: GestureMask = .subviews
-  
+
   init(manager: @autoclosure @escaping () -> PlayerManager) {
     _playerManager = StateObject(wrappedValue: manager())
   }
-  
+
   var body: some View {
-    GeometryReader { proxy in
+    GeometryReader { _ in
       ZStack {
         VideoPlayer(player: playerManager.player)
-        
+
       }
     }
     .navigationBarHidden(hideNavigationBar)

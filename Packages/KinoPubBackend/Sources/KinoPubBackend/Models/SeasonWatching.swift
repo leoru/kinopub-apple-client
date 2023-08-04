@@ -10,4 +10,3 @@ import Foundation
 public struct SeasonWatching: Codable, Hashable {
   public let status: Int
 }
-

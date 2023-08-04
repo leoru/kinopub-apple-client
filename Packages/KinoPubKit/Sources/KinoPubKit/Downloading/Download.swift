@@ -8,27 +8,27 @@
 import Foundation
 
 public class Download {
-  public typealias ProgressHandler = (Float) -> ()
+  public typealias ProgressHandler = (Float) -> Void
   public var progressHandler: ProgressHandler?
-  
+
   internal var task: URLSessionDownloadTask?
   private var resumeData: Data?
   private let url: URL
   private let manager: DownloadManaging
-  
+
   init(url: URL, manager: DownloadManaging) {
     self.url = url
     self.manager = manager
     self.task = manager.session.downloadTask(with: URLRequest(url: url))
   }
-  
+
   func pause() {
     task?.cancel(byProducingResumeData: { data in
       self.resumeData = data
     })
     task = nil
   }
-  
+
   func resume() {
     if let resumeData = self.resumeData {
       task = manager.session.downloadTask(withResumeData: resumeData)
@@ -38,4 +38,3 @@ public class Download {
     task?.resume()
   }
 }
-

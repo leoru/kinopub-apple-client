@@ -10,13 +10,13 @@ import SwiftUI
 import KinoPubBackend
 
 public struct ContentItemView: View {
-  
+
   private var mediaItem: MediaItem
-  
+
   init(mediaItem: MediaItem) {
     self.mediaItem = mediaItem
   }
-  
+
   public var body: some View {
     VStack(alignment: .center) {
       ZStack {
@@ -35,7 +35,7 @@ public struct ContentItemView: View {
       }
     }
   }
-  
+
   var image: some View {
     AsyncImage(url: URL(string: mediaItem.posters.medium)) { image in
       image.resizable()
@@ -51,7 +51,7 @@ public struct ContentItemView: View {
               size: CGSize(width: PosterStyle.Size.medium.width,
                            height: PosterStyle.Size.medium.height))
   }
-  
+
   var title: some View {
     Text(mediaItem.localizedTitle ?? "")
       .lineLimit(1)
@@ -59,7 +59,7 @@ public struct ContentItemView: View {
       .foregroundStyle(Color.KinoPub.text)
       .skeleton(enabled: mediaItem.skeleton ?? false)
   }
-  
+
   var subtitle: some View {
     Text(mediaItem.originalTitle ?? "")
       .lineLimit(1)
@@ -67,7 +67,7 @@ public struct ContentItemView: View {
       .foregroundStyle(Color.KinoPub.subtitle)
       .skeleton(enabled: mediaItem.skeleton ?? false)
   }
-  
+
 }
 
 #Preview {

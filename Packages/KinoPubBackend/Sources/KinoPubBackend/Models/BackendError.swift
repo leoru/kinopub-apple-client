@@ -17,7 +17,7 @@ public struct BackendError: Error, Codable {
   public var status: Int
   public var errorCode: BackendErrorCode
   public var errorDescription: String?
-  
+
   private enum CodingKeys: String, CodingKey {
     case status
     case errorCode = "error"

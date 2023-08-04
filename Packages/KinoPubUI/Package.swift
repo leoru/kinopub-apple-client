@@ -9,7 +9,7 @@ let package = Package(
   products: [
     .library(
       name: "KinoPubUI",
-      targets: ["KinoPubUI"]),
+      targets: ["KinoPubUI"])
   ],
   dependencies: [
     .package(name: "KinoPubBackend", path: "../KinoPubBackend"),
@@ -20,10 +20,10 @@ let package = Package(
       name: "KinoPubUI",
       dependencies: [
         .product(name: "KinoPubBackend", package: "KinoPubBackend"),
-        .product(name: "SkeletonUI", package: "SkeletonUI"),
+        .product(name: "SkeletonUI", package: "SkeletonUI")
       ]),
     .testTarget(
       name: "KinoPubUITests",
-      dependencies: ["KinoPubUI"]),
+      dependencies: ["KinoPubUI"])
   ]
 )

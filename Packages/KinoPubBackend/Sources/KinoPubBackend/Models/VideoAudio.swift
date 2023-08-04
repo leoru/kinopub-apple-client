@@ -15,7 +15,7 @@ public struct VideoAudio: Codable, Hashable {
   public let lang: String
   public let type: TypeClass?
   public let author: TypeClass?
-  
+
   private enum CodingKeys: String, CodingKey {
     case id = "id"
     case index = "index"

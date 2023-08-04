@@ -11,22 +11,22 @@ import KinoPubUI
 import KinoPubBackend
 
 struct MediaItemHeaderView: View {
-  
+
   public var headerSize: HeaderSize
   public var mediaItem: MediaItem
   public var isSkeleton: Bool
-  
+
   public enum HeaderSize: Double, RawRepresentable {
     case standard = 1.0
     case reduced = 0.5
   }
-  
+
   public init(size: HeaderSize = .standard, mediaItem: MediaItem, isSkeleton: Bool) {
     self.headerSize = size
     self.mediaItem = mediaItem
     self.isSkeleton = isSkeleton
   }
-  
+
   var body: some View {
     ZStack {
       image
@@ -34,7 +34,7 @@ struct MediaItemHeaderView: View {
       VStack {
         Spacer()
         HStack {
-          
+
           NavigationLink(value: MainRoutes.player(mediaItem)) {
             Text("Смотреть")
           }
@@ -42,7 +42,7 @@ struct MediaItemHeaderView: View {
 //            
 //          }
           KinoPubButton(title: "Трейлер", color: .gray) {
-            
+
           }
         }
         .padding(.all, 16)
@@ -52,7 +52,7 @@ struct MediaItemHeaderView: View {
     .contentShape(Rectangle())
     .skeleton(enabled: isSkeleton, size: CGSize(width: 300, height: 300))
   }
-  
+
   var image: some View {
     AsyncImage(url: URL(string: mediaItem.posters.big)) { image in
       image.resizable()

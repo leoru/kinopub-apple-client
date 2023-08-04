@@ -15,11 +15,11 @@ public enum MediaType: String, Codable, CaseIterable, Identifiable {
   case documovie
   case docuserial
   case tvshow
-  
+
   public var id: Self {
     return self
   }
-  
+
   public var title: String {
     switch self {
     case .movie: return "Movie"

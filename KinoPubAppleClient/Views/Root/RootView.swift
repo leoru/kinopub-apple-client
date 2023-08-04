@@ -10,11 +10,11 @@ import KinoPubUI
 import KinoPubBackend
 
 struct RootView: View {
-  
+
   @Environment(\.appContext) var appContext
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var authState: AuthState
-  
+
   var placement: ToolbarPlacement {
 #if os(iOS)
     .tabBar
@@ -22,7 +22,7 @@ struct RootView: View {
     .windowToolbar
 #endif
   }
-  
+
   var body: some View {
     TabView {
       MainView(catalog: MediaCatalog(itemsService: appContext.contentService,

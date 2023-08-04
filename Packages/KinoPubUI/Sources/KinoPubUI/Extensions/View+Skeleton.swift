@@ -16,7 +16,7 @@ public extension View {
       .appearance(type: .solid(color: Color.KinoPub.skeleton))
       .shape(type: .rounded(.radius(6, style: .continuous)))
   }
-  
+
   func multilineSkeleton(enabled: Bool, size: CGSize? = nil) -> some View {
     self.skeleton(with: enabled)
 //      .animation(type: .none)

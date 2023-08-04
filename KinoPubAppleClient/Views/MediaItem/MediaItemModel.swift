@@ -12,18 +12,18 @@ import KinoPubLogging
 
 @MainActor
 class MediaItemModel: ObservableObject {
-  
+
   private var itemsService: VideoContentService
-  
+
   public var mediaItemId: Int
   @Published public var mediaItem: MediaItem = MediaItem.mock()
   @Published public var itemLoaded: Bool = false
-  
+
   init(mediaItemId: Int, itemsService: VideoContentService) {
     self.itemsService = itemsService
     self.mediaItemId = mediaItemId
   }
-  
+
   func fetchData() {
     Task {
       do {
@@ -34,5 +34,5 @@ class MediaItemModel: ObservableObject {
       }
     }
   }
-  
+
 }

@@ -9,23 +9,23 @@ import Foundation
 
 internal class RequestBuilder {
   let baseURL: URL
-  
+
   init(baseURL: URL) {
     self.baseURL = baseURL
   }
-  
+
   func build(with endpoint: Endpoint) -> URLRequest? {
     guard let url = URL(string: endpoint.path, relativeTo: baseURL) else { return nil }
-    
+
     var request = URLRequest(url: url)
     request.httpMethod = endpoint.method
-    
+
     if let headers = endpoint.headers {
       for (key, value) in headers {
         request.addValue(value, forHTTPHeaderField: key)
       }
     }
-    
+
     if let parameters = endpoint.parameters {
       switch endpoint.method {
       case "GET":
@@ -39,10 +39,10 @@ internal class RequestBuilder {
         request.httpBody = bodyData
       }
     }
-    
+
     return request
   }
-  
+
   private func convertParamsToURL(for url: URL, request: URLRequest, endpoint: Endpoint) -> URLRequest {
     var request = request
     var components = URLComponents(url: url, resolvingAgainstBaseURL: true)!

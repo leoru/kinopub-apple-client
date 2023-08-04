@@ -10,13 +10,13 @@ import SwiftUI
 import KinoPubBackend
 
 struct FilterView: View {
-  
+
   @StateObject private var model: FilterModel
-  
+
   init(model: @autoclosure @escaping () -> FilterModel) {
     _model = StateObject(wrappedValue: model())
   }
-  
+
   var body: some View {
     NavigationView {
       HStack {
@@ -32,7 +32,7 @@ struct FilterView: View {
     .navigationTitle("Filter")
     .navigationBarTitleDisplayMode(.inline)
   }
-  
+
   var typePicker: some View {
     Picker("Type", selection: $model.mediaType) {
       ForEach(MediaType.allCases) { type in
@@ -41,18 +41,18 @@ struct FilterView: View {
       }
     }
   }
-  
+
   var buttonsSection: some View {
     Section {
       Button("Clear") {
-        
+
       }
       Button("Apply") {
-        
+
       }
     }
   }
-  
+
   var yearSection: some View {
     Section {
       Toggle("Release Year", isOn: $model.yearFilterEnabled)
@@ -62,7 +62,7 @@ struct FilterView: View {
       }
     }
   }
-  
+
   var imdbRatingSection: some View {
     Section {
       Toggle("IMDB Rating", isOn: $model.imdbFilterEnabled)
@@ -72,7 +72,7 @@ struct FilterView: View {
       }
     }
   }
-  
+
   func numberPicker(title: String, from: Int, to: Int, currentValue: Binding<Int>) -> some View {
     Picker(title, selection: currentValue) {
       ForEach(from..<to+1) {

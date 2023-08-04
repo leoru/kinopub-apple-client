@@ -13,7 +13,7 @@ public struct VerificationResponse: Codable {
   public let verificationUri: String
   public let expiresIn: Int
   public let interval: Int
-  
+
   enum CodingKeys: String, CodingKey {
     case code
     case userCode = "user_code"

@@ -15,7 +15,7 @@ enum Category: String {
 
 struct BookmarksView: View {
   @State private var selected = Category.movies
-  
+
   var body: some View {
     NavigationView {
       VStack {
@@ -28,7 +28,7 @@ struct BookmarksView: View {
       .background(Color.KinoPub.background)
     }
   }
-  
+
   var topSelector: some View {
     Picker("Choose item", selection: $selected) {
       Text("Movies")

@@ -23,13 +23,13 @@ protocol AccessTokenServiceProvider {
 }
 
 struct AccessTokenServiceMock: AccessTokenService {
-  
-  func set<T>(token: T) where T : Token {
-    
+
+  func set<T>(token: T) where T: Token {
+
   }
-  
-  func token<T>() -> T? where T : Token {
+
+  func token<T>() -> T? where T: Token {
     nil
   }
-  
+
 }

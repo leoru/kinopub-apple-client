@@ -15,11 +15,11 @@ struct MainView: View {
   @StateObject private var catalog: MediaCatalog
   @State private var showShortCutPicker: Bool = false
   @State private var showFilterPicker: Bool = false
-  
+
   init(catalog: @autoclosure @escaping () -> MediaCatalog) {
     _catalog = StateObject(wrappedValue: catalog())
   }
-  
+
   var toolbarItemPlacement: ToolbarItemPlacement {
 #if os(iOS)
     .topBarTrailing
@@ -27,7 +27,7 @@ struct MainView: View {
     .navigation
 #endif
   }
-  
+
   var body: some View {
     NavigationStack(path: $navigationState.mainRoutes) {
       VStack {
@@ -47,7 +47,7 @@ struct MainView: View {
             Image(systemName: "arrow.up.arrow.down")
           }
         }
-        
+
         ToolbarItem(placement: toolbarItemPlacement) {
           Button {
             showFilterPicker = true
@@ -75,11 +75,11 @@ struct MainView: View {
         case .player(let item):
           PlayerView(manager: PlayerManager(mediaItem: item))
         }
-        
+
       }
     }
   }
-  
+
   var catalogView: some View {
     GeometryReader { geometryProxy in
       ContentItemsListView(width: geometryProxy.size.width, items: $catalog.items, onLoadMoreContent: { item in
@@ -91,7 +91,7 @@ struct MainView: View {
       })
     }
   }
-  
+
   var emptyView: some View {
     Text("No resuts")
       .foregroundStyle(Color.KinoPub.text)
@@ -101,7 +101,7 @@ struct MainView: View {
 
 struct MainView_Previews: PreviewProvider {
   @StateObject static var navState = NavigationState()
-  
+
   static var previews: some View {
     MainView(catalog: MediaCatalog(itemsService: VideoContentServiceMock(), authState: AuthState(authService: AuthorizationServiceMock(), accessTokenService: AccessTokenServiceMock())))
       .environmentObject(navState)

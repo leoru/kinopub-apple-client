@@ -9,13 +9,13 @@ let package = Package(
     products: [
         .library(
             name: "KinoPubLogging",
-            targets: ["KinoPubLogging"]),
+            targets: ["KinoPubLogging"])
     ],
     targets: [
         .target(
             name: "KinoPubLogging"),
         .testTarget(
             name: "KinoPubLoggingTests",
-            dependencies: ["KinoPubLogging"]),
+            dependencies: ["KinoPubLogging"])
     ]
 )

@@ -14,4 +14,3 @@ public struct DownloadedFileInfo: Codable {
 }
 
 extension DownloadedFileInfo: Equatable {}
-

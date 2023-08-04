@@ -13,4 +13,3 @@ public struct URLInfo: Codable, Hashable {
   public let hls4: String
   public let hls2: String
 }
-
