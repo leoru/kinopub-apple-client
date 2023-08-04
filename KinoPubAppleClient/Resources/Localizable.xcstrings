@@ -4,6 +4,9 @@
     "" : {
 
     },
+    "%lld" : {
+
+    },
     "200 Wide" : {
 
     },
@@ -120,6 +123,9 @@
         }
       }
     },
+    "Filter" : {
+
+    },
     "Fresh" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -141,6 +147,9 @@
           }
         }
       }
+    },
+    "IMDB Rating" : {
+
     },
     "Main" : {
       "localizations" : {
@@ -298,6 +307,9 @@
         }
       }
     },
+    "Release Year" : {
+
+    },
     "Serial" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -343,6 +355,9 @@
           }
         }
       }
+    },
+    "Type" : {
+
     },
     "X Large Type" : {
 

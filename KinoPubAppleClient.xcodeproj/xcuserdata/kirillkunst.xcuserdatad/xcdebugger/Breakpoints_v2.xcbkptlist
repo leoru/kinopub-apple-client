@@ -1437,7 +1437,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "94E43EA0-FAF2-4E79-9B10-51CD8DE7B798"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "KinoPubAppleClient/App/AuthState.swift"

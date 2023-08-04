@@ -44,6 +44,8 @@
 		CC7FCE872A72ACB700DFC0A9 /* AuthModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */; };
 		CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */; };
 		CC7FCE942A730DA400DFC0A9 /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = CC7FCE932A730DA400DFC0A9 /* PopupView */; };
+		CC844A9B2A7D0DF100E2495A /* FilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC844A9A2A7D0DF100E2495A /* FilterView.swift */; };
+		CC844A9D2A7D0E1700E2495A /* FilterModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC844A9C2A7D0E1700E2495A /* FilterModel.swift */; };
 		CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */; };
 		CC88E1E72A6586E600E9387F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E62A6586E600E9387F /* RootView.swift */; };
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
@@ -94,6 +96,8 @@
 		CC71E7252A6DD643004AFB3F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModel.swift; sourceTree = "<group>"; };
 		CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClientError+Description.swift"; sourceTree = "<group>"; };
+		CC844A9A2A7D0DF100E2495A /* FilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterView.swift; sourceTree = "<group>"; };
+		CC844A9C2A7D0E1700E2495A /* FilterModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterModel.swift; sourceTree = "<group>"; };
 		CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KinoPubAppleClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KinoPubAppleClientApp.swift; sourceTree = "<group>"; };
 		CC88E1E62A6586E600E9387F /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -199,6 +203,7 @@
 		CC71E6F32A6C05B4004AFB3F /* Main */ = {
 			isa = PBXGroup;
 			children = (
+				CC844A992A7D0DE400E2495A /* Filter */,
 				CCE9C6DD2A73EA11007923C0 /* Shortcut */,
 				CC71E6FB2A6C0678004AFB3F /* MainView.swift */,
 				CCF388312A71C13900242581 /* MediaCatalog.swift */,
@@ -258,6 +263,15 @@
 			path = Custom;
 			sourceTree = "<group>";
 		};
+		CC844A992A7D0DE400E2495A /* Filter */ = {
+			isa = PBXGroup;
+			children = (
+				CC844A9A2A7D0DF100E2495A /* FilterView.swift */,
+				CC844A9C2A7D0E1700E2495A /* FilterModel.swift */,
+			);
+			path = Filter;
+			sourceTree = "<group>";
+		};
 		CC88E1D82A6586E600E9387F = {
 			isa = PBXGroup;
 			children = (
@@ -279,11 +293,11 @@
 		CC88E1E32A6586E600E9387F /* KinoPubAppleClient */ = {
 			isa = PBXGroup;
 			children = (
-				CC0146192A783DEB00F858AF /* Navigation */,
 				CC88E1F42A6587CC00E9387F /* App */,
 				CCF388262A718BAA00242581 /* Context */,
 				CC7FCE8D2A72D3BD00DFC0A9 /* Custom */,
 				CCF388302A718FED00242581 /* Info.plist */,
+				CC0146192A783DEB00F858AF /* Navigation */,
 				CC88E1F32A6587BB00E9387F /* Resources */,
 				CCF388172A7187F900242581 /* Services */,
 				CC71E6F12A6C04AE004AFB3F /* Views */,
@@ -539,7 +553,9 @@
 				CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */,
 				CC01461F2A783F8400F858AF /* Routes.swift in Sources */,
 				CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */,
+				CC844A9B2A7D0DF100E2495A /* FilterView.swift in Sources */,
 				CCB487A12A77DBC200FA4483 /* MediaItemDescriptionCard.swift in Sources */,
+				CC844A9D2A7D0E1700E2495A /* FilterModel.swift in Sources */,
 				CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */,
 				CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */,
 				CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */,

@@ -14,6 +14,7 @@ struct MainView: View {
   @Environment(\.appContext) var appContext
   @StateObject private var catalog: MediaCatalog
   @State private var showShortCutPicker: Bool = false
+  @State private var showFilterPicker: Bool = false
   
   init(catalog: @autoclosure @escaping () -> MediaCatalog) {
     _catalog = StateObject(wrappedValue: catalog())
@@ -53,7 +54,7 @@ struct MainView: View {
         
         ToolbarItem(placement: toolbarItemPlacement) {
           Button {
-            
+            showFilterPicker = true
           } label: {
             Image(systemName: "line.3.horizontal.decrease.circle")
           }
@@ -66,6 +67,9 @@ struct MainView: View {
       .sheet(isPresented: $showShortCutPicker, content: {
         ShortcutSelectionView(shortcut: $catalog.shortcut,
                               mediaType: $catalog.contentType)
+      })
+      .sheet(isPresented: $showFilterPicker, content: {
+        FilterView(model: FilterModel())
       })
       .navigationDestination(for: MainRoutes.self) { route in
         switch route {
