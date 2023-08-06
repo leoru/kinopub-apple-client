@@ -12,6 +12,8 @@ import KinoPubBackend
 
 struct BookmarkView: View {
   @EnvironmentObject var navigationState: NavigationState
+  @EnvironmentObject var errorHandler: ErrorHandler
+  
   @StateObject private var model: BookmarkModel
   @Environment(\.appContext) var appContext
 
@@ -28,6 +30,7 @@ struct BookmarkView: View {
     .task {
       await model.fetchItems()
     }
+    .handleError(state: $errorHandler.state)
   }
 
   var listView: some View {

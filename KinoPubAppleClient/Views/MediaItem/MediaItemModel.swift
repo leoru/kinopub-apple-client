@@ -14,16 +14,21 @@ import KinoPubLogging
 class MediaItemModel: ObservableObject {
 
   private var itemsService: VideoContentService
+  private var errorHandler: ErrorHandler
   public var linkProvider: NavigationLinkProvider
   public var mediaItemId: Int
   
   @Published public var mediaItem: MediaItem = MediaItem.mock()
   @Published public var itemLoaded: Bool = false
 
-  init(mediaItemId: Int, itemsService: VideoContentService, linkProvider: NavigationLinkProvider) {
+  init(mediaItemId: Int,
+       itemsService: VideoContentService,
+       linkProvider: NavigationLinkProvider,
+       errorHandler: ErrorHandler) {
     self.itemsService = itemsService
     self.mediaItemId = mediaItemId
     self.linkProvider = linkProvider
+    self.errorHandler = errorHandler
   }
 
   func fetchData() {
@@ -32,7 +37,7 @@ class MediaItemModel: ObservableObject {
         mediaItem = try await itemsService.fetchDetails(for: "\(mediaItemId)").item
         itemLoaded = true
       } catch {
-        // TODO: error
+        errorHandler.setError(error)
       }
     }
   }

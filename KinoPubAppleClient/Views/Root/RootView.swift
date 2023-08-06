@@ -13,6 +13,7 @@ struct RootView: View {
   
   @Environment(\.appContext) var appContext
   @EnvironmentObject var navigationState: NavigationState
+  @EnvironmentObject var errorHandler: ErrorHandler
   @EnvironmentObject var authState: AuthState
   
   var placement: ToolbarPlacement {
@@ -32,9 +33,12 @@ struct RootView: View {
     }
     .accentColor(Color.KinoPub.accent)
     .sheet(isPresented: $authState.shouldShowAuthentication, content: {
-      AuthView(model: AuthModel(authService: appContext.authService, authState: authState))
+      AuthView(model: AuthModel(authService: appContext.authService,
+                                authState: authState,
+                                errorHandler: errorHandler))
     })
     .environmentObject(navigationState)
+    .environmentObject(errorHandler)
     .task {
       authState.check()
     }
@@ -42,7 +46,8 @@ struct RootView: View {
   
   var mainTab: some View {
     MainView(catalog: MediaCatalog(itemsService: appContext.contentService,
-                                   authState: authState))
+                                   authState: authState,
+                                   errorHandler: errorHandler))
     .tag(NavigationTabs.main)
     .tabItem {
       Label("Main", systemImage: "house")
@@ -52,7 +57,8 @@ struct RootView: View {
   
   var bookmarksTab: some View {
     BookmarksView(catalog: BookmarksCatalog(itemsService: appContext.contentService,
-                                            authState: authState))
+                                            authState: authState,
+                                            errorHandler: errorHandler))
     .tag(NavigationTabs.bookmarks)
     .tabItem {
       Label("Bookmarks", systemImage: "bookmark")

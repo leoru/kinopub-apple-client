@@ -11,6 +11,7 @@ import PopupView
 struct AuthView: View {
 
   @StateObject var model: AuthModel
+  @EnvironmentObject var errorHandler: ErrorHandler
   @Environment(\.dismiss) var dismiss
 
   init(model: @autoclosure @escaping () -> AuthModel) {
@@ -27,17 +28,6 @@ struct AuthView: View {
     .fixedSize(horizontal: false, vertical: true)
     .edgesIgnoringSafeArea(.all)
     .background(Color.KinoPub.background)
-    .popup(isPresented: $model.showError) {
-      ToastContentView(text: model.error ?? "")
-        .padding()
-    } customize: {
-      $0
-        .type(.floater())
-        .position(.bottom)
-        .animation(.spring())
-        .closeOnTapOutside(true)
-        .autohideIn(5.0)
-    }
     .interactiveDismissDisabled(true)
     .task {
       model.fetchDeviceCode()
@@ -47,6 +37,7 @@ struct AuthView: View {
         dismiss()
       }
     })
+    .handleError(state: $errorHandler.state)
   }
 
   var titleView: some View {

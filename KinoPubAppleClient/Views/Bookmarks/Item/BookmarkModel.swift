@@ -14,13 +14,15 @@ import KinoPubLogging
 class BookmarkModel: ObservableObject {
 
   private var contentService: VideoContentService
+  private var errorHandler: ErrorHandler
 
   public var bookmark: Bookmark
   @Published public var items: [MediaItem] = MediaItem.skeletonMock()
 
-  init(bookmark: Bookmark, itemsService: VideoContentService) {
+  init(bookmark: Bookmark, itemsService: VideoContentService, errorHandler: ErrorHandler) {
     self.contentService = itemsService
     self.bookmark = bookmark
+    self.errorHandler = errorHandler
   }
 
   func fetchItems() async {
@@ -28,10 +30,9 @@ class BookmarkModel: ObservableObject {
       items = try await contentService.fetchBookmarkItems(id: "\(bookmark.id)").items
     } catch {
       Logger.app.debug("fetch bookmark items error: \(error)")
+      errorHandler.setError(error)
     }
   }
-
-  
 
   @MainActor
   func refresh() {

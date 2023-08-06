@@ -10,7 +10,9 @@ import KinoPubBackend
 
 struct MainView: View {
   @EnvironmentObject var navigationState: NavigationState
+  @EnvironmentObject var errorHandler: ErrorHandler
   @Environment(\.appContext) var appContext
+  
   @StateObject private var catalog: MediaCatalog
   @State private var showShortCutPicker: Bool = false
   @State private var showFilterPicker: Bool = false
@@ -71,12 +73,13 @@ struct MainView: View {
         case .details(let item):
           MediaItemView(model: MediaItemModel(mediaItemId: item.id,
                                               itemsService: appContext.contentService,
-                                              linkProvider: MainRoutesLinkProvider()))
+                                              linkProvider: MainRoutesLinkProvider(),
+                                              errorHandler: errorHandler))
         case .player(let item):
           PlayerView(manager: PlayerManager(mediaItem: item))
         }
-
       }
+      .handleError(state: $errorHandler.state)
     }
   }
 
@@ -103,7 +106,7 @@ struct MainView_Previews: PreviewProvider {
   @StateObject static var navState = NavigationState()
 
   static var previews: some View {
-    MainView(catalog: MediaCatalog(itemsService: VideoContentServiceMock(), authState: AuthState(authService: AuthorizationServiceMock(), accessTokenService: AccessTokenServiceMock())))
+    MainView(catalog: MediaCatalog(itemsService: VideoContentServiceMock(), authState: AuthState(authService: AuthorizationServiceMock(), accessTokenService: AccessTokenServiceMock()), errorHandler: ErrorHandler()))
       .environmentObject(navState)
   }
 }

@@ -54,6 +54,8 @@
 		CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */; };
 		CCC70B8A2A7FC15F00274E5F /* BookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B892A7FC15F00274E5F /* BookmarkView.swift */; };
 		CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */; };
+		CCC70B922A7FCA0D00274E5F /* ErrorHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B912A7FCA0D00274E5F /* ErrorHandler.swift */; };
+		CCC70B942A7FCADC00274E5F /* View+ErrorState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B932A7FCADC00274E5F /* View+ErrorState.swift */; };
 		CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */; };
 		CCE9C6DC2A73DB87007923C0 /* BookmarksCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */; };
 		CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */; };
@@ -111,6 +113,8 @@
 		CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemFieldsCard.swift; sourceTree = "<group>"; };
 		CCC70B892A7FC15F00274E5F /* BookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkView.swift; sourceTree = "<group>"; };
 		CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkModel.swift; sourceTree = "<group>"; };
+		CCC70B912A7FCA0D00274E5F /* ErrorHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorHandler.swift; sourceTree = "<group>"; };
+		CCC70B932A7FCADC00274E5F /* View+ErrorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+ErrorState.swift"; sourceTree = "<group>"; };
 		CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemView.swift; sourceTree = "<group>"; };
 		CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksCatalog.swift; sourceTree = "<group>"; };
 		CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutView.swift; sourceTree = "<group>"; };
@@ -166,17 +170,6 @@
 				CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */,
 			);
 			path = Subviews;
-			sourceTree = "<group>";
-		};
-		CC0146192A783DEB00F858AF /* Navigation */ = {
-			isa = PBXGroup;
-			children = (
-				CC01461A2A783DF900F858AF /* NavigationState.swift */,
-				CC01461C2A783EEF00F858AF /* NavigationTabs.swift */,
-				CC01461E2A783F8400F858AF /* Routes.swift */,
-				CC0146342A78439600F858AF /* NavigationLinkProvider.swift */,
-			);
-			path = Navigation;
 			sourceTree = "<group>";
 		};
 		CC71E6F12A6C04AE004AFB3F /* Views */ = {
@@ -298,9 +291,9 @@
 				CCF388262A718BAA00242581 /* Context */,
 				CC7FCE8D2A72D3BD00DFC0A9 /* Custom */,
 				CCF388302A718FED00242581 /* Info.plist */,
-				CC0146192A783DEB00F858AF /* Navigation */,
 				CC88E1F32A6587BB00E9387F /* Resources */,
 				CCF388172A7187F900242581 /* Services */,
+				CCC70B8D2A7FC9DB00274E5F /* States */,
 				CC71E6F12A6C04AE004AFB3F /* Views */,
 			);
 			path = KinoPubAppleClient;
@@ -321,7 +314,6 @@
 		CC88E1F42A6587CC00E9387F /* App */ = {
 			isa = PBXGroup;
 			children = (
-				CC09047E2A7BE95D00A71F53 /* AuthState.swift */,
 				CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */,
 				CC71E7252A6DD643004AFB3F /* AppDelegate.swift */,
 			);
@@ -355,6 +347,44 @@
 				CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */,
 			);
 			path = Item;
+			sourceTree = "<group>";
+		};
+		CCC70B8D2A7FC9DB00274E5F /* States */ = {
+			isa = PBXGroup;
+			children = (
+				CCC70B8F2A7FC9E600274E5F /* Auth */,
+				CCC70B8E2A7FC9E100274E5F /* Error */,
+				CCC70B902A7FC9EB00274E5F /* Navigation */,
+			);
+			path = States;
+			sourceTree = "<group>";
+		};
+		CCC70B8E2A7FC9E100274E5F /* Error */ = {
+			isa = PBXGroup;
+			children = (
+				CCC70B912A7FCA0D00274E5F /* ErrorHandler.swift */,
+				CCC70B932A7FCADC00274E5F /* View+ErrorState.swift */,
+			);
+			path = Error;
+			sourceTree = "<group>";
+		};
+		CCC70B8F2A7FC9E600274E5F /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				CC09047E2A7BE95D00A71F53 /* AuthState.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		CCC70B902A7FC9EB00274E5F /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				CC01461A2A783DF900F858AF /* NavigationState.swift */,
+				CC01461C2A783EEF00F858AF /* NavigationTabs.swift */,
+				CC01461E2A783F8400F858AF /* Routes.swift */,
+				CC0146342A78439600F858AF /* NavigationLinkProvider.swift */,
+			);
+			path = Navigation;
 			sourceTree = "<group>";
 		};
 		CCE9C6DD2A73EA11007923C0 /* Shortcut */ = {
@@ -573,11 +603,13 @@
 				CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */,
 				CC844A9B2A7D0DF100E2495A /* FilterView.swift in Sources */,
 				CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */,
+				CCC70B922A7FCA0D00274E5F /* ErrorHandler.swift in Sources */,
 				CCB487A12A77DBC200FA4483 /* MediaItemDescriptionCard.swift in Sources */,
 				CC844A9D2A7D0E1700E2495A /* FilterModel.swift in Sources */,
 				CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */,
 				CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */,
 				CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */,
+				CCC70B942A7FCADC00274E5F /* View+ErrorState.swift in Sources */,
 				CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */,
 				CC0904832A7C353200A71F53 /* PlayerManager.swift in Sources */,
 				CCF388322A71C13900242581 /* MediaCatalog.swift in Sources */,

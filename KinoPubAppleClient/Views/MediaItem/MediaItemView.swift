@@ -13,6 +13,7 @@ import SkeletonUI
 
 struct MediaItemView: View {
 
+  @EnvironmentObject var errorHandler: ErrorHandler
   @StateObject private var itemModel: MediaItemModel
 
   init(model: @autoclosure @escaping () -> MediaItemModel) {
@@ -63,6 +64,7 @@ struct MediaItemView: View {
     .task {
       itemModel.fetchData()
     }
+    .handleError(state: $errorHandler.state)
   }
 
   var headerView: some View {
@@ -77,7 +79,9 @@ struct MediaItemView_Previews: PreviewProvider {
   struct Preview: View {
     var body: some View {
       MediaItemView(model: MediaItemModel(mediaItemId: MediaItem.mock().id,
-                                          itemsService: VideoContentServiceMock(), linkProvider: MainRoutesLinkProvider()))
+                                          itemsService: VideoContentServiceMock(),
+                                          linkProvider: MainRoutesLinkProvider(),
+                                          errorHandler: ErrorHandler()))
     }
   }
   static var previews: some View {

@@ -16,23 +16,22 @@ class AuthModel: ObservableObject {
 
   private var authService: AuthorizationService
   private var authState: AuthState
+  private var errorHandler: ErrorHandler
 
   @Published var deviceCode: String = ""
-  @Published var error: String?
-  @Published var showError: Bool = false
   @Published var close: Bool = false
 
   private var tempVerificationResponse: VerificationResponse?
 
-  init(authService: AuthorizationService, authState: AuthState) {
+  init(authService: AuthorizationService, authState: AuthState, errorHandler: ErrorHandler) {
     self.authService = authService
     self.authState = authState
+    self.errorHandler = errorHandler
   }
 
   func fetchDeviceCode() {
     Logger.app.debug("Fetch device code...")
-    error = nil
-    showError = false
+    errorHandler.reset()
     Task {
       do {
         let response = try await authService.fetchDeviceCode()
@@ -92,8 +91,7 @@ class AuthModel: ObservableObject {
       return
     }
 
-    self.error = error.description
-    self.showError = true
+    errorHandler.setError(error)
   }
 
 }

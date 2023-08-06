@@ -12,6 +12,7 @@ import SkeletonUI
 struct BookmarksView: View {
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var authState: AuthState
+  @EnvironmentObject var errorHandler: ErrorHandler
   @Environment(\.appContext) var appContext
   @StateObject private var catalog: BookmarksCatalog
   
@@ -34,13 +35,18 @@ struct BookmarksView: View {
         switch route {
         case .details(let item):
           MediaItemView(model: MediaItemModel(mediaItemId: item.id,
-                                              itemsService: appContext.contentService, linkProvider: BookmarksRoutesLinkProvider()))
+                                              itemsService: appContext.contentService,
+                                              linkProvider: BookmarksRoutesLinkProvider(),
+                                              errorHandler: errorHandler))
         case .bookmark(let bookmark):
-          BookmarkView(model: BookmarkModel(bookmark: bookmark, itemsService: appContext.contentService))
+          BookmarkView(model: BookmarkModel(bookmark: bookmark,
+                                            itemsService: appContext.contentService,
+                                            errorHandler: errorHandler))
         case .player(let item):
           PlayerView(manager: PlayerManager(mediaItem: item))
         }
       }
+      .handleError(state: $errorHandler.state)
     }
     
   }
@@ -58,6 +64,7 @@ struct BookmarksView: View {
 struct BookmarksView_Previews: PreviewProvider {
   static var previews: some View {
     BookmarksView(catalog: BookmarksCatalog(itemsService: VideoContentServiceMock(),
-                                            authState: AuthState(authService: AuthorizationServiceMock(), accessTokenService: AccessTokenServiceMock())))
+                                            authState: AuthState(authService: AuthorizationServiceMock(), accessTokenService: AccessTokenServiceMock()),
+                                            errorHandler: ErrorHandler()))
   }
 }

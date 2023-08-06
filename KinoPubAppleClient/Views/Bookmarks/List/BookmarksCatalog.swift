@@ -16,13 +16,15 @@ class BookmarksCatalog: ObservableObject {
 
   private var authState: AuthState
   private var contentService: VideoContentService
+  private var errorHandler: ErrorHandler
   private var bag = Set<AnyCancellable>()
 
   @Published public var items: [Bookmark] = Bookmark.skeletonMock()
 
-  init(itemsService: VideoContentService, authState: AuthState) {
+  init(itemsService: VideoContentService, authState: AuthState, errorHandler: ErrorHandler) {
     self.contentService = itemsService
     self.authState = authState
+    self.errorHandler = errorHandler
   }
 
   func fetchItems() async {
@@ -35,6 +37,7 @@ class BookmarksCatalog: ObservableObject {
       items = try await contentService.fetchBookmarks().items
     } catch {
       Logger.app.debug("fetch bookmarks error: \(error)")
+      errorHandler.setError(error)
     }
   }
 

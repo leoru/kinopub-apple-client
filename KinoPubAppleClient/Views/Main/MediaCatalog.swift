@@ -15,6 +15,7 @@ import Combine
 class MediaCatalog: ObservableObject {
 
   private var authState: AuthState
+  private var errorHandler: ErrorHandler
   private var itemsService: VideoContentService
   private var bag = Set<AnyCancellable>()
 
@@ -28,9 +29,10 @@ class MediaCatalog: ObservableObject {
     contentType.title
   }
 
-  init(itemsService: VideoContentService, authState: AuthState) {
+  init(itemsService: VideoContentService, authState: AuthState, errorHandler: ErrorHandler) {
     self.itemsService = itemsService
     self.authState = authState
+    self.errorHandler = errorHandler
     subscribe()
   }
 
@@ -49,13 +51,13 @@ class MediaCatalog: ObservableObject {
         let data = try await itemsService.fetch(shortcut: shortcut, contentType: contentType, page: page)
         handleData(data)
       }
-
     } catch {
       Logger.app.debug("fetch items error: \(error)")
+      errorHandler.setError(error)
     }
   }
 
-  private func handleData(_ data: PaginatedData<MediaItem>) {
+  private func handleData(_ data: PaginatedData<MediaItem>) {    
     if items.first(where: { $0.skeleton ?? false }) != nil {
       items = data.items
     } else {
@@ -82,6 +84,7 @@ class MediaCatalog: ObservableObject {
   func refresh() {
     items = MediaItem.skeletonMock()
     pagination = nil
+    errorHandler.reset()
     Task {
       Logger.app.debug("refetch items")
       await fetchItems()
