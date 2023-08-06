@@ -68,6 +68,7 @@ struct MediaItemView: View {
   var headerView: some View {
     MediaItemHeaderView(size: .standard,
                         mediaItem: itemModel.mediaItem,
+                        linkProvider: itemModel.linkProvider,
                         isSkeleton: !itemModel.itemLoaded)
   }
 }
@@ -76,7 +77,7 @@ struct MediaItemView_Previews: PreviewProvider {
   struct Preview: View {
     var body: some View {
       MediaItemView(model: MediaItemModel(mediaItemId: MediaItem.mock().id,
-                                          itemsService: VideoContentServiceMock()))
+                                          itemsService: VideoContentServiceMock(), linkProvider: MainRoutesLinkProvider()))
     }
   }
   static var previews: some View {

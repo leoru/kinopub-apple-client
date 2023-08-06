@@ -14,5 +14,7 @@ enum MainRoutes: Hashable {
 }
 
 enum BookmarksRoutes: Hashable {
+  case bookmark(Bookmark)
   case details(MediaItem)
+  case player(MediaItem)
 }

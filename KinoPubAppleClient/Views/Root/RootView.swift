@@ -10,11 +10,11 @@ import KinoPubUI
 import KinoPubBackend
 
 struct RootView: View {
-
+  
   @Environment(\.appContext) var appContext
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var authState: AuthState
-
+  
   var placement: ToolbarPlacement {
 #if os(iOS)
     .tabBar
@@ -22,43 +22,60 @@ struct RootView: View {
     .windowToolbar
 #endif
   }
-
+  
   var body: some View {
     TabView {
-      MainView(catalog: MediaCatalog(itemsService: appContext.contentService,
-                                     authState: authState))
-        .tag(NavigationTabs.main)
-        .tabItem {
-          Label("Main", systemImage: "house")
-        }
-        .toolbarBackground(Color.KinoPub.background, for: placement)
-      BookmarksView()
-        .tag(NavigationTabs.bookmarks)
-        .tabItem {
-          Label("Bookmarks", systemImage: "bookmark")
-        }
-        .toolbarBackground(Color.KinoPub.background, for: placement)
-      DownloadsView()
-        .tag(NavigationTabs.downloads)
-        .tabItem {
-          Label("Downloads", systemImage: "arrow.down.circle")
-        }
-        .toolbarBackground(Color.KinoPub.background, for: placement)
-      SettingsView()
-        .tag(NavigationTabs.settings)
-        .tabItem {
-          Label("Settings", systemImage: "gearshape")
-        }
-        .toolbarBackground(Color.KinoPub.background, for: placement)
+      mainTab
+      bookmarksTab
+      downloadsTab
+      settingsTab
     }
     .accentColor(Color.KinoPub.accent)
-    .task {
-      authState.check()
-    }
     .sheet(isPresented: $authState.shouldShowAuthentication, content: {
       AuthView(model: AuthModel(authService: appContext.authService, authState: authState))
     })
     .environmentObject(navigationState)
+    .task {
+      authState.check()
+    }
+  }
+  
+  var mainTab: some View {
+    MainView(catalog: MediaCatalog(itemsService: appContext.contentService,
+                                   authState: authState))
+    .tag(NavigationTabs.main)
+    .tabItem {
+      Label("Main", systemImage: "house")
+    }
+    .toolbarBackground(Color.KinoPub.background, for: placement)
+  }
+  
+  var bookmarksTab: some View {
+    BookmarksView(catalog: BookmarksCatalog(itemsService: appContext.contentService,
+                                            authState: authState))
+    .tag(NavigationTabs.bookmarks)
+    .tabItem {
+      Label("Bookmarks", systemImage: "bookmark")
+    }
+    .toolbarBackground(Color.KinoPub.background, for: placement)
+  }
+  
+  var downloadsTab: some View {
+    DownloadsView()
+      .tag(NavigationTabs.downloads)
+      .tabItem {
+        Label("Downloads", systemImage: "arrow.down.circle")
+      }
+      .toolbarBackground(Color.KinoPub.background, for: placement)
+  }
+  
+  var settingsTab: some View {
+    SettingsView()
+      .tag(NavigationTabs.settings)
+      .tabItem {
+        Label("Settings", systemImage: "gearshape")
+      }
+      .toolbarBackground(Color.KinoPub.background, for: placement)
   }
 }
 

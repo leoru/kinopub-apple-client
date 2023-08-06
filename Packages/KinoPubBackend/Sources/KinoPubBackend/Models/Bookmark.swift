@@ -14,6 +14,19 @@ public struct Bookmark: Codable {
   public let count: String
   public let created: Int
   public let updated: Int
+  public var skeleton: Bool?
+}
+
+public extension Bookmark {
+  static func skeletonMock() -> [Bookmark] {
+    (0..<4).map { id in
+      mock(id: id, skeleton: true)
+    }
+  }
+
+  static func mock(id: Int = 1, skeleton: Bool = false) -> Bookmark {
+    Bookmark(id: id, title: "", views: 0, count: "", created: 0, updated: 0, skeleton: skeleton)
+  }
 }
 
 extension Bookmark: Identifiable { }

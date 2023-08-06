@@ -14,6 +14,7 @@ struct MediaItemHeaderView: View {
 
   public var headerSize: HeaderSize
   public var mediaItem: MediaItem
+  public var linkProvider: NavigationLinkProvider
   public var isSkeleton: Bool
 
   public enum HeaderSize: Double, RawRepresentable {
@@ -21,10 +22,14 @@ struct MediaItemHeaderView: View {
     case reduced = 0.5
   }
 
-  public init(size: HeaderSize = .standard, mediaItem: MediaItem, isSkeleton: Bool) {
+  public init(size: HeaderSize = .standard,
+              mediaItem: MediaItem,
+              linkProvider: NavigationLinkProvider,
+              isSkeleton: Bool) {
     self.headerSize = size
     self.mediaItem = mediaItem
     self.isSkeleton = isSkeleton
+    self.linkProvider = linkProvider
   }
 
   var body: some View {
@@ -35,11 +40,11 @@ struct MediaItemHeaderView: View {
         Spacer()
         HStack {
 
-          NavigationLink(value: MainRoutes.player(mediaItem)) {
+          NavigationLink(value: linkProvider.player(for: mediaItem)) {
             Text("Смотреть")
               .modifier(KinoPubButtonTextStyle())
           }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
-          NavigationLink(value: MainRoutes.player(mediaItem)) {
+          NavigationLink(value: linkProvider.link(for: mediaItem)) {
             Text("Трейлер")
               .modifier(KinoPubButtonTextStyle())
           }.buttonStyle(KinoPubButtonStyle(buttonColor: .gray))
@@ -65,6 +70,9 @@ struct MediaItemHeaderView: View {
 
 struct MediaItemHeaderView_Previews: PreviewProvider {
   static var previews: some View {
-    MediaItemHeaderView(size: .standard, mediaItem: MediaItem.mock(), isSkeleton: true)
+    MediaItemHeaderView(size: .standard,
+                        mediaItem: MediaItem.mock(),
+                        linkProvider: MainRoutesLinkProvider(),
+                        isSkeleton: true)
   }
 }

@@ -52,6 +52,8 @@
 		CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */; };
 		CCB487A12A77DBC200FA4483 /* MediaItemDescriptionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB487A02A77DBC200FA4483 /* MediaItemDescriptionCard.swift */; };
 		CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */; };
+		CCC70B8A2A7FC15F00274E5F /* BookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B892A7FC15F00274E5F /* BookmarkView.swift */; };
+		CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */; };
 		CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */; };
 		CCE9C6DC2A73DB87007923C0 /* BookmarksCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */; };
 		CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */; };
@@ -107,6 +109,8 @@
 		CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidthThresholdReader.swift; sourceTree = "<group>"; };
 		CCB487A02A77DBC200FA4483 /* MediaItemDescriptionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDescriptionCard.swift; sourceTree = "<group>"; };
 		CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemFieldsCard.swift; sourceTree = "<group>"; };
+		CCC70B892A7FC15F00274E5F /* BookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkView.swift; sourceTree = "<group>"; };
+		CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkModel.swift; sourceTree = "<group>"; };
 		CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemView.swift; sourceTree = "<group>"; };
 		CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksCatalog.swift; sourceTree = "<group>"; };
 		CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutView.swift; sourceTree = "<group>"; };
@@ -212,8 +216,8 @@
 		CC71E6F42A6C05B9004AFB3F /* Bookmarks */ = {
 			isa = PBXGroup;
 			children = (
-				CC71E6F92A6C0655004AFB3F /* BookmarksView.swift */,
-				CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */,
+				CCC70B882A7FC15200274E5F /* Item */,
+				CCC70B862A7FBF5300274E5F /* List */,
 			);
 			path = Bookmarks;
 			sourceTree = "<group>";
@@ -333,6 +337,24 @@
 				CC88E1F72A65A42B00E9387F /* KinoPubUI */,
 			);
 			name = Packages;
+			sourceTree = "<group>";
+		};
+		CCC70B862A7FBF5300274E5F /* List */ = {
+			isa = PBXGroup;
+			children = (
+				CC71E6F92A6C0655004AFB3F /* BookmarksView.swift */,
+				CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */,
+			);
+			path = List;
+			sourceTree = "<group>";
+		};
+		CCC70B882A7FC15200274E5F /* Item */ = {
+			isa = PBXGroup;
+			children = (
+				CCC70B892A7FC15F00274E5F /* BookmarkView.swift */,
+				CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */,
+			);
+			path = Item;
 			sourceTree = "<group>";
 		};
 		CCE9C6DD2A73EA11007923C0 /* Shortcut */ = {
@@ -550,6 +572,7 @@
 				CC01461F2A783F8400F858AF /* Routes.swift in Sources */,
 				CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */,
 				CC844A9B2A7D0DF100E2495A /* FilterView.swift in Sources */,
+				CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */,
 				CCB487A12A77DBC200FA4483 /* MediaItemDescriptionCard.swift in Sources */,
 				CC844A9D2A7D0E1700E2495A /* FilterModel.swift in Sources */,
 				CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */,
@@ -561,6 +584,7 @@
 				CCF388382A71C87E00242581 /* KeychainStorage.swift in Sources */,
 				CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */,
 				CC0904812A7C34D200A71F53 /* PlayerView.swift in Sources */,
+				CCC70B8A2A7FC15F00274E5F /* BookmarkView.swift in Sources */,
 				CCF3883F2A71C98C00242581 /* AccessTokenService.swift in Sources */,
 				CCF3883C2A71C8D600242581 /* KeychainStorageImpl.swift in Sources */,
 				CC7FCE872A72ACB700DFC0A9 /* AuthModel.swift in Sources */,
@@ -718,6 +742,7 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
@@ -762,6 +787,7 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";

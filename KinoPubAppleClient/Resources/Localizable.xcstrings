@@ -68,6 +68,7 @@
       }
     },
     "Choose item" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

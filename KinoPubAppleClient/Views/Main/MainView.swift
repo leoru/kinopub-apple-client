@@ -10,7 +10,6 @@ import KinoPubBackend
 
 struct MainView: View {
   @EnvironmentObject var navigationState: NavigationState
-  @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
   @StateObject private var catalog: MediaCatalog
   @State private var showShortCutPicker: Bool = false
@@ -71,7 +70,8 @@ struct MainView: View {
         switch route {
         case .details(let item):
           MediaItemView(model: MediaItemModel(mediaItemId: item.id,
-                                              itemsService: appContext.contentService))
+                                              itemsService: appContext.contentService,
+                                              linkProvider: MainRoutesLinkProvider()))
         case .player(let item):
           PlayerView(manager: PlayerManager(mediaItem: item))
         }

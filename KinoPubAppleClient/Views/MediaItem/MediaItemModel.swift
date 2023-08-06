@@ -14,14 +14,16 @@ import KinoPubLogging
 class MediaItemModel: ObservableObject {
 
   private var itemsService: VideoContentService
-
+  public var linkProvider: NavigationLinkProvider
   public var mediaItemId: Int
+  
   @Published public var mediaItem: MediaItem = MediaItem.mock()
   @Published public var itemLoaded: Bool = false
 
-  init(mediaItemId: Int, itemsService: VideoContentService) {
+  init(mediaItemId: Int, itemsService: VideoContentService, linkProvider: NavigationLinkProvider) {
     self.itemsService = itemsService
     self.mediaItemId = mediaItemId
+    self.linkProvider = linkProvider
   }
 
   func fetchData() {
