@@ -23,7 +23,7 @@ public struct DownloadedItemView: View {
   public var body: some View {
     HStack(alignment: .center) {
       image
-        .padding(.leading, 16)
+        
       VStack(alignment: .leading) {
         title
         subtitle

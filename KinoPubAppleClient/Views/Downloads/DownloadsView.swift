@@ -23,10 +23,15 @@ struct DownloadsView: View {
   var body: some View {
     NavigationStack(path: $navigationState.downloadsRoutes) {
       VStack {
-        ScrollView {
+        List {
           activeDownloadsList
           downloadedFilesList
         }
+        .listStyle(.inset)
+        .listRowBackground(Color.KinoPub.background)
+        .scrollContentBackground(.hidden)
+        .background(Color.KinoPub.background)
+        .tint(Color.clear)
       }
       .navigationTitle("Downloads")
       .background(Color.KinoPub.background)
@@ -44,26 +49,22 @@ struct DownloadsView: View {
   }
   
   var activeDownloadsList: some View {
-    VStack(alignment: .leading) {
-      ForEach(catalog.activeDownloads, id: \.url) { download in
-        NavigationLink(value: DownloadsRoutes.player(download.metadata)) {
-          let binding = Binding<Float>(
-            get: { download.progress },
-            set: { _ in  })
-          DownloadedItemView(mediaItem: download.metadata, progress: binding)
-        }
+    ForEach(catalog.activeDownloads, id: \.url) { download in
+      NavigationLink(value: DownloadsRoutes.player(download.metadata)) {
+        let binding = Binding<Float>(
+          get: { download.progress },
+          set: { _ in  })
+        DownloadedItemView(mediaItem: download.metadata, progress: binding)
       }
-    }
+    }.listRowBackground(Color.KinoPub.background)
   }
   
   var downloadedFilesList: some View {
-    VStack(alignment: .leading) {
-      ForEach(catalog.downloadedItems, id: \.originalURL) { fileInfo in
-        NavigationLink(value: DownloadsRoutes.player(fileInfo.metadata)) {
-          DownloadedItemView(mediaItem: fileInfo.metadata, progress: nil)
-        }
+    ForEach(catalog.downloadedItems, id: \.originalURL) { fileInfo in
+      NavigationLink(value: DownloadsRoutes.player(fileInfo.metadata)) {
+        DownloadedItemView(mediaItem: fileInfo.metadata, progress: nil)
       }
-    }
+    }.listRowBackground(Color.KinoPub.background)
   }
 }
 
