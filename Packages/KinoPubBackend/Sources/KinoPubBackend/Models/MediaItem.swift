@@ -91,6 +91,16 @@ public struct MediaItem: Codable, Hashable {
   }
 }
 
+// MARK: - Downloadable url
+
+public extension MediaItem {
+
+  var downloadableURL: URL {
+    URL(string: videos?.last?.files.first?.url.http ?? "")!
+  }
+  
+}
+
 public extension MediaItem {
   static func skeletonMock() -> [MediaItem] {
     (0..<15).map { id in

@@ -36,6 +36,7 @@ struct BookmarksView: View {
         case .details(let item):
           MediaItemView(model: MediaItemModel(mediaItemId: item.id,
                                               itemsService: appContext.contentService,
+                                              downloadManager: appContext.downloadManager,
                                               linkProvider: BookmarksRoutesLinkProvider(),
                                               errorHandler: errorHandler))
         case .bookmark(let bookmark):

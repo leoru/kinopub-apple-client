@@ -18,3 +18,7 @@ enum BookmarksRoutes: Hashable {
   case details(MediaItem)
   case player(MediaItem)
 }
+
+enum DownloadsRoutes: Hashable {
+  case player(MediaItem)
+}

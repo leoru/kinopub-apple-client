@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import KinoPubBackend
+import KinoPubKit
 
 // MARK: - Env key
 
@@ -29,6 +30,9 @@ typealias AppContextProtocol = AuthorizationServiceProvider
 & ConfigurationProvider
 & KeychainStorageProvider
 & AccessTokenServiceProvider
+& DownloadManagerProvider
+& DownloadedFilesDatabaseProvider
+& FileSaverProvider
 
 // MARK: - AppContext
 
@@ -39,12 +43,21 @@ struct AppContext: AppContextProtocol {
   var contentService: VideoContentService
   var accessTokenService: AccessTokenService
   var keychainStorage: KeychainStorage
+  var fileSaver: FileSaving
+  var downloadManager: DownloadManager<MediaItem>
+  var downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>
 
   static let shared: AppContext = {
     let configuration = BundleConfiguration()
     let keychainStorage = KeychainStorageImpl()
     let accessTokenService = AccessTokenServiceImpl(storage: keychainStorage)
 
+    // Downloads
+    
+    let fileSaver = FileSaver()
+    let downloadedFilesDatabase = DownloadedFilesDatabase<MediaItem>(fileSaver: fileSaver)
+    let downloadManager = DownloadManager<MediaItem>(fileSaver: fileSaver, database: downloadedFilesDatabase)
+    // Api Client
     let apiClient = makeApiClient(with: configuration.baseURL, accessTokenService: accessTokenService)
 
     return AppContext(configuration: configuration,
@@ -53,7 +66,10 @@ struct AppContext: AppContextProtocol {
                                                             accessTokenService: accessTokenService),
                       contentService: VideoContentServiceImpl(apiClient: apiClient),
                       accessTokenService: accessTokenService,
-                      keychainStorage: keychainStorage)
+                      keychainStorage: keychainStorage,
+                      fileSaver: fileSaver,
+                      downloadManager: downloadManager,
+                      downloadedFilesDatabase: downloadedFilesDatabase)
   }()
 
   // MARK: - API Client building

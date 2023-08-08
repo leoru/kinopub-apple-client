@@ -9,7 +9,6 @@ import Foundation
 import KinoPubBackend
 import KinoPubLogging
 import OSLog
-
 enum UserState {
   case unauthorized
   case authorized
@@ -21,7 +20,7 @@ final class AuthState: ObservableObject {
   @Published var shouldShowAuthentication: Bool = false
 
   private var authService: AuthorizationService
-  private var accessTokenService: AccessTokenService
+private var accessTokenService: AccessTokenService
 
   init(authService: AuthorizationService, accessTokenService: AccessTokenService) {
     self.authService = authService

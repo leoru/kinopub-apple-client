@@ -67,7 +67,7 @@ struct RootView: View {
   }
   
   var downloadsTab: some View {
-    DownloadsView()
+    DownloadsView(catalog: DownloadsCatalog(downloadsDatabase: appContext.downloadedFilesDatabase, downloadManager: appContext.downloadManager))
       .tag(NavigationTabs.downloads)
       .tabItem {
         Label("Downloads", systemImage: "arrow.down.circle")

@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import KinoPubUI
 import KinoPubBackend
+import KinoPubKit
 import SkeletonUI
 
 struct MediaItemView: View {
@@ -39,7 +40,9 @@ struct MediaItemView: View {
           headerView
 
           Grid(horizontalSpacing: 12, verticalSpacing: 12) {
-            MediaItemDescriptionCard(mediaItem: itemModel.mediaItem, isSkeleton: !itemModel.itemLoaded)
+            MediaItemDescriptionCard(mediaItem: itemModel.mediaItem, isSkeleton: !itemModel.itemLoaded) {
+              itemModel.startDownload()
+            }
             MediaItemFieldsCard(mediaItem: itemModel.mediaItem, isSkeleton: !itemModel.itemLoaded)
           }
           .containerShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -80,6 +83,8 @@ struct MediaItemView_Previews: PreviewProvider {
     var body: some View {
       MediaItemView(model: MediaItemModel(mediaItemId: MediaItem.mock().id,
                                           itemsService: VideoContentServiceMock(),
+                                          downloadManager: DownloadManager<MediaItem>(fileSaver: FileSaver(),
+                                                                                      database: DownloadedFilesDatabase<MediaItem>(fileSaver: FileSaver())),
                                           linkProvider: MainRoutesLinkProvider(),
                                           errorHandler: ErrorHandler()))
     }

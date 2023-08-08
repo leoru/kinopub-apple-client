@@ -11,16 +11,16 @@ import KinoPubUI
 import KinoPubBackend
 
 struct MediaItemHeaderView: View {
+  
+  public enum HeaderSize: Double, RawRepresentable {
+    case standard = 1.0
+    case reduced = 0.5
+  }
 
   public var headerSize: HeaderSize
   public var mediaItem: MediaItem
   public var linkProvider: NavigationLinkProvider
   public var isSkeleton: Bool
-
-  public enum HeaderSize: Double, RawRepresentable {
-    case standard = 1.0
-    case reduced = 0.5
-  }
 
   public init(size: HeaderSize = .standard,
               mediaItem: MediaItem,

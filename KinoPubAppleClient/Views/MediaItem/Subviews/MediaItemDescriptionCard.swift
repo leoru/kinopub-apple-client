@@ -14,6 +14,7 @@ struct MediaItemDescriptionCard: View {
 
   var mediaItem: MediaItem
   var isSkeleton: Bool
+  var onDownload: () -> Void
 
   var body: some View {
     VStack(alignment: .leading) {
@@ -62,6 +63,10 @@ struct MediaItemDescriptionCard: View {
 
   var actionIcons: some View {
     HStack {
+      Button(action: onDownload, label: {
+        Image(systemName: "arrow.down.circle").foregroundStyle(Color.KinoPub.text)
+          .skeleton(enabled: isSkeleton, size: CGSize(width: 30, height: 30))
+      })
       Button(action: {}, label: {
         Image(systemName: "eye").foregroundStyle(Color.KinoPub.text)
           .skeleton(enabled: isSkeleton, size: CGSize(width: 30, height: 30))
@@ -82,7 +87,7 @@ struct MediaItemDescriptionCard: View {
 struct MediaItemDescriptionCard_Previews: PreviewProvider {
   struct Preview: View {
     var body: some View {
-      MediaItemDescriptionCard(mediaItem: MediaItem.mock(), isSkeleton: true)
+      MediaItemDescriptionCard(mediaItem: MediaItem.mock(), isSkeleton: true, onDownload: {})
     }
   }
 

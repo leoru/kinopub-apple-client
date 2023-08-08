@@ -9,11 +9,13 @@ import Foundation
 import KinoPubBackend
 import OSLog
 import KinoPubLogging
+import KinoPubKit
 
 @MainActor
 class MediaItemModel: ObservableObject {
 
   private var itemsService: VideoContentService
+  private var downloadManager: DownloadManager<MediaItem>
   private var errorHandler: ErrorHandler
   public var linkProvider: NavigationLinkProvider
   public var mediaItemId: Int
@@ -23,12 +25,14 @@ class MediaItemModel: ObservableObject {
 
   init(mediaItemId: Int,
        itemsService: VideoContentService,
+       downloadManager: DownloadManager<MediaItem>,
        linkProvider: NavigationLinkProvider,
        errorHandler: ErrorHandler) {
     self.itemsService = itemsService
     self.mediaItemId = mediaItemId
     self.linkProvider = linkProvider
     self.errorHandler = errorHandler
+    self.downloadManager = downloadManager
   }
 
   func fetchData() {
@@ -40,6 +44,10 @@ class MediaItemModel: ObservableObject {
         errorHandler.setError(error)
       }
     }
+  }
+  
+  func startDownload() {
+    let download = downloadManager.startDownload(url: mediaItem.downloadableURL, withMetadata: mediaItem)
   }
 
 }

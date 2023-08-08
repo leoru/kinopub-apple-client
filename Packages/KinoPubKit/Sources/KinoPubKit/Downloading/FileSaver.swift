@@ -15,7 +15,7 @@ public protocol FileSaving {
 public class FileSaver: FileSaving {
   private let fileManager: FileManager
 
-  init(fileManager: FileManager = .default) {
+  public init(fileManager: FileManager = .default) {
     self.fileManager = fileManager
   }
 

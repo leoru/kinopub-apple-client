@@ -32,3 +32,13 @@ struct BookmarksRoutesLinkProvider: NavigationLinkProvider {
     return BookmarksRoutes.player(item)
   }
 }
+
+struct DownloadsRoutesLinkProvider: NavigationLinkProvider {
+  func link(for item: MediaItem) -> any Hashable {
+    return BookmarksRoutes.details(item)
+  }
+  
+  func player(for item: MediaItem) -> any Hashable {
+    return DownloadsRoutes.player(item)
+  }
+}

@@ -73,6 +73,7 @@ struct MainView: View {
         case .details(let item):
           MediaItemView(model: MediaItemModel(mediaItemId: item.id,
                                               itemsService: appContext.contentService,
+                                              downloadManager: appContext.downloadManager,
                                               linkProvider: MainRoutesLinkProvider(),
                                               errorHandler: errorHandler))
         case .player(let item):

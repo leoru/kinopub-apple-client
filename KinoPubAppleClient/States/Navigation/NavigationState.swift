@@ -12,4 +12,5 @@ class NavigationState: ObservableObject {
   @Published var selectedTab: NavigationTabs = .main
   @Published var mainRoutes: [MainRoutes] = []
   @Published var bookmarksRoutes: [BookmarksRoutes] = []
+  @Published var downloadsRoutes: [DownloadsRoutes] = []
 }
