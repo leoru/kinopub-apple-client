@@ -44,7 +44,8 @@ struct BookmarksView: View {
                                             itemsService: appContext.contentService,
                                             errorHandler: errorHandler))
         case .player(let item):
-          PlayerView(manager: PlayerManager(mediaItem: item))
+          PlayerView(manager: PlayerManager(mediaItem: item,
+                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase))
         }
       }
       .handleError(state: $errorHandler.state)

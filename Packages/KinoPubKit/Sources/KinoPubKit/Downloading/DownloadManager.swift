@@ -82,7 +82,7 @@ public class DownloadManager<Meta: Codable & Equatable>: NSObject, URLSessionDow
                          totalBytesExpectedToWrite: Int64) {
     if totalBytesExpectedToWrite > 0, let download = activeDownloads[downloadTask.originalRequest?.url ?? URL(fileURLWithPath: "")] {
       let progress = Float(totalBytesWritten) / Float(totalBytesExpectedToWrite)
-      Logger.kit.error("[DOWNLOAD] progress for download: \(download.url), value: \(progress)")
+      Logger.kit.debug("[DOWNLOAD] progress for download: \(download.url), value: \(progress)")
       DispatchQueue.main.async {
         download.updateProgress(progress)
       }

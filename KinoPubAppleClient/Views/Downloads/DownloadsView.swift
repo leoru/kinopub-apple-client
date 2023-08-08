@@ -36,7 +36,8 @@ struct DownloadsView: View {
       .navigationDestination(for: DownloadsRoutes.self) { route in
         switch route {
         case .player(let item):
-          PlayerView(manager: PlayerManager(mediaItem: item))
+          PlayerView(manager: PlayerManager(mediaItem: item,
+                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase))
         }
       }
       .onAppear(perform: {

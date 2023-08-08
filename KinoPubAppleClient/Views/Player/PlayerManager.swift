@@ -9,17 +9,29 @@ import Foundation
 import SwiftUI
 import Combine
 import KinoPubBackend
+import KinoPubKit
 import AVFoundation
 
 @MainActor
 class PlayerManager: ObservableObject {
-
-  lazy var player = AVPlayer(url: URL(string: mediaItem.videos?.first?.files.first?.url.hls4 ?? "")!)
-
+  
+  private var downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>
+  lazy var player = AVPlayer(url: fileURL)
+  
   var mediaItem: MediaItem
-
-  init(mediaItem: MediaItem) {
-    self.mediaItem = mediaItem
+  
+  var fileURL: URL {
+    let downloadedFiles = downloadedFilesDatabase.readData()
+    if let file = downloadedFiles?.filter({ $0.metadata.id == mediaItem.id }).first {
+      return file.originalURL
+    }
+    
+    return URL(string: mediaItem.videos?.first?.files.first?.url.hls4 ?? "")!
   }
-
+  
+  init(mediaItem: MediaItem, downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>) {
+    self.mediaItem = mediaItem
+    self.downloadedFilesDatabase = downloadedFilesDatabase
+  }
+  
 }
