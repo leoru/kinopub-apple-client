@@ -49,4 +49,12 @@ public class DownloadedFilesDatabase<Meta: Codable & Equatable>: DownloadedFiles
       try? data.write(to: dataFileURL)
     }
   }
+  
+  public func remove(fileInfo: DownloadedFileInfo<Meta>) {
+    var currentData = readData() ?? []
+    currentData.removeAll(where: { $0.originalURL == fileInfo.originalURL })
+    writeData(currentData)
+    try? fileSaver.removeFile(at: fileInfo.originalURL)
+    Logger.kit.debug("[DOWNLOAD] file data removed: \(fileInfo.originalURL)")
+  }
 }

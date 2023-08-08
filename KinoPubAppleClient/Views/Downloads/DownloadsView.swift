@@ -28,10 +28,8 @@ struct DownloadsView: View {
           downloadedFilesList
         }
         .listStyle(.inset)
-        .listRowBackground(Color.KinoPub.background)
         .scrollContentBackground(.hidden)
         .background(Color.KinoPub.background)
-        .tint(Color.clear)
       }
       .navigationTitle("Downloads")
       .background(Color.KinoPub.background)
@@ -56,7 +54,11 @@ struct DownloadsView: View {
           set: { _ in  })
         DownloadedItemView(mediaItem: download.metadata, progress: binding)
       }
-    }.listRowBackground(Color.KinoPub.background)
+    }
+    .onDelete(perform: { indexSet in
+      catalog.deleteActiveDownload(at: indexSet)
+    })
+    .listRowBackground(Color.KinoPub.background)
   }
   
   var downloadedFilesList: some View {
@@ -64,7 +66,11 @@ struct DownloadsView: View {
       NavigationLink(value: DownloadsRoutes.player(fileInfo.metadata)) {
         DownloadedItemView(mediaItem: fileInfo.metadata, progress: nil)
       }
-    }.listRowBackground(Color.KinoPub.background)
+    }
+    .onDelete(perform: { indexSet in
+      catalog.deleteDownloadedItem(at: indexSet)
+    })
+    .listRowBackground(Color.KinoPub.background)
   }
 }
 

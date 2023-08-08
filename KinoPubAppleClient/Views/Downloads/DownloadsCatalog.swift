@@ -29,4 +29,18 @@ class DownloadsCatalog: ObservableObject {
     self.downloadedItems = downloadsDatabase.readData() ?? []
     self.activeDownloads = downloadManager.activeDownloads.map({ $0.value })
   }
+  
+  func deleteDownloadedItem(at indexSet: IndexSet) {
+    for index in indexSet {
+      let item = downloadedItems[index]
+      downloadsDatabase.remove(fileInfo: item)
+    }
+  }
+  
+  func deleteActiveDownload(at indexSet: IndexSet) {
+    for index in indexSet {
+      let item = activeDownloads[index]
+      downloadManager.removeDownload(for: item.url)
+    }
+  }
 }

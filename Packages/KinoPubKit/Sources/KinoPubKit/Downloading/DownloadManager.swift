@@ -14,6 +14,7 @@ public protocol DownloadManaging {
   
   var session: URLSession { get }
   func startDownload(url: URL, withMetadata metadata: Meta) -> Download<Meta>
+  func removeDownload(for url: URL)
   func completeDownload(_ url: URL)
 }
 
@@ -35,9 +36,18 @@ public class DownloadManager<Meta: Codable & Equatable>: NSObject, URLSessionDow
 
   public func startDownload(url: URL, withMetadata metadata: Meta) -> Download<Meta> {
     let download = Download(url: url, metadata: metadata, manager: self)
-    download.task?.resume()
+    download.resume()
     activeDownloads[url] = download
     return download
+  }
+  
+  public func removeDownload(for url: URL) {
+    guard let download = activeDownloads[url] else {
+      return
+    }
+    
+    download.pause()
+    activeDownloads[url] = nil
   }
 
   public func completeDownload(_ url: URL) {

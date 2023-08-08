@@ -9,6 +9,7 @@ import Foundation
 
 public protocol FileSaving {
   func saveFile(from sourceURL: URL, to destinationURL: URL) throws
+  func removeFile(at sourceURL: URL) throws
   func getDocumentsDirectoryURL(forFilename filename: String) -> URL
 }
 
@@ -22,6 +23,10 @@ public class FileSaver: FileSaving {
   public func saveFile(from sourceURL: URL, to destinationURL: URL) throws {
     try? fileManager.removeItem(at: destinationURL)
     try fileManager.moveItem(at: sourceURL, to: destinationURL)
+  }
+  
+  public func removeFile(at sourceURL: URL) throws {
+    try fileManager.removeItem(at: sourceURL)
   }
 
   public func getDocumentsDirectoryURL(forFilename filename: String) -> URL {

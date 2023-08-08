@@ -48,7 +48,6 @@ public class Download<Meta: Codable & Equatable>: Identifiable {
     self.url = url
     self.metadata = metadata
     self.manager = manager
-    self.task = manager.session.downloadTask(with: URLRequest(url: url))
     self.state = .queued
     Logger.kit.debug("[DOWNLOAD] Download for url: \(url) is queued")
   }
