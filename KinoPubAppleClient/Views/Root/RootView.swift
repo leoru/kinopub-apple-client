@@ -29,7 +29,7 @@ struct RootView: View {
       mainTab
       bookmarksTab
       downloadsTab
-      settingsTab
+      profileTab
     }
     .accentColor(Color.KinoPub.accent)
     .sheet(isPresented: $authState.shouldShowAuthentication, content: {
@@ -75,11 +75,13 @@ struct RootView: View {
       .toolbarBackground(Color.KinoPub.background, for: placement)
   }
   
-  var settingsTab: some View {
-    SettingsView()
-      .tag(NavigationTabs.settings)
+  var profileTab: some View {
+    ProfileView(model: ProfileModel(userService: appContext.userService,
+                                    errorHandler: errorHandler,
+                                    authState: authState))
+      .tag(NavigationTabs.profile)
       .tabItem {
-        Label("Settings", systemImage: "gearshape")
+        Label("Profile", systemImage: "person.crop.circle")
       }
       .toolbarBackground(Color.KinoPub.background, for: placement)
   }

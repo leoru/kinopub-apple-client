@@ -16,6 +16,7 @@ protocol AuthorizationService {
   func fetchDeviceCode() async throws -> VerificationResponse
   func fetchToken(by verification: VerificationResponse) async throws
   func refreshToken() async throws
+  func logout()
 }
 
 protocol AuthorizationServiceProvider {
@@ -34,6 +35,10 @@ struct AuthorizationServiceMock: AuthorizationService {
 
   func refreshToken() async throws {
     throw MockError.mock
+  }
+  
+  func logout() {
+    
   }
 
 }

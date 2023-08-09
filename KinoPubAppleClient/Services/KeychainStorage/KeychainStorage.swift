@@ -21,7 +21,7 @@ struct Key<Value>: KeyRepresentable {
 protocol KeychainStorage {
   func object<Value>(for key: Key<Value>) -> Value? where Value: Codable
   func setObject<Value>(_ object: Value?, for key: Key<Value>) where Value: Codable
-  func removeObject<Value>(for key: Key<Value>) where Value: Codable
+  func clear()
 }
 
 protocol KeychainStorageProvider {

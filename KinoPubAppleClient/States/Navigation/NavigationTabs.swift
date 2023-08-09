@@ -11,5 +11,5 @@ enum NavigationTabs {
   case main
   case bookmarks
   case downloads
-  case settings
+  case profile
 }

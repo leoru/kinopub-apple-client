@@ -26,5 +26,9 @@ public final class AccessTokenServiceImpl: AccessTokenService {
   func token<T>() -> T? where T: Token {
     storage.object(for: .token)
   }
+  
+  func clear() {
+    storage.clear()
+  }
 
 }

@@ -9,7 +9,7 @@ import Foundation
 import KinoPubBackend
 
 final class AuthorizationServiceImpl: AuthorizationService {
-
+  
   private var apiClient: APIClient
   private var configuration: Configuration
   private var accessTokenService: AccessTokenService
@@ -41,6 +41,10 @@ final class AuthorizationServiceImpl: AuthorizationService {
                                       refreshToken: token.refreshToken)
     let newToken = try await apiClient.performRequest(with: request, decodingType: AccessToken.self)
     accessTokenService.set(token: newToken)
+  }
+  
+  func logout() {
+    accessTokenService.clear()
   }
 
 }

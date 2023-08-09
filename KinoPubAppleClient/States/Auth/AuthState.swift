@@ -18,15 +18,15 @@ enum UserState {
 final class AuthState: ObservableObject {
   @Published var userState: UserState = .unauthorized
   @Published var shouldShowAuthentication: Bool = false
-
+  
   private var authService: AuthorizationService
-private var accessTokenService: AccessTokenService
-
+  private var accessTokenService: AccessTokenService
+  
   init(authService: AuthorizationService, accessTokenService: AccessTokenService) {
     self.authService = authService
     self.accessTokenService = accessTokenService
   }
-
+  
   func check() {
     Logger.app.debug("start auth state checking...")
     guard let _: AccessToken = accessTokenService.token() else {
@@ -35,10 +35,10 @@ private var accessTokenService: AccessTokenService
       Logger.app.debug("auth state: unauthorized")
       return
     }
-
+    
     refreshToken()
   }
-
+  
   func refreshToken() {
     Logger.app.debug("refreshing token...")
     Task {
@@ -56,5 +56,11 @@ private var accessTokenService: AccessTokenService
       }
     }
   }
-
+  
+  func logout() {
+    authService.logout()
+    userState = .unauthorized
+    shouldShowAuthentication = true
+  }
+  
 }

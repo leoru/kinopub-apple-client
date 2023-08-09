@@ -16,6 +16,7 @@ protocol Token: Codable {
 protocol AccessTokenService {
   func set<T>(token: T) where T: Token
   func token<T>() -> T? where T: Token
+  func clear()
 }
 
 protocol AccessTokenServiceProvider {
@@ -32,4 +33,7 @@ struct AccessTokenServiceMock: AccessTokenService {
     nil
   }
 
+  func clear() {
+    
+  }
 }

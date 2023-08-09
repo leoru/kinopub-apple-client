@@ -32,10 +32,10 @@ final class KeychainStorageImpl: KeychainStorage {
       print(error)
     }
   }
-
-  public func removeObject<Value>(for key: Key<Value>) where Value: Decodable, Value: Encodable {
+  
+  func clear() {
     do {
-      try keychain.remove(key.rawValue)
+      try keychain.removeAll()
     } catch {
       print(error)
     }

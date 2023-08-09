@@ -16,9 +16,10 @@
 		CC0904832A7C353200A71F53 /* PlayerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0904822A7C353200A71F53 /* PlayerManager.swift */; };
 		CC21151D2A7A8FA7001996BD /* MediaItemModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */; };
 		CC2115212A7AA6F8001996BD /* String+Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2115202A7AA6F8001996BD /* String+Localization.swift */; };
+		CC439CF52A83CC1400E00B36 /* UserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC439CF42A83CC1400E00B36 /* UserService.swift */; };
 		CC71E6EE2A6BF92D004AFB3F /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */; platformFilter = ios; };
 		CC71E6F02A6C048C004AFB3F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6EF2A6C048C004AFB3F /* Localizable.xcstrings */; };
-		CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6F72A6C0626004AFB3F /* SettingsView.swift */; };
+		CC71E6F82A6C0626004AFB3F /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6F72A6C0626004AFB3F /* ProfileView.swift */; };
 		CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6F92A6C0655004AFB3F /* BookmarksView.swift */; };
 		CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6FB2A6C0678004AFB3F /* MainView.swift */; };
 		CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6FE2A6C069D004AFB3F /* DownloadsView.swift */; };
@@ -40,6 +41,7 @@
 		CC71E7222A6DD62E004AFB3F /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7212A6DD62E004AFB3F /* FirebaseStorage */; };
 		CC71E7242A6DD62E004AFB3F /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7232A6DD62E004AFB3F /* FirebaseStorageCombine-Community */; };
 		CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E7252A6DD643004AFB3F /* AppDelegate.swift */; };
+		CC748DEE2A83CCA200D87C0C /* UserServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC748DED2A83CCA200D87C0C /* UserServiceImpl.swift */; };
 		CC78FC482A82CDF600C5BDFD /* DownloadsCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC78FC472A82CDF600C5BDFD /* DownloadsCatalog.swift */; };
 		CC78FC4A2A82D5D100C5BDFD /* DownloadedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC78FC492A82D5D100C5BDFD /* DownloadedItemView.swift */; };
 		CC7FCE872A72ACB700DFC0A9 /* AuthModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */; };
@@ -58,6 +60,7 @@
 		CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */; };
 		CCC70B922A7FCA0D00274E5F /* ErrorHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B912A7FCA0D00274E5F /* ErrorHandler.swift */; };
 		CCC70B942A7FCADC00274E5F /* View+ErrorState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B932A7FCADC00274E5F /* View+ErrorState.swift */; };
+		CCE221B32A83CE9E007AF382 /* ProfileModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE221B22A83CE9E007AF382 /* ProfileModel.swift */; };
 		CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */; };
 		CCE9C6DC2A73DB87007923C0 /* BookmarksCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */; };
 		CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */; };
@@ -88,17 +91,19 @@
 		CC0904822A7C353200A71F53 /* PlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerManager.swift; sourceTree = "<group>"; };
 		CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemModel.swift; sourceTree = "<group>"; };
 		CC2115202A7AA6F8001996BD /* String+Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Localization.swift"; sourceTree = "<group>"; };
+		CC439CF42A83CC1400E00B36 /* UserService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserService.swift; sourceTree = "<group>"; };
 		CC676BC52A6ADBEE00B8AC66 /* KinoPubLogging */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubLogging; path = Packages/KinoPubLogging; sourceTree = "<group>"; };
 		CC71E6EC2A6B2FBE004AFB3F /* KinoPubKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubKit; path = Packages/KinoPubKit; sourceTree = "<group>"; };
 		CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		CC71E6EF2A6C048C004AFB3F /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		CC71E6F72A6C0626004AFB3F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		CC71E6F72A6C0626004AFB3F /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		CC71E6F92A6C0655004AFB3F /* BookmarksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksView.swift; sourceTree = "<group>"; };
 		CC71E6FB2A6C0678004AFB3F /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		CC71E6FE2A6C069D004AFB3F /* DownloadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsView.swift; sourceTree = "<group>"; };
 		CC71E7002A6DD043004AFB3F /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		CC71E70E2A6DD5B1004AFB3F /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		CC71E7252A6DD643004AFB3F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		CC748DED2A83CCA200D87C0C /* UserServiceImpl.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserServiceImpl.swift; sourceTree = "<group>"; };
 		CC78FC472A82CDF600C5BDFD /* DownloadsCatalog.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DownloadsCatalog.swift; sourceTree = "<group>"; };
 		CC78FC492A82D5D100C5BDFD /* DownloadedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadedItemView.swift; sourceTree = "<group>"; };
 		CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModel.swift; sourceTree = "<group>"; };
@@ -120,6 +125,7 @@
 		CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkModel.swift; sourceTree = "<group>"; };
 		CCC70B912A7FCA0D00274E5F /* ErrorHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorHandler.swift; sourceTree = "<group>"; };
 		CCC70B932A7FCADC00274E5F /* View+ErrorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+ErrorState.swift"; sourceTree = "<group>"; };
+		CCE221B22A83CE9E007AF382 /* ProfileModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProfileModel.swift; sourceTree = "<group>"; };
 		CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemView.swift; sourceTree = "<group>"; };
 		CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksCatalog.swift; sourceTree = "<group>"; };
 		CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutView.swift; sourceTree = "<group>"; };
@@ -196,7 +202,7 @@
 				CCF388152A71816B00242581 /* MediaItem */,
 				CCF388162A71817300242581 /* Player */,
 				CC71E6F22A6C04B5004AFB3F /* Root */,
-				CC71E6F62A6C0600004AFB3F /* Settings */,
+				CC71E6F62A6C0600004AFB3F /* Profile */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -238,12 +244,13 @@
 			path = Auth;
 			sourceTree = "<group>";
 		};
-		CC71E6F62A6C0600004AFB3F /* Settings */ = {
+		CC71E6F62A6C0600004AFB3F /* Profile */ = {
 			isa = PBXGroup;
 			children = (
-				CC71E6F72A6C0626004AFB3F /* SettingsView.swift */,
+				CCE221B22A83CE9E007AF382 /* ProfileModel.swift */,
+				CC71E6F72A6C0626004AFB3F /* ProfileView.swift */,
 			);
-			path = Settings;
+			path = Profile;
 			sourceTree = "<group>";
 		};
 		CC71E6FD2A6C0691004AFB3F /* Downloads */ = {
@@ -411,6 +418,15 @@
 			path = Shortcut;
 			sourceTree = "<group>";
 		};
+		CCF1FF302A83CBF2004DCED9 /* User */ = {
+			isa = PBXGroup;
+			children = (
+				CC439CF42A83CC1400E00B36 /* UserService.swift */,
+				CC748DED2A83CCA200D87C0C /* UserServiceImpl.swift */,
+			);
+			path = User;
+			sourceTree = "<group>";
+		};
 		CCF388152A71816B00242581 /* MediaItem */ = {
 			isa = PBXGroup;
 			children = (
@@ -433,11 +449,12 @@
 		CCF388172A7187F900242581 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				CC44462F2A828B2F0017F499 /* Download */,
 				CCF3883D2A71C97E00242581 /* AccessToken */,
 				CCF388182A71880100242581 /* Authorization */,
 				CCF388292A718E5700242581 /* Configuration */,
+				CC44462F2A828B2F0017F499 /* Download */,
 				CCF388362A71C86900242581 /* KeychainStorage */,
+				CCF1FF302A83CBF2004DCED9 /* User */,
 				CCF3881F2A718AD100242581 /* VideoContent */,
 			);
 			path = Services;
@@ -610,7 +627,7 @@
 				CCF388432A71CB3F00242581 /* AccessTokenPlugin.swift in Sources */,
 				CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */,
 				CC21151D2A7A8FA7001996BD /* MediaItemModel.swift in Sources */,
-				CC71E6F82A6C0626004AFB3F /* SettingsView.swift in Sources */,
+				CC71E6F82A6C0626004AFB3F /* ProfileView.swift in Sources */,
 				CC88E1E72A6586E600E9387F /* RootView.swift in Sources */,
 				CCF3882F2A718EAA00242581 /* BundleConfiguration.swift in Sources */,
 				CC78FC482A82CDF600C5BDFD /* DownloadsCatalog.swift in Sources */,
@@ -624,11 +641,14 @@
 				CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */,
 				CCC70B922A7FCA0D00274E5F /* ErrorHandler.swift in Sources */,
 				CCB487A12A77DBC200FA4483 /* MediaItemDescriptionCard.swift in Sources */,
+				CC748DEE2A83CCA200D87C0C /* UserServiceImpl.swift in Sources */,
 				CC78FC4A2A82D5D100C5BDFD /* DownloadedItemView.swift in Sources */,
 				CC844A9D2A7D0E1700E2495A /* FilterModel.swift in Sources */,
 				CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */,
 				CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */,
 				CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */,
+				CCE221B32A83CE9E007AF382 /* ProfileModel.swift in Sources */,
+				CC439CF52A83CC1400E00B36 /* UserService.swift in Sources */,
 				CCC70B942A7FCADC00274E5F /* View+ErrorState.swift in Sources */,
 				CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */,
 				CC0904832A7C353200A71F53 /* PlayerManager.swift in Sources */,

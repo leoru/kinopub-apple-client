@@ -33,25 +33,27 @@ typealias AppContextProtocol = AuthorizationServiceProvider
 & DownloadManagerProvider
 & DownloadedFilesDatabaseProvider
 & FileSaverProvider
+& UserServiceProvider
 
 // MARK: - AppContext
 
 struct AppContext: AppContextProtocol {
-
+  
   var configuration: Configuration
   var authService: AuthorizationService
   var contentService: VideoContentService
   var accessTokenService: AccessTokenService
+  var userService: UserService
   var keychainStorage: KeychainStorage
   var fileSaver: FileSaving
   var downloadManager: DownloadManager<MediaItem>
   var downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>
-
+  
   static let shared: AppContext = {
     let configuration = BundleConfiguration()
     let keychainStorage = KeychainStorageImpl()
     let accessTokenService = AccessTokenServiceImpl(storage: keychainStorage)
-
+    
     // Downloads
     
     let fileSaver = FileSaver()
@@ -59,21 +61,23 @@ struct AppContext: AppContextProtocol {
     let downloadManager = DownloadManager<MediaItem>(fileSaver: fileSaver, database: downloadedFilesDatabase)
     // Api Client
     let apiClient = makeApiClient(with: configuration.baseURL, accessTokenService: accessTokenService)
-
+    
+    let authService = AuthorizationServiceImpl(apiClient: apiClient,
+                                               configuration: configuration,
+                                               accessTokenService: accessTokenService)
     return AppContext(configuration: configuration,
-                      authService: AuthorizationServiceImpl(apiClient: apiClient,
-                                                            configuration: configuration,
-                                                            accessTokenService: accessTokenService),
+                      authService: authService,
                       contentService: VideoContentServiceImpl(apiClient: apiClient),
                       accessTokenService: accessTokenService,
+                      userService: UserServiceImpl(apiClient: apiClient),
                       keychainStorage: keychainStorage,
                       fileSaver: fileSaver,
                       downloadManager: downloadManager,
                       downloadedFilesDatabase: downloadedFilesDatabase)
   }()
-
+  
   // MARK: - API Client building
-
+  
   private static func makeApiClient(with baseURL: String, accessTokenService: AccessTokenService) -> APIClient {
     APIClient(baseUrl: baseURL,
               plugins: [
