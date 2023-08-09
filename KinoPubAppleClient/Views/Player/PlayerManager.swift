@@ -12,15 +12,16 @@ import KinoPubBackend
 import KinoPubKit
 import AVFoundation
 
-@MainActor
 class PlayerManager: ObservableObject {
   
-  private var downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>
+  @Published var isPlaying: Bool = false
   lazy var player = AVPlayer(url: fileURL)
-  
   var mediaItem: MediaItem
   
-  var fileURL: URL {
+  private var downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>
+  private var rateObservation: NSKeyValueObservation?
+  
+  private var fileURL: URL {
     let downloadedFiles = downloadedFilesDatabase.readData()
     if let file = downloadedFiles?.filter({ $0.metadata.id == mediaItem.id }).first {
       return file.originalURL
@@ -32,6 +33,9 @@ class PlayerManager: ObservableObject {
   init(mediaItem: MediaItem, downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>) {
     self.mediaItem = mediaItem
     self.downloadedFilesDatabase = downloadedFilesDatabase
+    rateObservation = player.observe(\.rate, options: [.new]) { [weak self] player, _ in
+      self?.isPlaying = player.rate > 0
+    }
   }
   
 }

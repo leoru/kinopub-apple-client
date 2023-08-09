@@ -10,31 +10,32 @@ import SwiftUI
 import AVKit
 
 struct PlayerView: View {
-
+  
   @StateObject private var playerManager: PlayerManager
   @State private var hideNavigationBar = false
-  @State var activeGestures: GestureMask = .subviews
-  @State private var navBarHidden = false
-
+  @Environment(\.dismiss) private var dismiss
+  
   init(manager: @autoclosure @escaping () -> PlayerManager) {
     _playerManager = StateObject(wrappedValue: manager())
+    let appearance = UINavigationBarAppearance()
+    appearance.configureWithTransparentBackground()
+    
+    UINavigationBar.appearance().standardAppearance = appearance
   }
-
+  
   var body: some View {
     GeometryReader { _ in
-      ZStack {
-        VideoPlayer(player: playerManager.player)
-          .ignoresSafeArea(.all)
-          .onAppear(perform: {
-            playerManager.player.play()
-          })
+      ZStack(alignment: .top) {
+        videoPlayer
+        backButton
       }
+      .ignoresSafeArea(.all)
     }
-    .navigationBarHidden(hideNavigationBar)
-    .navigationBarTitle("", displayMode: .inline)
-    .navigationBarHidden(navBarHidden)
     .ignoresSafeArea(.all)
-    .toolbar(.hidden, for: .tabBar)
+    .navigationBarHidden(true)
+    .onChange(of: playerManager.isPlaying) { isPlaying in
+      hideNavigationBar = isPlaying
+    }
     .onAppear(perform: {
       UIApplication.shared.isIdleTimerDisabled = true
       UIDevice.current.setValue(UIInterfaceOrientation.landscapeLeft.rawValue, forKey: "orientation")
@@ -46,5 +47,28 @@ struct PlayerView: View {
       UIDevice.current.setValue(UIDevice.current.orientation.rawValue, forKey: "orientation")
       UIViewController.attemptRotationToDeviceOrientation()
     })
+  }
+  
+  var videoPlayer: some View {
+    VideoPlayer(player: playerManager.player)
+      .onAppear(perform: {
+        playerManager.player.play()
+      })
+  }
+  
+  var backButton: some View {
+    HStack(alignment: .top) {
+      Button(action: { dismiss() }, label: {
+        Image(systemName: "chevron.backward")
+          .font(.system(size: 24))
+          .tint(Color.KinoPub.accent)
+      })
+      .frame(width: 70, height: 50)
+      .padding(.leading, 16)
+      .padding(.top, 16)
+      Spacer()
+    }
+    .fixedSize(horizontal: false, vertical: true)
+    .opacity(hideNavigationBar ? 0.0 : 1.0)
   }
 }
