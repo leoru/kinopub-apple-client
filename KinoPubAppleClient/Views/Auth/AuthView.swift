@@ -19,15 +19,15 @@ struct AuthView: View {
   }
 
   var body: some View {
-    return VStack(spacing: 50) {
-      titleView
-      deviceCodeView
-      activateButton
+    ZStack {
+      Color.KinoPub.background.edgesIgnoringSafeArea(.all)
+      VStack(spacing: 50) {
+        titleView
+        deviceCodeView
+        activateButton
+      }
+      .padding(EdgeInsets.init(top: 0, leading: 16, bottom: 0, trailing: 16))
     }
-    .padding(EdgeInsets.init(top: 0, leading: 16, bottom: 0, trailing: 16))
-    .fixedSize(horizontal: false, vertical: true)
-    .edgesIgnoringSafeArea(.all)
-    .background(Color.KinoPub.background)
     .interactiveDismissDisabled(true)
     .task {
       model.fetchDeviceCode()

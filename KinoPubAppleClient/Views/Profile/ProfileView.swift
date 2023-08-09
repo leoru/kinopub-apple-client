@@ -28,8 +28,11 @@ struct ProfileView: View {
         Form {
           Section {
             LabeledContent("User Name", value: model.userData.username)
+              .skeleton(enabled: model.userData.skeleton ?? false)
             LabeledContent("User Subscription", value: "\(model.userData.subscription.days) \("days".localized)")
+              .skeleton(enabled: model.userData.skeleton ?? false)
             LabeledContent("Registration Date", value: "\(model.userData.registrationDateFormatted)")
+              .skeleton(enabled: model.userData.skeleton ?? false)
           }
           
           Section {
@@ -38,10 +41,11 @@ struct ProfileView: View {
             }, label: {
               Text("Logout").foregroundStyle(Color.red)
             })
+            .skeleton(enabled: model.userData.skeleton ?? false)
           }
         }
         .scrollContentBackground(.hidden)
-        .skeleton(enabled: model.userData.skeleton ?? false)
+        
         .background(Color.KinoPub.background)
       }
       .navigationTitle("Profile")
