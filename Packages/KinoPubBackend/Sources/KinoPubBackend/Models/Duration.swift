@@ -9,5 +9,14 @@ import Foundation
 
 public struct Duration: Codable, Hashable {
   public let average: Double
-  public let total: Int
+  public let total: TimeInterval
+}
+
+public extension Duration {
+  var totalFormatted: String {
+    let formatter = DateComponentsFormatter()
+    formatter.allowedUnits = [.hour, .minute, .second, .nanosecond]
+    formatter.unitsStyle = .positional
+    return formatter.string(from: self.total) ?? ""
+  }
 }
