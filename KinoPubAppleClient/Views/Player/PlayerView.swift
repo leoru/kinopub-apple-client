@@ -28,6 +28,7 @@ struct PlayerView: View {
       .ignoresSafeArea(.all)
     }
     .ignoresSafeArea(.all)
+    #if os(iOS)
     .navigationBarHidden(true)
     .toolbar(.hidden, for: .tabBar)
     .onChange(of: playerManager.isPlaying) { isPlaying in
@@ -44,6 +45,7 @@ struct PlayerView: View {
       UIDevice.current.setValue(UIDevice.current.orientation.rawValue, forKey: "orientation")
       UIViewController.attemptRotationToDeviceOrientation()
     })
+    #endif
   }
   
   var videoPlayer: some View {

@@ -153,6 +153,9 @@
         }
       }
     },
+    "Detail!" : {
+
+    },
     "Documental" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -30,7 +30,9 @@ struct FilterView: View {
       }
     }
     .navigationTitle("Filter")
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
   }
 
   var typePicker: some View {

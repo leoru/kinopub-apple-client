@@ -33,7 +33,9 @@ struct ShortcutSelectionView: View {
           .tag(shortcut)
       }
     }
+#if os(iOS)
     .pickerStyle(.wheel)
+#endif
     .padding()
   }
   var mediaTypesPicker: some View {
@@ -43,7 +45,9 @@ struct ShortcutSelectionView: View {
           .tag(type)
       }
     }
+#if os(iOS)
     .pickerStyle(.wheel)
+#endif
     .padding()
   }
 }

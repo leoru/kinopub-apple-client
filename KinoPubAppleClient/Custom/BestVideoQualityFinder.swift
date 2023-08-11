@@ -6,14 +6,19 @@
 //
 
 import Foundation
+#if os(iOS)
 import UIKit
+#endif
 import SystemConfiguration
 import Reachability
 import KinoPubBackend
 
 struct BestVideoQualityFinder {
   
+  #if os(iOS)
   private static let deviceCapabilitySize = UIApplication.shared.statusBarOrientation.isLandscape ? UIScreen.main.bounds.width : UIScreen.main.bounds.height
+  #endif
+  
   
   private static func currentNetworkStatus() -> Reachability.Connection {
     guard let reachability = try? Reachability() else { return .unavailable }
@@ -29,9 +34,16 @@ struct BestVideoQualityFinder {
   
   
   static func findBestURL(for files: [FileInfo]) -> String {
+    
+    
     var bestURL: String = files.last?.url.hls4 ?? ""
     var closestResolutionDifference = Int.max
     
+#if os(macOS)
+    bestURL = files.first?.url.hls4 ?? ""
+#endif
+    
+    #if os(iOS)
     if !isConnectionGood() {
       return bestURL
     }
@@ -46,6 +58,7 @@ struct BestVideoQualityFinder {
         closestResolutionDifference = resolutionDifference
       }
     }
+    #endif
     
     return bestURL
   }

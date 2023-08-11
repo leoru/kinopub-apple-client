@@ -53,7 +53,9 @@ struct MediaItemView: View {
     }
     .background(Color.KinoPub.background)
     .background()
+    #if os(iOS)
     .toolbar(.hidden, for: .tabBar)
+    #endif
     .toolbar {
       ToolbarItem(placement: toolbarItemPlacement) {
         Button {
