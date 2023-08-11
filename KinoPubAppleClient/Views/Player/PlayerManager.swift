@@ -33,7 +33,7 @@ class PlayerManager: ObservableObject {
     case .media:
       let downloadedFiles = downloadedFilesDatabase.readData()
       if let file = downloadedFiles?.filter({ $0.metadata.id == mediaItem.id }).first {
-        return file.originalURL
+        return file.localFileURL
       }
       return URL(string: BestVideoQualityFinder.findBestURL(for: mediaItem.videos?.first?.files ?? []))!
     case .trailer:

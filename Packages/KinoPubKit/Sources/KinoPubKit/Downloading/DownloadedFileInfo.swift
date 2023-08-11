@@ -28,4 +28,11 @@ public struct DownloadedFileInfo<Meta: Codable & Equatable>: Codable {
   public let metadata: Meta
 }
 
+public extension DownloadedFileInfo {
+  var localFileURL: URL {
+    let basePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    return basePath.appending(path: localFilename)
+  }
+}
+
 extension DownloadedFileInfo: Equatable {}
