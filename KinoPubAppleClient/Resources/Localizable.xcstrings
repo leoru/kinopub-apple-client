@@ -513,6 +513,16 @@
     "X Large Type" : {
 
     },
+    "You don't have any downloads yet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "У вас пока нет загрузок"
+          }
+        }
+      }
+    },
     "Главная" : {
       "extractionState" : "stale",
       "localizations" : {

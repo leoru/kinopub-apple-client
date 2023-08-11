@@ -21,18 +21,14 @@ public struct ContentItemView: View {
     VStack(alignment: .center) {
       ZStack {
         image
-        VStack {
-          Spacer()
-          ContentItemRatingView(imdbScore: mediaItem.imdbRating,
-                                kinopoiskScore: mediaItem.kinopoiskRating)
-          .skeleton(enabled: mediaItem.skeleton ?? false)
-          .padding(.bottom, 8)
+        if !(mediaItem.skeleton ?? false) {
+          ratingsBlock
         }
       }
       VStack(alignment: .center) {
         title
         subtitle
-      }
+      }.padding(.horizontal, 8)
     }
   }
 
@@ -50,6 +46,16 @@ public struct ContentItemView: View {
     .skeleton(enabled: mediaItem.skeleton ?? false,
               size: CGSize(width: PosterStyle.Size.medium.width,
                            height: PosterStyle.Size.medium.height))
+  }
+  
+  var ratingsBlock: some View {
+    VStack {
+      Spacer()
+      ContentItemRatingView(imdbScore: mediaItem.imdbRating,
+                            kinopoiskScore: mediaItem.kinopoiskRating)
+      .skeleton(enabled: mediaItem.skeleton ?? false)
+      .padding(.bottom, 8)
+    }
   }
 
   var title: some View {
@@ -71,5 +77,5 @@ public struct ContentItemView: View {
 }
 
 #Preview {
-  ContentItemView(mediaItem: MediaItem.mock())
+  ContentItemView(mediaItem: MediaItem.mock(skeleton: true))
 }

@@ -147,7 +147,7 @@ public extension MediaItem {
               ratingPercentage: 0,
               views: 730000,
               comments: 0,
-              posters: Posters(small: "https://cdn.service-kp.com/poster/item/big/91675.jpg", medium: "https://cdn.service-kp.com/poster/item/big/91675.jpg", big: "https://cdn.service-kp.com/poster/item/big/91675.jpg", wide: "https://cdn.service-kp.com/poster/item/big/91675.jpg"),
+              posters: Posters(small: "", medium: "", big: "", wide: ""),
               trailer: nil,
               finished: true,
               advert: true,

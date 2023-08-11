@@ -20,6 +20,10 @@ class DownloadsCatalog: ObservableObject {
   @Published public var downloadedItems: [DownloadedFileInfo<MediaItem>] = []
   @Published public var activeDownloads: [Download<MediaItem>] = []
   
+  var isEmpty: Bool {
+    downloadedItems.isEmpty && activeDownloads.isEmpty
+  }
+  
   init(downloadsDatabase: DownloadedFilesDatabase<MediaItem>, downloadManager: DownloadManager<MediaItem>) {
     self.downloadsDatabase = downloadsDatabase
     self.downloadManager = downloadManager

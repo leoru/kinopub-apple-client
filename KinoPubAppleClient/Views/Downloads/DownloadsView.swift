@@ -22,14 +22,12 @@ struct DownloadsView: View {
   
   var body: some View {
     NavigationStack(path: $navigationState.downloadsRoutes) {
-      VStack {
-        List {
-          activeDownloadsList
-          downloadedFilesList
+      ZStack {
+        if catalog.isEmpty {
+          emptyView
+        } else {
+          downloadsList
         }
-        .listStyle(.inset)
-        .scrollContentBackground(.hidden)
-        .background(Color.KinoPub.background)
       }
       .navigationTitle("Downloads")
       .background(Color.KinoPub.background)
@@ -50,6 +48,16 @@ struct DownloadsView: View {
       })
     }
     
+  }
+  
+  var downloadsList: some View {
+    List {
+      activeDownloadsList
+      downloadedFilesList
+    }
+    .listStyle(.inset)
+    .scrollContentBackground(.hidden)
+    .background(Color.KinoPub.background)
   }
   
   var activeDownloadsList: some View {
@@ -77,6 +85,16 @@ struct DownloadsView: View {
       catalog.deleteDownloadedItem(at: indexSet)
     })
     .listRowBackground(Color.KinoPub.background)
+  }
+  
+  var emptyView: some View {
+    VStack {
+      Text("You don't have any downloads yet")
+        .font(Font.KinoPub.subheader)
+        .foregroundStyle(Color.KinoPub.text)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color.KinoPub.background)
   }
 }
 

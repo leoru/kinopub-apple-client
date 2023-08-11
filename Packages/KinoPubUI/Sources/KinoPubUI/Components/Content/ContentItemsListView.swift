@@ -96,17 +96,7 @@ public struct ContentItemsListView: View {
 struct ContentItemsListView_Previews: PreviewProvider {
 
   struct Preview: View {
-    @State var items: [MediaItem] = [
-      MediaItem.mock(id: 1),
-      MediaItem.mock(id: 2),
-      MediaItem.mock(id: 3),
-      MediaItem.mock(id: 4),
-      MediaItem.mock(id: 5),
-      MediaItem.mock(id: 6),
-      MediaItem.mock(id: 7),
-      MediaItem.mock(id: 8),
-      MediaItem.mock(id: 9)
-    ]
+    @State var items: [MediaItem] = MediaItem.skeletonMock()
 
     var body: some View {
       GeometryReader { geometryProxy in
