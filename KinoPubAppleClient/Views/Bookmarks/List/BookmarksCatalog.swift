@@ -43,18 +43,18 @@ class BookmarksCatalog: ObservableObject {
 
   
 
-  @MainActor
-  func refresh() {
+  @Sendable @MainActor
+  func refresh() async {
     items = Bookmark.skeletonMock()
-    Task {
-      Logger.app.debug("refetch bookmarks")
-      await fetchItems()
-    }
+    Logger.app.debug("refetch bookmarks")
+    await fetchItems()
   }
 
   private func subscribeForAuth() {
     authState.$userState.filter({ $0 == .authorized }).first().sink { [weak self] _ in
-      self?.refresh()
+      Task {
+        await self?.refresh()
+      }
     }.store(in: &bag)
   }
 

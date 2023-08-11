@@ -47,7 +47,7 @@ class MediaItemModel: ObservableObject {
   }
   
   func startDownload(file: FileInfo) {
-    let _ = downloadManager.startDownload(url: URL(string: file.url.http)!, withMetadata: mediaItem)
+    _ = downloadManager.startDownload(url: URL(string: file.url.http)!, withMetadata: mediaItem)
   }
 
 }
