@@ -44,7 +44,7 @@ struct MediaItemHeaderView: View {
             Text("Смотреть")
               .modifier(KinoPubButtonTextStyle())
           }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
-          NavigationLink(value: linkProvider.link(for: mediaItem)) {
+          NavigationLink(value: linkProvider.trailerPlayer(for: mediaItem)) {
             Text("Трейлер")
               .modifier(KinoPubButtonTextStyle())
           }.buttonStyle(KinoPubButtonStyle(buttonColor: .gray))

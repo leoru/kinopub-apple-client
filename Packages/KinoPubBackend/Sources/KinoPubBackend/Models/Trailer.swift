@@ -10,4 +10,5 @@ import Foundation
 public struct Trailer: Codable, Hashable {
   public let id: Int
   public let file: String
+  public let url: String?
 }

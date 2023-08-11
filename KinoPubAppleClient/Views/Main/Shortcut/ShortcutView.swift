@@ -14,9 +14,12 @@ struct ShortcutSelectionView: View {
   @Binding var mediaType: MediaType
 
   var body: some View {
-    HStack {
-      mediaTypesPicker
-      shortcutPicker
+    ZStack {
+      Color.KinoPub.background.edgesIgnoringSafeArea(.all)
+      HStack {
+        mediaTypesPicker
+        shortcutPicker
+      }
     }
     .background(Color.KinoPub.background)
     .presentationDetents([.height(180.0)])

@@ -17,10 +17,6 @@ struct PlayerView: View {
   
   init(manager: @autoclosure @escaping () -> PlayerManager) {
     _playerManager = StateObject(wrappedValue: manager())
-    let appearance = UINavigationBarAppearance()
-    appearance.configureWithTransparentBackground()
-    
-    UINavigationBar.appearance().standardAppearance = appearance
   }
   
   var body: some View {

@@ -9,19 +9,19 @@ import Foundation
 import SwiftUI
 
 public extension Font {
-
+  
   struct KinoPub {
     public static var header: Font {
       .system(size: 22.0)
     }
-
+    
     public static var subheader: Font {
       .system(size: 17.0)
     }
-
+    
     public static var small: Font {
       .system(size: 14.0)
     }
   }
-
+  
 }

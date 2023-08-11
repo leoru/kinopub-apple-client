@@ -78,6 +78,11 @@ struct MainView: View {
                                               errorHandler: errorHandler))
         case .player(let item):
           PlayerView(manager: PlayerManager(mediaItem: item,
+                                            watchMode: .media,
+                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase))
+        case .trailerPlayer(let item):
+          PlayerView(manager: PlayerManager(mediaItem: item,
+                                            watchMode: .trailer,
                                             downloadedFilesDatabase: appContext.downloadedFilesDatabase))
         }
       }

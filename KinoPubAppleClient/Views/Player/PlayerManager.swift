@@ -12,26 +12,40 @@ import KinoPubBackend
 import KinoPubKit
 import AVFoundation
 
+enum WatchMode {
+  case media
+  case trailer
+}
+
 class PlayerManager: ObservableObject {
   
   @Published var isPlaying: Bool = false
   lazy var player = AVPlayer(url: fileURL)
   var mediaItem: MediaItem
+  private var watchMode: WatchMode
   
   private var downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>
   private var rateObservation: NSKeyValueObservation?
   
   private var fileURL: URL {
-    let downloadedFiles = downloadedFilesDatabase.readData()
-    if let file = downloadedFiles?.filter({ $0.metadata.id == mediaItem.id }).first {
-      return file.originalURL
-    }
     
-    return URL(string: mediaItem.videos?.first?.files.first?.url.hls4 ?? "")!
+    switch watchMode {
+    case .media:
+      let downloadedFiles = downloadedFilesDatabase.readData()
+      if let file = downloadedFiles?.filter({ $0.metadata.id == mediaItem.id }).first {
+        return file.originalURL
+      }
+      return mediaItem.watchableURL
+    case .trailer:
+      return URL(string: mediaItem.trailer?.url ?? "")!
+    }
   }
   
-  init(mediaItem: MediaItem, downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>) {
+  init(mediaItem: MediaItem,
+       watchMode: WatchMode,
+       downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>) {
     self.mediaItem = mediaItem
+    self.watchMode = watchMode
     self.downloadedFilesDatabase = downloadedFilesDatabase
     rateObservation = player.observe(\.rate, options: [.new]) { [weak self] player, _ in
       self?.isPlaying = player.rate > 0

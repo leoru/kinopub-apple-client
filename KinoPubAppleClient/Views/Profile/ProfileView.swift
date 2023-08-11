@@ -33,8 +33,8 @@ struct ProfileView: View {
               .skeleton(enabled: model.userData.skeleton ?? false)
             LabeledContent("Registration Date", value: "\(model.userData.registrationDateFormatted)")
               .skeleton(enabled: model.userData.skeleton ?? false)
+            LabeledContent("App version", value: Bundle.main.appVersionLong)
           }
-          
           Section {
             Button(action: {
               showLogoutAlert = true

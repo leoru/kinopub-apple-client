@@ -1665,9 +1665,9 @@
             filePath = "KinoPubAppleClient/Views/Player/PlayerManager.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "33"
-            endingLineNumber = "33"
-            landmarkName = "init(mediaItem:downloadedFilesDatabase:)"
+            startingLineNumber = "44"
+            endingLineNumber = "44"
+            landmarkName = "init(mediaItem:watchMode:downloadedFilesDatabase:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

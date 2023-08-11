@@ -11,14 +11,17 @@ import KinoPubBackend
 enum MainRoutes: Hashable {
   case details(MediaItem)
   case player(MediaItem)
+  case trailerPlayer(MediaItem)
 }
 
 enum BookmarksRoutes: Hashable {
   case bookmark(Bookmark)
   case details(MediaItem)
   case player(MediaItem)
+  case trailerPlayer(MediaItem)
 }
 
 enum DownloadsRoutes: Hashable {
   case player(MediaItem)
+  case trailerPlayer(MediaItem)
 }

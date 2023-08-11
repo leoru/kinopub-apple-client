@@ -99,6 +99,10 @@ public extension MediaItem {
     URL(string: videos?.last?.files.first?.url.http ?? "")!
   }
   
+  var watchableURL: URL {
+    URL(string: videos?.first?.files.first?.url.hls4 ?? "")!
+  }
+  
 }
 
 public extension MediaItem {

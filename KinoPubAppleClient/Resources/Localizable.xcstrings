@@ -10,6 +10,16 @@
     "200 Wide" : {
 
     },
+    "App version" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Версия приложения"
+          }
+        }
+      }
+    },
     "Apply" : {
       "localizations" : {
         "en" : {
