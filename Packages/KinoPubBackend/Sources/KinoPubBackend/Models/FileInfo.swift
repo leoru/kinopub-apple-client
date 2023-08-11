@@ -24,3 +24,9 @@ public struct FileInfo: Codable, Hashable {
     case url = "url"
   }
 }
+
+public extension FileInfo {
+  var resolution: Int {
+    Int(quality.dropLast()) ?? 0
+  }
+}

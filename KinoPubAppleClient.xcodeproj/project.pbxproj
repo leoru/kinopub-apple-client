@@ -47,6 +47,8 @@
 		CC7FCE872A72ACB700DFC0A9 /* AuthModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */; };
 		CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */; };
 		CC7FCE942A730DA400DFC0A9 /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = CC7FCE932A730DA400DFC0A9 /* PopupView */; };
+		CC8202FD2A8656E70041079A /* BestVideoQualityFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8202FC2A8656E70041079A /* BestVideoQualityFinder.swift */; };
+		CC8203002A8657BA0041079A /* Reachability in Frameworks */ = {isa = PBXBuildFile; productRef = CC8202FF2A8657BA0041079A /* Reachability */; };
 		CC844A9B2A7D0DF100E2495A /* FilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC844A9A2A7D0DF100E2495A /* FilterView.swift */; };
 		CC844A9D2A7D0E1700E2495A /* FilterModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC844A9C2A7D0E1700E2495A /* FilterModel.swift */; };
 		CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */; };
@@ -109,6 +111,7 @@
 		CC78FC492A82D5D100C5BDFD /* DownloadedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadedItemView.swift; sourceTree = "<group>"; };
 		CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModel.swift; sourceTree = "<group>"; };
 		CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClientError+Description.swift"; sourceTree = "<group>"; };
+		CC8202FC2A8656E70041079A /* BestVideoQualityFinder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BestVideoQualityFinder.swift; sourceTree = "<group>"; };
 		CC844A9A2A7D0DF100E2495A /* FilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterView.swift; sourceTree = "<group>"; };
 		CC844A9C2A7D0E1700E2495A /* FilterModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterModel.swift; sourceTree = "<group>"; };
 		CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KinoPubAppleClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -166,6 +169,7 @@
 				CC71E7182A6DD62E004AFB3F /* FirebaseMLModelDownloader in Frameworks */,
 				CC71E7042A6DD119004AFB3F /* KinoPubBackend in Frameworks */,
 				CC7FCE942A730DA400DFC0A9 /* PopupView in Frameworks */,
+				CC8203002A8657BA0041079A /* Reachability in Frameworks */,
 				CCF388352A71C83500242581 /* KeychainAccess in Frameworks */,
 				CC71E7222A6DD62E004AFB3F /* FirebaseStorage in Frameworks */,
 				CC71E70A2A6DD119004AFB3F /* KinoPubUI in Frameworks */,
@@ -275,6 +279,7 @@
 		CC7FCE8D2A72D3BD00DFC0A9 /* Custom */ = {
 			isa = PBXGroup;
 			children = (
+				CC8202FC2A8656E70041079A /* BestVideoQualityFinder.swift */,
 				CCF1F24D2A8526CF002DA9AA /* Bundle+Data.swift */,
 				CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */,
 				CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */,
@@ -551,6 +556,7 @@
 				CC71E7232A6DD62E004AFB3F /* FirebaseStorageCombine-Community */,
 				CCF388342A71C83500242581 /* KeychainAccess */,
 				CC7FCE932A730DA400DFC0A9 /* PopupView */,
+				CC8202FF2A8657BA0041079A /* Reachability */,
 			);
 			productName = KinoPubAppleClient;
 			productReference = CC88E1E12A6586E600E9387F /* KinoPubAppleClient.app */;
@@ -585,6 +591,7 @@
 				CC71E7102A6DD62E004AFB3F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */,
+				CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */,
 			);
 			productRefGroup = CC88E1E22A6586E600E9387F /* Products */;
 			projectDirPath = "";
@@ -637,6 +644,7 @@
 				CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */,
 				CCB4879D2A77D8FE00FA4483 /* MediaItemHeaderView.swift in Sources */,
 				CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */,
+				CC8202FD2A8656E70041079A /* BestVideoQualityFinder.swift in Sources */,
 				CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */,
 				CC01461F2A783F8400F858AF /* Routes.swift in Sources */,
 				CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */,
@@ -927,6 +935,14 @@
 				minimumVersion = 2.6.0;
 			};
 		};
+		CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ashleymills/Reachability.swift";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 5.1.0;
+			};
+		};
 		CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess.git";
@@ -1013,6 +1029,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */;
 			productName = PopupView;
+		};
+		CC8202FF2A8657BA0041079A /* Reachability */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */;
+			productName = Reachability;
 		};
 		CCF388342A71C83500242581 /* KeychainAccess */ = {
 			isa = XCSwiftPackageProductDependency;
