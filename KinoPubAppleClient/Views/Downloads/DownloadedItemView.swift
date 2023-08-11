@@ -35,10 +35,12 @@ public struct DownloadedItemView: View {
       
       if let progress = progress {
         Spacer()
-        ProgressButton(progress: progress) { state in
-          onDownloadStateChange(state == .pause)
+        if progress != 1.0 {
+          ProgressButton(progress: progress) { state in
+            onDownloadStateChange(state == .pause)
+          }
+          .padding(.trailing, 16)
         }
-        .padding(.trailing, 16)
       } else {
         Spacer()
       }
