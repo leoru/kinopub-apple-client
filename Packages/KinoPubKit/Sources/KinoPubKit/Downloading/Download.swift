@@ -11,7 +11,7 @@ import OSLog
 
 /// `Download` represents a downloadable resource. It provides methods for controlling the download,
 /// such as pausing and resuming, and notifies about the progress through a progress handler.
-public class Download<Meta: Codable & Equatable>: Identifiable {
+public class Download<Meta: Codable & Equatable>: ObservableObject {
   /// The state of the download, such as not started, queued, in progress, or paused.
   public enum State: String {
     case notStarted
@@ -63,7 +63,7 @@ public class Download<Meta: Codable & Equatable>: Identifiable {
   }
   
   /// Resumes the download. If the download is already in progress, this method has no effect.
-  func resume() {
+  public func resume() {
     if let resumeData = self.resumeData {
       task = manager.session.downloadTask(withResumeData: resumeData)
     } else {
@@ -79,3 +79,5 @@ public class Download<Meta: Codable & Equatable>: Identifiable {
   }
   
 }
+
+extension Download: Identifiable {}

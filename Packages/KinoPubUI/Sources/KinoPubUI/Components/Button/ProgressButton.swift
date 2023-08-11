@@ -16,11 +16,11 @@ public struct ProgressButton: View {
   }
   
   private var action: (ProgressState) -> Void
-  @Binding var progress: Float
+  var progress: Float
   
-  public init(progress: Binding<Float>, action: @escaping (ProgressState) -> Void) {
+  public init(progress: Float, action: @escaping (ProgressState) -> Void) {
     self.action = action
-    self._progress = progress
+    self.progress = progress
   }
   
   @State private var progressState = ProgressState.resume

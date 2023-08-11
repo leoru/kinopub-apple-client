@@ -10,6 +10,7 @@ import KinoPubBackend
 import KinoPubLogging
 import KinoPubKit
 import OSLog
+import Combine
 
 @MainActor
 class DownloadsCatalog: ObservableObject {
@@ -19,6 +20,8 @@ class DownloadsCatalog: ObservableObject {
   
   @Published public var downloadedItems: [DownloadedFileInfo<MediaItem>] = []
   @Published public var activeDownloads: [Download<MediaItem>] = []
+  
+  var cancellables = [AnyCancellable]()
   
   var isEmpty: Bool {
     downloadedItems.isEmpty && activeDownloads.isEmpty
@@ -32,6 +35,12 @@ class DownloadsCatalog: ObservableObject {
   func refresh() {
     self.downloadedItems = downloadsDatabase.readData() ?? []
     self.activeDownloads = downloadManager.activeDownloads.map({ $0.value })
+    cancellables.removeAll()
+    self.activeDownloads.forEach({
+      let c = $0.objectWillChange.sink(receiveValue: { self.objectWillChange.send() })
+      self.cancellables.append(c)
+    })
+    
   }
   
   func deleteDownloadedItem(at indexSet: IndexSet) {
@@ -45,6 +54,14 @@ class DownloadsCatalog: ObservableObject {
     for index in indexSet {
       let item = activeDownloads[index]
       downloadManager.removeDownload(for: item.url)
+    }
+  }
+  
+  func toggle(download: Download<MediaItem>) {
+    if download.state == .inProgress {
+      download.pause()
+    } else {
+      download.resume()
     }
   }
 }

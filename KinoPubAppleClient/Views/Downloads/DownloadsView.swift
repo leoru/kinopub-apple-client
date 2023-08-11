@@ -63,10 +63,9 @@ struct DownloadsView: View {
   var activeDownloadsList: some View {
     ForEach(catalog.activeDownloads, id: \.url) { download in
       NavigationLink(value: DownloadsRoutes.player(download.metadata)) {
-        let binding = Binding<Float>(
-          get: { download.progress },
-          set: { _ in  })
-        DownloadedItemView(mediaItem: download.metadata, progress: binding)
+        DownloadedItemView(mediaItem: download.metadata, progress: download.progress) { paused in
+          catalog.toggle(download: download)
+        }
       }
     }
     .onDelete(perform: { indexSet in
@@ -78,7 +77,9 @@ struct DownloadsView: View {
   var downloadedFilesList: some View {
     ForEach(catalog.downloadedItems, id: \.originalURL) { fileInfo in
       NavigationLink(value: DownloadsRoutes.player(fileInfo.metadata)) {
-        DownloadedItemView(mediaItem: fileInfo.metadata, progress: nil)
+        DownloadedItemView(mediaItem: fileInfo.metadata, progress: nil) { paused in
+          
+        }
       }
     }
     .onDelete(perform: { indexSet in

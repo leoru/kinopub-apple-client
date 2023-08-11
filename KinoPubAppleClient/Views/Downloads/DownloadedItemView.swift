@@ -13,11 +13,15 @@ import KinoPubUI
 public struct DownloadedItemView: View {
   
   private var mediaItem: MediaItem
-  private var progress: Binding<Float>?
+  private var progress: Float?
+  private var onDownloadStateChange: (Bool) -> Void
   
-  public init(mediaItem: MediaItem, progress: Binding<Float>?) {
+  public init(mediaItem: MediaItem,
+              progress: Float?,
+              onDownloadStateChange: @escaping (Bool) -> Void) {
     self.mediaItem = mediaItem
     self.progress = progress
+    self.onDownloadStateChange = onDownloadStateChange
   }
   
   public var body: some View {
@@ -32,7 +36,7 @@ public struct DownloadedItemView: View {
       if let progress = progress {
         Spacer()
         ProgressButton(progress: progress) { state in
-          
+          onDownloadStateChange(state == .pause)
         }
         .padding(.trailing, 16)
       } else {
@@ -73,6 +77,8 @@ public struct DownloadedItemView: View {
 }
 
 #Preview {
-  DownloadedItemView(mediaItem: MediaItem.mock(), progress: nil)
+  DownloadedItemView(mediaItem: MediaItem.mock(), progress: nil) { _ in
+    
+  }
 }
 
