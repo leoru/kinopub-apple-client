@@ -14,7 +14,9 @@ struct MediaItemDescriptionCard: View {
 
   var mediaItem: MediaItem
   var isSkeleton: Bool
-  var onDownload: () -> Void
+  @State private var showDownloadPicker: Bool = false
+  
+  var onDownload: (FileInfo) -> Void
 
   var body: some View {
     VStack(alignment: .leading) {
@@ -63,31 +65,41 @@ struct MediaItemDescriptionCard: View {
 
   var actionIcons: some View {
     HStack {
-      Button(action: onDownload, label: {
-        Image(systemName: "arrow.down.circle").foregroundStyle(Color.KinoPub.text)
-          .skeleton(enabled: isSkeleton, size: CGSize(width: 30, height: 30))
+      Button(action: { showDownloadPicker = true }, label: {
+        image(imageName: "arrow.down.circle")
+      })
+      .confirmationDialog("", isPresented: $showDownloadPicker, titleVisibility: .hidden) {
+        ForEach(mediaItem.videos?.first?.files ?? []) { file in
+          Button(file.quality) {
+            onDownload(file)
+          }
+        }
+      }
+      Button(action: {}, label: {
+        image(imageName: "eye")
       })
       Button(action: {}, label: {
-        Image(systemName: "eye").foregroundStyle(Color.KinoPub.text)
-          .skeleton(enabled: isSkeleton, size: CGSize(width: 30, height: 30))
+        image(imageName: "folder")
       })
       Button(action: {}, label: {
-        Image(systemName: "folder").foregroundStyle(Color.KinoPub.text)
-          .skeleton(enabled: isSkeleton, size: CGSize(width: 30, height: 30))
-      })
-      Button(action: {}, label: {
-        Image(systemName: "bell").foregroundStyle(Color.KinoPub.text)
-          .skeleton(enabled: isSkeleton, size: CGSize(width: 30, height: 30))
+        image(imageName: "bell")
       })
     }
 
+  }
+  
+  func image(imageName: String) -> some View {
+    Image(systemName: imageName)
+      .foregroundStyle(Color.KinoPub.accent)
+      .font(.title)
+      .skeleton(enabled: isSkeleton, size: CGSize(width: 30, height: 30))
   }
 }
 
 struct MediaItemDescriptionCard_Previews: PreviewProvider {
   struct Preview: View {
     var body: some View {
-      MediaItemDescriptionCard(mediaItem: MediaItem.mock(), isSkeleton: true, onDownload: {})
+      MediaItemDescriptionCard(mediaItem: MediaItem.mock(), isSkeleton: true, onDownload: { _ in })
     }
   }
 

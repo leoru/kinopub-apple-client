@@ -30,3 +30,9 @@ public extension FileInfo {
     Int(quality.dropLast()) ?? 0
   }
 }
+
+extension FileInfo: Identifiable {
+  public var id: Int {
+    url.hashValue
+  }
+}

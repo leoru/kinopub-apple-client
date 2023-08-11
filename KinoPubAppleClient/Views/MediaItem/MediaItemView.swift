@@ -13,18 +13,18 @@ import KinoPubKit
 import SkeletonUI
 
 struct MediaItemView: View {
-
+  
   @EnvironmentObject var errorHandler: ErrorHandler
   @StateObject private var itemModel: MediaItemModel
-
+  
   init(model: @autoclosure @escaping () -> MediaItemModel) {
     _itemModel = StateObject(wrappedValue: model())
   }
-
+  
 #if os(iOS)
   @Environment(\.horizontalSizeClass) private var sizeClass
 #endif
-
+  
   var toolbarItemPlacement: ToolbarItemPlacement {
 #if os(iOS)
     .topBarTrailing
@@ -32,16 +32,15 @@ struct MediaItemView: View {
     .navigation
 #endif
   }
-
+  
   var body: some View {
     WidthThresholdReader(widthThreshold: 520) { _ in
       ScrollView(.vertical) {
         VStack(spacing: 16) {
           headerView
-
           Grid(horizontalSpacing: 12, verticalSpacing: 12) {
             MediaItemDescriptionCard(mediaItem: itemModel.mediaItem, isSkeleton: !itemModel.itemLoaded) {
-              itemModel.startDownload()
+              itemModel.startDownload(file: $0)
             }
             MediaItemFieldsCard(mediaItem: itemModel.mediaItem, isSkeleton: !itemModel.itemLoaded)
           }
@@ -58,7 +57,7 @@ struct MediaItemView: View {
     .toolbar {
       ToolbarItem(placement: toolbarItemPlacement) {
         Button {
-
+          
         } label: {
           Image(systemName: "square.and.arrow.up")
         }
@@ -68,8 +67,9 @@ struct MediaItemView: View {
       itemModel.fetchData()
     }
     .handleError(state: $errorHandler.state)
+    
   }
-
+  
   var headerView: some View {
     MediaItemHeaderView(size: .standard,
                         mediaItem: itemModel.mediaItem,
