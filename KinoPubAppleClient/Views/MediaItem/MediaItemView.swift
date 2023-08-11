@@ -67,7 +67,6 @@ struct MediaItemView: View {
       itemModel.fetchData()
     }
     .handleError(state: $errorHandler.state)
-    
   }
   
   var headerView: some View {

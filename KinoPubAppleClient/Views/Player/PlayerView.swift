@@ -29,6 +29,7 @@ struct PlayerView: View {
     }
     .ignoresSafeArea(.all)
     .navigationBarHidden(true)
+    .toolbar(.hidden, for: .tabBar)
     .onChange(of: playerManager.isPlaying) { isPlaying in
       hideNavigationBar = isPlaying
     }
