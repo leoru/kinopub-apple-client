@@ -24,11 +24,12 @@ struct SidebarView: View {
       SidebarNavigationDetail(selection: $navigationState.selectedTab)
     }
     .accentColor(Color.KinoPub.accent)
-//    .sheet(isPresented: $authState.shouldShowAuthentication, content: {
-//      AuthView(model: AuthModel(authService: appContext.authService,
-//                                authState: authState,
-//                                errorHandler: errorHandler))
-//    })
+    .sheet(isPresented: $authState.shouldShowAuthentication, content: {
+      AuthView(model: AuthModel(authService: appContext.authService,
+                                authState: authState,
+                                errorHandler: errorHandler))
+      .frame(width: 600, height: 600)
+    })
     .environmentObject(navigationState)
     .environmentObject(errorHandler)
     .task {

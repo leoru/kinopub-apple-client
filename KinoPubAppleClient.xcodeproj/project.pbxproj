@@ -212,11 +212,9 @@
 		CC71E6F22A6C04B5004AFB3F /* Root */ = {
 			isa = PBXGroup;
 			children = (
-				CCFBE1572A86BD91001CBEC1 /* Sidebar.swift */,
+				CCC963172A883FCC0074A2F9 /* macOS */,
 				CC7734472A86BBBC00FE56CF /* TabsNavigationView.swift */,
 				CC88E1E62A6586E600E9387F /* RootView.swift */,
-				CC8203012A86BB0F0041079A /* SidebarNavigationView.swift */,
-				CCE1BCA12A86D1F90012E474 /* SidebarNavigationDetail.swift */,
 			);
 			path = Root;
 			sourceTree = "<group>";
@@ -416,6 +414,16 @@
 				CC0146342A78439600F858AF /* NavigationLinkProvider.swift */,
 			);
 			path = Navigation;
+			sourceTree = "<group>";
+		};
+		CCC963172A883FCC0074A2F9 /* macOS */ = {
+			isa = PBXGroup;
+			children = (
+				CCFBE1572A86BD91001CBEC1 /* Sidebar.swift */,
+				CC8203012A86BB0F0041079A /* SidebarNavigationView.swift */,
+				CCE1BCA12A86D1F90012E474 /* SidebarNavigationDetail.swift */,
+			);
+			path = macOS;
 			sourceTree = "<group>";
 		};
 		CCE9C6DD2A73EA11007923C0 /* Shortcut */ = {
