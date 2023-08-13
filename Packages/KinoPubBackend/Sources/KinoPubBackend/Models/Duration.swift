@@ -15,7 +15,9 @@ public struct Duration: Codable, Hashable {
 public extension Duration {
   var totalFormatted: String {
     let formatter = DateComponentsFormatter()
+    #if os(iOS)
     formatter.allowedUnits = [.hour, .minute, .second, .nanosecond]
+    #endif
     formatter.unitsStyle = .positional
     return formatter.string(from: self.total) ?? ""
   }

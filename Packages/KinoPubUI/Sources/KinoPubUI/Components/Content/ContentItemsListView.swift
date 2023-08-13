@@ -84,6 +84,9 @@ public struct ContentItemsListView: View {
                 onLoadMoreContent(item)
               }
           }
+          #if os(macOS)
+          .buttonStyle(PlainButtonStyle())
+          #endif
         }
       })
       .padding(.horizontal, 16)

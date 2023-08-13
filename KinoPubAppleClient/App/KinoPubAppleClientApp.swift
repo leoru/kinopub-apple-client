@@ -20,7 +20,7 @@ struct KinoPubAppleClientApp: App {
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 #endif
   
-#if os(macOS)
+#if os(macOS) 
   @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 #endif
   

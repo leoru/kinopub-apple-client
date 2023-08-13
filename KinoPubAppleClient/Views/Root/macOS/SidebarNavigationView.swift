@@ -18,7 +18,7 @@ struct SidebarView: View {
   @EnvironmentObject var authState: AuthState
   
   var body: some View {
-    NavigationSplitView {
+    NavigationSplitView(columnVisibility: $navigationState.columnVisibility) {
       Sidebar(selection: $navigationState.selectedTab)
     } detail: {
       SidebarNavigationDetail(selection: $navigationState.selectedTab)
@@ -36,9 +36,7 @@ struct SidebarView: View {
       authState.check()
     }
   }
-  
-  
-  
+
 }
 
 struct SideBarView_Previews: PreviewProvider {

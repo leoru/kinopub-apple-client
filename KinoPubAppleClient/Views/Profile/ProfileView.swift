@@ -24,32 +24,36 @@ struct ProfileView: View {
   
   var body: some View {
     NavigationStack {
-      VStack {
-        Form {
-          Section {
-            LabeledContent("User Name", value: model.userData.username)
+      ZStack {
+        Color.KinoPub.background.edgesIgnoringSafeArea(.all)
+        VStack(alignment: .leading) {
+          Form {
+            Section {
+              LabeledContent("User Name", value: model.userData.username)
+                .skeleton(enabled: model.userData.skeleton ?? false)
+              LabeledContent("User Subscription", value: "\(model.userData.subscription.days) \("days".localized)")
+                .skeleton(enabled: model.userData.skeleton ?? false)
+              LabeledContent("Registration Date", value: "\(model.userData.registrationDateFormatted)")
+                .skeleton(enabled: model.userData.skeleton ?? false)
+              LabeledContent("App version", value: Bundle.main.appVersionLong)
+            }
+            Section {
+              Button(action: {
+                showLogoutAlert = true
+              }, label: {
+                Text("Logout").foregroundStyle(Color.red)
+              })
               .skeleton(enabled: model.userData.skeleton ?? false)
-            LabeledContent("User Subscription", value: "\(model.userData.subscription.days) \("days".localized)")
-              .skeleton(enabled: model.userData.skeleton ?? false)
-            LabeledContent("Registration Date", value: "\(model.userData.registrationDateFormatted)")
-              .skeleton(enabled: model.userData.skeleton ?? false)
-            LabeledContent("App version", value: Bundle.main.appVersionLong)
+#if os(macOS)
+              .buttonStyle(PlainButtonStyle())
+#endif
+            }
           }
-          Section {
-            Button(action: {
-              showLogoutAlert = true
-            }, label: {
-              Text("Logout").foregroundStyle(Color.red)
-            })
-            .skeleton(enabled: model.userData.skeleton ?? false)
-          }
+          .scrollContentBackground(.hidden)
+          .background(Color.KinoPub.background)
         }
-        .scrollContentBackground(.hidden)
-        
-        .background(Color.KinoPub.background)
       }
       .navigationTitle("Profile")
-      .background(Color.KinoPub.background)
       .onAppear(perform: {
         model.fetch()
       })

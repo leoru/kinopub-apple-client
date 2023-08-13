@@ -11,13 +11,13 @@ import KinoPubBackend
 import SkeletonUI
 
 struct MediaItemDescriptionCard: View {
-
+  
   var mediaItem: MediaItem
   var isSkeleton: Bool
   @State private var showDownloadPicker: Bool = false
   
   var onDownload: (FileInfo) -> Void
-
+  
   var body: some View {
     VStack(alignment: .leading) {
       Label(mediaItem.localizedTitle ?? "", systemImage: "movieclapper")
@@ -29,7 +29,7 @@ struct MediaItemDescriptionCard: View {
         .padding(.top, 8)
     }
   }
-
+  
   var metaIcons: some View {
     HStack(content: {
       metaIcon(text: "1080p")
@@ -39,7 +39,7 @@ struct MediaItemDescriptionCard: View {
       actionIcons
     })
   }
-
+  
   var plot: some View {
     Text(mediaItem.plot)
       .font(Font.KinoPub.small)
@@ -48,7 +48,7 @@ struct MediaItemDescriptionCard: View {
       .skeleton(with: isSkeleton, animated: nil)
       .multilineSkeleton(enabled: isSkeleton)
   }
-
+  
   func metaIcon(text: String) -> some View {
     Text(text)
       .overlay(
@@ -60,9 +60,9 @@ struct MediaItemDescriptionCard: View {
       .font(.system(size: 12))
       .padding(.horizontal, 5)
       .skeleton(enabled: isSkeleton, size: CGSize(width: 60, height: 20))
-
+    
   }
-
+  
   var actionIcons: some View {
     HStack {
       Button(action: { showDownloadPicker = true }, label: {
@@ -75,17 +75,32 @@ struct MediaItemDescriptionCard: View {
           }
         }
       }
+#if os(macOS)
+      .buttonStyle(PlainButtonStyle())
+#endif
+      
       Button(action: {}, label: {
         image(imageName: "eye")
       })
+#if os(macOS)
+      .buttonStyle(PlainButtonStyle())
+#endif
+      
       Button(action: {}, label: {
         image(imageName: "folder")
       })
+#if os(macOS)
+      .buttonStyle(PlainButtonStyle())
+#endif
+      
       Button(action: {}, label: {
         image(imageName: "bell")
       })
+#if os(macOS)
+      .buttonStyle(PlainButtonStyle())
+#endif
     }
-
+    
   }
   
   func image(imageName: String) -> some View {
@@ -102,7 +117,7 @@ struct MediaItemDescriptionCard_Previews: PreviewProvider {
       MediaItemDescriptionCard(mediaItem: MediaItem.mock(), isSkeleton: true, onDownload: { _ in })
     }
   }
-
+  
   static var previews: some View {
     NavigationStack {
       Preview()

@@ -16,17 +16,34 @@ struct Sidebar: View {
     List(selection: $selection) {
       NavigationLink(value: NavigationTabs.main) {
         Label("Main", systemImage: "house")
+          .foregroundStyle(Color.white)
       }
+      .listRowBackground(selection == .main ? Color.KinoPub.accent : Color.clear)
+      .tint(Color.clear)
+      
       NavigationLink(value: NavigationTabs.bookmarks) {
         Label("Bookmarks", systemImage: "bookmark")
+          .foregroundStyle(Color.white)
       }
+      .listRowBackground(selection == .bookmarks ? Color.KinoPub.accent : Color.clear)
+      .tint(Color.clear)
+      
       NavigationLink(value: NavigationTabs.downloads) {
         Label("Downloads", systemImage: "arrow.down.circle")
+          .foregroundStyle(Color.white)
       }
+      .listRowBackground(selection == .downloads ? Color.KinoPub.accent : Color.clear)
+      .tint(Color.clear)
+      
       NavigationLink(value: NavigationTabs.profile) {
         Label("Profile", systemImage: "person.crop.circle")
+          .foregroundStyle(Color.white)
       }
+      .listRowBackground(selection == .profile ? Color.KinoPub.accent : Color.clear)
+      .tint(Color.clear)
     }
+    .scrollContentBackground(.hidden)
+    .background(Color.KinoPub.background)
     .navigationTitle("Main")
 #if os(macOS)
     .navigationSplitViewColumnWidth(min: 200, ideal: 200)

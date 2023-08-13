@@ -30,6 +30,7 @@ public struct ContentItemView: View {
         subtitle
       }.padding(.horizontal, 8)
     }
+    .background(Color.clear)
   }
 
   var image: some View {

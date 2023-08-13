@@ -14,6 +14,7 @@ struct PlayerView: View {
   @StateObject private var playerManager: PlayerManager
   @State private var hideNavigationBar = false
   @Environment(\.dismiss) private var dismiss
+  @EnvironmentObject var navigationState: NavigationState
   
   init(manager: @autoclosure @escaping () -> PlayerManager) {
     _playerManager = StateObject(wrappedValue: manager())
@@ -28,7 +29,13 @@ struct PlayerView: View {
       .ignoresSafeArea(.all)
     }
     .ignoresSafeArea(.all)
-    #if os(iOS)
+#if os(macOS)
+    .toolbar(.hidden, for: .windowToolbar)
+    .onAppear(perform: {
+      toggleSidebar()
+    })
+#endif
+#if os(iOS)
     .navigationBarHidden(true)
     .toolbar(.hidden, for: .tabBar)
     .onChange(of: playerManager.isPlaying) { isPlaying in
@@ -38,6 +45,7 @@ struct PlayerView: View {
       UIApplication.shared.isIdleTimerDisabled = true
       UIDevice.current.setValue(UIInterfaceOrientation.landscapeLeft.rawValue, forKey: "orientation")
       AppDelegate.orientationLock = .landscape
+      toggleSidebar()
     })
     .onDisappear(perform: {
       UIApplication.shared.isIdleTimerDisabled = false
@@ -45,7 +53,7 @@ struct PlayerView: View {
       UIDevice.current.setValue(UIDevice.current.orientation.rawValue, forKey: "orientation")
       UIViewController.attemptRotationToDeviceOrientation()
     })
-    #endif
+#endif
   }
   
   var videoPlayer: some View {
@@ -62,6 +70,9 @@ struct PlayerView: View {
           .font(.system(size: 24))
           .tint(Color.KinoPub.accent)
       })
+#if os(macOS)
+      .buttonStyle(PlainButtonStyle())
+#endif
       .frame(width: 70, height: 50)
       .padding(.leading, 16)
       .padding(.top, 16)
@@ -69,5 +80,9 @@ struct PlayerView: View {
     }
     .fixedSize(horizontal: false, vertical: true)
     .opacity(hideNavigationBar ? 0.0 : 1.0)
+  }
+  
+  private func toggleSidebar() {
+    navigationState.columnVisibility = .detailOnly
   }
 }

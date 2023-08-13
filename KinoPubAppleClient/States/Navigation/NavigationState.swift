@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 
 class NavigationState: ObservableObject {
+  @Published var columnVisibility = NavigationSplitViewVisibility.automatic
   @Published var selectedTab: NavigationTabs = .main
   @Published var mainRoutes: [MainRoutes] = []
   @Published var bookmarksRoutes: [BookmarksRoutes] = []
