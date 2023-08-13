@@ -9,15 +9,15 @@ import KinoPubUI
 import PopupView
 
 struct AuthView: View {
-
+  
   @StateObject var model: AuthModel
   @EnvironmentObject var errorHandler: ErrorHandler
   @Environment(\.dismiss) var dismiss
-
+  
   init(model: @autoclosure @escaping () -> AuthModel) {
     _model = StateObject(wrappedValue: model())
   }
-
+  
   var body: some View {
     ZStack {
       Color.KinoPub.background.edgesIgnoringSafeArea(.all)
@@ -39,7 +39,7 @@ struct AuthView: View {
     })
     .handleError(state: $errorHandler.state)
   }
-
+  
   var titleView: some View {
     VStack(spacing: 20) {
       Text("Auth_CodeActivationTitle")
@@ -56,7 +56,7 @@ struct AuthView: View {
     .background(Color.KinoPub.background)
     .fixedSize(horizontal: false, vertical: true)
   }
-
+  
   var deviceCodeView: some View {
     VStack(spacing: 5) {
       Text(model.deviceCode)
@@ -69,9 +69,12 @@ struct AuthView: View {
     }
     .fixedSize(horizontal: false, vertical: true)
   }
-
+  
   var activateButton: some View {
     Button("Auth_Activate", action: { model.openActivationURL() })
+#if os(macOS)
+      .buttonStyle(PlainButtonStyle())
+#endif
       .foregroundColor(Color.KinoPub.text)
       .padding(.all, 20.0)
       .overlay(
