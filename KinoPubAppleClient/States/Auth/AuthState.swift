@@ -1,3 +1,4 @@
+
 //
 //  AuthState.swift
 //  KinoPubAppleClient
@@ -9,6 +10,7 @@ import Foundation
 import KinoPubBackend
 import KinoPubLogging
 import OSLog
+
 enum UserState {
   case unauthorized
   case authorized
@@ -27,32 +29,30 @@ final class AuthState: ObservableObject {
     self.accessTokenService = accessTokenService
   }
   
-  func check() {
-    Logger.app.debug("start auth state checking...")
+  func check() async {
+    Logger.app.debug("Start auth state checking...")
     guard let _: AccessToken = accessTokenService.token() else {
       userState = .unauthorized
       shouldShowAuthentication = true
-      Logger.app.debug("auth state: unauthorized")
+      Logger.app.debug("Auth state: unauthorized")
       return
     }
     
-    refreshToken()
+    await refreshToken()
   }
   
-  func refreshToken() {
-    Logger.app.debug("refreshing token...")
-    Task {
-      do {
-        try await authService.refreshToken()
-        userState = .authorized
-        shouldShowAuthentication = false
-        Logger.app.debug("auth state: authorized")
-      } catch {
-        await MainActor.run {
-          userState = .unauthorized
-          shouldShowAuthentication = true
-          Logger.app.debug("failed to refresh token, auth state: unauthorized")
-        }
+  private func refreshToken() async {
+    Logger.app.debug("Refreshing token...")
+    do {
+      try await authService.refreshToken()
+      userState = .authorized
+      shouldShowAuthentication = false
+      Logger.app.debug("Auth state: authorized")
+    } catch {
+      await MainActor.run {
+        userState = .unauthorized
+        shouldShowAuthentication = true
+        Logger.app.debug("Failed to refresh token, auth state: unauthorized")
       }
     }
   }
@@ -62,5 +62,5 @@ final class AuthState: ObservableObject {
     userState = .unauthorized
     shouldShowAuthentication = true
   }
-  
 }
+

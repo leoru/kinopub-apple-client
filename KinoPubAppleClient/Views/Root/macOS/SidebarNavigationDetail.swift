@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 
+#if os(macOS)
 struct SidebarNavigationDetail: View {
   @Environment(\.appContext) var appContext
   @EnvironmentObject var navigationState: NavigationState
@@ -16,10 +17,6 @@ struct SidebarNavigationDetail: View {
   
   @Binding var selection: NavigationTabs
   
-  /// The body function
-  ///
-  /// This view presents the appropriate view in response to the person's selection in the ``Sidebar``. See ``Panel``
-  /// for the views that `DetailColumn`  presents.
   var body: some View {
     switch selection {
     case .main:
@@ -68,3 +65,4 @@ struct SidebarNavigationDetail_Previews: PreviewProvider {
   }
 }
 
+#endif

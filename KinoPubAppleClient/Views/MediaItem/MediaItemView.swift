@@ -56,15 +56,6 @@ struct MediaItemView: View {
     #if os(iOS)
     .toolbar(.hidden, for: .tabBar)
     #endif
-    .toolbar {
-      ToolbarItem(placement: toolbarItemPlacement) {
-        Button {
-          
-        } label: {
-          Image(systemName: "square.and.arrow.up")
-        }
-      }
-    }
     .task {
       itemModel.fetchData()
     }

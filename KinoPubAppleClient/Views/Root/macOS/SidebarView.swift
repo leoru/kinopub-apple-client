@@ -10,6 +10,7 @@ import SwiftUI
 import KinoPubUI
 import KinoPubBackend
 
+#if os(macOS)
 struct SidebarView: View {
   
   @Environment(\.appContext) var appContext
@@ -44,3 +45,5 @@ struct SideBarView_Previews: PreviewProvider {
     SidebarView()
   }
 }
+
+#endif

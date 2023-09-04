@@ -28,7 +28,6 @@ class PlayerManager: ObservableObject {
   private var rateObservation: NSKeyValueObservation?
   
   private var fileURL: URL {
-    
     switch watchMode {
     case .media:
       let downloadedFiles = downloadedFilesDatabase.readData()

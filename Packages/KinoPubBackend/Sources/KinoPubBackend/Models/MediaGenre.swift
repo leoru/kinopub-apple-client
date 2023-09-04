@@ -7,9 +7,8 @@
 
 import Foundation
 
-public enum MediaGenre: String, Codable {
-  case movie
-  case docu
-  case music
-  case tvshow
+public struct MediaGenre: Codable {
+  public let id: String
+  public let title: String
+  public let type: MediaType
 }

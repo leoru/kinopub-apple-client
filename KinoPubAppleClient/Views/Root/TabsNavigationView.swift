@@ -41,7 +41,9 @@ struct TabsNavigationView: View {
     .environmentObject(navigationState)
     .environmentObject(errorHandler)
     .task {
-      authState.check()
+      Task {
+        await authState.check()
+      }
     }
   }
   

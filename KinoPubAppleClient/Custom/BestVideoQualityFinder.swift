@@ -1,3 +1,4 @@
+
 //
 //  BestVideoQualityFinder.swift
 //  KinoPubAppleClient
@@ -16,9 +17,10 @@ import KinoPubBackend
 struct BestVideoQualityFinder {
   
   #if os(iOS)
-  private static let deviceCapabilitySize = UIApplication.shared.statusBarOrientation.isLandscape ? UIScreen.main.bounds.width : UIScreen.main.bounds.height
+  private static var deviceCapabilitySize: CGFloat {
+    UIApplication.shared.statusBarOrientation.isLandscape ? UIScreen.main.bounds.width : UIScreen.main.bounds.height
+  }
   #endif
-  
   
   private static func currentNetworkStatus() -> Reachability.Connection {
     guard let reachability = try? Reachability() else { return .unavailable }
@@ -26,16 +28,10 @@ struct BestVideoQualityFinder {
   }
   
   private static func isConnectionGood() -> Bool {
-    let connectionType = currentNetworkStatus()
-    // Assuming that a Wi-Fi connection is good and cellular may not be as good
-    // You can add more specific checks here based on your requirements
-    return connectionType == .wifi
+    currentNetworkStatus() == .wifi
   }
   
-  
   static func findBestURL(for files: [FileInfo]) -> String {
-    
-    
     var bestURL: String = files.last?.url.hls4 ?? ""
     var closestResolutionDifference = Int.max
     
@@ -44,16 +40,14 @@ struct BestVideoQualityFinder {
 #endif
     
     #if os(iOS)
-    if !isConnectionGood() {
+    guard isConnectionGood() else {
       return bestURL
     }
     
     for fileInfo in files {
-      let resolution = fileInfo.resolution
-      let resolutionDifference = abs(resolution - Int(deviceCapabilitySize))
+      let resolutionDifference = abs(fileInfo.resolution - Int(deviceCapabilitySize))
       
-      // Assuming Wi-Fi connection is good, choosing the closest resolution to the device's capability
-      if resolution <= Int(deviceCapabilitySize) && resolutionDifference < closestResolutionDifference {
+      if fileInfo.resolution <= Int(deviceCapabilitySize) && resolutionDifference < closestResolutionDifference {
         bestURL = fileInfo.url.hls4
         closestResolutionDifference = resolutionDifference
       }
@@ -62,5 +56,4 @@ struct BestVideoQualityFinder {
     
     return bestURL
   }
-  
 }

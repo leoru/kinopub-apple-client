@@ -1680,8 +1680,8 @@
             filePath = "KinoPubAppleClient/Views/Player/PlayerManager.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "44"
-            endingLineNumber = "44"
+            startingLineNumber = "43"
+            endingLineNumber = "43"
             landmarkName = "init(mediaItem:watchMode:downloadedFilesDatabase:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -1964,8 +1964,8 @@
             filePath = "KinoPubAppleClient/Custom/BestVideoQualityFinder.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "53"
-            endingLineNumber = "53"
+            startingLineNumber = "52"
+            endingLineNumber = "52"
             landmarkName = "findBestURL(for:)"
             landmarkType = "7">
             <Locations>
@@ -2013,9 +2013,7 @@
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "63"
-            endingLineNumber = "63"
-            landmarkName = "findBestURL(for:)"
-            landmarkType = "7">
+            endingLineNumber = "63">
             <Locations>
                <Location
                   uuid = "38C6EF6E-CD7D-443A-859B-0270806D099C - cdea7f2a9aeea5f5"
@@ -2060,8 +2058,8 @@
             filePath = "KinoPubAppleClient/Custom/BestVideoQualityFinder.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "57"
-            endingLineNumber = "57"
+            startingLineNumber = "56"
+            endingLineNumber = "56"
             landmarkName = "findBestURL(for:)"
             landmarkType = "7">
             <Locations>
@@ -2108,8 +2106,8 @@
             filePath = "KinoPubAppleClient/Custom/BestVideoQualityFinder.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "54"
-            endingLineNumber = "54"
+            startingLineNumber = "53"
+            endingLineNumber = "53"
             landmarkName = "findBestURL(for:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2124,8 +2122,8 @@
             filePath = "KinoPubAppleClient/Custom/BestVideoQualityFinder.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "58"
-            endingLineNumber = "58"
+            startingLineNumber = "57"
+            endingLineNumber = "57"
             landmarkName = "findBestURL(for:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2141,9 +2139,7 @@
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "64"
-            endingLineNumber = "64"
-            landmarkName = "findBestURL(for:)"
-            landmarkType = "7">
+            endingLineNumber = "64">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -2156,8 +2152,8 @@
             filePath = "KinoPubAppleClient/Views/Player/PlayerManager.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "34"
-            endingLineNumber = "34"
+            startingLineNumber = "33"
+            endingLineNumber = "33"
             landmarkName = "fileURL"
             landmarkType = "24">
             <Locations>
@@ -2406,7 +2402,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "F18E8FA7-3710-4572-8ADD-74C545999E38"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "KinoPubAppleClient/Views/Auth/AuthModel.swift"
@@ -2470,7 +2466,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "017E60C9-97D3-4B78-B8FE-5509A76D0116"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "KinoPubAppleClient/States/Error/ErrorHandler.swift"

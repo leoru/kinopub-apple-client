@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 
+#if os(macOS)
 struct Sidebar: View {
   
   @Binding var selection: NavigationTabs
@@ -67,3 +68,5 @@ struct Sidebar_Previews: PreviewProvider {
     }
   }
 }
+
+#endif

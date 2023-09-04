@@ -35,11 +35,10 @@ struct MediaItemHeaderView: View {
   var body: some View {
     ZStack {
       image
-        .padding(.top, -200 * headerSize.rawValue)
+        .padding(.top, -150 * headerSize.rawValue)
       VStack {
         Spacer()
         HStack {
-
           NavigationLink(value: linkProvider.player(for: mediaItem)) {
             Text("Смотреть")
               .modifier(KinoPubButtonTextStyle())
