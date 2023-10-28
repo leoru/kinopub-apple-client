@@ -2,6 +2,17 @@
 
 This is the iOS, iPadOS and macOS client for the kino.pub service built with SwiftUI. 
 
+# Requirements
+
+- macOS 13.0.
+- Xcode 15.0.
+- Swift 5.8.
+
+# Supported Platforms
+
+- iOS 16.0.
+- macOS 13.0.
+
 ## App Structure
 
 The app is structured using the Swift Package Manager with the following packages:
@@ -37,3 +48,9 @@ The following third party libraries are used:
 - `KinoPubKit` - Shared business logic for things like authentication and data models.
 - `KinoPubBackend` - Networking layer that interfaces with the kino.pub API.
 - `KinoPubLogging` - Small package containing extensions for OSLog.
+
+# Contributing
+
+- Suggest your idea as a [feature request](https://github.com/leoru/kinopub-apple-client/issues/new?assignees=&labels=&template=feature_request.md&title=) for this project.
+- Create a [bug report](https://github.com/leoru/kinopub-apple-client/issues/new?assignees=&labels=&template=bug_report.md&title=) to help us improve.
+- Propose your own fixes, suggestions and open a pull request with the changes.
