@@ -8,6 +8,10 @@
 import SwiftUI
 import FirebaseCore
 
+enum WindowSize {
+  static let macos = CGSize(width: 1280, height: 720)
+}
+
 @main
 struct KinoPubAppleClientApp: App {
   
@@ -20,7 +24,7 @@ struct KinoPubAppleClientApp: App {
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 #endif
   
-#if os(macOS) 
+#if os(macOS)
   @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 #endif
   
@@ -31,6 +35,12 @@ struct KinoPubAppleClientApp: App {
         .environmentObject(navigationState)
         .environmentObject(authState)
         .environmentObject(errorHandler)
+#if os(macOS)
+        .frame(minWidth: WindowSize.macos.width, minHeight: WindowSize.macos.height)
+#endif
     }
+#if os(macOS)
+    .windowResizability(.contentSize)
+#endif
   }
 }

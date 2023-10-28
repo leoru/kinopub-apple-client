@@ -7,11 +7,13 @@
 
 import Foundation
 import SwiftUI
-
+/// A view modifier that applies a poster style to a view.
 public struct PosterStyle: ViewModifier {
+  /// The size options for the poster style.
   public enum Size {
     case small, medium, big
-
+    
+    /// The width of the poster based on the size option.
     public var width: CGFloat {
       switch self {
       case .small: return 53
@@ -19,7 +21,8 @@ public struct PosterStyle: ViewModifier {
       case .big: return 250
       }
     }
-
+    
+    /// The height of the poster based on the size option.
     public var height: CGFloat {
       switch self {
       case .small: return 80
@@ -28,9 +31,9 @@ public struct PosterStyle: ViewModifier {
       }
     }
   }
-
+  
   let size: Size
-
+  
   public func body(content: Content) -> some View {
     return content
       .frame(width: size.width, height: size.height)
@@ -40,7 +43,11 @@ public struct PosterStyle: ViewModifier {
 }
 
 public extension View {
-  func posterStyle( size: PosterStyle.Size) -> some View {
+  /// Applies the poster style to a view with the specified size option.
+  ///
+  /// - Parameter size: The size option for the poster style.
+  /// - Returns: A modified view with the poster style applied.
+  func posterStyle(size: PosterStyle.Size) -> some View {
     return ModifiedContent(content: self, modifier: PosterStyle(size: size))
   }
 }

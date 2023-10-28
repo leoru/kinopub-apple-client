@@ -10,8 +10,12 @@ import SwiftUI
 import PopupView
 import KinoPubUI
 
+/// Extension for the View protocol to handle error states.
 extension View {
   
+  /// Displays a popup with an error message when the error state is true.
+  /// - Parameter state: A binding to the error state.
+  /// - Returns: A modified view with error handling.
   func handleError(state: Binding<ErrorHandler.State>) -> some View {
     self.popup(isPresented: state.showError) {
       ToastContentView(text: state.error.wrappedValue ?? "")

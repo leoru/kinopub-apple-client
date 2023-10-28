@@ -34,7 +34,7 @@ struct SidebarView: View {
     .environmentObject(navigationState)
     .environmentObject(errorHandler)
     .task {
-      authState.check()
+      await authState.check()
     }
   }
 
