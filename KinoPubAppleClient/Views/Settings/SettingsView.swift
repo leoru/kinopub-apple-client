@@ -8,8 +8,7 @@
 import Foundation
 import SwiftUI
 
-import SwiftUI
-
+#if os(macOS)
 struct SettingsView: View {
   @EnvironmentObject var windowSettings: WindowSettings
   @AppStorage("alwaysOnTop") var alwaysOnTop: Bool = false
@@ -22,3 +21,4 @@ struct SettingsView: View {
     .frame(width: 300, height: 200)
   }
 }
+#endif

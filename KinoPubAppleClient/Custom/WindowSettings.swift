@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 
+#if os(macOS)
 class WindowSettings: ObservableObject {
   @Published var alwaysOnTop = UserDefaults.standard.bool(forKey: "alwaysOnTop") {
     didSet {
@@ -28,3 +29,4 @@ class WindowSettings: ObservableObject {
     }
   }
 }
+#endif
