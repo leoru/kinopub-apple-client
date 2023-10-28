@@ -66,6 +66,8 @@
 		CCE9C6DC2A73DB87007923C0 /* BookmarksCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */; };
 		CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */; };
 		CCF1F24E2A8526CF002DA9AA /* Bundle+Data.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF1F24D2A8526CF002DA9AA /* Bundle+Data.swift */; };
+		CCF2ABB22AED37FD000448A8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF2ABB12AED37FD000448A8 /* SettingsView.swift */; };
+		CCF2ABB42AED39E0000448A8 /* WindowSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF2ABB32AED39E0000448A8 /* WindowSettings.swift */; };
 		CCF3881A2A71882300242581 /* AuthorizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388192A71882300242581 /* AuthorizationService.swift */; };
 		CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */; };
 		CCF388212A718ADE00242581 /* VideoContentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388202A718ADE00242581 /* VideoContentService.swift */; };
@@ -139,6 +141,8 @@
 		CCE9C6DB2A73DB87007923C0 /* BookmarksCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksCatalog.swift; sourceTree = "<group>"; };
 		CCE9C6DE2A73EA46007923C0 /* ShortcutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutView.swift; sourceTree = "<group>"; };
 		CCF1F24D2A8526CF002DA9AA /* Bundle+Data.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Bundle+Data.swift"; sourceTree = "<group>"; };
+		CCF2ABB12AED37FD000448A8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		CCF2ABB32AED39E0000448A8 /* WindowSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSettings.swift; sourceTree = "<group>"; };
 		CCF388192A71882300242581 /* AuthorizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationService.swift; sourceTree = "<group>"; };
 		CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationServiceImpl.swift; sourceTree = "<group>"; };
 		CCF388202A718ADE00242581 /* VideoContentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoContentService.swift; sourceTree = "<group>"; };
@@ -210,6 +214,7 @@
 		CC71E6F12A6C04AE004AFB3F /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				CCF2ABB02AED37F2000448A8 /* Settings */,
 				CC71E6F52A6C05BF004AFB3F /* Auth */,
 				CC71E6F42A6C05B9004AFB3F /* Bookmarks */,
 				CC71E6FD2A6C0691004AFB3F /* Downloads */,
@@ -295,6 +300,7 @@
 				CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */,
 				CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */,
 				CC2115202A7AA6F8001996BD /* String+Localization.swift */,
+				CCF2ABB32AED39E0000448A8 /* WindowSettings.swift */,
 			);
 			path = Custom;
 			sourceTree = "<group>";
@@ -454,6 +460,14 @@
 				CC748DED2A83CCA200D87C0C /* UserServiceImpl.swift */,
 			);
 			path = User;
+			sourceTree = "<group>";
+		};
+		CCF2ABB02AED37F2000448A8 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				CCF2ABB12AED37FD000448A8 /* SettingsView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		CCF388152A71816B00242581 /* MediaItem */ = {
@@ -644,6 +658,7 @@
 				CC7734482A86BBBC00FE56CF /* TabsNavigationView.swift in Sources */,
 				CCF3882B2A718E6300242581 /* Configuration.swift in Sources */,
 				CC01461B2A783DF900F858AF /* NavigationState.swift in Sources */,
+				CCF2ABB42AED39E0000448A8 /* WindowSettings.swift in Sources */,
 				CCF388252A718AF300242581 /* VideoContentServiceImpl.swift in Sources */,
 				CC0146352A78439600F858AF /* NavigationLinkProvider.swift in Sources */,
 				CCFDF43E2A828B6B0035D8E0 /* Providers.swift in Sources */,
@@ -682,6 +697,7 @@
 				CC439CF52A83CC1400E00B36 /* UserService.swift in Sources */,
 				CCC70B942A7FCADC00274E5F /* View+ErrorState.swift in Sources */,
 				CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */,
+				CCF2ABB22AED37FD000448A8 /* SettingsView.swift in Sources */,
 				CC8203022A86BB0F0041079A /* SidebarView.swift in Sources */,
 				CC0904832A7C353200A71F53 /* PlayerManager.swift in Sources */,
 				CCF388322A71C13900242581 /* MediaCatalog.swift in Sources */,

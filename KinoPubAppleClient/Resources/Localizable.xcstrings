@@ -10,6 +10,17 @@
     "200 Wide" : {
 
     },
+    "AlwaysOnTop" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показывать поверх остальных окон"
+          }
+        }
+      }
+    },
     "App version" : {
       "localizations" : {
         "en" : {

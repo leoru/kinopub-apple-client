@@ -20,6 +20,10 @@ struct KinoPubAppleClientApp: App {
   @StateObject var authState = AuthState(authService: AppContext.shared.authService,
                                          accessTokenService: AppContext.shared.accessTokenService)
   
+#if os(macOS)
+  @StateObject var windowSettings = WindowSettings()
+#endif
+  
 #if os(iOS)
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 #endif
@@ -41,6 +45,13 @@ struct KinoPubAppleClientApp: App {
     }
 #if os(macOS)
     .windowResizability(.contentSize)
+#endif
+    
+#if os(macOS)
+    Settings {
+      SettingsView()
+        .environmentObject(windowSettings)
+    }
 #endif
   }
 }

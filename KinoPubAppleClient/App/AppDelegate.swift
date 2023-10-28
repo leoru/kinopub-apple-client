@@ -29,6 +29,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 #if os(macOS)
 class AppDelegate: NSObject, NSApplicationDelegate {
   
+  var window: NSWindow?
+  
   func applicationDidFinishLaunching(_ notification: Notification) {
     FirebaseApp.configure()
   }
