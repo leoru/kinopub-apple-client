@@ -49,14 +49,6 @@ public struct ContentItemsListView: View {
     useReducedThumbnailSize ? 140 : 180
   }
 
-  var thumbnailSize: Double {
-#if os(iOS)
-    return useReducedThumbnailSize ? 60 : 100
-#else
-    return useReducedThumbnailSize ? 40 : 80
-#endif
-  }
-
   var gridLayout: [GridItem] {
     [GridItem(.adaptive(minimum: cellSize), spacing: 25, alignment: .top)]
   }

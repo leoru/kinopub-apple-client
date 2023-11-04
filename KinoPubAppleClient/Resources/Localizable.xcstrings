@@ -7,6 +7,9 @@
     "%lld" : {
 
     },
+    "1" : {
+
+    },
     "200 Wide" : {
 
     },
@@ -443,6 +446,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Год выхода"
+          }
+        }
+      }
+    },
+    "Seasons" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сезоны"
           }
         }
       }

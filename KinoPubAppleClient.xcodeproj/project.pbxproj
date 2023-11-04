@@ -18,6 +18,10 @@
 		CC1E212B2A966DCD00070F7C /* FilteDataServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1E212A2A966DCD00070F7C /* FilteDataServiceImpl.swift */; };
 		CC21151D2A7A8FA7001996BD /* MediaItemModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */; };
 		CC2115212A7AA6F8001996BD /* String+Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2115202A7AA6F8001996BD /* String+Localization.swift */; };
+		CC21CEAB2AF6B60500EFCA8E /* SeasonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21CEAA2AF6B60500EFCA8E /* SeasonsView.swift */; };
+		CC21CEAD2AF6B61500EFCA8E /* SeasonsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21CEAC2AF6B61500EFCA8E /* SeasonsModel.swift */; };
+		CC21CEB02AF6B62200EFCA8E /* SeasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21CEAF2AF6B62200EFCA8E /* SeasonView.swift */; };
+		CC21CEB22AF6B62A00EFCA8E /* SeasonModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21CEB12AF6B62A00EFCA8E /* SeasonModel.swift */; };
 		CC439CF52A83CC1400E00B36 /* UserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC439CF42A83CC1400E00B36 /* UserService.swift */; };
 		CC71E6EE2A6BF92D004AFB3F /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */; platformFilter = ios; };
 		CC71E6F02A6C048C004AFB3F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6EF2A6C048C004AFB3F /* Localizable.xcstrings */; };
@@ -98,6 +102,10 @@
 		CC1E212A2A966DCD00070F7C /* FilteDataServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilteDataServiceImpl.swift; sourceTree = "<group>"; };
 		CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemModel.swift; sourceTree = "<group>"; };
 		CC2115202A7AA6F8001996BD /* String+Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Localization.swift"; sourceTree = "<group>"; };
+		CC21CEAA2AF6B60500EFCA8E /* SeasonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonsView.swift; sourceTree = "<group>"; };
+		CC21CEAC2AF6B61500EFCA8E /* SeasonsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonsModel.swift; sourceTree = "<group>"; };
+		CC21CEAF2AF6B62200EFCA8E /* SeasonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonView.swift; sourceTree = "<group>"; };
+		CC21CEB12AF6B62A00EFCA8E /* SeasonModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonModel.swift; sourceTree = "<group>"; };
 		CC439CF42A83CC1400E00B36 /* UserService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserService.swift; sourceTree = "<group>"; };
 		CC676BC52A6ADBEE00B8AC66 /* KinoPubLogging */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubLogging; path = Packages/KinoPubLogging; sourceTree = "<group>"; };
 		CC71E6EC2A6B2FBE004AFB3F /* KinoPubKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubKit; path = Packages/KinoPubKit; sourceTree = "<group>"; };
@@ -203,6 +211,24 @@
 			path = Filtering;
 			sourceTree = "<group>";
 		};
+		CC21CEA92AF6B45500EFCA8E /* Seasons */ = {
+			isa = PBXGroup;
+			children = (
+				CC21CEAA2AF6B60500EFCA8E /* SeasonsView.swift */,
+				CC21CEAC2AF6B61500EFCA8E /* SeasonsModel.swift */,
+			);
+			path = Seasons;
+			sourceTree = "<group>";
+		};
+		CC21CEAE2AF6B61900EFCA8E /* Season */ = {
+			isa = PBXGroup;
+			children = (
+				CC21CEAF2AF6B62200EFCA8E /* SeasonView.swift */,
+				CC21CEB12AF6B62A00EFCA8E /* SeasonModel.swift */,
+			);
+			path = Season;
+			sourceTree = "<group>";
+		};
 		CC44462F2A828B2F0017F499 /* Download */ = {
 			isa = PBXGroup;
 			children = (
@@ -241,7 +267,6 @@
 			children = (
 				CC844A992A7D0DE400E2495A /* Filter */,
 				CCE9C6DD2A73EA11007923C0 /* Shortcut */,
-				CC71E6FB2A6C0678004AFB3F /* MainView.swift */,
 				CCF388312A71C13900242581 /* MediaCatalog.swift */,
 			);
 			path = Main;
@@ -307,6 +332,7 @@
 		CC844A992A7D0DE400E2495A /* Filter */ = {
 			isa = PBXGroup;
 			children = (
+				CC71E6FB2A6C0678004AFB3F /* MainView.swift */,
 				CC844A9A2A7D0DF100E2495A /* FilterView.swift */,
 				CC844A9C2A7D0E1700E2495A /* FilterModel.swift */,
 			);
@@ -481,6 +507,8 @@
 		CCF388152A71816B00242581 /* MediaItem */ = {
 			isa = PBXGroup;
 			children = (
+				CC21CEAE2AF6B61900EFCA8E /* Season */,
+				CC21CEA92AF6B45500EFCA8E /* Seasons */,
 				CC0146182A7835A200F858AF /* Subviews */,
 				CCE9C6D92A73DB73007923C0 /* MediaItemView.swift */,
 				CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */,
@@ -684,8 +712,10 @@
 				CC78FC482A82CDF600C5BDFD /* DownloadsCatalog.swift in Sources */,
 				CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */,
 				CCB4879D2A77D8FE00FA4483 /* MediaItemHeaderView.swift in Sources */,
+				CC21CEB22AF6B62A00EFCA8E /* SeasonModel.swift in Sources */,
 				CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */,
 				CC8202FD2A8656E70041079A /* BestVideoQualityFinder.swift in Sources */,
+				CC21CEAD2AF6B61500EFCA8E /* SeasonsModel.swift in Sources */,
 				CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */,
 				CCFBE1582A86BD91001CBEC1 /* Sidebar.swift in Sources */,
 				CC01461F2A783F8400F858AF /* Routes.swift in Sources */,
@@ -694,6 +724,7 @@
 				CC1E212B2A966DCD00070F7C /* FilteDataServiceImpl.swift in Sources */,
 				CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */,
 				CCC70B922A7FCA0D00274E5F /* ErrorHandler.swift in Sources */,
+				CC21CEAB2AF6B60500EFCA8E /* SeasonsView.swift in Sources */,
 				CCB487A12A77DBC200FA4483 /* MediaItemDescriptionCard.swift in Sources */,
 				CC748DEE2A83CCA200D87C0C /* UserServiceImpl.swift in Sources */,
 				CC78FC4A2A82D5D100C5BDFD /* DownloadedItemView.swift in Sources */,
@@ -704,6 +735,7 @@
 				CCE221B32A83CE9E007AF382 /* ProfileModel.swift in Sources */,
 				CC439CF52A83CC1400E00B36 /* UserService.swift in Sources */,
 				CCC70B942A7FCADC00274E5F /* View+ErrorState.swift in Sources */,
+				CC21CEB02AF6B62200EFCA8E /* SeasonView.swift in Sources */,
 				CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */,
 				CCF2ABB22AED37FD000448A8 /* SettingsView.swift in Sources */,
 				CC8203022A86BB0F0041079A /* SidebarView.swift in Sources */,

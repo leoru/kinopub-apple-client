@@ -10,6 +10,8 @@ import KinoPubBackend
 
 enum MainRoutes: Hashable {
   case details(MediaItem)
+  case seasons([Season])
+  case season(Season)
   case player(MediaItem)
   case trailerPlayer(MediaItem)
 }
@@ -17,6 +19,8 @@ enum MainRoutes: Hashable {
 enum BookmarksRoutes: Hashable {
   case bookmark(Bookmark)
   case details(MediaItem)
+  case seasons([Season])
+  case season(Season)
   case player(MediaItem)
   case trailerPlayer(MediaItem)
 }

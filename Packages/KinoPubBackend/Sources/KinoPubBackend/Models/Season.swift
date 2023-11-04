@@ -12,11 +12,24 @@ public struct Season: Codable, Hashable {
   public let number: Int
   public let watching: SeasonWatching
   public let episodes: [Episode]
-
+  
   private enum CodingKeys: String, CodingKey {
     case title = "title"
     case number = "number"
     case watching = "watching"
     case episodes = "episodes"
+  }
+  
+  public var fixedTitle: String {
+    if title.isEmpty {
+      return "Сезон \(number)"
+    }
+    return title
+  }
+}
+
+extension Season: Identifiable {
+  public var id: String {
+    "\(number)"
   }
 }

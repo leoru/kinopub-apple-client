@@ -51,6 +51,10 @@ struct BookmarksView: View {
           PlayerView(manager: PlayerManager(mediaItem: item,
                                             watchMode: .trailer,
                                             downloadedFilesDatabase: appContext.downloadedFilesDatabase))
+        case .seasons(let seasons):
+          SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: BookmarksRoutesLinkProvider()))
+        case .season(let season):
+          SeasonView(model: SeasonModel(season: season, linkProvider: BookmarksRoutesLinkProvider()))
         }
       }
       .handleError(state: $errorHandler.state)

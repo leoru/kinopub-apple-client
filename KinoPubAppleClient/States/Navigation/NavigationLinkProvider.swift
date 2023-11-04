@@ -12,6 +12,8 @@ protocol NavigationLinkProvider {
   func link(for item: MediaItem) -> any Hashable
   func player(for item: MediaItem) -> any Hashable
   func trailerPlayer(for item: MediaItem) -> any Hashable
+  func seasons(for seasons: [Season]) -> any Hashable
+  func season(for season: Season) -> any Hashable
 }
 
 struct MainRoutesLinkProvider: NavigationLinkProvider {
@@ -25,6 +27,14 @@ struct MainRoutesLinkProvider: NavigationLinkProvider {
   
   func trailerPlayer(for item: MediaItem) -> any Hashable {
     MainRoutes.trailerPlayer(item)
+  }
+  
+  func seasons(for seasons: [Season]) -> any Hashable {
+    MainRoutes.seasons(seasons)
+  }
+  
+  func season(for season: Season) -> any Hashable {
+    MainRoutes.season(season)
   }
 }
 
@@ -40,6 +50,14 @@ struct BookmarksRoutesLinkProvider: NavigationLinkProvider {
   func trailerPlayer(for item: MediaItem) -> any Hashable {
     BookmarksRoutes.trailerPlayer(item)
   }
+  
+  func seasons(for seasons: [Season]) -> any Hashable {
+    BookmarksRoutes.seasons(seasons)
+  }
+  
+  func season(for season: Season) -> any Hashable {
+    BookmarksRoutes.season(season)
+  }
 }
 
 struct DownloadsRoutesLinkProvider: NavigationLinkProvider {
@@ -53,5 +71,13 @@ struct DownloadsRoutesLinkProvider: NavigationLinkProvider {
   
   func trailerPlayer(for item: MediaItem) -> any Hashable {
     DownloadsRoutes.trailerPlayer(item)
+  }
+  
+  func seasons(for seasons: [Season]) -> any Hashable {
+    ""
+  }
+  
+  func season(for season: Season) -> any Hashable {
+    ""
   }
 }

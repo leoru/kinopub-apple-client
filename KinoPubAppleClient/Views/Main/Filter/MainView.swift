@@ -81,6 +81,10 @@ struct MainView: View {
           PlayerView(manager: PlayerManager(mediaItem: item,
                                             watchMode: .trailer,
                                             downloadedFilesDatabase: appContext.downloadedFilesDatabase))
+        case .seasons(let seasons):
+          SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: MainRoutesLinkProvider()))
+        case .season(let season):
+          SeasonView(model: SeasonModel(season: season, linkProvider: MainRoutesLinkProvider()))
         }
       }
       .handleError(state: $errorHandler.state)

@@ -43,6 +43,13 @@ struct MediaItemHeaderView: View {
             Text("Смотреть")
               .modifier(KinoPubButtonTextStyle())
           }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
+          
+          if let seasons = mediaItem.seasons, !seasons.isEmpty {
+            NavigationLink(value: linkProvider.seasons(for: seasons)) {
+              Text("Seasons")
+                .modifier(KinoPubButtonTextStyle())
+            }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
+          }
           NavigationLink(value: linkProvider.trailerPlayer(for: mediaItem)) {
             Text("Трейлер")
               .modifier(KinoPubButtonTextStyle())
