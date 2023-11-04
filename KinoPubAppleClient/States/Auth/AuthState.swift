@@ -10,6 +10,7 @@ import Foundation
 import KinoPubBackend
 import KinoPubLogging
 import OSLog
+
 /// Represents the state of the user's authentication.
 enum UserState {
   case unauthorized

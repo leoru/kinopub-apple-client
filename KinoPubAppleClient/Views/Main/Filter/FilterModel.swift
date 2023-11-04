@@ -20,5 +20,8 @@ class FilterModel: ObservableObject {
   @Published var imdbFilterEnabled: Bool = false
   @Published var imdbMin: Int = 0
   @Published var imdbMax: Int = 0
+  
+  @Published var selectedGenre: MediaGenre?
+  @Published var selectedCountry: Country?
 
 }

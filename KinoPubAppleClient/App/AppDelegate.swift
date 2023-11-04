@@ -11,6 +11,8 @@ import FirebaseCore
 
 #if os(iOS)
 class AppDelegate: NSObject, UIApplicationDelegate {
+  
+  // This flag is used to lock orientation on the player view
   static var orientationLock = UIInterfaceOrientationMask.all
   
   func application(_ application: UIApplication,

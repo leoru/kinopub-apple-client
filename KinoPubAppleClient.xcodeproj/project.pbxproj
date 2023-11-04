@@ -214,7 +214,7 @@
 		CC71E6F12A6C04AE004AFB3F /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				CCF2ABB02AED37F2000448A8 /* Settings */,
+				CCA5023B2AF24FB400B18283 /* macOS */,
 				CC71E6F52A6C05BF004AFB3F /* Auth */,
 				CC71E6F42A6C05B9004AFB3F /* Bookmarks */,
 				CC71E6FD2A6C0691004AFB3F /* Downloads */,
@@ -230,7 +230,6 @@
 		CC71E6F22A6C04B5004AFB3F /* Root */ = {
 			isa = PBXGroup;
 			children = (
-				CCC963172A883FCC0074A2F9 /* macOS */,
 				CC7734472A86BBBC00FE56CF /* TabsNavigationView.swift */,
 				CC88E1E62A6586E600E9387F /* RootView.swift */,
 			);
@@ -379,6 +378,25 @@
 			name = Packages;
 			sourceTree = "<group>";
 		};
+		CCA5023B2AF24FB400B18283 /* macOS */ = {
+			isa = PBXGroup;
+			children = (
+				CCA5023C2AF24FCB00B18283 /* Sidebar */,
+				CCF2ABB02AED37F2000448A8 /* Settings */,
+			);
+			path = macOS;
+			sourceTree = "<group>";
+		};
+		CCA5023C2AF24FCB00B18283 /* Sidebar */ = {
+			isa = PBXGroup;
+			children = (
+				CCFBE1572A86BD91001CBEC1 /* Sidebar.swift */,
+				CC8203012A86BB0F0041079A /* SidebarView.swift */,
+				CCE1BCA12A86D1F90012E474 /* SidebarNavigationDetail.swift */,
+			);
+			path = Sidebar;
+			sourceTree = "<group>";
+		};
 		CCC70B862A7FBF5300274E5F /* List */ = {
 			isa = PBXGroup;
 			children = (
@@ -433,16 +451,6 @@
 				CC0146342A78439600F858AF /* NavigationLinkProvider.swift */,
 			);
 			path = Navigation;
-			sourceTree = "<group>";
-		};
-		CCC963172A883FCC0074A2F9 /* macOS */ = {
-			isa = PBXGroup;
-			children = (
-				CCFBE1572A86BD91001CBEC1 /* Sidebar.swift */,
-				CC8203012A86BB0F0041079A /* SidebarView.swift */,
-				CCE1BCA12A86D1F90012E474 /* SidebarNavigationDetail.swift */,
-			);
-			path = macOS;
 			sourceTree = "<group>";
 		};
 		CCE9C6DD2A73EA11007923C0 /* Shortcut */ = {

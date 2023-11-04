@@ -40,7 +40,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CC88E1E02A6586E600E9387F"
-            BuildableName = "KinoPubAppleClient.app"
+            BuildableName = "KinoPub.app"
             BlueprintName = "KinoPubAppleClient"
             ReferencedContainer = "container:../../KinoPubAppleClient.xcodeproj">
          </BuildableReference>
@@ -56,7 +56,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CC88E1E02A6586E600E9387F"
-            BuildableName = "KinoPubAppleClient.app"
+            BuildableName = "KinoPub.app"
             BlueprintName = "KinoPubAppleClient"
             ReferencedContainer = "container:../../KinoPubAppleClient.xcodeproj">
          </BuildableReference>

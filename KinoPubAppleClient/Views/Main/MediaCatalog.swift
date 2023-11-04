@@ -92,22 +92,35 @@ class MediaCatalog: ObservableObject {
   }
 
   private func subscribe() {
-    $contentType.dropFirst().sink { [weak self] _ in
+    $contentType
+      .dropFirst()
+      .removeDuplicates()
+      .sink { [weak self] _ in
       self?.refresh()
     }.store(in: &bag)
 
-    $shortcut.dropFirst().sink { [weak self] _ in
+    $shortcut
+      .dropFirst()
+      .removeDuplicates()
+      .sink { [weak self] _ in
       self?.refresh()
     }.store(in: &bag)
 
-    $query.dropFirst().debounce(for: .seconds(0.5), scheduler: DispatchQueue.main).sink { [weak self] _ in
+    $query
+      .dropFirst()
+      .removeDuplicates()
+      .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
+      .sink { [weak self] _ in
       self?.items = MediaItem.skeletonMock()
       self?.refresh()
     }.store(in: &bag)
   }
 
   private func subscribeForAuth() {
-    authState.$userState.filter({ $0 == .authorized }).first().sink { [weak self] _ in
+    authState.$userState.filter({ $0 == .authorized })
+      .first()
+      .removeDuplicates()
+      .sink { [weak self] _ in
       self?.refresh()
     }.store(in: &bag)
   }
