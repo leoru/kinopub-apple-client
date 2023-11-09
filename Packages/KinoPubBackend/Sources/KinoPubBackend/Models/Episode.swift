@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct Episode: Codable, Hashable {
+public struct Episode: Codable, Hashable, Identifiable {
   public let id: Int
   public let title: String
   public let thumbnail: String
@@ -20,4 +20,15 @@ public struct Episode: Codable, Hashable {
   public let watching: EpisodeWatching
   public let subtitles: [Subtitle]
   public let files: [FileInfo]
+  
+  public var fixedTitle: String {
+    if title.isEmpty {
+      return "Серия \(number)"
+    }
+    return title
+  }
+}
+
+extension Episode: PlayableItem {
+  public var trailer: Trailer? { nil }
 }

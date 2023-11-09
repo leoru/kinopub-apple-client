@@ -52,7 +52,7 @@ public struct DownloadedItemView: View {
     AsyncImage(url: URL(string: mediaItem.posters.small)) { image in
       image.resizable()
         .renderingMode(.original)
-        .posterStyle(size: .small)
+        .posterStyle(size: .small, orientation: .vertical)
     } placeholder: {
       Color.KinoPub.skeleton
         .frame(width: PosterStyle.Size.small.width,

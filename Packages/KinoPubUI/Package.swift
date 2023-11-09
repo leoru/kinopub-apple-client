@@ -13,7 +13,7 @@ let package = Package(
   ],
   dependencies: [
     .package(name: "KinoPubBackend", path: "../KinoPubBackend"),
-    .package(url: "https://github.com/CSolanaM/SkeletonUI.git", .branch("master"))
+    .package(url: "https://github.com/CSolanaM/SkeletonUI.git", branch: "master")
   ],
   targets: [
     .target(

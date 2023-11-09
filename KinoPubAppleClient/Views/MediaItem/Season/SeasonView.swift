@@ -12,21 +12,39 @@ import KinoPubBackend
 
 struct SeasonView: View {
   @StateObject private var model: SeasonModel
-
+  
   init(model: @autoclosure @escaping () -> SeasonModel) {
     _model = StateObject(wrappedValue: model())
   }
-
+  
+  var cellSize: Double { 140 }
+  
   var body: some View {
     VStack {
       listView
     }
-    .navigationTitle(model.season.title)
+    .navigationTitle(model.season.fixedTitle)
     .background(Color.KinoPub.background)
   }
-
+  
+  var gridLayout: [GridItem] {
+    [GridItem(.adaptive(minimum: cellSize), spacing: 16, alignment: .top)]
+  }
+  
   var listView: some View {
-    Text("1")
-    .scrollContentBackground(.hidden)
+    ScrollView {
+      LazyVGrid(columns: gridLayout, content: {
+        ForEach(model.season.episodes, id: \.id) { item in
+          NavigationLink(value: model.linkProvider.player(for: item)) {
+            SeasonItemView(episode: item)
+              .padding(.bottom, 16)
+          }
+#if os(macOS)
+          .buttonStyle(PlainButtonStyle())
+#endif
+        }
+      })
+      .padding(.horizontal, 16)
+    }
   }
 }

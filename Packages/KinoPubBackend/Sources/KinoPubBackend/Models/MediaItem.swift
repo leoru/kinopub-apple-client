@@ -175,3 +175,9 @@ public extension MediaItem {
     title.split(separator: "/").first?.trimmingCharacters(in: .whitespaces)
   }
 }
+
+extension MediaItem: PlayableItem {
+  public var files: [FileInfo] {
+    videos?.first?.files ?? []
+  }
+}

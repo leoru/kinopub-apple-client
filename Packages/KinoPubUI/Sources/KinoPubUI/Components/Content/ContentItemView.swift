@@ -37,7 +37,7 @@ public struct ContentItemView: View {
     AsyncImage(url: URL(string: mediaItem.posters.medium)) { image in
       image.resizable()
         .renderingMode(.original)
-        .posterStyle(size: .medium)
+        .posterStyle(size: .medium, orientation: .vertical)
     } placeholder: {
       Color.KinoPub.skeleton
         .frame(width: PosterStyle.Size.medium.width,

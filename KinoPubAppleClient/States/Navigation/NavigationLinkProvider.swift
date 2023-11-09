@@ -10,8 +10,8 @@ import KinoPubBackend
 
 protocol NavigationLinkProvider {
   func link(for item: MediaItem) -> any Hashable
-  func player(for item: MediaItem) -> any Hashable
-  func trailerPlayer(for item: MediaItem) -> any Hashable
+  func player(for item: any PlayableItem) -> any Hashable
+  func trailerPlayer(for item: any PlayableItem) -> any Hashable
   func seasons(for seasons: [Season]) -> any Hashable
   func season(for season: Season) -> any Hashable
 }
@@ -21,11 +21,11 @@ struct MainRoutesLinkProvider: NavigationLinkProvider {
     MainRoutes.details(item)
   }
   
-  func player(for item: MediaItem) -> any Hashable {
+  func player(for item: any PlayableItem) -> any Hashable {
     MainRoutes.player(item)
   }
   
-  func trailerPlayer(for item: MediaItem) -> any Hashable {
+  func trailerPlayer(for item: any PlayableItem) -> any Hashable {
     MainRoutes.trailerPlayer(item)
   }
   
@@ -43,11 +43,11 @@ struct BookmarksRoutesLinkProvider: NavigationLinkProvider {
     BookmarksRoutes.details(item)
   }
   
-  func player(for item: MediaItem) -> any Hashable {
+  func player(for item: any PlayableItem) -> any Hashable {
     BookmarksRoutes.player(item)
   }
   
-  func trailerPlayer(for item: MediaItem) -> any Hashable {
+  func trailerPlayer(for item: any PlayableItem) -> any Hashable {
     BookmarksRoutes.trailerPlayer(item)
   }
   
@@ -65,11 +65,11 @@ struct DownloadsRoutesLinkProvider: NavigationLinkProvider {
     BookmarksRoutes.details(item)
   }
   
-  func player(for item: MediaItem) -> any Hashable {
+  func player(for item: any PlayableItem) -> any Hashable {
     DownloadsRoutes.player(item)
   }
   
-  func trailerPlayer(for item: MediaItem) -> any Hashable {
+  func trailerPlayer(for item: any PlayableItem) -> any Hashable {
     DownloadsRoutes.trailerPlayer(item)
   }
   
