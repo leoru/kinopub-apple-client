@@ -24,6 +24,7 @@
 		CC21CEB22AF6B62A00EFCA8E /* SeasonModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21CEB12AF6B62A00EFCA8E /* SeasonModel.swift */; };
 		CC2C35DF2AFD6722009B8CF1 /* SeasonItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2C35DE2AFD6722009B8CF1 /* SeasonItemView.swift */; };
 		CC439CF52A83CC1400E00B36 /* UserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC439CF42A83CC1400E00B36 /* UserService.swift */; };
+		CC60254A2AFE7191003D8391 /* DownloadMeta.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC6025492AFE7191003D8391 /* DownloadMeta.swift */; };
 		CC71E6EE2A6BF92D004AFB3F /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */; platformFilter = ios; };
 		CC71E6F02A6C048C004AFB3F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = CC71E6EF2A6C048C004AFB3F /* Localizable.xcstrings */; };
 		CC71E6F82A6C0626004AFB3F /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E6F72A6C0626004AFB3F /* ProfileView.swift */; };
@@ -109,6 +110,7 @@
 		CC21CEB12AF6B62A00EFCA8E /* SeasonModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonModel.swift; sourceTree = "<group>"; };
 		CC2C35DE2AFD6722009B8CF1 /* SeasonItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonItemView.swift; sourceTree = "<group>"; };
 		CC439CF42A83CC1400E00B36 /* UserService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserService.swift; sourceTree = "<group>"; };
+		CC6025492AFE7191003D8391 /* DownloadMeta.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadMeta.swift; sourceTree = "<group>"; };
 		CC676BC52A6ADBEE00B8AC66 /* KinoPubLogging */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubLogging; path = Packages/KinoPubLogging; sourceTree = "<group>"; };
 		CC71E6EC2A6B2FBE004AFB3F /* KinoPubKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubKit; path = Packages/KinoPubKit; sourceTree = "<group>"; };
 		CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
@@ -240,6 +242,14 @@
 			path = Download;
 			sourceTree = "<group>";
 		};
+		CC6025482AFE70F6003D8391 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				CC6025492AFE7191003D8391 /* DownloadMeta.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
 		CC71E6F12A6C04AE004AFB3F /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -305,6 +315,7 @@
 		CC71E6FD2A6C0691004AFB3F /* Downloads */ = {
 			isa = PBXGroup;
 			children = (
+				CC6025482AFE70F6003D8391 /* Models */,
 				CC78FC472A82CDF600C5BDFD /* DownloadsCatalog.swift */,
 				CC71E6FE2A6C069D004AFB3F /* DownloadsView.swift */,
 				CC78FC492A82D5D100C5BDFD /* DownloadedItemView.swift */,
@@ -739,6 +750,7 @@
 				CC439CF52A83CC1400E00B36 /* UserService.swift in Sources */,
 				CCC70B942A7FCADC00274E5F /* View+ErrorState.swift in Sources */,
 				CC21CEB02AF6B62200EFCA8E /* SeasonView.swift in Sources */,
+				CC60254A2AFE7191003D8391 /* DownloadMeta.swift in Sources */,
 				CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */,
 				CCF2ABB22AED37FD000448A8 /* SettingsView.swift in Sources */,
 				CC8203022A86BB0F0041079A /* SidebarView.swift in Sources */,

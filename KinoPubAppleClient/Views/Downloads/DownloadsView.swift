@@ -102,9 +102,9 @@ struct DownloadsView: View {
 struct DownloadsView_Previews: PreviewProvider {
   static var previews: some View {
     
-    let database = DownloadedFilesDatabase<MediaItem>(fileSaver: FileSaver())
+    let database = DownloadedFilesDatabase<DownloadMeta>(fileSaver: FileSaver())
     
-    let downloadManager = DownloadManager<MediaItem>(fileSaver: FileSaver(), database: database)
+    let downloadManager = DownloadManager<DownloadMeta>(fileSaver: FileSaver(), database: database)
     
     DownloadsView(catalog: DownloadsCatalog(downloadsDatabase: database,
                                             downloadManager: downloadManager))

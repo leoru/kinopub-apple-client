@@ -10,11 +10,11 @@ import KinoPubKit
 import KinoPubBackend
 
 protocol DownloadedFilesDatabaseProvider {
-  var downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem> { get set }
+  var downloadedFilesDatabase: DownloadedFilesDatabase<DownloadMeta> { get set }
 }
 
 protocol DownloadManagerProvider {
-  var downloadManager: DownloadManager<MediaItem> { get set }
+  var downloadManager: DownloadManager<DownloadMeta> { get set }
 }
 
 protocol FileSaverProvider {

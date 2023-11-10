@@ -12,11 +12,11 @@ import KinoPubUI
 
 public struct DownloadedItemView: View {
   
-  private var mediaItem: MediaItem
+  private var mediaItem: DownloadMeta
   private var progress: Float?
   private var onDownloadStateChange: (Bool) -> Void
   
-  public init(mediaItem: MediaItem,
+  public init(mediaItem: DownloadMeta,
               progress: Float?,
               onDownloadStateChange: @escaping (Bool) -> Void) {
     self.mediaItem = mediaItem
@@ -49,7 +49,7 @@ public struct DownloadedItemView: View {
   }
   
   var image: some View {
-    AsyncImage(url: URL(string: mediaItem.posters.small)) { image in
+    AsyncImage(url: URL(string: mediaItem.imageUrl)) { image in
       image.resizable()
         .renderingMode(.original)
         .posterStyle(size: .small, orientation: .vertical)
@@ -62,7 +62,7 @@ public struct DownloadedItemView: View {
   }
   
   var title: some View {
-    Text(mediaItem.localizedTitle ?? "")
+    Text(mediaItem.localizedTitle)
       .lineLimit(1)
       .font(.system(size: 14.0, weight: .medium))
       .foregroundStyle(Color.KinoPub.text)
@@ -70,7 +70,7 @@ public struct DownloadedItemView: View {
   }
   
   var subtitle: some View {
-    Text(mediaItem.originalTitle ?? "")
+    Text(mediaItem.originalTitle)
       .lineLimit(1)
       .font(.system(size: 12.0, weight: .medium))
       .foregroundStyle(Color.KinoPub.subtitle)
@@ -79,7 +79,7 @@ public struct DownloadedItemView: View {
 }
 
 #Preview {
-  DownloadedItemView(mediaItem: MediaItem.mock(), progress: nil) { _ in
+  DownloadedItemView(mediaItem: DownloadMeta.make(from: DownloadableMediaItem(name: "", files: [], mediaItem: MediaItem.mock())), progress: nil) { _ in
     
   }
 }

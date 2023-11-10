@@ -480,19 +480,19 @@
         }
       }
     },
-    "Settings" : {
-      "extractionState" : "stale",
+    "Standard" : {
+
+    },
+    "Trailer" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Настройки"
+            "value" : "Трейлер"
           }
         }
       }
-    },
-    "Standard" : {
-
     },
     "TV Show" : {
       "extractionState" : "manual",
@@ -535,6 +535,17 @@
         }
       }
     },
+    "Watch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Смотреть"
+          }
+        }
+      }
+    },
     "X Large Type" : {
 
     },
@@ -547,23 +558,6 @@
           }
         }
       }
-    },
-    "Главная" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Главная"
-          }
-        }
-      }
-    },
-    "Смотреть" : {
-
-    },
-    "Трейлер" : {
-
     }
   },
   "version" : "1.0"

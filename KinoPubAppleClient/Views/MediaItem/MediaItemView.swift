@@ -40,7 +40,7 @@ struct MediaItemView: View {
           headerView
           Grid(horizontalSpacing: 12, verticalSpacing: 12) {
             MediaItemDescriptionCard(mediaItem: itemModel.mediaItem, isSkeleton: !itemModel.itemLoaded) {
-              itemModel.startDownload(file: $0)
+              itemModel.startDownload(item: $0, file: $1)
             }
             MediaItemFieldsCard(mediaItem: itemModel.mediaItem, isSkeleton: !itemModel.itemLoaded)
           }
@@ -75,8 +75,8 @@ struct MediaItemView_Previews: PreviewProvider {
     var body: some View {
       MediaItemView(model: MediaItemModel(mediaItemId: MediaItem.mock().id,
                                           itemsService: VideoContentServiceMock(),
-                                          downloadManager: DownloadManager<MediaItem>(fileSaver: FileSaver(),
-                                                                                      database: DownloadedFilesDatabase<MediaItem>(fileSaver: FileSaver())),
+                                          downloadManager: DownloadManager<DownloadMeta>(fileSaver: FileSaver(),
+                                                                                      database: DownloadedFilesDatabase<DownloadMeta>(fileSaver: FileSaver())),
                                           linkProvider: MainRoutesLinkProvider(),
                                           errorHandler: ErrorHandler()))
     }

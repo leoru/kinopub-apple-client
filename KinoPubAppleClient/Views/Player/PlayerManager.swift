@@ -24,7 +24,7 @@ class PlayerManager: ObservableObject {
   var playItem: any PlayableItem
   private var watchMode: WatchMode
   
-  private var downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>
+  private var downloadedFilesDatabase: DownloadedFilesDatabase<DownloadMeta>
   private var rateObservation: NSKeyValueObservation?
   
   private var fileURL: URL {
@@ -42,7 +42,7 @@ class PlayerManager: ObservableObject {
   
   init(playItem: any PlayableItem,
        watchMode: WatchMode,
-       downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>) {
+       downloadedFilesDatabase: DownloadedFilesDatabase<DownloadMeta>) {
     self.playItem = playItem
     self.watchMode = watchMode
     self.downloadedFilesDatabase = downloadedFilesDatabase

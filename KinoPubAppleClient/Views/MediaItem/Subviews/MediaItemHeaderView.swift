@@ -40,7 +40,7 @@ struct MediaItemHeaderView: View {
         Spacer()
         HStack {
           NavigationLink(value: linkProvider.player(for: mediaItem)) {
-            Text("Смотреть")
+            Text("Watch")
               .modifier(KinoPubButtonTextStyle())
           }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
           
@@ -51,7 +51,7 @@ struct MediaItemHeaderView: View {
             }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
           }
           NavigationLink(value: linkProvider.trailerPlayer(for: mediaItem)) {
-            Text("Трейлер")
+            Text("Trailer")
               .modifier(KinoPubButtonTextStyle())
           }.buttonStyle(KinoPubButtonStyle(buttonColor: .gray))
         }

@@ -15,7 +15,7 @@ import KinoPubKit
 class MediaItemModel: ObservableObject {
 
   private var itemsService: VideoContentService
-  private var downloadManager: DownloadManager<MediaItem>
+  private var downloadManager: DownloadManager<DownloadMeta>
   private var errorHandler: ErrorHandler
   public var linkProvider: NavigationLinkProvider
   public var mediaItemId: Int
@@ -25,7 +25,7 @@ class MediaItemModel: ObservableObject {
 
   init(mediaItemId: Int,
        itemsService: VideoContentService,
-       downloadManager: DownloadManager<MediaItem>,
+       downloadManager: DownloadManager<DownloadMeta>,
        linkProvider: NavigationLinkProvider,
        errorHandler: ErrorHandler) {
     self.itemsService = itemsService
@@ -46,8 +46,8 @@ class MediaItemModel: ObservableObject {
     }
   }
   
-  func startDownload(file: FileInfo) {
-    _ = downloadManager.startDownload(url: URL(string: file.url.http)!, withMetadata: mediaItem)
+  func startDownload(item: DownloadableMediaItem, file: FileInfo) {
+    _ = downloadManager.startDownload(url: URL(string: file.url.http)!, withMetadata: DownloadMeta.make(from: item))
   }
 
 }

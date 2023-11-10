@@ -91,6 +91,26 @@ public struct MediaItem: Codable, Hashable {
   }
 }
 
+public extension MediaItem {
+  var isSeries: Bool {
+    !(seasons?.isEmpty ?? false)
+  }
+}
+
+// MARK: - All series files list
+
+public extension MediaItem {
+  
+  var downloadableItems: [DownloadableMediaItem] {
+    return seasons?.flatMap({ season in
+      season.episodes.map({ episode in
+        DownloadableMediaItem(name: "S\(season.number)E\(episode.number)", files: episode.files, mediaItem: self)
+      })
+    }) ?? []
+  }
+  
+}
+
 // MARK: - Downloadable url
 
 public extension MediaItem {
@@ -167,12 +187,12 @@ public extension MediaItem {
 extension MediaItem: Identifiable { }
 
 public extension MediaItem {
-  var originalTitle: String? {
-    title.split(separator: "/").last?.trimmingCharacters(in: .whitespaces)
+  var originalTitle: String {
+    title.split(separator: "/").last?.trimmingCharacters(in: .whitespaces) ?? title
   }
 
-  var localizedTitle: String? {
-    title.split(separator: "/").first?.trimmingCharacters(in: .whitespaces)
+  var localizedTitle: String {
+    title.split(separator: "/").first?.trimmingCharacters(in: .whitespaces) ?? title
   }
 }
 

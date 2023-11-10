@@ -15,11 +15,11 @@ import Combine
 @MainActor
 class DownloadsCatalog: ObservableObject {
   
-  private var downloadsDatabase: DownloadedFilesDatabase<MediaItem>
-  private var downloadManager: DownloadManager<MediaItem>
+  private var downloadsDatabase: DownloadedFilesDatabase<DownloadMeta>
+  private var downloadManager: DownloadManager<DownloadMeta>
   
-  @Published public var downloadedItems: [DownloadedFileInfo<MediaItem>] = []
-  @Published public var activeDownloads: [Download<MediaItem>] = []
+  @Published public var downloadedItems: [DownloadedFileInfo<DownloadMeta>] = []
+  @Published public var activeDownloads: [Download<DownloadMeta>] = []
   
   var cancellables = [AnyCancellable]()
   
@@ -27,7 +27,7 @@ class DownloadsCatalog: ObservableObject {
     downloadedItems.isEmpty && activeDownloads.isEmpty
   }
   
-  init(downloadsDatabase: DownloadedFilesDatabase<MediaItem>, downloadManager: DownloadManager<MediaItem>) {
+  init(downloadsDatabase: DownloadedFilesDatabase<DownloadMeta>, downloadManager: DownloadManager<DownloadMeta>) {
     self.downloadsDatabase = downloadsDatabase
     self.downloadManager = downloadManager
   }
@@ -57,7 +57,7 @@ class DownloadsCatalog: ObservableObject {
     }
   }
   
-  func toggle(download: Download<MediaItem>) {
+  func toggle(download: Download<DownloadMeta>) {
     if download.state == .inProgress {
       download.pause()
     } else {

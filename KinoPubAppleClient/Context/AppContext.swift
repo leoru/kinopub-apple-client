@@ -46,8 +46,8 @@ struct AppContext: AppContextProtocol {
   var userService: UserService
   var keychainStorage: KeychainStorage
   var fileSaver: FileSaving
-  var downloadManager: DownloadManager<MediaItem>
-  var downloadedFilesDatabase: DownloadedFilesDatabase<MediaItem>
+  var downloadManager: DownloadManager<DownloadMeta>
+  var downloadedFilesDatabase: DownloadedFilesDatabase<DownloadMeta>
   
   static let shared: AppContext = {
     let configuration = BundleConfiguration()
@@ -57,8 +57,8 @@ struct AppContext: AppContextProtocol {
     // Downloads
     
     let fileSaver = FileSaver()
-    let downloadedFilesDatabase = DownloadedFilesDatabase<MediaItem>(fileSaver: fileSaver)
-    let downloadManager = DownloadManager<MediaItem>(fileSaver: fileSaver, database: downloadedFilesDatabase)
+    let downloadedFilesDatabase = DownloadedFilesDatabase<DownloadMeta>(fileSaver: fileSaver)
+    let downloadManager = DownloadManager<DownloadMeta>(fileSaver: fileSaver, database: downloadedFilesDatabase)
     // Api Client
     let apiClient = makeApiClient(with: configuration.baseURL, accessTokenService: accessTokenService)
     

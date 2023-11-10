@@ -14,9 +14,11 @@ struct MediaItemDescriptionCard: View {
   
   var mediaItem: MediaItem
   var isSkeleton: Bool
+  @State private var selectedDownloadableItem: DownloadableMediaItem?
   @State private var showDownloadPicker: Bool = false
+  @State private var showDownloadableItemPicker: Bool = false
   
-  var onDownload: (FileInfo) -> Void
+  var onDownload: (DownloadableMediaItem,FileInfo) -> Void
   
   var body: some View {
     VStack(alignment: .leading) {
@@ -65,13 +67,31 @@ struct MediaItemDescriptionCard: View {
   
   var actionIcons: some View {
     HStack {
-      Button(action: { showDownloadPicker = true }, label: {
+      Button(action: {
+        if mediaItem.seasons?.count ?? 0 > 0 {
+          showDownloadableItemPicker = true
+        } else {
+          self.selectedDownloadableItem = DownloadableMediaItem(name: mediaItem.title, files: mediaItem.files, mediaItem: mediaItem)
+          showDownloadPicker = true
+        }
+      }, label: {
         image(imageName: "arrow.down.circle")
       })
       .confirmationDialog("", isPresented: $showDownloadPicker, titleVisibility: .hidden) {
-        ForEach(mediaItem.videos?.first?.files ?? []) { file in
+        ForEach(selectedDownloadableItem?.files ?? []) { file in
           Button(file.quality) {
-            onDownload(file)
+            guard let selectedDownloadableItem else {
+              return
+            }
+            onDownload(selectedDownloadableItem, file)
+          }
+        }
+      }
+      .confirmationDialog("", isPresented: $showDownloadableItemPicker, titleVisibility: .hidden) {
+        ForEach(mediaItem.downloadableItems) { item in
+          Button(item.name) {
+            selectedDownloadableItem = item
+            showDownloadPicker = true
           }
         }
       }
@@ -114,7 +134,7 @@ struct MediaItemDescriptionCard: View {
 struct MediaItemDescriptionCard_Previews: PreviewProvider {
   struct Preview: View {
     var body: some View {
-      MediaItemDescriptionCard(mediaItem: MediaItem.mock(), isSkeleton: true, onDownload: { _ in })
+      MediaItemDescriptionCard(mediaItem: MediaItem.mock(), isSkeleton: true, onDownload: { _,_  in })
     }
   }
   
