@@ -148,7 +148,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ё"
+            "value" : "Концерт"
+          }
+        }
+      }
+    },
+    "Continue Watching" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Продолжить просмотр с"
           }
         }
       }
@@ -396,6 +407,17 @@
         }
       }
     },
+    "No" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет"
+          }
+        }
+      }
+    },
     "No resuts" : {
       "localizations" : {
         "en" : {
@@ -548,6 +570,17 @@
     },
     "X Large Type" : {
 
+    },
+    "Yes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Да"
+          }
+        }
+      }
     },
     "You don't have any downloads yet" : {
       "localizations" : {

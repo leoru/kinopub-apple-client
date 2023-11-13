@@ -7,6 +7,6 @@
 
 import Foundation
 
-public struct EmptyResponseData {
+public struct EmptyResponseData: Codable {
   public var status: Int
 }

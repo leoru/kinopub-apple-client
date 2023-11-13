@@ -11,4 +11,5 @@ public protocol PlayableItem: Identifiable, Hashable, Equatable {
   var id: Int { get }
   var files: [FileInfo] { get }
   var trailer: Trailer? { get }
+  var metadata: WatchingMetadata { get }
 }

@@ -25,6 +25,9 @@ struct PlayerView: View {
       ZStack(alignment: .top) {
         videoPlayer
         backButton
+        if let continueTime = playerManager.continueTime {
+          continueWatching(to: continueTime)
+        }
       }
       .ignoresSafeArea(.all)
     }
@@ -46,6 +49,9 @@ struct PlayerView: View {
       UIDevice.current.setValue(UIInterfaceOrientation.landscapeLeft.rawValue, forKey: "orientation")
       AppDelegate.orientationLock = .landscape
       toggleSidebar()
+      Task {
+        await playerManager.fetchWatchMark()
+      }
     })
     .onDisappear(perform: {
       UIApplication.shared.isIdleTimerDisabled = false
@@ -80,6 +86,20 @@ struct PlayerView: View {
     }
     .fixedSize(horizontal: false, vertical: true)
     .opacity(hideNavigationBar ? 0.0 : 1.0)
+  }
+  
+  func continueWatching(to continueTime: TimeInterval) -> some View {
+    VStack(alignment: .center) {
+      Spacer()
+      PlayerContinueWatchingView(time: continueTime, onContinueWatching: {
+        playerManager.seekToContinueWatching()
+      }, onCancelContinueWatching: {
+        playerManager.cancelContinueWatching()
+      })
+      .frame(width: 180, height: 50)
+      .padding(.bottom, 50)
+    }
+    
   }
   
   private func toggleSidebar() {

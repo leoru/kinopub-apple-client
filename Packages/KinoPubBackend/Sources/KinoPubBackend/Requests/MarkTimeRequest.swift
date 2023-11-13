@@ -11,13 +11,13 @@ public struct MarkTimeRequest: Endpoint {
   
   public var id: Int
   public var time: Int
-  public var video: Int
+  public var video: Int = -1
   public var season: Int = -1
   
-  init(id: Int, time: Int, video: Int, season: Int? = nil) {
+  public init(id: Int, time: Int, video: Int? = nil, season: Int? = nil) {
     self.id = id
     self.time = time
-    self.video = video
+    self.video = video ?? -1
     self.season = season ?? -1
   }
   

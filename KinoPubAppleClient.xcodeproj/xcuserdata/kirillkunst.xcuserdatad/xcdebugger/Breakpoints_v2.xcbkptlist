@@ -1680,9 +1680,9 @@
             filePath = "KinoPubAppleClient/Views/Player/PlayerManager.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "43"
-            endingLineNumber = "43"
-            landmarkName = "init(playItem:watchMode:downloadedFilesDatabase:)"
+            startingLineNumber = "49"
+            endingLineNumber = "49"
+            landmarkName = "init(playItem:watchMode:downloadedFilesDatabase:actionsService:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -1884,8 +1884,8 @@
             filePath = "Packages/KinoPubBackend/Sources/KinoPubBackend/Models/MediaItem.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "119"
-            endingLineNumber = "119"
+            startingLineNumber = "122"
+            endingLineNumber = "122"
             landmarkName = "downloadableURL"
             landmarkType = "24">
          </BreakpointContent>
@@ -2152,8 +2152,8 @@
             filePath = "KinoPubAppleClient/Views/Player/PlayerManager.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "33"
-            endingLineNumber = "33"
+            startingLineNumber = "39"
+            endingLineNumber = "39"
             landmarkName = "fileURL"
             landmarkType = "24">
             <Locations>
@@ -2536,8 +2536,8 @@
             filePath = "KinoPubAppleClient/Views/Player/PlayerView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "86"
-            endingLineNumber = "86"
+            startingLineNumber = "106"
+            endingLineNumber = "106"
             landmarkName = "toggleSidebar()"
             landmarkType = "7">
          </BreakpointContent>
@@ -2552,8 +2552,8 @@
             filePath = "KinoPubAppleClient/Views/Player/PlayerView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "47"
-            endingLineNumber = "47"
+            startingLineNumber = "50"
+            endingLineNumber = "50"
             landmarkName = "body"
             landmarkType = "24">
          </BreakpointContent>
@@ -2616,8 +2616,8 @@
             filePath = "KinoPubAppleClient/Views/MediaItem/Subviews/MediaItemDescriptionCard.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "94"
-            endingLineNumber = "94"
+            startingLineNumber = "97"
+            endingLineNumber = "97"
             landmarkName = "actionIcons"
             landmarkType = "24">
             <Locations>
@@ -2664,8 +2664,8 @@
             filePath = "KinoPubAppleClient/Views/MediaItem/Subviews/MediaItemDescriptionCard.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "83"
-            endingLineNumber = "83"
+            startingLineNumber = "86"
+            endingLineNumber = "86"
             landmarkName = "actionIcons"
             landmarkType = "24">
             <Locations>
@@ -2712,9 +2712,9 @@
             filePath = "Packages/KinoPubBackend/Sources/KinoPubBackend/Models/DownloadableMediaItem.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "18"
-            endingLineNumber = "18"
-            landmarkName = "init(name:files:mediaItem:)"
+            startingLineNumber = "19"
+            endingLineNumber = "19"
+            landmarkName = "init(name:files:mediaItem:watchingMetadata:)"
             landmarkType = "7">
             <Locations>
                <Location
@@ -2748,6 +2748,100 @@
                   offsetFromSymbolStart = "1144">
                </Location>
             </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "DD312BEC-CA5D-4B50-B750-52C776F2C3A1"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Views/Player/PlayerManager.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "64"
+            endingLineNumber = "64"
+            landmarkName = "fetchWatchMark()"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "DD312BEC-CA5D-4B50-B750-52C776F2C3A1 - ad3d5d231049d33"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for KinoPub.PlayerManager.fetchWatchMark() async -&gt; ()"
+                  moduleName = "KinoPub"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Player/PlayerManager.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "64"
+                  endingLineNumber = "64"
+                  offsetFromSymbolStart = "112">
+               </Location>
+               <Location
+                  uuid = "DD312BEC-CA5D-4B50-B750-52C776F2C3A1 - ba42493db2d73f00"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for KinoPub.PlayerManager.fetchWatchMark() async -&gt; ()"
+                  moduleName = "KinoPub"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Player/PlayerManager.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "64"
+                  endingLineNumber = "64"
+                  offsetFromSymbolStart = "48">
+               </Location>
+               <Location
+                  uuid = "DD312BEC-CA5D-4B50-B750-52C776F2C3A1 - 3f0a4d014b1c4d31"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for KinoPub.PlayerManager.fetchWatchMark() async -&gt; ()"
+                  moduleName = "KinoPub"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Player/PlayerManager.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "64"
+                  endingLineNumber = "64"
+                  offsetFromSymbolStart = "148">
+               </Location>
+               <Location
+                  uuid = "DD312BEC-CA5D-4B50-B750-52C776F2C3A1 - 29d9791f01e39530"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(4) suspend resume partial function for KinoPub.PlayerManager.fetchWatchMark() async -&gt; ()"
+                  moduleName = "KinoPub"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/kirillkunst/Projects/ios/KinoPubAppleClient/KinoPubAppleClient/Views/Player/PlayerManager.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "64"
+                  endingLineNumber = "64"
+                  offsetFromSymbolStart = "176">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "450ADBB6-6E7F-4B72-876F-E358DDAC6149"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "KinoPubAppleClient/Views/Player/PlayerManager.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "66"
+            endingLineNumber = "66"
+            landmarkName = "fetchWatchMark()"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

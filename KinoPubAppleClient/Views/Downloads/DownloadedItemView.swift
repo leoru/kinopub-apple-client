@@ -79,7 +79,7 @@ public struct DownloadedItemView: View {
 }
 
 #Preview {
-  DownloadedItemView(mediaItem: DownloadMeta.make(from: DownloadableMediaItem(name: "", files: [], mediaItem: MediaItem.mock())), progress: nil) { _ in
+  DownloadedItemView(mediaItem: DownloadMeta.make(from: DownloadableMediaItem(name: "", files: [], mediaItem: MediaItem.mock(), watchingMetadata: WatchingMetadata(id: 0, video: nil, season: nil))), progress: nil) { _ in
     
   }
 }

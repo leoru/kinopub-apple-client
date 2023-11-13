@@ -14,6 +14,7 @@ public struct KinoPubButton: View {
     case green
     case gray
     case red
+    case blue
 
     internal var color: Color {
       switch self {
@@ -23,6 +24,8 @@ public struct KinoPubButton: View {
         return Color.KinoPub.accentRed
       case .gray:
         return Color.KinoPub.selectionBackground
+      case .blue:
+        return Color.KinoPub.accentBlue
       }
     }
   }

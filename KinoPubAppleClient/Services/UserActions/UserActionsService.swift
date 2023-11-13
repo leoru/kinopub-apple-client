@@ -9,9 +9,9 @@ import Foundation
 import KinoPubBackend
 
 protocol UserActionsService {
-  func markWatch(id: Int, video: Int, season: Int?) async throws
-  func toggleWatching(id: Int, video: Int, season: Int?) async throws
-  func fetchWatchMark(id: Int) async throws -> WatchData
+  func markWatch(id: Int, time: Int, video: Int?, season: Int?) async throws
+  func toggleWatching(id: Int, video: Int?, season: Int?) async throws
+  func fetchWatchMark(id: Int, video: Int?, season: Int?) async throws -> WatchData
 }
 
 protocol UserActionsServiceProvider {
@@ -19,15 +19,15 @@ protocol UserActionsServiceProvider {
 }
 
 struct UserActionsServiceMock: UserActionsService {
-  func markWatch(id: Int, video: Int, season: Int?) async throws {
+  func markWatch(id: Int, time: Int, video: Int?, season: Int?) async throws {
     
   }
   
-  func toggleWatching(id: Int, video: Int, season: Int?) async throws {
+  func toggleWatching(id: Int, video: Int?, season: Int?) async throws {
     
   }
   
-  func fetchWatchMark(id: Int) async throws -> WatchData {
+  func fetchWatchMark(id: Int, video: Int?, season: Int?) async throws -> WatchData {
     WatchData()
   }
 }

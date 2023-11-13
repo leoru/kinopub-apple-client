@@ -72,7 +72,10 @@ struct MediaItemDescriptionCard: View {
         if mediaItem.seasons?.count ?? 0 > 0 {
           showDownloadableItemPicker = true
         } else {
-          self.selectedDownloadableItem = DownloadableMediaItem(name: mediaItem.title, files: mediaItem.files, mediaItem: mediaItem)
+          self.selectedDownloadableItem = DownloadableMediaItem(name: mediaItem.title, 
+                                                                files: mediaItem.files,
+                                                                mediaItem: mediaItem,
+                                                                watchingMetadata: WatchingMetadata(id: mediaItem.id, video: nil, season: nil))
           showDownloadPicker = true
         }
       }, label: {

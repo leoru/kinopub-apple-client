@@ -15,6 +15,7 @@ public struct DownloadMeta: PlayableItem, Codable, Equatable {
   public var originalTitle: String
   public var localizedTitle: String
   public var imageUrl: String
+  public var metadata: WatchingMetadata
 }
 
 extension DownloadMeta {
@@ -25,6 +26,6 @@ extension DownloadMeta {
                         files: item.files,
                         originalTitle: originalTitle,
                         localizedTitle: localizedTitle,
-                        imageUrl: item.mediaItem.posters.small)
+                        imageUrl: item.mediaItem.posters.small, metadata: item.watchingMetadata)
   }
 }

@@ -20,7 +20,7 @@ public struct WatchData: Codable, Hashable {
     public var id: Int
     public var number: Int
     public var title: String
-    public var time: Double
+    public var time: TimeInterval
     public var status: Int
   }
   

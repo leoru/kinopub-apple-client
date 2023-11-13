@@ -13,7 +13,7 @@ public struct GetWatchingDataRequest: Endpoint {
   public var video: Int = -1
   public var season: Int = -1
   
-  init(id: Int, time: Int, video: Int? = nil, season: Int? = nil) {
+  public init(id: Int, video: Int? = nil, season: Int? = nil) {
     self.id = id
     self.video = video ?? -1
     self.season = season ?? -1

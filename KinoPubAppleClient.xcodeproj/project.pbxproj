@@ -57,6 +57,8 @@
 		CC8203022A86BB0F0041079A /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8203012A86BB0F0041079A /* SidebarView.swift */; };
 		CC844A9B2A7D0DF100E2495A /* FilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC844A9A2A7D0DF100E2495A /* FilterView.swift */; };
 		CC844A9D2A7D0E1700E2495A /* FilterModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC844A9C2A7D0E1700E2495A /* FilterModel.swift */; };
+		CC87E6372B020F730096BDC3 /* PlayerTimeObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC87E6362B020F730096BDC3 /* PlayerTimeObserver.swift */; };
+		CC87E6392B021E7F0096BDC3 /* PlayerContinueWatchingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC87E6382B021E7F0096BDC3 /* PlayerContinueWatchingView.swift */; };
 		CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */; };
 		CC88E1E72A6586E600E9387F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E62A6586E600E9387F /* RootView.swift */; };
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
@@ -136,6 +138,8 @@
 		CC8203012A86BB0F0041079A /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		CC844A9A2A7D0DF100E2495A /* FilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterView.swift; sourceTree = "<group>"; };
 		CC844A9C2A7D0E1700E2495A /* FilterModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterModel.swift; sourceTree = "<group>"; };
+		CC87E6362B020F730096BDC3 /* PlayerTimeObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerTimeObserver.swift; sourceTree = "<group>"; };
+		CC87E6382B021E7F0096BDC3 /* PlayerContinueWatchingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerContinueWatchingView.swift; sourceTree = "<group>"; };
 		CC88E1E12A6586E600E9387F /* KinoPub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KinoPub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KinoPubAppleClientApp.swift; sourceTree = "<group>"; };
 		CC88E1E62A6586E600E9387F /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -352,6 +356,7 @@
 				CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */,
 				CC2115202A7AA6F8001996BD /* String+Localization.swift */,
 				CCF2ABB32AED39E0000448A8 /* WindowSettings.swift */,
+				CC87E6362B020F730096BDC3 /* PlayerTimeObserver.swift */,
 			);
 			path = Custom;
 			sourceTree = "<group>";
@@ -548,6 +553,7 @@
 			children = (
 				CC0904802A7C34D200A71F53 /* PlayerView.swift */,
 				CC0904822A7C353200A71F53 /* PlayerManager.swift */,
+				CC87E6382B021E7F0096BDC3 /* PlayerContinueWatchingView.swift */,
 			);
 			path = Player;
 			sourceTree = "<group>";
@@ -761,6 +767,7 @@
 				CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */,
 				CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */,
 				CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */,
+				CC87E6392B021E7F0096BDC3 /* PlayerContinueWatchingView.swift in Sources */,
 				CCE221B32A83CE9E007AF382 /* ProfileModel.swift in Sources */,
 				CC439CF52A83CC1400E00B36 /* UserService.swift in Sources */,
 				CCC70B942A7FCADC00274E5F /* View+ErrorState.swift in Sources */,
@@ -768,6 +775,7 @@
 				CC60254A2AFE7191003D8391 /* DownloadMeta.swift in Sources */,
 				CC71E6FF2A6C069D004AFB3F /* DownloadsView.swift in Sources */,
 				CCF2ABB22AED37FD000448A8 /* SettingsView.swift in Sources */,
+				CC87E6372B020F730096BDC3 /* PlayerTimeObserver.swift in Sources */,
 				CC60254D2AFF548B003D8391 /* UserActionsService.swift in Sources */,
 				CC8203022A86BB0F0041079A /* SidebarView.swift in Sources */,
 				CC2C35DF2AFD6722009B8CF1 /* SeasonItemView.swift in Sources */,

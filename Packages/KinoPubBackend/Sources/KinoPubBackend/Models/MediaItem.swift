@@ -104,7 +104,10 @@ public extension MediaItem {
   var downloadableItems: [DownloadableMediaItem] {
     return seasons?.flatMap({ season in
       season.episodes.map({ episode in
-        DownloadableMediaItem(name: "S\(season.number)E\(episode.number)", files: episode.files, mediaItem: self)
+        DownloadableMediaItem(name: "S\(season.number)E\(episode.number)",
+                              files: episode.files,
+                              mediaItem: self,
+                              watchingMetadata: WatchingMetadata(id: episode.id, video: episode.number, season: season.number))
       })
     }) ?? []
   }
@@ -199,5 +202,9 @@ public extension MediaItem {
 extension MediaItem: PlayableItem {
   public var files: [FileInfo] {
     videos?.first?.files ?? []
+  }
+  
+  public var metadata: WatchingMetadata {
+    WatchingMetadata(id: id, video: nil, season: nil)
   }
 }

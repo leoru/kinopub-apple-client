@@ -36,11 +36,13 @@ struct DownloadsView: View {
         case .player(let item):
           PlayerView(manager: PlayerManager(playItem: item,
                                             watchMode: .media,
-                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase))
+                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase,
+                                            actionsService: appContext.actionsService))
         case .trailerPlayer(let item):
           PlayerView(manager: PlayerManager(playItem: item,
                                             watchMode: .trailer,
-                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase))
+                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase,
+                                            actionsService: appContext.actionsService))
         }
       }
       .onAppear(perform: {

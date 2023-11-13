@@ -34,6 +34,7 @@ typealias AppContextProtocol = AuthorizationServiceProvider
 & DownloadedFilesDatabaseProvider
 & FileSaverProvider
 & UserServiceProvider
+& UserActionsServiceProvider
 
 // MARK: - AppContext
 
@@ -48,6 +49,7 @@ struct AppContext: AppContextProtocol {
   var fileSaver: FileSaving
   var downloadManager: DownloadManager<DownloadMeta>
   var downloadedFilesDatabase: DownloadedFilesDatabase<DownloadMeta>
+  var actionsService: UserActionsService
   
   static let shared: AppContext = {
     let configuration = BundleConfiguration()
@@ -73,7 +75,8 @@ struct AppContext: AppContextProtocol {
                       keychainStorage: keychainStorage,
                       fileSaver: fileSaver,
                       downloadManager: downloadManager,
-                      downloadedFilesDatabase: downloadedFilesDatabase)
+                      downloadedFilesDatabase: downloadedFilesDatabase,
+                      actionsService: UserActionsServiceImpl(apiClient: apiClient))
   }()
   
   // MARK: - API Client building
