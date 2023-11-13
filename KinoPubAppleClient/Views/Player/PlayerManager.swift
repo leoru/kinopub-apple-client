@@ -26,9 +26,9 @@ class PlayerManager: ObservableObject {
   @Published var continueTime: TimeInterval?
   
   lazy var player = AVPlayer(url: fileURL)
-  var playItem: any PlayableItem
+  private var playerTimeObserver: PlayerTimeObserver?
+  private var playItem: any PlayableItem
   private var watchMode: WatchMode
-  
   private var downloadedFilesDatabase: DownloadedFilesDatabase<DownloadMeta>
   private var rateObservation: NSKeyValueObservation?
   private var actionsService: UserActionsService
@@ -55,7 +55,25 @@ class PlayerManager: ObservableObject {
     self.actionsService = actionsService
     self.downloadedFilesDatabase = downloadedFilesDatabase
     rateObservation = player.observe(\.rate, options: [.new]) { [weak self] player, _ in
-      self?.isPlaying = player.rate > 0
+      DispatchQueue.main.async {
+        self?.isPlaying = player.rate > 0
+      }
+    }
+    
+    playerTimeObserver = PlayerTimeObserver(player: player, period: 10.0, timeUpdateHandler: { [weak self] time in
+      self?.saveWatchMark(time: time)
+    })
+  }
+  
+  // MARK: - Watch marks
+  
+  func saveWatchMark(time: TimeInterval) {
+    Task.detached(priority: .utility) { [unowned self] in
+      do {
+        try await self.actionsService.markWatch(id: playItem.id, time: Int(time), video: playItem.metadata.video, season: playItem.metadata.season)
+      } catch {
+        Logger.app.error("Failed to save watch mark: \(error)")
+      }
     }
   }
   
@@ -63,12 +81,15 @@ class PlayerManager: ObservableObject {
     do {
       watchMark = try await actionsService.fetchWatchMark(id: playItem.metadata.id, video: playItem.metadata.video, season: playItem.metadata.season)
       if let watchMark {
-        self.continueTime = watchMark.item.videos?.first?.time ?? watchMark.item.seasons?.first?.episodes.first?.time
+        let remoteContinueTime = watchMark.item.videos?.first?.time ?? watchMark.item.seasons?.first?.episodes.first?.time
+        self.continueTime = remoteContinueTime ?? 0 > 0 ? remoteContinueTime : nil
       }
     } catch {
       Logger.app.error("Failed to fetch watch mark: \(error)")
     }
   }
+  
+  // MARK: - Continue watching
   
   func seekToContinueWatching() {
     guard let continueTime else {

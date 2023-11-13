@@ -11,7 +11,7 @@ import AVFoundation
 class PlayerTimeObserver {
   private weak var player: AVPlayer?
   private var timeObserverToken: Any?
-  private var timeUpdateHandler: ((Double) -> Void)?
+  private var timeUpdateHandler: ((TimeInterval) -> Void)?
   private var period: TimeInterval
   
   init(player: AVPlayer, period: TimeInterval, timeUpdateHandler: @escaping (Double) -> Void) {
@@ -28,7 +28,9 @@ class PlayerTimeObserver {
     let time = CMTime(seconds: period, preferredTimescale: timeScale)
     
     timeObserverToken = player.addPeriodicTimeObserver(forInterval: time, queue: .global(qos: .userInteractive)) { [weak self] time in
-      self?.timeUpdateHandler?(time.seconds)
+      if time.seconds > 60.0 {
+        self?.timeUpdateHandler?(time.seconds)
+      }
     }
   }
   
