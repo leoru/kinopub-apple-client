@@ -14,15 +14,16 @@ struct MediaItemDescriptionCard: View {
   
   var mediaItem: MediaItem
   var isSkeleton: Bool
+  var onDownload: (DownloadableMediaItem,FileInfo) -> Void
+  var onWatchedToggle: () -> Void
+  var onBookmarkHandle: () -> Void
   @State private var selectedDownloadableItem: DownloadableMediaItem?
   @State private var showDownloadPicker: Bool = false
   @State private var showDownloadableItemPicker: Bool = false
-  
-  var onDownload: (DownloadableMediaItem,FileInfo) -> Void
-  
+
   var body: some View {
     VStack(alignment: .leading) {
-      Label(mediaItem.localizedTitle ?? "", systemImage: "movieclapper")
+      Label(mediaItem.localizedTitle, systemImage: "movieclapper")
         .foregroundStyle(Color.KinoPub.text)
         .font(Font.KinoPub.header)
         .skeleton(enabled: isSkeleton)
@@ -77,6 +78,7 @@ struct MediaItemDescriptionCard: View {
       }, label: {
         image(imageName: "arrow.down.circle")
       })
+      // Picker to select quality of the item to download
       .confirmationDialog("", isPresented: $showDownloadPicker, titleVisibility: .hidden) {
         ForEach(selectedDownloadableItem?.files ?? []) { file in
           Button(file.quality) {
@@ -87,6 +89,7 @@ struct MediaItemDescriptionCard: View {
           }
         }
       }
+      // Picker to select episode or entire media to download
       .confirmationDialog("", isPresented: $showDownloadableItemPicker, titleVisibility: .hidden) {
         ForEach(mediaItem.downloadableItems) { item in
           Button(item.name) {
@@ -99,22 +102,15 @@ struct MediaItemDescriptionCard: View {
       .buttonStyle(PlainButtonStyle())
 #endif
       
-      Button(action: {}, label: {
+      Button(action: { onWatchedToggle() }, label: {
         image(imageName: "eye")
       })
 #if os(macOS)
       .buttonStyle(PlainButtonStyle())
 #endif
       
-      Button(action: {}, label: {
+      Button(action: { onBookmarkHandle() }, label: {
         image(imageName: "folder")
-      })
-#if os(macOS)
-      .buttonStyle(PlainButtonStyle())
-#endif
-      
-      Button(action: {}, label: {
-        image(imageName: "bell")
       })
 #if os(macOS)
       .buttonStyle(PlainButtonStyle())
@@ -134,7 +130,7 @@ struct MediaItemDescriptionCard: View {
 struct MediaItemDescriptionCard_Previews: PreviewProvider {
   struct Preview: View {
     var body: some View {
-      MediaItemDescriptionCard(mediaItem: MediaItem.mock(), isSkeleton: true, onDownload: { _,_  in })
+      MediaItemDescriptionCard(mediaItem: MediaItem.mock(), isSkeleton: true, onDownload: { _,_  in }, onWatchedToggle: {}, onBookmarkHandle: {})
     }
   }
   

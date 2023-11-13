@@ -2616,8 +2616,8 @@
             filePath = "KinoPubAppleClient/Views/MediaItem/Subviews/MediaItemDescriptionCard.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "91"
-            endingLineNumber = "91"
+            startingLineNumber = "94"
+            endingLineNumber = "94"
             landmarkName = "actionIcons"
             landmarkType = "24">
             <Locations>
@@ -2664,8 +2664,8 @@
             filePath = "KinoPubAppleClient/Views/MediaItem/Subviews/MediaItemDescriptionCard.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "81"
-            endingLineNumber = "81"
+            startingLineNumber = "83"
+            endingLineNumber = "83"
             landmarkName = "actionIcons"
             landmarkType = "24">
             <Locations>

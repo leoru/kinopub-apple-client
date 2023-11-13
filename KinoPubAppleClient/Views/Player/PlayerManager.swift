@@ -34,7 +34,7 @@ class PlayerManager: ObservableObject {
       if let file = downloadedFiles?.filter({ $0.metadata.id == playItem.id }).first {
         return file.localFileURL
       }
-      return URL(string: BestVideoQualityFinder.findBestURL(for: playItem.files ?? []))!
+      return URL(string: BestVideoQualityFinder.findBestURL(for: playItem.files))!
     case .trailer:
       return URL(string: playItem.trailer?.url ?? "")!
     }

@@ -60,7 +60,7 @@ public struct ContentItemView: View {
   }
 
   var title: some View {
-    Text(mediaItem.localizedTitle ?? "")
+    Text(mediaItem.localizedTitle)
       .lineLimit(1)
       .font(.system(size: 16.0, weight: .medium))
       .foregroundStyle(Color.KinoPub.text)
@@ -68,7 +68,7 @@ public struct ContentItemView: View {
   }
 
   var subtitle: some View {
-    Text(mediaItem.originalTitle ?? "")
+    Text(mediaItem.originalTitle)
       .lineLimit(1)
       .font(.system(size: 14.0, weight: .medium))
       .foregroundStyle(Color.KinoPub.subtitle)

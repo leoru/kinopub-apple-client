@@ -39,9 +39,11 @@ struct MediaItemView: View {
         VStack(spacing: 16) {
           headerView
           Grid(horizontalSpacing: 12, verticalSpacing: 12) {
-            MediaItemDescriptionCard(mediaItem: itemModel.mediaItem, isSkeleton: !itemModel.itemLoaded) {
-              itemModel.startDownload(item: $0, file: $1)
-            }
+            MediaItemDescriptionCard(mediaItem: itemModel.mediaItem, 
+                                     isSkeleton: !itemModel.itemLoaded,
+                                     onDownload: { itemModel.startDownload(item: $0, file: $1) },
+                                     onWatchedToggle: {},
+                                     onBookmarkHandle: {})
             MediaItemFieldsCard(mediaItem: itemModel.mediaItem, isSkeleton: !itemModel.itemLoaded)
           }
           .containerShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
