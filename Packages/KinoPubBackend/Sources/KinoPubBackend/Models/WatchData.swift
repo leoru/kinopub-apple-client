@@ -13,10 +13,15 @@ public struct WatchData: Codable, Hashable {
     public var id: Int
     public var number: Int
     public var status: Int
-    public var episodes: [WatchDataItem]
+    public var episodes: [WatchDataVideoItem]
   }
   
   public struct WatchDataItem: Codable, Hashable {
+    public var seasons: [Season]?
+    public var videos: [WatchDataVideoItem]?
+  }
+  
+  public struct WatchDataVideoItem: Codable, Hashable {
     public var id: Int
     public var number: Int
     public var title: String
@@ -24,9 +29,15 @@ public struct WatchData: Codable, Hashable {
     public var status: Int
   }
   
-  public var seasons: [Season]?
-  public var videos: [WatchDataItem]?
+  public var item: WatchDataItem
   
-  public init() {}
-  
+  init(item: WatchDataItem) {
+    self.item = item
+  }
+}
+
+public extension WatchData {
+  static var mock: WatchData {
+    WatchData(item: WatchDataItem())
+  }
 }

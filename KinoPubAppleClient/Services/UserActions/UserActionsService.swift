@@ -28,6 +28,6 @@ struct UserActionsServiceMock: UserActionsService {
   }
   
   func fetchWatchMark(id: Int, video: Int?, season: Int?) async throws -> WatchData {
-    WatchData()
+    WatchData.mock
   }
 }

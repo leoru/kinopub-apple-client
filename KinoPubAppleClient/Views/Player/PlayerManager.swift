@@ -63,7 +63,7 @@ class PlayerManager: ObservableObject {
     do {
       watchMark = try await actionsService.fetchWatchMark(id: playItem.metadata.id, video: playItem.metadata.video, season: playItem.metadata.season)
       if let watchMark {
-        self.continueTime = watchMark.videos?.first?.time ?? watchMark.seasons?.first?.episodes.first?.time
+        self.continueTime = watchMark.item.videos?.first?.time ?? watchMark.item.seasons?.first?.episodes.first?.time
       }
     } catch {
       Logger.app.error("Failed to fetch watch mark: \(error)")
