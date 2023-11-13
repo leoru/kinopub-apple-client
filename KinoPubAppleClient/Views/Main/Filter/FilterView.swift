@@ -8,9 +8,11 @@
 import Foundation
 import SwiftUI
 import KinoPubBackend
+import KinoPubUI
 
 struct FilterView: View {
 
+  @Environment(\.dismiss) private var dismiss
   @StateObject private var model: FilterModel
 
   init(model: @autoclosure @escaping () -> FilterModel) {
@@ -18,17 +20,32 @@ struct FilterView: View {
   }
 
   var body: some View {
-    NavigationView {
+//    NavigationView {
+    VStack {
       HStack {
         Spacer()
         Form {
           typePicker
           yearSection
           imdbRatingSection
-          buttonsSection
         }
       }
+      HStack {
+        KinoPubButton(title: "Clear".localized, color: .red) {
+          dismiss()
+        }
+        .frame(width: 120, height: 30)
+        KinoPubButton(title: "Apply".localized, color: .green) {
+          dismiss()
+        }
+        .frame(width: 120, height: 30)
+      }
+      .padding()
     }
+    .padding()
+      
+      
+//    }
     .navigationTitle("Filter")
     #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
@@ -43,18 +60,7 @@ struct FilterView: View {
       }
     }
   }
-
-  var buttonsSection: some View {
-    Section {
-      Button("Clear") {
-
-      }
-      Button("Apply") {
-
-      }
-    }
-  }
-
+  
   var yearSection: some View {
     Section {
       Toggle("Release Year", isOn: $model.yearFilterEnabled)

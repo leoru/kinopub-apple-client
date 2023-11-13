@@ -23,7 +23,7 @@ struct MediaItemFieldsCard: View {
         .skeleton(enabled: isSkeleton, size: CGSize(width: 200, height: 50))
 
       VStack {
-        data(key: "MediaItem_Title", value: "\(mediaItem.originalTitle ?? "")")
+        data(key: "MediaItem_Title", value: "\(mediaItem.originalTitle)")
         data(key: "MediaItem_Year", value: "\(mediaItem.year)")
         data(key: "MediaItem_Duration", value: "\(mediaItem.duration.totalFormatted)")
         data(key: "MediaItem_Country", value: "\(mediaItem.countries.compactMap({ $0.title }).joined(separator: ","))")

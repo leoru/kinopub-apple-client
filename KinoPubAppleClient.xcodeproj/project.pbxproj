@@ -298,6 +298,7 @@
 				CC844A992A7D0DE400E2495A /* Filter */,
 				CCE9C6DD2A73EA11007923C0 /* Shortcut */,
 				CCF388312A71C13900242581 /* MediaCatalog.swift */,
+				CC71E6FB2A6C0678004AFB3F /* MainView.swift */,
 			);
 			path = Main;
 			sourceTree = "<group>";
@@ -364,7 +365,6 @@
 		CC844A992A7D0DE400E2495A /* Filter */ = {
 			isa = PBXGroup;
 			children = (
-				CC71E6FB2A6C0678004AFB3F /* MainView.swift */,
 				CC844A9A2A7D0DF100E2495A /* FilterView.swift */,
 				CC844A9C2A7D0E1700E2495A /* FilterModel.swift */,
 			);
