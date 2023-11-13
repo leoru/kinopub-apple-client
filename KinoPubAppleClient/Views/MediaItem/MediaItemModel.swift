@@ -39,6 +39,8 @@ class MediaItemModel: ObservableObject {
     Task {
       do {
         mediaItem = try await itemsService.fetchDetails(for: "\(mediaItemId)").item
+        let mediaId = mediaItem.id
+        mediaItem.seasons = mediaItem.seasons?.map({ $0.mediaId = mediaId; return $0 })
         itemLoaded = true
       } catch {
         errorHandler.setError(error)

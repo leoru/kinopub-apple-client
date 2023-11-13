@@ -561,14 +561,14 @@
 		CCF388172A7187F900242581 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				CC60254B2AFF5480003D8391 /* UserActions */,
-				CC1E21272A966D3700070F7C /* Filtering */,
 				CCF3883D2A71C97E00242581 /* AccessToken */,
 				CCF388182A71880100242581 /* Authorization */,
 				CCF388292A718E5700242581 /* Configuration */,
 				CC44462F2A828B2F0017F499 /* Download */,
+				CC1E21272A966D3700070F7C /* Filtering */,
 				CCF388362A71C86900242581 /* KeychainStorage */,
 				CCF1FF302A83CBF2004DCED9 /* User */,
+				CC60254B2AFF5480003D8391 /* UserActions */,
 				CCF3881F2A718AD100242581 /* VideoContent */,
 			);
 			path = Services;

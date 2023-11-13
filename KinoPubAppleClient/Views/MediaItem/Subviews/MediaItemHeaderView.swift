@@ -16,12 +16,12 @@ struct MediaItemHeaderView: View {
     case standard = 1.0
     case reduced = 0.5
   }
-
+  
   public var headerSize: HeaderSize
   public var mediaItem: MediaItem
   public var linkProvider: NavigationLinkProvider
   public var isSkeleton: Bool
-
+  
   public init(size: HeaderSize = .standard,
               mediaItem: MediaItem,
               linkProvider: NavigationLinkProvider,
@@ -31,7 +31,7 @@ struct MediaItemHeaderView: View {
     self.isSkeleton = isSkeleton
     self.linkProvider = linkProvider
   }
-
+  
   var body: some View {
     ZStack {
       image
@@ -39,14 +39,14 @@ struct MediaItemHeaderView: View {
       VStack {
         Spacer()
         HStack {
-          NavigationLink(value: linkProvider.player(for: mediaItem)) {
-            Text("Watch")
-              .modifier(KinoPubButtonTextStyle())
-          }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
-          
           if let seasons = mediaItem.seasons, !seasons.isEmpty {
             NavigationLink(value: linkProvider.seasons(for: seasons)) {
               Text("Seasons")
+                .modifier(KinoPubButtonTextStyle())
+            }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
+          } else {
+            NavigationLink(value: linkProvider.player(for: mediaItem)) {
+              Text("Watch")
                 .modifier(KinoPubButtonTextStyle())
             }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
           }
@@ -62,7 +62,7 @@ struct MediaItemHeaderView: View {
     .contentShape(Rectangle())
     .skeleton(enabled: isSkeleton, size: CGSize(width: 300, height: 300))
   }
-
+  
   var image: some View {
     AsyncImage(url: URL(string: mediaItem.posters.big)) { image in
       image.resizable()

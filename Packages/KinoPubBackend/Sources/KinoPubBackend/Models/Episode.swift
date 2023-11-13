@@ -22,6 +22,8 @@ public class Episode: Codable, Hashable, Identifiable {
   public let subtitles: [Subtitle]
   public let files: [FileInfo]
   public var seasonNumber: Int?
+  public var mediaId: Int?
+  
   public var fixedTitle: String {
     if title.isEmpty {
       return "Серия \(number)"
@@ -56,6 +58,6 @@ public class Episode: Codable, Hashable, Identifiable {
 extension Episode: PlayableItem {
   public var trailer: Trailer? { nil }
   public var metadata: WatchingMetadata {
-    WatchingMetadata(id: id, video: number, season: seasonNumber)
+    WatchingMetadata(id: mediaId ?? id, video: number, season: seasonNumber)
   }
 }

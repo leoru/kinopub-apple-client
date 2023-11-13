@@ -70,7 +70,9 @@ class PlayerManager: ObservableObject {
   func saveWatchMark(time: TimeInterval) {
     Task.detached(priority: .utility) { [unowned self] in
       do {
-        try await self.actionsService.markWatch(id: playItem.id, time: Int(time), video: playItem.metadata.video, season: playItem.metadata.season)
+        try await self.actionsService.markWatch(id: playItem.metadata.id, 
+                                                time: Int(time), video: playItem.metadata.video,
+                                                season: playItem.metadata.season)
       } catch {
         Logger.app.error("Failed to save watch mark: \(error)")
       }

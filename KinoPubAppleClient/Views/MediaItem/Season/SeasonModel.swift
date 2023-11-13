@@ -18,4 +18,10 @@ class SeasonModel: ObservableObject {
     self.linkProvider = linkProvider
   }
   
+  func filledEpisode(_ episode: Episode) -> Episode {
+    let episode = episode
+    episode.seasonNumber = season.number
+    episode.mediaId = season.mediaId
+    return episode
+  }
 }

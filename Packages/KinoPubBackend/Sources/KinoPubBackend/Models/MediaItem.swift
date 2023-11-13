@@ -44,7 +44,7 @@ public struct MediaItem: Codable, Hashable {
   public let subscribed: Bool?
   public let ac3: Int?
   public let bookmarks: [TypeClass]?
-  public let seasons: [Season]?
+  public var seasons: [Season]?
   public let videos: [Video]?
   public let skeleton: Bool?
 
