@@ -79,9 +79,10 @@ struct PlayerView: View {
 #if os(macOS)
       .buttonStyle(PlainButtonStyle())
 #endif
-      .frame(width: 70, height: 50)
-      .padding(.leading, 16)
+      .frame(width: 70, height: 70)
+      .padding(.leading, 32)
       .padding(.top, 16)
+      .contentShape(Rectangle())
       Spacer()
     }
     .fixedSize(horizontal: false, vertical: true)
