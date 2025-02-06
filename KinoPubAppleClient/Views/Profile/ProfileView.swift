@@ -15,13 +15,10 @@ struct ProfileView: View {
   @EnvironmentObject var errorHandler: ErrorHandler
   @Environment(\.appContext) var appContext
   @StateObject private var model: ProfileModel
-  
+  @AppStorage("selectedLanguage") private var selectedLanguage: String = Locale.currentLanguageCode
+
   @State private var showLogoutAlert: Bool = false
-  @State private var showExitAlert: Bool = false
-  @AppStorage("selectedLanguage") private var selectedLanguage: String = Locale.current.language.languageCode?.identifier ?? "en"
     
-  let availableLanguages = ["en": "English", "lt": "Lietuvių", "ru": "Русский"]
-  
   init(model: @autoclosure @escaping () -> ProfileModel) {
     _model = StateObject(wrappedValue: model())
   }
@@ -42,17 +39,7 @@ struct ProfileView: View {
               LabeledContent("App version", value: Bundle.main.appVersionLong)
             }
               
-            Section(header: Text("Language")) {
-                Picker("Select Language", selection: $selectedLanguage) {
-                    ForEach(availableLanguages.keys.sorted(), id: \.self) { key in
-                        Text(availableLanguages[key] ?? key).tag(key)
-                    }
-                }
-                .pickerStyle(MenuPickerStyle())
-                .onChange(of: selectedLanguage) { newLanguage in
-                    changeLanguage(to: newLanguage)
-                }
-            }
+            languageSection
               
             Section {
               Button(action: {
@@ -78,7 +65,7 @@ struct ProfileView: View {
         Button("Logout", role: .destructive) { model.logout() }
         Button("Cancel", role: .cancel) { }
       }
-      .alert(isPresented: $showExitAlert) {
+      .alert(isPresented: $model.shouldShowExitAlert) {
         Alert(
           title: Text("Restarting the app"),
           message: Text("The app will restart to apply the language change."),
@@ -90,11 +77,18 @@ struct ProfileView: View {
       }
     }
   }
-    
-    private func changeLanguage(to language: String) {
-        UserDefaults.standard.setValue([language], forKey: "AppleLanguages")
-        UserDefaults.standard.synchronize()
-        showExitAlert = true
+    private var languageSection: some View {
+        Section(header: Text("Language")) {
+            Picker("Select Language", selection: $selectedLanguage) {
+                ForEach(model.availableLanguages.keys.sorted(), id: \.self) { key in
+                    Text(model.availableLanguages[key] ?? key).tag(key)
+                }
+            }
+            .pickerStyle(MenuPickerStyle())
+            .onChange(of: selectedLanguage) { newLanguage in
+                model.changeLanguage(to: newLanguage)
+            }
+        }
     }
 }
 
