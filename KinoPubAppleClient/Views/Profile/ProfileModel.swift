@@ -29,7 +29,7 @@ class ProfileModel: ObservableObject {
         self.userService = userService
         self.errorHandler = errorHandler
         self.authState = authState
-        self.selectedLanguage = UserDefaults.standard.string(forKey: "selectedLanguage") ?? Locale.currentLanguageCode
+        self.selectedLanguage = UserDefaults.standard.string(forKey: "selectedLanguage") ?? (Locale.current.language.languageCode?.identifier ?? "en")
     }
     func fetch() {
         Task {
