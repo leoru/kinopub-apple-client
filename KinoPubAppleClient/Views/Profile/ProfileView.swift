@@ -15,7 +15,7 @@ struct ProfileView: View {
   @EnvironmentObject var errorHandler: ErrorHandler
   @Environment(\.appContext) var appContext
   @StateObject private var model: ProfileModel
-  @AppStorage("selectedLanguage") private var selectedLanguage: String = Locale.currentLanguageCode
+  @AppStorage("selectedLanguage") private var selectedLanguage: String = (Locale.current.language.languageCode?.identifier ?? "en")
 
   @State private var showLogoutAlert: Bool = false
     
