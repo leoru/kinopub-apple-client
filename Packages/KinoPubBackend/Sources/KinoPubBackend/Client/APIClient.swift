@@ -47,8 +47,12 @@ public class APIClient {
       if throwDecodingErrorImmediately {
         throw APIClientError.decodingError(error)
       }
-      let result = try decode(BackendError.self, from: data, throwDecodingErrorImmediately: true)
-      throw APIClientError.networkError(result)
+
+      if let backendError = try? JSONDecoder().decode(BackendError.self, from: data) {
+        throw APIClientError.networkError(backendError)
+      }
+
+      throw APIClientError.decodingError(error)
     }
   }
 }
