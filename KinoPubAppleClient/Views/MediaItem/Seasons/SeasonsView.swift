@@ -31,6 +31,8 @@ struct SeasonsView: View {
         Text(season.fixedTitle)
       }
     }
+#if !os(tvOS)
     .scrollContentBackground(.hidden)
+#endif
   }
 }

@@ -56,7 +56,9 @@ struct ProfileView: View {
 #endif
             }
           }
+#if !os(tvOS)
           .scrollContentBackground(.hidden)
+#endif
           .background(Color.KinoPub.background)
         }
       }

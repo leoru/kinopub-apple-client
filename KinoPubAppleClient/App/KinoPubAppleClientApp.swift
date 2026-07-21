@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import FirebaseCore
 
 enum WindowSize {
   static let macos = CGSize(width: 1280, height: 720)

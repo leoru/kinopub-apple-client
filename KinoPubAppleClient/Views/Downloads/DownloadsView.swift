@@ -57,8 +57,10 @@ struct DownloadsView: View {
       activeDownloadsList
       downloadedFilesList
     }
+#if !os(tvOS)
     .listStyle(.inset)
     .scrollContentBackground(.hidden)
+#endif
     .background(Color.KinoPub.background)
   }
   

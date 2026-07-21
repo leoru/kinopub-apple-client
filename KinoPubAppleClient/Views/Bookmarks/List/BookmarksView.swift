@@ -70,7 +70,9 @@ struct BookmarksView: View {
         Text(bookmark.title)
       }
     }
+#if !os(tvOS)
     .scrollContentBackground(.hidden)
+#endif
   }
 }
 
