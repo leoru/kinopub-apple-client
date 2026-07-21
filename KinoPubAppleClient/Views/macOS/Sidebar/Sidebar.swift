@@ -22,6 +22,13 @@ struct Sidebar: View {
       .listRowBackground(selection == .main ? Color.KinoPub.accent : Color.clear)
       .tint(Color.clear)
       
+      NavigationLink(value: NavigationTabs.search) {
+        Label("Search", systemImage: "magnifyingglass")
+          .foregroundStyle(Color.white)
+      }
+      .listRowBackground(selection == .search ? Color.KinoPub.accent : Color.clear)
+      .tint(Color.clear)
+
       NavigationLink(value: NavigationTabs.bookmarks) {
         Label("Bookmarks", systemImage: "bookmark")
           .foregroundStyle(Color.white)

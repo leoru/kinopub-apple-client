@@ -70,8 +70,7 @@ These are real, verified, and up for grabs:
 - **CC detection is sloppy.** `SubtitleSelector.looksLikeCC` builds a regex by interpolating the marker
   into `#"\b\#(marker)\b"#`, and counts `forced` as a CC marker — forced tracks carry no dialogue and make
   a bad default.
-- **Main and Search show the same grid** until the Phase 1 home rebuild lands. Search owns the query,
-  sort and filter controls; Main is a plain catalog grid waiting to become rows.
+- **Home rows show only the first page** of each shortcut and refetch every time the tab appears.
 
 ## Target UX
 
@@ -102,10 +101,12 @@ What "done" looks like, so nobody has to guess:
 
 ### Phase 1 — Home rebuild
 - [x] Move search, sort and filters out of Main into their own Search tab (all platforms)
-- [ ] Row-based home model (sections of horizontally scrolling cards) replacing the flat `LazyVGrid`
-- [ ] Wire `GET /v1/watching/movies` + `GET /v1/watching/serials` → "Continue watching" row
-- [ ] Rows per shortcut and content type (Hot / Fresh / Popular, Movies / Series)
-- [ ] tvOS card component with proper focus scaling, parallax and ratings
+- [x] Row-based home model (sections of horizontally scrolling cards) replacing the flat `LazyVGrid`
+- [x] Wire `GET /v1/watching/movies` + `GET /v1/watching/serials` → "Continue watching" row
+- [x] Rows per shortcut and content type (Hot / Fresh / Popular, Movies / Series)
+- [x] tvOS card component with focus scaling, ratings, watch progress and new-episode badges
+- [ ] Paginate rows as they scroll (each row currently shows the first page only)
+- [ ] Cache the home rows so returning to the tab doesn't refetch everything
 
 ### Phase 2 — Detail page
 - [ ] Trailer at the top, autoplaying, muted-until-focused

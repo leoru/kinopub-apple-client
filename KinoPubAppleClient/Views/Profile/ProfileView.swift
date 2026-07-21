@@ -62,7 +62,7 @@ struct ProfileView: View {
           .background(Color.KinoPub.background)
         }
       }
-      .navigationTitle("Profile")
+      .platformNavigationTitle("Profile")
       .onAppear(perform: {
         model.fetch()
       })

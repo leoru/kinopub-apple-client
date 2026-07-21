@@ -10,15 +10,21 @@ import KinoPubBackend
 
 enum MainRoutes: Hashable {
   case details(MediaItem)
+  /// The watching endpoints return only an id and artwork, so rows built from them
+  /// route by id — `MediaItemView` fetches the full item anyway.
+  case detailsById(Int)
   case seasons([Season])
   case season(Season)
   case player(any PlayableItem)
   case trailerPlayer(any PlayableItem)
-  
+
   func hash(into hasher: inout Hasher) {
     switch self {
     case .details(let item):
       hasher.combine(item)
+    case .detailsById(let id):
+      hasher.combine("detailsById")
+      hasher.combine(id)
     case .season(let season):
       hasher.combine(season)
     case .seasons(let seasons):

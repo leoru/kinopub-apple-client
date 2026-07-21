@@ -22,6 +22,8 @@ jobs:
             destination: 'generic/platform=tvOS Simulator'
           - platform: iOS
             destination: 'generic/platform=iOS Simulator'
+          - platform: macOS
+            destination: 'platform=macOS'
     steps:
       - uses: actions/checkout@v4
 

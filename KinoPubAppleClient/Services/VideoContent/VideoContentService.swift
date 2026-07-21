@@ -14,6 +14,8 @@ protocol VideoContentService {
   func fetchDetails(for id: String) async throws -> SingleItemData<MediaItem>
   func fetchBookmarks() async throws -> ArrayData<Bookmark>
   func fetchBookmarkItems(id: String) async throws -> ArrayData<MediaItem>
+  func fetchWatchingMovies() async throws -> ArrayData<WatchingItem>
+  func fetchWatchingSerials() async throws -> ArrayData<WatchingItem>
 }
 
 protocol VideoContentServiceProvider {
@@ -39,6 +41,14 @@ struct VideoContentServiceMock: VideoContentService {
   }
   
   func fetchBookmarkItems(id: String) async throws -> ArrayData<MediaItem> {
+    return ArrayData.mock(data: [])
+  }
+
+  func fetchWatchingMovies() async throws -> ArrayData<WatchingItem> {
+    return ArrayData.mock(data: [])
+  }
+
+  func fetchWatchingSerials() async throws -> ArrayData<WatchingItem> {
     return ArrayData.mock(data: [])
   }
 

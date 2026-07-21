@@ -51,4 +51,18 @@ final class VideoContentServiceImpl: VideoContentService {
     return response
   }
 
+  func fetchWatchingMovies() async throws -> ArrayData<WatchingItem> {
+    let request = WatchingMoviesRequest()
+    let response = try await apiClient.performRequest(with: request,
+                                                      decodingType: ArrayData<WatchingItem>.self)
+    return response
+  }
+
+  func fetchWatchingSerials() async throws -> ArrayData<WatchingItem> {
+    let request = WatchingSerialsRequest()
+    let response = try await apiClient.performRequest(with: request,
+                                                      decodingType: ArrayData<WatchingItem>.self)
+    return response
+  }
+
 }

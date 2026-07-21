@@ -25,7 +25,7 @@ struct BookmarkView: View {
     VStack {
       listView
     }
-    .navigationTitle(model.bookmark.title)
+    .platformNavigationTitle(model.bookmark.title)
     .background(Color.KinoPub.background)
     .task {
       await model.fetchItems()

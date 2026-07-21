@@ -61,9 +61,9 @@ struct TabsNavigationView: View {
   }
   
   var mainTab: some View {
-    MainView(catalog: MediaCatalog(itemsService: appContext.contentService,
-                                   authState: authState,
-                                   errorHandler: errorHandler))
+    MainView(catalog: HomeCatalog(itemsService: appContext.contentService,
+                                  authState: authState,
+                                  errorHandler: errorHandler))
     .tag(NavigationTabs.main)
     .tabItem {
       tabLabel("Main", systemImage: "house")

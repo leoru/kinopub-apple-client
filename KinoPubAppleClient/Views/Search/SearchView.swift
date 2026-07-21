@@ -40,7 +40,7 @@ struct SearchView: View {
         }
       }
       .searchable(text: $catalog.query, placement: .automatic)
-      .navigationTitle("Search")
+      .platformNavigationTitle("Search")
       .toolbar {
         ToolbarItem(placement: toolbarItemPlacement) {
           Button {

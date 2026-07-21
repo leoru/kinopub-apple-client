@@ -23,7 +23,7 @@ struct SeasonView: View {
     VStack {
       listView
     }
-    .navigationTitle(model.season.fixedTitle)
+    .platformNavigationTitle(model.season.fixedTitle)
     .background(Color.KinoPub.background)
   }
   

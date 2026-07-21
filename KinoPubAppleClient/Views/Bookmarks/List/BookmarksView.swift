@@ -25,7 +25,7 @@ struct BookmarksView: View {
       VStack {
         bookmarksList
       }
-      .navigationTitle("Bookmarks")
+      .platformNavigationTitle("Bookmarks")
       .background(Color.KinoPub.background)
       .refreshable(action: catalog.refresh)
       .task {

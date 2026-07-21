@@ -29,7 +29,7 @@ struct DownloadsView: View {
           downloadsList
         }
       }
-      .navigationTitle("Downloads")
+      .platformNavigationTitle("Downloads")
       .background(Color.KinoPub.background)
       .navigationDestination(for: DownloadsRoutes.self) { route in
         switch route {

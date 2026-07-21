@@ -21,7 +21,7 @@ struct SeasonsView: View {
     VStack {
       listView
     }
-    .navigationTitle("Seasons")
+    .platformNavigationTitle("Seasons")
     .background(Color.KinoPub.background)
   }
 
