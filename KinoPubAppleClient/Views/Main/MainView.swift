@@ -22,7 +22,7 @@ struct MainView: View {
   }
   
   var toolbarItemPlacement: ToolbarItemPlacement {
-#if os(iOS)
+#if os(iOS) || os(tvOS)
     .topBarTrailing
 #elseif os(macOS)
     .navigation

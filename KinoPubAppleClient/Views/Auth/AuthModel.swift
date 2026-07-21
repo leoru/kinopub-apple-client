@@ -10,6 +10,12 @@ import SwiftUI
 import KinoPubBackend
 import KinoPubLogging
 import OSLog
+#if canImport(UIKit)
+import UIKit
+#endif
+#if canImport(AppKit)
+import AppKit
+#endif
 
 @MainActor
 class AuthModel: ObservableObject {
@@ -52,9 +58,11 @@ class AuthModel: ObservableObject {
 
     Logger.app.debug("open activation url: \(url)")
 
-    #if os(iOS)
+#if canImport(UIKit)
     UIApplication.shared.open(url)
-    #endif
+#elseif os(macOS)
+    NSWorkspace.shared.open(url)
+#endif
   }
 
   private func requestToken(by response: VerificationResponse) async throws {

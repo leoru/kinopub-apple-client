@@ -12,4 +12,5 @@ public protocol PlayableItem: Identifiable, Hashable, Equatable {
   var files: [FileInfo] { get }
   var trailer: Trailer? { get }
   var metadata: WatchingMetadata { get }
+  var subtitles: [Subtitle] { get }
 }

@@ -18,7 +18,7 @@ struct TabsNavigationView: View {
   @EnvironmentObject var authState: AuthState
   
   var placement: ToolbarPlacement {
-#if os(iOS)
+#if os(iOS) || os(tvOS)
     .tabBar
 #elseif os(macOS)
     .windowToolbar

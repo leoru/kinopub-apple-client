@@ -8,18 +8,19 @@
 import Foundation
 import SwiftUI
 import AVKit
+import KinoPubUI
 
 struct PlayerView: View {
-  
+
   @StateObject private var playerManager: PlayerManager
   @State private var hideNavigationBar = false
   @Environment(\.dismiss) private var dismiss
   @EnvironmentObject var navigationState: NavigationState
-  
+
   init(manager: @autoclosure @escaping () -> PlayerManager) {
     _playerManager = StateObject(wrappedValue: manager())
   }
-  
+
   var body: some View {
     GeometryReader { _ in
       ZStack(alignment: .top) {
@@ -28,6 +29,7 @@ struct PlayerView: View {
         if let continueTime = playerManager.continueTime {
           continueWatching(to: continueTime)
         }
+        subtitleLayers
       }
       .ignoresSafeArea(.all)
     }
@@ -60,15 +62,60 @@ struct PlayerView: View {
       UIViewController.attemptRotationToDeviceOrientation()
     })
 #endif
+#if os(tvOS)
+    .onAppear {
+      Task {
+        await playerManager.fetchWatchMark()
+      }
+    }
+    .onChange(of: playerManager.isPlaying) { isPlaying in
+      hideNavigationBar = isPlaying
+    }
+#endif
+#if os(macOS)
+    .onAppear {
+      Task {
+        await playerManager.fetchWatchMark()
+      }
+    }
+    .onChange(of: playerManager.isPlaying) { isPlaying in
+      hideNavigationBar = isPlaying
+    }
+#endif
   }
-  
+
   var videoPlayer: some View {
     VideoPlayer(player: playerManager.player)
       .onAppear(perform: {
         playerManager.player.play()
       })
   }
-  
+
+  @ViewBuilder
+  private var subtitleLayers: some View {
+    VStack {
+      Spacer()
+      if playerManager.subtitlesEnabled,
+         playerManager.isPlaying,
+         let cue = playerManager.activeCue {
+        SubtitleOverlayView(text: cue.displayText)
+          .padding(.bottom, 48)
+          .transition(.opacity)
+      }
+
+      if !playerManager.isPlaying,
+         let cue = playerManager.activeCue ?? playerManager.lastCue,
+         !cue.displayText.isEmpty {
+        SubtitleTranslatePanel(cueText: cue.displayText)
+          .padding(.horizontal, 24)
+          .padding(.bottom, 56)
+          .transition(.opacity)
+      }
+    }
+    .animation(.easeOut(duration: 0.2), value: playerManager.isPlaying)
+    .animation(.easeOut(duration: 0.2), value: playerManager.activeCue)
+  }
+
   var backButton: some View {
     HStack(alignment: .top) {
       Button(action: { dismiss() }, label: {
@@ -88,7 +135,7 @@ struct PlayerView: View {
     .fixedSize(horizontal: false, vertical: true)
     .opacity(hideNavigationBar ? 0.0 : 1.0)
   }
-  
+
   func continueWatching(to continueTime: TimeInterval) -> some View {
     VStack(alignment: .center) {
       Spacer()
@@ -100,9 +147,9 @@ struct PlayerView: View {
       .frame(width: 180, height: 50)
       .padding(.bottom, 50)
     }
-    
+
   }
-  
+
   private func toggleSidebar() {
     navigationState.columnVisibility = .detailOnly
   }

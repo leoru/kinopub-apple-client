@@ -60,4 +60,5 @@ extension Episode: PlayableItem {
   public var metadata: WatchingMetadata {
     WatchingMetadata(id: mediaId ?? id, video: number, season: seasonNumber)
   }
+  // `subtitles` already declared on Episode
 }

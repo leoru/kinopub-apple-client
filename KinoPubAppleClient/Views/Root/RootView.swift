@@ -10,17 +10,9 @@ import KinoPubUI
 import KinoPubBackend
 
 struct RootView: View {
-  
-  var placement: ToolbarPlacement {
-#if os(iOS)
-    .tabBar
-#elseif os(macOS)
-    .windowToolbar
-#endif
-  }
-  
+
   var body: some View {
-#if os(iOS)
+#if os(iOS) || os(tvOS)
     TabsNavigationView()
 #elseif os(macOS)
     SidebarView()

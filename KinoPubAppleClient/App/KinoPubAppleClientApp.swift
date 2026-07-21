@@ -24,10 +24,10 @@ struct KinoPubAppleClientApp: App {
   @StateObject var windowSettings = WindowSettings()
 #endif
   
-#if os(iOS)
+#if os(iOS) || os(tvOS)
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 #endif
-  
+
 #if os(macOS)
   @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 #endif

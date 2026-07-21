@@ -60,14 +60,29 @@ struct AuthView: View {
   var deviceCodeView: some View {
     VStack(spacing: 5) {
       Text(model.deviceCode)
-        .font(.system(size: 40, weight: Font.Weight.bold))
+        .font(.system(size: deviceCodeFontSize, weight: Font.Weight.bold))
         .foregroundColor(Color.KinoPub.text)
-        .frame(minHeight: 44, idealHeight: 44, maxHeight: 44)
+        .frame(minHeight: 44, idealHeight: 44, maxHeight: 80)
       Text("Auth_DeviceCode")
         .foregroundColor(Color.KinoPub.text)
         .font(.system(size: 16, weight: Font.Weight.regular))
+#if os(tvOS)
+      Text("Enter this code on the KinoPub device activation page.")
+        .foregroundColor(Color.KinoPub.text.opacity(0.8))
+        .font(.system(size: 18, weight: .regular))
+        .multilineTextAlignment(.center)
+        .padding(.top, 12)
+#endif
     }
     .fixedSize(horizontal: false, vertical: true)
+  }
+
+  private var deviceCodeFontSize: CGFloat {
+#if os(tvOS)
+    return 64
+#else
+    return 40
+#endif
   }
   
   var activateButton: some View {

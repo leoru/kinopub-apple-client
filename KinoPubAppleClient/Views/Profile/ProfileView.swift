@@ -16,6 +16,8 @@ struct ProfileView: View {
   @Environment(\.appContext) var appContext
   @StateObject private var model: ProfileModel
   @AppStorage("selectedLanguage") private var selectedLanguage: String = (Locale.current.language.languageCode?.identifier ?? "en")
+  @AppStorage(SubtitlePreferences.preferEnglishKey) private var preferEnglishSubtitles: Bool = true
+  @AppStorage(SubtitlePreferences.preferNonCCKey) private var preferNonCCSubtitles: Bool = true
 
   @State private var showLogoutAlert: Bool = false
     
@@ -40,6 +42,7 @@ struct ProfileView: View {
             }
               
             languageSection
+            playbackSection
               
             Section {
               Button(action: {
@@ -84,11 +87,23 @@ struct ProfileView: View {
                     Text(model.availableLanguages[key] ?? key).tag(key)
                 }
             }
+#if os(tvOS)
+            .pickerStyle(.automatic)
+#else
             .pickerStyle(MenuPickerStyle())
+#endif
             .onChange(of: selectedLanguage) { newLanguage in
                 model.changeLanguage(to: newLanguage)
             }
         }
+    }
+
+    private var playbackSection: some View {
+      Section(header: Text("Playback")) {
+        Toggle("Default English subtitles", isOn: $preferEnglishSubtitles)
+        Toggle("Prefer non-CC / non-SDH", isOn: $preferNonCCSubtitles)
+          .disabled(!preferEnglishSubtitles)
+      }
     }
 }
 

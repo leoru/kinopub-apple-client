@@ -34,8 +34,10 @@ struct ShortcutSelectionView: View {
       
     }
     .background(Color.KinoPub.background)
+#if !os(tvOS)
     .presentationDetents([.height(180.0)])
     .presentationDragIndicator(.visible)
+#endif
     
   }
   
@@ -48,6 +50,8 @@ struct ShortcutSelectionView: View {
     }
 #if os(iOS)
     .pickerStyle(.wheel)
+#elseif os(tvOS)
+    .pickerStyle(.menu)
 #endif
 #if os(macOS)
     .pickerStyle(.radioGroup)
@@ -63,6 +67,8 @@ struct ShortcutSelectionView: View {
     }
 #if os(iOS)
     .pickerStyle(.wheel)
+#elseif os(tvOS)
+    .pickerStyle(.menu)
 #endif
 #if os(macOS)
     .pickerStyle(.radioGroup)

@@ -16,6 +16,7 @@ public struct DownloadMeta: PlayableItem, Codable, Equatable {
   public var localizedTitle: String
   public var imageUrl: String
   public var metadata: WatchingMetadata
+  public var subtitles: [Subtitle] { [] }
 }
 
 extension DownloadMeta {
