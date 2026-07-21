@@ -148,8 +148,13 @@ microiptv leaves a lot on the table. We shouldn't.
 - [ ] Trailers on the detail page as a proper section, not only the hero takeover
 - [ ] Awards
 - [ ] Collections (`GET /v1/collections`, `/v1/collections/view?id=`)
-- [ ] **Every production country**, not just the first — microiptv shows one
-- [ ] Sweep the item payload for anything else worth surfacing (voices, quality, AC3, tracklist)
+- [x] **Every production country**, not just the first — microiptv shows one
+- [x] Ratings section: kino.pub / IMDb / Kinopoisk with vote counts
+- [x] Cast and crew as round portraits
+- [x] Information · Translation · Audio columns, stacking when the display is narrow
+- [ ] Cast photos and character names — kino.pub sends neither, so portraits are initials.
+      Would need TMDb by IMDb id
+- [ ] Sweep the rest of the payload (quality, AC3, age rating)
 - [ ] Similar items (`GET /v1/items/similar`)
 
 ### Phase C — Remember playback choices

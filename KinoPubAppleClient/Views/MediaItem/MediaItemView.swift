@@ -22,7 +22,7 @@ struct MediaItemView: View {
 
   var body: some View {
     ScrollView(.vertical) {
-      VStack(alignment: .leading, spacing: Self.sectionSpacing) {
+      VStack(alignment: .leading, spacing: MediaItemLayout.sectionSpacing) {
         MediaItemHeroView(mediaItem: itemModel.mediaItem,
                           isSkeleton: !itemModel.itemLoaded,
                           linkProvider: itemModel.linkProvider,
@@ -37,11 +37,15 @@ struct MediaItemView: View {
           SeasonsRailView(seasons: seasons, linkProvider: itemModel.linkProvider)
         }
 
-        detailsSection
+        if itemModel.itemLoaded {
+          MediaItemRatingsSection(mediaItem: itemModel.mediaItem)
+          MediaItemCastSection(mediaItem: itemModel.mediaItem)
+          MediaItemInfoColumns(mediaItem: itemModel.mediaItem)
+        }
       }
-      .padding(.bottom, Self.sectionSpacing)
+      .padding(.bottom, MediaItemLayout.sectionSpacing)
     }
-    .background(Color.KinoPub.background)
+    .background(ambientBackground)
     // Horizontal too, or the hero stops short of the screen edges on tvOS, where the
     // safe area is inset for overscan.
     .ignoresSafeArea(edges: [.top, .horizontal])
@@ -55,43 +59,28 @@ struct MediaItemView: View {
     .handleError(state: $errorHandler.state)
   }
 
-  private var detailsSection: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      sectionHeader("MediaItem_Details")
+  /// The artwork, blurred far past recognition, tinting the whole page — the colour
+  /// wash microiptv puts behind its item pages. Blurring the small poster rather than
+  /// the large one costs almost nothing and looks identical once this soft.
+  private var ambientBackground: some View {
+    ZStack {
+      Color.KinoPub.background
 
-      MediaItemFieldsCard(mediaItem: itemModel.mediaItem,
-                          isSkeleton: !itemModel.itemLoaded)
-      .frame(maxWidth: Self.textMaxWidth, alignment: .leading)
-      .padding(.horizontal, Self.horizontalInset)
+      AsyncImage(url: URL(string: itemModel.mediaItem.posters.medium)) { image in
+        image
+          .resizable()
+          .aspectRatio(contentMode: .fill)
+          .blur(radius: 120, opaque: true)
+          .saturation(1.6)
+          .opacity(0.55)
+      } placeholder: {
+        Color.clear
+      }
+
+      Color.KinoPub.background.opacity(0.55)
     }
+    .ignoresSafeArea()
   }
-
-  private func sectionHeader(_ key: LocalizedStringKey) -> some View {
-    Text(key)
-      .font(Self.headerFont)
-      .foregroundStyle(Color.KinoPub.text)
-      .padding(.horizontal, Self.horizontalInset)
-  }
-
-#if os(tvOS)
-  static let sectionSpacing: CGFloat = 40
-  static let horizontalInset: CGFloat = 80
-  static let textMaxWidth: CGFloat = 1400
-  static let headerFont: Font = .system(size: 32, weight: .semibold)
-  static let bodyFont: Font = .system(size: 26, weight: .regular)
-#elseif os(macOS)
-  static let sectionSpacing: CGFloat = 28
-  static let horizontalInset: CGFloat = 32
-  static let textMaxWidth: CGFloat = 900
-  static let headerFont: Font = .system(size: 22, weight: .semibold)
-  static let bodyFont: Font = .system(size: 15, weight: .regular)
-#else
-  static let sectionSpacing: CGFloat = 24
-  static let horizontalInset: CGFloat = 20
-  static let textMaxWidth: CGFloat = 700
-  static let headerFont: Font = .system(size: 20, weight: .semibold)
-  static let bodyFont: Font = .system(size: 15, weight: .regular)
-#endif
 }
 
 struct MediaItemView_Previews: PreviewProvider {
