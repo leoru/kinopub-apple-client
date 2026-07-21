@@ -64,6 +64,7 @@
 		CCA100012C6F000100000203 /* View+PlatformNavigationTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000204 /* View+PlatformNavigationTitle.swift */; };
 		CCA100012C6F000100000301 /* MediaItemHeroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000302 /* MediaItemHeroView.swift */; };
 		CCA100012C6F000100000401 /* SeasonsRailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000402 /* SeasonsRailView.swift */; };
+		CCA100012C6F000100000501 /* CatalogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000502 /* CatalogView.swift */; };
 		CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000006 /* SubtitleCueParser.swift */; };
 		CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000008 /* SubtitleOverlayView.swift */; };
 		CCA100012C6F000100000009 /* SubtitleTranslatePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */; };
@@ -156,6 +157,7 @@
 		CCA100012C6F000100000204 /* View+PlatformNavigationTitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+PlatformNavigationTitle.swift"; sourceTree = "<group>"; };
 		CCA100012C6F000100000302 /* MediaItemHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemHeroView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000402 /* SeasonsRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonsRailView.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000502 /* CatalogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000006 /* SubtitleCueParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleCueParser.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000008 /* SubtitleOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleOverlayView.swift; sourceTree = "<group>"; };
 		CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslatePanel.swift; sourceTree = "<group>"; };
@@ -285,6 +287,7 @@
 				CCF388162A71817300242581 /* Player */,
 				CC71E6F62A6C0600004AFB3F /* Profile */,
 				CCA100012C6F000100000103 /* Search */,
+				CCA100012C6F000100000503 /* Catalog */,
 				CC71E6F22A6C04B5004AFB3F /* Root */,
 			);
 			path = Views;
@@ -297,6 +300,14 @@
 				CC88E1E62A6586E600E9387F /* RootView.swift */,
 			);
 			path = Root;
+			sourceTree = "<group>";
+		};
+		CCA100012C6F000100000503 /* Catalog */ = {
+			isa = PBXGroup;
+			children = (
+				CCA100012C6F000100000502 /* CatalogView.swift */,
+			);
+			path = Catalog;
 			sourceTree = "<group>";
 		};
 		CCA100012C6F000100000103 /* Search */ = {
@@ -801,6 +812,7 @@
 				CCA100012C6F000100000203 /* View+PlatformNavigationTitle.swift in Sources */,
 				CCA100012C6F000100000301 /* MediaItemHeroView.swift in Sources */,
 				CCA100012C6F000100000401 /* SeasonsRailView.swift in Sources */,
+				CCA100012C6F000100000501 /* CatalogView.swift in Sources */,
 				CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */,
 				CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */,
 				CCA100012C6F000100000009 /* SubtitleTranslatePanel.swift in Sources */,

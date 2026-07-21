@@ -29,10 +29,14 @@ class MediaCatalog: ObservableObject {
     contentType.title
   }
 
-  init(itemsService: VideoContentService, authState: AuthState, errorHandler: ErrorHandler) {
+  init(itemsService: VideoContentService,
+       authState: AuthState,
+       errorHandler: ErrorHandler,
+       contentType: MediaType = .movie) {
     self.itemsService = itemsService
     self.authState = authState
     self.errorHandler = errorHandler
+    self.contentType = contentType
     subscribe()
   }
 

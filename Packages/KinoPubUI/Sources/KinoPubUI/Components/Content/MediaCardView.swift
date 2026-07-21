@@ -5,6 +5,7 @@
 
 import Foundation
 import SwiftUI
+import KinoPubBackend
 
 /// Everything a poster card needs to draw itself, so rows can be built from any
 /// endpoint's payload rather than only from a full `MediaItem`.
@@ -43,6 +44,19 @@ public struct MediaCard: Identifiable, Hashable {
     self.progress = progress
     self.badge = badge
     self.isPlaceholder = isPlaceholder
+  }
+}
+
+public extension MediaCard {
+  /// The standard mapping from a catalog item, so grids and rows draw the same card.
+  init(_ item: MediaItem) {
+    self.init(id: item.id,
+              posterURL: item.posters.medium,
+              title: item.localizedTitle,
+              subtitle: item.originalTitle,
+              imdbRating: item.imdbRating,
+              kinopoiskRating: item.kinopoiskRating,
+              isPlaceholder: item.skeleton ?? false)
   }
 }
 

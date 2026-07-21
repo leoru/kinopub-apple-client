@@ -8,9 +8,11 @@
 import Foundation
 
 enum NavigationTabs {
-  case main
   case search
-  case bookmarks
+  case home
+  case movies
+  case series
+  case saved
   case downloads
-  case profile
+  case settings
 }

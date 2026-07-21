@@ -46,7 +46,11 @@ public struct ContentItemsListView: View {
   }
 
   var cellSize: Double {
-    useReducedThumbnailSize ? 140 : 180
+#if os(tvOS)
+    return MediaCardView.cardWidth
+#else
+    return useReducedThumbnailSize ? 140 : 180
+#endif
   }
 
   var gridLayout: [GridItem] {
@@ -69,16 +73,21 @@ public struct ContentItemsListView: View {
     ScrollView {
       LazyVGrid(columns: gridLayout, content: {
         ForEach(items, id: \.id) { item in
-          NavigationLink(value: navigationLinkProvider(item)) {
-            ContentItemView(mediaItem: item)
+          let card = MediaCard(item)
+          // Skeleton rows carry placeholder ids, so they must not be tappable.
+          if card.isPlaceholder {
+            MediaCardView(card: card)
               .padding(.vertical, 20)
-              .onAppear {
-                onLoadMoreContent(item)
-              }
+          } else {
+            NavigationLink(value: navigationLinkProvider(item)) {
+              MediaCardView(card: card)
+                .padding(.vertical, 20)
+                .onAppear {
+                  onLoadMoreContent(item)
+                }
+            }
+            .buttonStyle(MediaCardButtonStyle())
           }
-          #if os(macOS)
-          .buttonStyle(PlainButtonStyle())
-          #endif
         }
       })
       .padding(.horizontal, 16)

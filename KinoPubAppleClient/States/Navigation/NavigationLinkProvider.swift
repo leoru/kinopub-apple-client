@@ -38,6 +38,14 @@ struct MainRoutesLinkProvider: NavigationLinkProvider {
   }
 }
 
+struct CatalogRoutesLinkProvider: NavigationLinkProvider {
+  func link(for item: MediaItem) -> any Hashable { CatalogRoutes.details(item) }
+  func player(for item: any PlayableItem) -> any Hashable { CatalogRoutes.player(item) }
+  func trailerPlayer(for item: any PlayableItem) -> any Hashable { CatalogRoutes.trailerPlayer(item) }
+  func seasons(for seasons: [Season]) -> any Hashable { CatalogRoutes.seasons(seasons) }
+  func season(for season: Season) -> any Hashable { CatalogRoutes.season(season) }
+}
+
 struct SearchRoutesLinkProvider: NavigationLinkProvider {
   func link(for item: MediaItem) -> any Hashable {
     SearchRoutes.details(item)

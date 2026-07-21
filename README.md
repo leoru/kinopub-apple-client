@@ -104,10 +104,9 @@ What "done" looks like, so nobody has to guess:
   Native tvOS buttons — no tiny iOS-sized controls.
 - **White is the accent colour**, as on Apple TV. The site's green is gone; the only coloured chrome
   left is semantic (rating tiers, destructive actions).
-- **Tabs** across the top, text-only on tvOS (no SF Symbols — tvOS tab bars are text):
-  Search · Movies · Series · Mine · Library · TV · Settings. Search owns the query field along with
-  the sort and filter controls, on every platform.
-  "Mine" = unfinished movies/serials + bookmark folders. "Library" = the full catalog with filters.
+- **Tabs** across the top: 🔍 · Home · Movies · Series · Saved · ⚙️. On tvOS the labelled tabs are
+  text-only (tvOS tab bars are text) and Search and Settings are icons alone; other platforms show
+  icon + label. Search owns the query field along with the sort and filter controls, everywhere.
 - Downloads tab exists only on non-TV platforms.
 - Apple HIG throughout; if a stock Apple TV app doesn't do it, we probably shouldn't either.
 
@@ -143,9 +142,9 @@ What "done" looks like, so nobody has to guess:
 - [ ] Similar items row via `GET /v1/items/similar`
 
 ### Phase 3 — Navigation & Library
-- [ ] Tab set: Search · Movies · Series · Mine · Library · TV · Settings
-- [ ] Hide Downloads on tvOS
-- [ ] "Mine" tab: unfinished serials/movies + bookmark folders
+- [x] Tab set: 🔍 · Home · Movies · Series · Saved · ⚙️, icon-only where it should be
+- [x] Hide Downloads on tvOS
+- [x] Movies and Series browse tabs, each pinned to a content type with a sort control
 - [ ] Library filters wired to `GET /v1/items` (type, genre, country, year, quality, sort)
 - [ ] Filter pickers fed by `/v1/types`, `/v1/genres`, `/v1/countries`
 

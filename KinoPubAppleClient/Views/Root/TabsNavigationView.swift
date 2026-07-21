@@ -11,12 +11,12 @@ import KinoPubUI
 import KinoPubBackend
 
 struct TabsNavigationView: View {
-  
+
   @Environment(\.appContext) var appContext
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var errorHandler: ErrorHandler
   @EnvironmentObject var authState: AuthState
-  
+
   var placement: ToolbarPlacement {
 #if os(iOS) || os(tvOS)
     .tabBar
@@ -24,26 +24,35 @@ struct TabsNavigationView: View {
     .windowToolbar
 #endif
   }
-  
-  /// tvOS tab bars are text-only — SF Symbols there read as clutter.
+
+  /// tvOS tab bars are text, so labelled tabs drop their icon there. Search and
+  /// Settings are the exception: they are icons alone, as on Apple TV.
   @ViewBuilder
-  private func tabLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
+  private func tabLabel(_ title: LocalizedStringKey, systemImage: String, iconOnly: Bool = false) -> some View {
 #if os(tvOS)
-    Text(title)
+    if iconOnly {
+      Image(systemName: systemImage)
+    } else {
+      Text(title)
+    }
 #else
     Label(title, systemImage: systemImage)
 #endif
   }
 
   var body: some View {
-    TabView {
-      mainTab
+    // Bound, or TabView opens on the first tab — Search sits leftmost, but Home is
+    // where the app should land.
+    TabView(selection: $navigationState.selectedTab) {
       searchTab
-      bookmarksTab
+      homeTab
+      moviesTab
+      seriesTab
+      savedTab
 #if !os(tvOS)
       downloadsTab
 #endif
-      profileTab
+      settingsTab
     }
     .accentColor(Color.KinoPub.accent)
     .sheet(isPresented: $authState.shouldShowAuthentication, content: {
@@ -59,40 +68,68 @@ struct TabsNavigationView: View {
       }
     }
   }
-  
-  var mainTab: some View {
-    MainView(catalog: HomeCatalog(itemsService: appContext.contentService,
-                                  authState: authState,
-                                  errorHandler: errorHandler))
-    .tag(NavigationTabs.main)
-    .tabItem {
-      tabLabel("Main", systemImage: "house")
-    }
-    .toolbarBackground(Color.KinoPub.background, for: placement)
-  }
-  
+
   var searchTab: some View {
     SearchView(catalog: MediaCatalog(itemsService: appContext.contentService,
                                      authState: authState,
                                      errorHandler: errorHandler))
     .tag(NavigationTabs.search)
     .tabItem {
-      tabLabel("Search", systemImage: "magnifyingglass")
+      tabLabel("Search", systemImage: "magnifyingglass", iconOnly: true)
     }
     .toolbarBackground(Color.KinoPub.background, for: placement)
   }
 
-  var bookmarksTab: some View {
-    BookmarksView(catalog: BookmarksCatalog(itemsService: appContext.contentService,
-                                            authState: authState,
-                                            errorHandler: errorHandler))
-    .tag(NavigationTabs.bookmarks)
+  var homeTab: some View {
+    MainView(catalog: HomeCatalog(itemsService: appContext.contentService,
+                                  authState: authState,
+                                  errorHandler: errorHandler))
+    .tag(NavigationTabs.home)
     .tabItem {
-      tabLabel("Bookmarks", systemImage: "bookmark")
+      tabLabel("Home", systemImage: "house")
     }
     .toolbarBackground(Color.KinoPub.background, for: placement)
   }
-  
+
+  var moviesTab: some View {
+    CatalogView(title: "Movies",
+                path: \.moviesRoutes,
+                catalog: MediaCatalog(itemsService: appContext.contentService,
+                                      authState: authState,
+                                      errorHandler: errorHandler,
+                                      contentType: .movie))
+    .tag(NavigationTabs.movies)
+    .tabItem {
+      tabLabel("Movies", systemImage: "film")
+    }
+    .toolbarBackground(Color.KinoPub.background, for: placement)
+  }
+
+  var seriesTab: some View {
+    CatalogView(title: "Series",
+                path: \.seriesRoutes,
+                catalog: MediaCatalog(itemsService: appContext.contentService,
+                                      authState: authState,
+                                      errorHandler: errorHandler,
+                                      contentType: .serial))
+    .tag(NavigationTabs.series)
+    .tabItem {
+      tabLabel("Series", systemImage: "tv")
+    }
+    .toolbarBackground(Color.KinoPub.background, for: placement)
+  }
+
+  var savedTab: some View {
+    BookmarksView(catalog: BookmarksCatalog(itemsService: appContext.contentService,
+                                            authState: authState,
+                                            errorHandler: errorHandler))
+    .tag(NavigationTabs.saved)
+    .tabItem {
+      tabLabel("Saved", systemImage: "bookmark")
+    }
+    .toolbarBackground(Color.KinoPub.background, for: placement)
+  }
+
   var downloadsTab: some View {
     DownloadsView(catalog: DownloadsCatalog(downloadsDatabase: appContext.downloadedFilesDatabase, downloadManager: appContext.downloadManager))
       .tag(NavigationTabs.downloads)
@@ -101,14 +138,14 @@ struct TabsNavigationView: View {
       }
       .toolbarBackground(Color.KinoPub.background, for: placement)
   }
-  
-  var profileTab: some View {
+
+  var settingsTab: some View {
     ProfileView(model: ProfileModel(userService: appContext.userService,
                                     errorHandler: errorHandler,
                                     authState: authState))
-      .tag(NavigationTabs.profile)
+      .tag(NavigationTabs.settings)
       .tabItem {
-        tabLabel("Profile", systemImage: "person.crop.circle")
+        tabLabel("Settings", systemImage: "gearshape", iconOnly: true)
       }
       .toolbarBackground(Color.KinoPub.background, for: placement)
   }
