@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  GenresRequest.swift
 //  
 //
 //  Created by Kirill Kunst on 14.08.2023.
@@ -9,10 +9,16 @@ import Foundation
 
 public struct GenresRequest: Endpoint {
 
-  public init() {}
+  private let contentType: MediaType?
 
+  public init(contentType: MediaType? = nil) {
+    self.contentType = contentType
+  }
+
+  /// Was pointing at `/v1/countries` — a copy-paste that would have filled the genre
+  /// picker with country names.
   public var path: String {
-    "/v1/countries"
+    "/v1/genres"
   }
 
   public var method: String {
@@ -20,7 +26,8 @@ public struct GenresRequest: Endpoint {
   }
 
   public var parameters: [String: Any]? {
-    nil
+    guard let contentType else { return nil }
+    return ["type": contentType.rawValue]
   }
 
   public var headers: [String: String]? {

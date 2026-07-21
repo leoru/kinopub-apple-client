@@ -73,6 +73,8 @@ These are real, verified, and up for grabs:
   into `#"\b\#(marker)\b"#`, and counts `forced` as a CC marker — forced tracks carry no dialogue and make
   a bad default.
 - **Home rows show only the first page** of each shortcut and refetch every time the tab appears.
+- **Year filtering is by decade**, not an arbitrary from/to — a two-ended numeric picker is painful
+  with a remote. The API accepts any range if that changes.
 - **Continue watching shows the last-played episode, not the next one.** Working out "next" needs a
   per-item `/v1/watching?id=` call; the row shows where playback stopped instead.
 - **A title played longer ago than the last 50 history entries** falls back to its poster, cropped to
@@ -130,11 +132,11 @@ that line is polish, and everything above it is unfinished business.
 
 Nothing exotic. A working, good-looking client that does what microiptv does.
 
-- [ ] **Library browsing in the Search tab**, matching microiptv's Library:
-  - sorts: recently added *(default)*, recently updated, views, title, year, Kinopoisk rating,
-    IMDb rating — `GET /v1/items` takes `sort` with a `-` prefix for descending
-  - filters as dropdowns: type, genre, country, release-year range
-  - pickers fed by `/v1/types`, `/v1/genres`, `/v1/countries`
+- [x] **Library browsing in the Search tab**, matching microiptv's Library:
+  - all seven sorts, recently added by default. `kinopoisk_rating` and `imdb_rating` are not in the
+    docs but the service accepts and orders by them — verified against live responses
+  - dropdown filters: type, genre, country, release decade
+  - pickers fed by `/v1/genres` and `/v1/countries`
 - [x] **Wire the Watched and Bookmark buttons** — Watched hits `/v1/watching/toggle`; Bookmark opens
   the account's folders and toggles membership via `/v1/bookmarks/toggle-item`
 - [ ] Paginate home rows; cache them so returning to the tab doesn't refetch everything

@@ -17,6 +17,9 @@ protocol VideoContentService {
   func fetchWatchingMovies() async throws -> ArrayData<WatchingItem>
   func fetchWatchingSerials(subscribedOnly: Bool) async throws -> ArrayData<WatchingItem>
   func fetchHistory() async throws -> HistoryData
+  func fetchItems(filter: LibraryFilter, page: Int?) async throws -> PaginatedData<MediaItem>
+  func fetchGenres(for type: MediaType?) async throws -> ArrayData<MediaGenre>
+  func fetchCountries() async throws -> ArrayData<Country>
   func fetchItemFolders(itemId: Int) async throws -> ArrayData<Bookmark>
   func toggleBookmark(itemId: Int, folderId: Int) async throws
 }
@@ -57,6 +60,18 @@ struct VideoContentServiceMock: VideoContentService {
 
   func fetchHistory() async throws -> HistoryData {
     return HistoryData.mock(data: [])
+  }
+
+  func fetchItems(filter: LibraryFilter, page: Int?) async throws -> PaginatedData<MediaItem> {
+    return PaginatedData.mock(data: [])
+  }
+
+  func fetchGenres(for type: MediaType?) async throws -> ArrayData<MediaGenre> {
+    return ArrayData.mock(data: [])
+  }
+
+  func fetchCountries() async throws -> ArrayData<Country> {
+    return ArrayData.mock(data: [])
   }
 
   func fetchItemFolders(itemId: Int) async throws -> ArrayData<Bookmark> {

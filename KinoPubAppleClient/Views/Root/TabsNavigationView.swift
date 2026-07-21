@@ -70,7 +70,7 @@ struct TabsNavigationView: View {
   }
 
   var searchTab: some View {
-    SearchView(catalog: MediaCatalog(itemsService: appContext.contentService,
+    SearchView(catalog: LibraryCatalog(itemsService: appContext.contentService,
                                      authState: authState,
                                      errorHandler: errorHandler))
     .tag(NavigationTabs.search)

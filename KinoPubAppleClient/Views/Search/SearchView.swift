@@ -14,26 +14,21 @@ struct SearchView: View {
   @EnvironmentObject var errorHandler: ErrorHandler
   @Environment(\.appContext) var appContext
 
-  @StateObject private var catalog: MediaCatalog
-  @State private var showShortCutPicker: Bool = false
-  @State private var showFilterPicker: Bool = false
+  @StateObject private var catalog: LibraryCatalog
 
-  init(catalog: @autoclosure @escaping () -> MediaCatalog) {
+  init(catalog: @autoclosure @escaping () -> LibraryCatalog) {
     _catalog = StateObject(wrappedValue: catalog())
-  }
-
-  var toolbarItemPlacement: ToolbarItemPlacement {
-#if os(iOS) || os(tvOS)
-    .topBarTrailing
-#elseif os(macOS)
-    .navigation
-#endif
   }
 
   var body: some View {
     NavigationStack(path: $navigationState.searchRoutes) {
-      VStack {
-        if catalog.items.isEmpty && !catalog.query.isEmpty {
+      VStack(spacing: 0) {
+        // Sorting and filtering apply to the catalog listing, not to a search.
+        if !catalog.isSearching {
+          LibraryFiltersBar(catalog: catalog)
+        }
+
+        if catalog.items.isEmpty && catalog.isSearching {
           emptyView
         } else {
           catalogView
@@ -41,31 +36,7 @@ struct SearchView: View {
       }
       .searchable(text: $catalog.query, placement: .automatic)
       .platformNavigationTitle("Search")
-      .toolbar {
-        ToolbarItem(placement: toolbarItemPlacement) {
-          Button {
-            showShortCutPicker = true
-          } label: {
-            Image(systemName: "arrow.up.arrow.down")
-          }
-        }
-
-        ToolbarItem(placement: toolbarItemPlacement) {
-          Button {
-            showFilterPicker = true
-          } label: {
-            Image(systemName: "line.3.horizontal.decrease.circle")
-          }
-        }
-      }
       .background(Color.KinoPub.background)
-      .sheet(isPresented: $showShortCutPicker, content: {
-        ShortcutSelectionView(shortcut: $catalog.shortcut,
-                              mediaType: $catalog.contentType)
-      })
-      .sheet(isPresented: $showFilterPicker, content: {
-        FilterView(model: FilterModel())
-      })
       .navigationDestination(for: SearchRoutes.self) { route in
         switch route {
         case .details(let item):
@@ -92,7 +63,7 @@ struct SearchView: View {
       }
       .handleError(state: $errorHandler.state)
       .task {
-        await catalog.fetchItems()
+        await catalog.load()
       }
     }
   }
@@ -120,10 +91,10 @@ struct SearchView_Previews: PreviewProvider {
   @StateObject static var navState = NavigationState()
 
   static var previews: some View {
-    SearchView(catalog: MediaCatalog(itemsService: VideoContentServiceMock(),
-                                     authState: AuthState(authService: AuthorizationServiceMock(),
-                                                          accessTokenService: AccessTokenServiceMock()),
-                                     errorHandler: ErrorHandler()))
+    SearchView(catalog: LibraryCatalog(itemsService: VideoContentServiceMock(),
+                                       authState: AuthState(authService: AuthorizationServiceMock(),
+                                                            accessTokenService: AccessTokenServiceMock()),
+                                       errorHandler: ErrorHandler()))
     .environmentObject(navState)
   }
 }

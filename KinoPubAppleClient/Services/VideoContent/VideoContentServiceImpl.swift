@@ -72,6 +72,24 @@ final class VideoContentServiceImpl: VideoContentService {
     return response
   }
 
+  func fetchItems(filter: LibraryFilter, page: Int?) async throws -> PaginatedData<MediaItem> {
+    let request = ItemsRequest(filter: filter, page: page)
+    return try await apiClient.performRequest(with: request,
+                                              decodingType: PaginatedData<MediaItem>.self)
+  }
+
+  func fetchGenres(for type: MediaType?) async throws -> ArrayData<MediaGenre> {
+    let request = GenresRequest(contentType: type)
+    return try await apiClient.performRequest(with: request,
+                                              decodingType: ArrayData<MediaGenre>.self)
+  }
+
+  func fetchCountries() async throws -> ArrayData<Country> {
+    let request = CountriesRequest()
+    return try await apiClient.performRequest(with: request,
+                                              decodingType: ArrayData<Country>.self)
+  }
+
   func fetchItemFolders(itemId: Int) async throws -> ArrayData<Bookmark> {
     let request = ItemFoldersRequest(itemId: itemId)
     let response = try await apiClient.performRequest(with: request,

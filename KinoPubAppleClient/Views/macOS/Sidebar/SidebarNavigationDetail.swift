@@ -43,7 +43,7 @@ struct SidebarNavigationDetail: View {
   }
   
   var search: some View {
-    SearchView(catalog: MediaCatalog(itemsService: appContext.contentService,
+    SearchView(catalog: LibraryCatalog(itemsService: appContext.contentService,
                                      authState: authState,
                                      errorHandler: errorHandler))
   }
