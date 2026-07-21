@@ -27,6 +27,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Toolchain versions
+        run: |
+          xcodebuild -version
+          swift --version
+          xcodebuild -showsdks | sed -n '1,40p'
+
       # KinoPubUI contains a .metal shader. Xcode 26+ moved the Metal toolchain out
       # into a separate downloadable component; earlier Xcodes bundle it, so this is
       # a no-op there and a real download on newer runner images.
@@ -53,6 +59,16 @@ jobs:
         package: [KinoPubKit, KinoPubUI, KinoPubBackend, KinoPubLogging]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Toolchain versions
+        run: |
+          xcodebuild -version
+          swift --version
+
+      # KinoPubUI's shader is compiled by `swift test` too, so this job needs the
+      # toolchain just as much as the build jobs do.
+      - name: Ensure Metal toolchain
+        run: xcodebuild -downloadComponent MetalToolchain || echo "bundled with this Xcode"
 
       - name: swift test
         run: swift test --package-path Packages/${{ matrix.package }}

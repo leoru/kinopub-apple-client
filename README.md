@@ -117,54 +117,77 @@ What "done" looks like, so nobody has to guess:
 
 ## Roadmap
 
-### Phase 0 — tvOS hygiene ✅
-- [x] Verify and keep green a `platform=tvOS Simulator` build in CI (`.github/workflows/ci.yml`)
-- [x] Remove the stale `GoogleService-Info.plist` reference from `project.pbxproj`
-- [x] Text-only tab labels on tvOS; Downloads tab hidden there
-- [x] Audit every custom `Button` / `NavigationLink` for focus behaviour on tvOS —
-      `KinoPubButtonStyle` and the subtitle word chips now react to focus
-- [x] Repair the `KinoPubKit` / `KinoPubUI` test targets and add them back to CI
-- [x] Hide the item-page download button on tvOS
+The goal in one line: **a client good enough to replace microiptv for daily use.** Everything below
+that line is polish, and everything above it is unfinished business.
 
-### Phase 1 — Home rebuild
-- [x] Move search, sort and filters out of Main into their own Search tab (all platforms)
-- [x] Row-based home model (sections of horizontally scrolling cards) replacing the flat `LazyVGrid`
-- [x] Wire `GET /v1/watching/movies` + `GET /v1/watching/serials` → "Continue watching" row
-- [x] Rows per shortcut and content type (Hot / Fresh / Popular, Movies / Series)
-- [x] tvOS card component with focus scaling, ratings, watch progress and new-episode badges
-- [ ] Paginate rows as they scroll (each row currently shows the first page only)
-- [ ] Cache the home rows so returning to the tab doesn't refetch everything
+### Done so far
+- tvOS build hygiene, CI across tvOS/iOS/macOS, all four package test suites green
+- Row-based home led by Continue Watching, ordered by intent and rendered as landscape cards with
+  episode stills, resume bars and "S1, E7 · 51 min"
+- Detail page: full-bleed hero with a Metal variable blur, trailer takeover, native action buttons,
+  season tabs over a rail of episode stills
+- Tabs: Search · Home · Movies · Series · Saved · Settings, icon-only where it should be
+- Combined score badges on posters, separate IMDb/Kinopoisk marks on detail pages
+- White accent throughout; the site's green is gone
 
-### Phase 2 — Detail page
-- [x] Full-bleed hero with a true variable blur (Metal `layerEffect`) — sharp at the top,
-      dissolving into the text; stacked-layer fallback below tvOS 17 / macOS 14
-- [x] Trailer takes over the hero once the player reports it is ready
-- [x] Native tvOS action buttons; the primary one reads Play / Continue / Play Again
-- [x] IMDb and Kinopoisk shown separately with their own marks
-- [x] Plot appears once, expandable via More
-- [x] Season tabs over a horizontal rail of episode stills, opening on the unfinished season
-- [ ] Wire the Watched and Bookmark buttons — they render but do nothing yet
-- [ ] Similar items row via `GET /v1/items/similar`
+### Phase A — Plan-minimum: parity with what I already use
 
-### Phase 3 — Navigation & Library
-- [x] Tab set: 🔍 · Home · Movies · Series · Saved · ⚙️, icon-only where it should be
-- [x] Hide Downloads on tvOS
-- [x] Movies and Series browse tabs, each pinned to a content type with a sort control
-- [ ] Library filters wired to `GET /v1/items` (type, genre, country, year, quality, sort)
-- [ ] Filter pickers fed by `/v1/types`, `/v1/genres`, `/v1/countries`
+Nothing exotic. A working, good-looking client that does what microiptv does.
 
-### Phase 4 — Player & subtitles
-- [ ] Fix the Apple Translation wiring so the pause panel actually translates
-- [ ] Make the word panel focus-navigable on tvOS
-- [ ] Per-episode subtitle tracks
-- [ ] Subtitle appearance settings (size, background); revisit CC/forced detection
-- [ ] Reconcile custom overlays with the native tvOS transport bar
+- [ ] **Library browsing in the Search tab**, matching microiptv's Library:
+  - sorts: recently added *(default)*, recently updated, views, title, year, Kinopoisk rating,
+    IMDb rating — `GET /v1/items` takes `sort` with a `-` prefix for descending
+  - filters as dropdowns: type, genre, country, release-year range
+  - pickers fed by `/v1/types`, `/v1/genres`, `/v1/countries`
+- [ ] **Wire the Watched and Bookmark buttons** — they render but do nothing
+  (`/v1/watching/toggle`, `/v1/bookmarks`)
+- [ ] Paginate home rows; cache them so returning to the tab doesn't refetch everything
+- [ ] Fix the player issues listed under Known issues (subtitle track per episode, tvOS transport
+      conflicts, CC/forced detection)
 
-### Phase 5 — Later
-- [ ] Collections rows (`/v1/collections`)
-- [ ] TV channels tab (`/v1/tv/index`)
-- [ ] Viewing history (`/v1/history`)
+### Phase B — All of kino.pub's data
+
+microiptv leaves a lot on the table. We shouldn't.
+
+- [ ] Trailers on the detail page as a proper section, not only the hero takeover
+- [ ] Awards
+- [ ] Collections (`GET /v1/collections`, `/v1/collections/view?id=`)
+- [ ] **Every production country**, not just the first — microiptv shows one
+- [ ] Sweep the item payload for anything else worth surfacing (voices, quality, AC3, tracklist)
+- [ ] Similar items (`GET /v1/items/similar`)
+
+### Phase C — Remember playback choices
+
+- [ ] Remember the last subtitle track per series and default to it for the next episode
+- [ ] Same for audio track
+- [ ] Fall back to the system's language settings when there is no prior choice
+      — microiptv resets every time, which is the thing worth beating here
+
+### Phase D — Exploratory: IMDb recommendations and tops
+
+Wanted: recommendations and top lists sourced from IMDb rather than kino.pub. Two routes, and they
+are not equivalent:
+
+- **IMDb's official non-commercial datasets** (`datasets.imdbws.com`, also mirrored on S3) — daily
+  TSV dumps of `title.basics`, `title.ratings`, `title.akas` and friends. Reliable, legitimate for
+  personal use, and enough to build **top lists** (rating + vote count, filtered by type/year/genre).
+  They contain **no recommendation data** — "More like this" is not in the dumps.
+- **Unofficial API wrappers** scrape the site. They can reach recommendations, but they break without
+  warning and sit outside IMDb's terms.
+
+So: tops from the datasets are straightforward; recommendations are the part that needs a decision.
+Matching an IMDb id to a kino.pub item is easy either way — `MediaItem.imdb` already carries it.
+
+- [ ] Decide the source, given the above
+- [ ] Match IMDb ids to kino.pub items and skip what the service doesn't carry
+- [ ] Top-N rows on Home; a "similar" row on the detail page
+
+### Later
+- [ ] TV channels tab (`GET /v1/tv/index`)
+- [ ] Viewing history screen
 - [ ] Top Shelf extension
+- [ ] tvOS card parallax — needs TVUIKit via `UIViewRepresentable`; SwiftUI has no equivalent
+
 
 ## API notes
 
