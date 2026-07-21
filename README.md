@@ -184,6 +184,36 @@ Sourcing, and the two routes are not equivalent:
 - [ ] Map IMDb ids to kino.pub items, skipping what the service doesn't carry
 - [ ] Render the surviving lists as Home rows
 
+### Phase E — Skip intros, recaps and credits
+
+Two tiers, and the cheap one is worth shipping first:
+
+- **Minimum, from subtitles.** A gap in the subtitle track at the head of an episode, or a repeated
+  cue block across episodes of a season, approximates the intro well enough to offer a Skip button.
+  Needs no external service and the cue parser already exists.
+- **Proper, from a segment database.** Community sources keyed by ids we can reach:
+  - **TheIntroDB** (`introdb.app`) — open REST API of intro/recap/outro timecodes, keyed by TMDb,
+    IMDb and TVDb ids. Used by Jellyfin's Media Segments and Stremio. `MediaItem.imdb` gives the key.
+  - **AniSkip** (`api.aniskip.com/v2/skip-times/{mal_id}/{episode}`) — the accurate one for anime,
+    with typed segments (`op`, `ed`, `recap`, `mixed_op`). Keyed by MAL/AniList id, so it needs a
+    title match rather than an id we already hold.
+  - **Anime-Skip** — similar, with finer segments (intro, canon, filler, preview).
+- **Fallback, computed locally.** Audio fingerprinting is what Plex and Jellyfin's Intro Skipper
+  actually do: hash the audio of several episodes in a season (Chromaprint/`fpcalc` + FFmpeg) and find
+  the repeated 30–90s run. Accurate and source-independent, but it needs the files — plausible for
+  downloads, not for streaming, so it is the last resort rather than the plan.
+
+- [ ] Subtitle-gap heuristic + a Skip control in the player
+- [ ] TheIntroDB lookup by IMDb id, cached per episode
+- [ ] AniSkip for anime, once there is a MAL/AniList match
+- [ ] Decide whether fingerprinting is worth it for downloaded files only
+
+### Phase F — Episode schedule
+
+- [ ] Show air dates on episode cards, including episodes not out yet ("Ep 6 · 14 Aug")
+- [ ] Mark upcoming episodes as unplayable rather than hiding them
+- [ ] Source: kino.pub's own data if it carries dates, otherwise TVDb/TMDb by IMDb id
+
 ### Later
 - [ ] TV channels tab (`GET /v1/tv/index`)
 - [ ] Viewing history screen
