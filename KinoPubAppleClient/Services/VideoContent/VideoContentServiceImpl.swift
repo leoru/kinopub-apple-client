@@ -72,4 +72,16 @@ final class VideoContentServiceImpl: VideoContentService {
     return response
   }
 
+  func fetchItemFolders(itemId: Int) async throws -> ArrayData<Bookmark> {
+    let request = ItemFoldersRequest(itemId: itemId)
+    let response = try await apiClient.performRequest(with: request,
+                                                      decodingType: ArrayData<Bookmark>.self)
+    return response
+  }
+
+  func toggleBookmark(itemId: Int, folderId: Int) async throws {
+    let request = ToggleBookmarkRequest(itemId: itemId, folderId: folderId)
+    _ = try await apiClient.performRequest(with: request, decodingType: EmptyResponseData.self)
+  }
+
 }

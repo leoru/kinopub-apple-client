@@ -71,8 +71,12 @@ struct MediaItemHeroView: View {
   var mediaItem: MediaItem
   var isSkeleton: Bool
   var linkProvider: NavigationLinkProvider
+  var isWatched: Bool
+  var isBookmarked: Bool
+  var folders: [Bookmark]
+  var folderIDsContainingItem: Set<Int>
   var onWatchedToggle: () -> Void
-  var onBookmarkHandle: () -> Void
+  var onFolderToggle: (Bookmark) -> Void
 
   @StateObject private var trailer = TrailerPreviewModel()
 
@@ -220,19 +224,46 @@ struct MediaItemHeroView: View {
       }
 
       Button(action: onWatchedToggle) {
-        Image(systemName: "checkmark")
+        Image(systemName: isWatched ? "checkmark.circle.fill" : "checkmark")
       }
       .buttonStyle(.bordered)
       .buttonBorderShape(.capsule)
 
-      Button(action: onBookmarkHandle) {
+      bookmarkMenu
+    }
+    .font(Self.buttonFont)
+    .disabled(isSkeleton)
+  }
+
+  /// kino.pub bookmarks are folders, so this offers the list rather than a single
+  /// on/off — the icon fills once the item is in at least one of them.
+  @ViewBuilder
+  private var bookmarkMenu: some View {
+    if folders.isEmpty {
+      Button {
+        // Nothing to add to until the account has a folder.
+      } label: {
         Image(systemName: "bookmark")
       }
       .buttonStyle(.bordered)
       .buttonBorderShape(.capsule)
+      .disabled(true)
+    } else {
+      Menu {
+        ForEach(folders, id: \.id) { folder in
+          Button {
+            onFolderToggle(folder)
+          } label: {
+            Label(folder.title,
+                  systemImage: folderIDsContainingItem.contains(folder.id) ? "checkmark" : "")
+          }
+        }
+      } label: {
+        Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+      }
+      .buttonStyle(.bordered)
+      .buttonBorderShape(.capsule)
     }
-    .font(Self.buttonFont)
-    .disabled(isSkeleton)
   }
 
   @ViewBuilder

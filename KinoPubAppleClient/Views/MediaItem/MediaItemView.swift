@@ -26,8 +26,12 @@ struct MediaItemView: View {
         MediaItemHeroView(mediaItem: itemModel.mediaItem,
                           isSkeleton: !itemModel.itemLoaded,
                           linkProvider: itemModel.linkProvider,
-                          onWatchedToggle: {},
-                          onBookmarkHandle: {})
+                          isWatched: itemModel.isWatched,
+                          isBookmarked: itemModel.isBookmarked,
+                          folders: itemModel.folders,
+                          folderIDsContainingItem: itemModel.folderIDsContainingItem,
+                          onWatchedToggle: { itemModel.toggleWatched() },
+                          onFolderToggle: { itemModel.toggleFolder($0) })
 
         if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
           SeasonsRailView(seasons: seasons, linkProvider: itemModel.linkProvider)

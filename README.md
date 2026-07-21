@@ -77,7 +77,8 @@ These are real, verified, and up for grabs:
   per-item `/v1/watching?id=` call; the row shows where playback stopped instead.
 - **A title played longer ago than the last 50 history entries** falls back to its poster, cropped to
   the landscape frame, with no episode label.
-- **The detail page's Watched and Bookmark buttons are inert.** They are wired to empty closures.
+- **Bookmarking needs an existing folder.** There is no create-folder flow yet, so the button is
+  disabled on an account with none.
 - **The hero trailer only appears when the API returns `trailer.url`.** Some items carry a `trailer`
   object with no link; the button is hidden and the artwork stays.
 
@@ -134,8 +135,8 @@ Nothing exotic. A working, good-looking client that does what microiptv does.
     IMDb rating — `GET /v1/items` takes `sort` with a `-` prefix for descending
   - filters as dropdowns: type, genre, country, release-year range
   - pickers fed by `/v1/types`, `/v1/genres`, `/v1/countries`
-- [ ] **Wire the Watched and Bookmark buttons** — they render but do nothing
-  (`/v1/watching/toggle`, `/v1/bookmarks`)
+- [x] **Wire the Watched and Bookmark buttons** — Watched hits `/v1/watching/toggle`; Bookmark opens
+  the account's folders and toggles membership via `/v1/bookmarks/toggle-item`
 - [ ] Paginate home rows; cache them so returning to the tab doesn't refetch everything
 - [ ] Fix the player issues listed under Known issues (subtitle track per episode, tvOS transport
       conflicts, CC/forced detection)
