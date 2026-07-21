@@ -154,7 +154,8 @@ private struct EpisodeCardView: View {
   let episode: Episode
 
   private var progress: Double? {
-    guard episode.duration > 0, episode.watching.time > 0 else { return nil }
+    // Watched episodes carry the checkmark; a full bar underneath it says nothing.
+    guard episode.watched == 0, episode.duration > 0, episode.watching.time > 0 else { return nil }
     return min(Double(episode.watching.time) / Double(episode.duration), 1.0)
   }
 
