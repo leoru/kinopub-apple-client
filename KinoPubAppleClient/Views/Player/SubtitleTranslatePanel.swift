@@ -15,146 +15,6 @@ struct SubtitleTranslatePanel: View {
   let cueText: String
 
   @State private var selectedWord: String?
-  @State private var translatedText: String?
-  @State private var isTranslating = false
-  @State private var translationUnavailableMessage: String?
-  @available(macOS 15.0, iOS 18.0, *)
-  @State private var translationConfiguration: TranslationSession.Configuration?
-
-  private var words: [String] {
-    cueText
-      .components(separatedBy: .whitespacesAndNewlines)
-      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-      .filter { !$0.isEmpty }
-  }
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Pause to translate")
-        .font(.headline)
-        .foregroundStyle(.secondary)
-
-      FlowWordChips(words: words, selectedWord: selectedWord) { word in
-        translate(word: word)
-      }
-
-      if isTranslating {
-        ProgressView()
-          .progressViewStyle(.circular)
-      }
-
-      if let selectedWord, let translatedText {
-        VStack(alignment: .leading, spacing: 4) {
-          Text(cleanWord(selectedWord))
-            .font(.title3.weight(.semibold))
-          Text(translatedText)
-            .font(.title3)
-            .foregroundStyle(.primary)
-        }
-        .padding(.top, 4)
-      } else if let translationUnavailableMessage {
-        Text(translationUnavailableMessage)
-          .font(.footnote)
-          .foregroundStyle(.secondary)
-      }
-    }
-    .padding(20)
-    .frame(maxWidth: 720, alignment: .leading)
-    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    .transformBody()
-  }
-
-  private func translate(word: String) {
-    selectedWord = word
-    translatedText = nil
-    translationUnavailableMessage = nil
-
-    if #available(macOS 15.0, iOS 18.0, *) {
-      let cleaned = cleanWord(word)
-      guard !cleaned.isEmpty else { return }
-      isTranslating = true
-      if translationConfiguration == nil {
-        translationConfiguration = .init(
-          source: Locale.Language(identifier: "en"),
-          target: Locale.Language(identifier: "ru")
-        )
-      } else {
-        translationConfiguration?.invalidate()
-      }
-    } else {
-      translationUnavailableMessage = "On-device translation requires macOS 15.0 or iOS 18.0."
-    }
-  }
-
-  @available(macOS 15.0, iOS 18.0, *)
-  private func performTranslation(session: TranslationSession) async {
-    guard let selectedWord else { return }
-    do {
-      let response = try await session.translate(cleanWord(selectedWord))
-      await MainActor.run {
-        translatedText = response.targetText
-        isTranslating = false
-      }
-    } catch {
-      await MainActor.run {
-        translationUnavailableMessage = "Translation unavailable for this word."
-        isTranslating = false
-      }
-    }
-  }
-
-  private func cleanWord(_ word: String) -> String {
-    word.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-  }
-}
-
-// MARK: - Translation modifier (availability-gated)
-
-@available(macOS 15.0, iOS 18.0, *)
-private struct TranslationTransformModifier: ViewModifier {
-  @Binding var translationConfiguration: TranslationSession.Configuration?
-
-  func body(content: Content) -> some View {
-    content.translationTask(translationConfiguration) { session in
-      // Delegate to the parent's performTranslation — handled via a shared closure pattern
-      // This is wired at the call site
-    }
-  }
-}
-
-private extension View {
-  func transformBody() -> some View {
-    if #available(macOS 15.0, iOS 18.0, *) {
-      return AnyView(TranslatedBody(content: self))
-    } else {
-      return AnyView(self)
-    }
-  }
-}
-
-@available(macOS 15.0, iOS 18.0, *)
-private struct TranslatedBody<Content: View>: View {
-  let content: Content
-  @State private var configuration: TranslationSession.Configuration?
-
-  var body: some View {
-    content
-      .translationTask(configuration) { _ in
-        // Translation is driven by the parent SubtitleTranslatePanel's @State
-      }
-  }
-}
-
-#else
-
-// MARK: - tvOS / no-Translation fallback
-
-struct SubtitleTranslatePanel: View {
-  let cueText: String
-
-  @State private var selectedWord: String?
-  @State private var translatedText: String?
-  @State private var translationUnavailableMessage: String?
 
   private var words: [String] {
     cueText
@@ -171,14 +31,17 @@ struct SubtitleTranslatePanel: View {
 
       FlowWordChips(words: words, selectedWord: selectedWord) { word in
         selectedWord = word
-        translatedText = nil
-        translationUnavailableMessage = "On-device translation is not available on this platform."
       }
 
-      if let translationUnavailableMessage {
-        Text(translationUnavailableMessage)
-          .font(.footnote)
-          .foregroundStyle(.secondary)
+      if let selectedWord, !cleanWord(selectedWord).isEmpty {
+        if #available(macOS 15.0, iOS 18.0, *) {
+          WordTranslationView(word: cleanWord(selectedWord))
+            .padding(.top, 4)
+        } else {
+          Text("On-device translation requires macOS 15.0 or iOS 18.0.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
       }
     }
     .padding(20)
@@ -188,6 +51,95 @@ struct SubtitleTranslatePanel: View {
 
   private func cleanWord(_ word: String) -> String {
     word.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+  }
+}
+
+/// Owns the translation session for one word.
+///
+/// This lives in its own view for two reasons: a stored property cannot be marked
+/// `@available` when the enclosing type is available earlier, and `.translationTask`
+/// has to observe the very same `@State` that requests the translation — the previous
+/// version kept them in separate views, so the request never reached a task.
+@available(macOS 15.0, iOS 18.0, *)
+private struct WordTranslationView: View {
+  let word: String
+
+  @State private var configuration: TranslationSession.Configuration?
+  @State private var translated: String?
+  @State private var failed = false
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Text(word)
+        .font(.title3.weight(.semibold))
+
+      if let translated {
+        Text(translated)
+          .font(.title3)
+          .foregroundStyle(.primary)
+      } else if failed {
+        Text("Translation unavailable for this word.")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+      } else {
+        ProgressView()
+          .progressViewStyle(.circular)
+      }
+    }
+    .task(id: word) {
+      translated = nil
+      failed = false
+      configuration = TranslationSession.Configuration(
+        source: Locale.Language(identifier: "en"),
+        target: Locale.Language(identifier: "ru")
+      )
+    }
+    .translationTask(configuration) { session in
+      do {
+        let response = try await session.translate(word)
+        await MainActor.run { translated = response.targetText }
+      } catch {
+        await MainActor.run { failed = true }
+      }
+    }
+  }
+}
+
+#else
+
+// MARK: - tvOS / no-Translation fallback
+
+struct SubtitleTranslatePanel: View {
+  let cueText: String
+
+  @State private var selectedWord: String?
+
+  private var words: [String] {
+    cueText
+      .components(separatedBy: .whitespacesAndNewlines)
+      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty }
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("Pause to translate")
+        .font(.headline)
+        .foregroundStyle(.secondary)
+
+      FlowWordChips(words: words, selectedWord: selectedWord) { word in
+        selectedWord = word
+      }
+
+      if selectedWord != nil {
+        Text("On-device translation is not available on this platform.")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+      }
+    }
+    .padding(20)
+    .frame(maxWidth: 720, alignment: .leading)
+    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
   }
 }
 

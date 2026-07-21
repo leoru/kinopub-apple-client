@@ -57,17 +57,12 @@ open KinoPubAppleClient.xcodeproj
 - Downloads and offline playback (iOS/iPadOS/macOS only)
 - **English subtitles by default**, preferring non-CC/SDH sidecar tracks, parsed into synced cues and
   rendered as an overlay (`Views/Player/Subtitle*.swift`); toggles live in Profile → Playback
-- On-pause word panel that is *meant* to translate EN→RU on device — see Known issues
+- On-pause word panel translating EN→RU on device (iOS 18 / macOS 15; not available on tvOS)
 
 ## Known issues / half-finished
 
 These are real, verified, and up for grabs:
 
-- **Word translation never fires.** `SubtitleTranslatePanel.translate(word:)` sets a
-  `TranslationSession.Configuration` on the panel's own `@State`, but the only `.translationTask` sits
-  inside the private `TranslatedBody` wrapper with a *separate*, never-assigned configuration — so
-  `performTranslation(session:)` has no caller. `TranslationTransformModifier` is dead code.
-  See `KinoPubAppleClient/Views/Player/SubtitleTranslatePanel.swift`.
 - **The pause panel's focus behaviour is unverified on a real remote.** The word chips now use a
   focus-reactive button style, but nobody has driven it with a Siri Remote yet.
 - **Subtitles don't follow the episode.** `MediaItem.subtitles` returns `videos?.first?.subtitles`, so a

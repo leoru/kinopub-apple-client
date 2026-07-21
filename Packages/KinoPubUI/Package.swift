@@ -22,7 +22,11 @@ let package = Package(
       dependencies: [
         .product(name: "KinoPubBackend", package: "KinoPubBackend"),
         .product(name: "SkeletonUI", package: "SkeletonUI")
-      ]),
+      ],
+      // Declared explicitly: relying on SwiftPM to infer the asset catalogue meant
+      // `Bundle.module` was not generated on every toolchain, and every
+      // `Image(..., bundle: .module)` failed to compile.
+      resources: [.process("Media.xcassets")]),
     .testTarget(
       name: "KinoPubUITests",
       dependencies: ["KinoPubUI"])
