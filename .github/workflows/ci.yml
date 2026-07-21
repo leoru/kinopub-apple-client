@@ -39,16 +39,24 @@ jobs:
       - name: Ensure Metal toolchain
         run: xcodebuild -downloadComponent MetalToolchain || echo "bundled with this Xcode"
 
+      # Failures are echoed back as ::error:: so they show up as annotations. Job
+      # logs need admin rights to read, annotations do not.
       - name: xcodebuild
         run: |
           set -o pipefail
-          xcodebuild \
+          if ! xcodebuild \
             -project KinoPubAppleClient.xcodeproj \
             -scheme KinoPubAppleClient \
             -destination '${{ matrix.destination }}' \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build 2>&1 | tee /tmp/build.log
+          then
+            grep -E "error:|error " /tmp/build.log | sort -u | head -15 | while IFS= read -r line; do
+              echo "::error::${{ matrix.platform }}: ${line}"
+            done
+            exit 1
+          fi
 
   test-packages:
     name: Test ${{ matrix.package }}
@@ -71,4 +79,12 @@ jobs:
         run: xcodebuild -downloadComponent MetalToolchain || echo "bundled with this Xcode"
 
       - name: swift test
-        run: swift test --package-path Packages/${{ matrix.package }}
+        run: |
+          set -o pipefail
+          if ! swift test --package-path Packages/${{ matrix.package }} 2>&1 | tee /tmp/test.log
+          then
+            grep -E "error:|error " /tmp/test.log | sort -u | head -15 | while IFS= read -r line; do
+              echo "::error::${{ matrix.package }}: ${line}"
+            done
+            exit 1
+          fi
