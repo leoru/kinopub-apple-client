@@ -220,14 +220,8 @@ private struct FlexibleWordLayout: View {
         } label: {
           Text(word)
             .font(.body.weight(.medium))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-              RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(word == selectedWord ? Color.accentColor.opacity(0.35) : Color.primary.opacity(0.12))
-            )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(WordChipButtonStyle(isSelected: word == selectedWord))
       }
     }
   }
@@ -238,5 +232,42 @@ private struct FlexibleWordLayout: View {
 #else
     return 56
 #endif
+  }
+}
+
+/// Chip styling that reacts to focus, so the Siri Remote has something to land on.
+/// `.buttonStyle(.plain)` leaves tvOS buttons focusable but visually inert.
+private struct WordChipButtonStyle: ButtonStyle {
+  let isSelected: Bool
+
+  // Spelled out rather than `Configuration`: the Translation framework puts a
+  // protocol of that name in scope in this file.
+  func makeBody(configuration: ButtonStyleConfiguration) -> some View {
+    Chip(configuration: configuration, isSelected: isSelected)
+  }
+
+  private struct Chip: View {
+    let configuration: ButtonStyle.Configuration
+    let isSelected: Bool
+    @Environment(\.isFocused) private var isFocused
+
+    private var fill: Color {
+      if isFocused { return Color.accentColor.opacity(0.65) }
+      if isSelected { return Color.accentColor.opacity(0.35) }
+      return Color.primary.opacity(0.12)
+    }
+
+    var body: some View {
+      configuration.label
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+          RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(fill)
+        )
+        .scaleEffect(isFocused ? 1.1 : (configuration.isPressed ? 0.95 : 1.0))
+        .animation(.easeOut(duration: 0.15), value: isFocused)
+        .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+    }
   }
 }

@@ -25,11 +25,23 @@ struct TabsNavigationView: View {
 #endif
   }
   
+  /// tvOS tab bars are text-only — SF Symbols there read as clutter.
+  @ViewBuilder
+  private func tabLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
+#if os(tvOS)
+    Text(title)
+#else
+    Label(title, systemImage: systemImage)
+#endif
+  }
+
   var body: some View {
     TabView {
       mainTab
       bookmarksTab
+#if !os(tvOS)
       downloadsTab
+#endif
       profileTab
     }
     .accentColor(Color.KinoPub.accent)
@@ -53,7 +65,7 @@ struct TabsNavigationView: View {
                                    errorHandler: errorHandler))
     .tag(NavigationTabs.main)
     .tabItem {
-      Label("Main", systemImage: "house")
+      tabLabel("Main", systemImage: "house")
     }
     .toolbarBackground(Color.KinoPub.background, for: placement)
   }
@@ -64,7 +76,7 @@ struct TabsNavigationView: View {
                                             errorHandler: errorHandler))
     .tag(NavigationTabs.bookmarks)
     .tabItem {
-      Label("Bookmarks", systemImage: "bookmark")
+      tabLabel("Bookmarks", systemImage: "bookmark")
     }
     .toolbarBackground(Color.KinoPub.background, for: placement)
   }
@@ -73,7 +85,7 @@ struct TabsNavigationView: View {
     DownloadsView(catalog: DownloadsCatalog(downloadsDatabase: appContext.downloadedFilesDatabase, downloadManager: appContext.downloadManager))
       .tag(NavigationTabs.downloads)
       .tabItem {
-        Label("Downloads", systemImage: "arrow.down.circle")
+        tabLabel("Downloads", systemImage: "arrow.down.circle")
       }
       .toolbarBackground(Color.KinoPub.background, for: placement)
   }
@@ -84,7 +96,7 @@ struct TabsNavigationView: View {
                                     authState: authState))
       .tag(NavigationTabs.profile)
       .tabItem {
-        Label("Profile", systemImage: "person.crop.circle")
+        tabLabel("Profile", systemImage: "person.crop.circle")
       }
       .toolbarBackground(Color.KinoPub.background, for: placement)
   }

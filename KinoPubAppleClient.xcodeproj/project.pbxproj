@@ -39,7 +39,6 @@
 		CC71E7082A6DD119004AFB3F /* KinoPubLogging in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7072A6DD119004AFB3F /* KinoPubLogging */; };
 		CC71E70A2A6DD119004AFB3F /* KinoPubUI in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7092A6DD119004AFB3F /* KinoPubUI */; };
 		CC71E70D2A6DD56A004AFB3F /* SkeletonUI in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E70C2A6DD56A004AFB3F /* SkeletonUI */; };
-		CC71E70F2A6DD5B1004AFB3F /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = CC71E70E2A6DD5B1004AFB3F /* GoogleService-Info.plist */; };
 		CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E7252A6DD643004AFB3F /* AppDelegate.swift */; };
 		CC748DEE2A83CCA200D87C0C /* UserServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC748DED2A83CCA200D87C0C /* UserServiceImpl.swift */; };
 		CC7734482A86BBBC00FE56CF /* TabsNavigationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7734472A86BBBC00FE56CF /* TabsNavigationView.swift */; };
@@ -127,7 +126,6 @@
 		CC71E6FB2A6C0678004AFB3F /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		CC71E6FE2A6C069D004AFB3F /* DownloadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsView.swift; sourceTree = "<group>"; };
 		CC71E7002A6DD043004AFB3F /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
-		CC71E70E2A6DD5B1004AFB3F /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		CC71E7252A6DD643004AFB3F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		CC748DED2A83CCA200D87C0C /* UserServiceImpl.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserServiceImpl.swift; sourceTree = "<group>"; };
 		CC7734472A86BBBC00FE56CF /* TabsNavigationView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TabsNavigationView.swift; sourceTree = "<group>"; };
@@ -409,7 +407,6 @@
 		CC88E1F32A6587BB00E9387F /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				CC71E70E2A6DD5B1004AFB3F /* GoogleService-Info.plist */,
 				CC88E1EA2A6586E700E9387F /* KinoPubAppleClient.entitlements */,
 				CC88E1E82A6586E700E9387F /* Assets.xcassets */,
 				CC71E6ED2A6BF92D004AFB3F /* Launch Screen.storyboard */,
@@ -711,7 +708,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				CC71E6EE2A6BF92D004AFB3F /* Launch Screen.storyboard in Resources */,
-				CC71E70F2A6DD5B1004AFB3F /* GoogleService-Info.plist in Resources */,
 				CC71E6F02A6C048C004AFB3F /* Localizable.xcstrings in Resources */,
 				CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */,
 			);

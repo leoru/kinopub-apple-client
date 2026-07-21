@@ -70,7 +70,10 @@ These are real, verified, and up for grabs:
 - **CC detection is sloppy.** `SubtitleSelector.looksLikeCC` builds a regex by interpolating the marker
   into `#"\b\#(marker)\b"#`, and counts `forced` as a CC marker — forced tracks carry no dialogue and make
   a bad default.
-- Stale `GoogleService-Info.plist` reference left in `project.pbxproj` after Firebase was dropped.
+- **`KinoPubKit` and `KinoPubUI` test targets don't compile.** `DownloadManagerTests` /
+  `DownloadedFilesDatabaseTests` predate the `DownloadManager<Meta>` generics refactor, and
+  `KinoPubUI`'s `View+Skeleton.swift` doesn't build against the SkeletonUI version SPM resolves
+  standalone. Both are excluded from CI until repaired.
 
 ## Target UX
 
@@ -89,11 +92,13 @@ What "done" looks like, so nobody has to guess:
 
 ## Roadmap
 
-### Phase 0 — tvOS hygiene
-- [ ] Verify and keep green a `platform=tvOS Simulator` build in CI
-- [ ] Remove the stale `GoogleService-Info.plist` reference from `project.pbxproj`
-- [ ] Text-only tab labels on tvOS
-- [ ] Audit every custom `Button` / `NavigationLink` for focus behaviour on tvOS
+### Phase 0 — tvOS hygiene ✅
+- [x] Verify and keep green a `platform=tvOS Simulator` build in CI (`.github/workflows/ci.yml`)
+- [x] Remove the stale `GoogleService-Info.plist` reference from `project.pbxproj`
+- [x] Text-only tab labels on tvOS; Downloads tab hidden there
+- [x] Audit every custom `Button` / `NavigationLink` for focus behaviour on tvOS —
+      `KinoPubButtonStyle` and the subtitle word chips now react to focus
+- [ ] Repair the `KinoPubKit` / `KinoPubUI` test targets and add them back to CI
 
 ### Phase 1 — Home rebuild
 - [ ] Row-based home model (sections of horizontally scrolling cards) replacing the flat `LazyVGrid`
