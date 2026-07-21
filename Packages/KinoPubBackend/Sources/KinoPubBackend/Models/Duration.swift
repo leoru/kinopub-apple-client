@@ -16,7 +16,13 @@ public extension Duration {
   /// "2 h 11 min" style, for the metadata line. `totalFormatted` is positional
   /// ("2:11:58") and only sets `allowedUnits` on iOS, so it reads badly elsewhere.
   var hoursMinutesFormatted: String {
-    let totalMinutes = Int((total / 60).rounded())
+    Self.hoursMinutes(seconds: Int(total))
+  }
+
+  /// Seconds → "1 h 48 min" (or "48 min" under an hour), shared by anything showing a
+  /// runtime — a bare "108 min" reads badly for a feature.
+  static func hoursMinutes(seconds: Int) -> String {
+    let totalMinutes = Int((Double(seconds) / 60).rounded())
     guard totalMinutes > 0 else { return "" }
     let hours = totalMinutes / 60
     let minutes = totalMinutes % 60

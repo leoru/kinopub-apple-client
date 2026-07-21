@@ -77,8 +77,7 @@ struct MediaItemHeroView: View {
   @StateObject private var trailer = TrailerPreviewModel()
 
   private var backdropURL: String {
-    let wide = mediaItem.posters.wide ?? ""
-    return wide.isEmpty ? mediaItem.posters.big : wide
+    mediaItem.posters.wideURL ?? mediaItem.posters.big
   }
 
   private var isSeries: Bool {

@@ -106,6 +106,7 @@ struct MediaCardButtonStyle: ButtonStyle {
 
     var body: some View {
       configuration.label
+        .environment(\.cardFocused, isFocused)
         .scaleEffect(isFocused ? 1.08 : (configuration.isPressed ? 0.97 : 1.0))
         .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 18, y: 10)
         .animation(.easeOut(duration: 0.18), value: isFocused)

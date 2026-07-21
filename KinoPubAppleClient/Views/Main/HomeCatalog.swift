@@ -123,17 +123,10 @@ class HomeCatalog: ObservableObject {
               overlayLabel: overlayLabel(for: history))
   }
 
-  /// Prefer the still of the episode actually being watched, then the title's wide
-  /// artwork, and fall back to the poster — cropped to the landscape frame — so the
-  /// row never mixes shapes.
+  /// Wide cover art, the way microiptv stretches it as a backdrop. History carries
+  /// the real wide URL; otherwise it is derived from the watching item's poster.
   private static func landscapeImageURL(for item: WatchingItem, history: HistoryEntry?) -> String {
-    if let thumbnail = history?.media?.thumbnail, !thumbnail.isEmpty, history?.isEpisode == true {
-      return thumbnail
-    }
-    if let wide = history?.item.posters?.wide, !wide.isEmpty {
-      return wide
-    }
-    return item.posters.big
+    history?.item.posters?.wideURL ?? item.posters.wideURL ?? item.posters.big
   }
 
   private static func overlayLabel(for history: HistoryEntry?) -> String? {
@@ -143,7 +136,7 @@ class HomeCatalog: ObservableObject {
       parts.append("S\(season), E\(episode)")
     }
     if let duration = history.media?.duration, duration >= 60 {
-      parts.append("\(duration / 60) \("min".localized)")
+      parts.append(Duration.hoursMinutes(seconds: duration))
     }
     return parts.isEmpty ? nil : parts.joined(separator: " · ")
   }

@@ -81,6 +81,8 @@ public struct MediaCardView: View {
     self.card = card
   }
 
+  @Environment(\.cardFocused) private var cardFocused
+
   public var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       poster
@@ -103,15 +105,7 @@ public struct MediaCardView: View {
 
   private var poster: some View {
     ZStack(alignment: .bottom) {
-      AsyncImage(url: URL(string: imageURL)) { image in
-        image
-          .resizable()
-          .aspectRatio(contentMode: .fill)
-      } placeholder: {
-        Color.KinoPub.skeleton
-      }
-      .frame(width: width, height: imageHeight)
-      .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+      artwork
 
       if card.isLandscape {
         playbackFooter
@@ -141,37 +135,59 @@ public struct MediaCardView: View {
               size: CGSize(width: width, height: imageHeight))
   }
 
-  /// Play glyph, resume bar and episode label, laid over the bottom of the still —
-  /// the shape the Apple TV app uses for Continue Watching.
+  @ViewBuilder
+  private var artwork: some View {
+    let image = AsyncImage(url: URL(string: imageURL)) { image in
+      image
+        .resizable()
+        .aspectRatio(contentMode: .fill)
+        .frame(width: width, height: imageHeight)
+    } placeholder: {
+      Color.KinoPub.skeleton
+        .frame(width: width, height: imageHeight)
+    }
+
+    Group {
+      if card.isLandscape {
+        // Blur only the bottom strip, where the playback footer sits, so the still
+        // stays crisp above it. Beats a black fade — the artwork shows through.
+        ProgressiveBlur(startPoint: 0.6, maxRadius: 24, layers: 4) { image }
+      } else {
+        image
+      }
+    }
+    .frame(width: width, height: imageHeight)
+    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+  }
+
+  /// Play glyph, resume bar and episode label over the bottom of the still. The text
+  /// is vibrant-secondary at rest and turns solid white on focus.
   private var playbackFooter: some View {
     HStack(spacing: 10) {
       Image(systemName: "play.fill")
         .font(.system(size: Self.footerGlyphSize))
-        .foregroundStyle(.white)
 
       Capsule()
-        .fill(Color.white.opacity(0.35))
+        .fill(.secondary)
         .frame(width: Self.footerBarWidth, height: 4)
         .overlay(alignment: .leading) {
           Capsule()
-            .fill(Color.white)
+            .fill(cardFocused ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
             .frame(width: Self.footerBarWidth * (card.progress ?? 0), height: 4)
         }
 
       if let label = card.overlayLabel {
         Text(label)
           .font(Self.footerFont)
-          .foregroundStyle(.white)
           .lineLimit(1)
       }
       Spacer(minLength: 0)
     }
+    .foregroundStyle(cardFocused ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
+    .animation(.easeOut(duration: 0.15), value: cardFocused)
     .padding(.horizontal, 14)
     .padding(.bottom, 12)
     .padding(.top, 28)
-    .background(
-      LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .top, endPoint: .bottom)
-    )
   }
 
   private func progressBar(_ progress: Double) -> some View {
@@ -188,19 +204,42 @@ public struct MediaCardView: View {
     .padding(.bottom, 8)
   }
 
+  /// Continue-watching cards show their title only while focused; poster cards keep
+  /// the localized title but reveal the original (English) one on focus, since a
+  /// Russian audience rarely needs it. Off tvOS there is no focus, so the localized
+  /// title always shows and the original stays hidden.
+  private var showsLocalizedTitle: Bool {
+#if os(tvOS)
+    return card.isLandscape ? cardFocused : true
+#else
+    return true
+#endif
+  }
+
+  private var showsOriginalTitle: Bool {
+#if os(tvOS)
+    return cardFocused
+#else
+    return false
+#endif
+  }
+
   private var titles: some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text(card.title)
-        .lineLimit(1)
-        .font(Self.titleFont)
-        .foregroundStyle(Color.KinoPub.text)
-      if let subtitle = card.subtitle, !subtitle.isEmpty {
+      if showsLocalizedTitle {
+        Text(card.title)
+          .lineLimit(1)
+          .font(Self.titleFont)
+          .foregroundStyle(Color.KinoPub.text)
+      }
+      if showsOriginalTitle, let subtitle = card.subtitle, !subtitle.isEmpty {
         Text(subtitle)
           .lineLimit(1)
           .font(Self.subtitleFont)
           .foregroundStyle(Color.KinoPub.subtitle)
       }
     }
+    .animation(.easeOut(duration: 0.12), value: cardFocused)
     .skeleton(enabled: card.isPlaceholder, size: CGSize(width: width, height: 18))
   }
 

@@ -153,29 +153,36 @@ microiptv leaves a lot on the table. We shouldn't.
 
 ### Phase C — Remember playback choices
 
-- [ ] Remember the last subtitle track per series and default to it for the next episode
-- [ ] Same for audio track
-- [ ] Fall back to the system's language settings when there is no prior choice
-      — microiptv resets every time, which is the thing worth beating here
+The subtitle *default* already exists (Profile → Playback: on/off and prefer-non-CC, English first
+rather than the system language). What's missing is memory of what the user picked mid-watch.
 
-### Phase D — Exploratory: IMDb recommendations and tops
+- [ ] Remember the last subtitle track chosen for a series and pre-select it for the next episode,
+      falling back to the default preference — microiptv forgets every episode, which is the thing
+      worth beating
+- [ ] Same for the audio track
+- [ ] **Dual subtitles** — Russian on top, English below, for watching in English with a safety net.
+      Nothing else does this; the cue overlay already exists to build on.
 
-Wanted: recommendations and top lists sourced from IMDb rather than kino.pub. Two routes, and they
-are not equivalent:
+### Phase D — Exploratory: IMDb-sourced top lists
 
-- **IMDb's official non-commercial datasets** (`datasets.imdbws.com`, also mirrored on S3) — daily
-  TSV dumps of `title.basics`, `title.ratings`, `title.akas` and friends. Reliable, legitimate for
-  personal use, and enough to build **top lists** (rating + vote count, filtered by type/year/genre).
-  They contain **no recommendation data** — "More like this" is not in the dumps.
-- **Unofficial API wrappers** scrape the site. They can reach recommendations, but they break without
-  warning and sit outside IMDb's terms.
+**Tops and curated lists only** — kino.pub's own are tired. Personal recommendations are explicitly
+not wanted for now (the owner isn't logging IMDb ratings), and "similar" doesn't need IMDb anyway.
 
-So: tops from the datasets are straightforward; recommendations are the part that needs a decision.
-Matching an IMDb id to a kino.pub item is easy either way — `MediaItem.imdb` already carries it.
+The idea: reproduce IMDb's editorial lists as rows, composed from kino.pub's catalog —
+*Top 10 on IMDb this week*, *In theaters*, *Top box office (US)*, *Current & upcoming TV shows* —
+either mapping each to what kino.pub carries, or reverse-matching by IMDb id (`MediaItem.imdb` has it).
 
-- [ ] Decide the source, given the above
-- [ ] Match IMDb ids to kino.pub items and skip what the service doesn't carry
-- [ ] Top-N rows on Home; a "similar" row on the detail page
+Sourcing, and the two routes are not equivalent:
+- **Official non-commercial datasets** (`datasets.imdbws.com`, mirrored on S3) — daily TSVs of
+  `title.basics`, `title.ratings`, `title.akas`. Legitimate for personal use and enough for
+  rating/vote-count tops, but they carry **no editorial lists** — "this week", "in theaters" and
+  "box office" are not in the dumps.
+- **Scraping / unofficial wrappers** reach the editorial lists but break without warning and sit
+  outside IMDb's terms.
+
+- [ ] Decide the source per list, given the above
+- [ ] Map IMDb ids to kino.pub items, skipping what the service doesn't carry
+- [ ] Render the surviving lists as Home rows
 
 ### Later
 - [ ] TV channels tab (`GET /v1/tv/index`)
