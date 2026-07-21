@@ -380,3 +380,135 @@ enum MediaItemLayout {
   static let headerFont: Font = .system(size: 20, weight: .semibold)
 #endif
 }
+
+// MARK: - Plot
+
+/// The synopsis, clamped to a few lines and focusable as a single control. Selecting
+/// it opens the full text, rather than expanding in place and pushing the artwork
+/// around.
+struct MediaItemPlotView: View {
+
+  let title: String
+  let plot: String
+
+  @State private var isTruncated = false
+  @State private var showsFullText = false
+
+  var body: some View {
+    Button {
+      showsFullText = true
+    } label: {
+      HStack(alignment: .bottom, spacing: 8) {
+        Text(plot)
+          .lineLimit(Self.lineLimit)
+          .multilineTextAlignment(.leading)
+          .background {
+            // Sized to the clamped text: if the full copy fits, nothing is hidden.
+            ViewThatFits(in: .vertical) {
+              Text(plot)
+              Color.clear.onAppear { isTruncated = true }
+            }
+            .hidden()
+          }
+
+        if isTruncated {
+          Text("More")
+            .font(Self.moreFont)
+            .fixedSize()
+        }
+      }
+      .font(Self.font)
+      .frame(maxWidth: Self.maxWidth, alignment: .leading)
+    }
+    .buttonStyle(PlotButtonStyle())
+    .sheet(isPresented: $showsFullText) {
+      MediaItemPlotFullText(title: title, plot: plot)
+    }
+  }
+
+#if os(tvOS)
+  static let lineLimit = 3
+  static let maxWidth: CGFloat = 900
+  static let font: Font = .system(size: 26, weight: .regular)
+  static let moreFont: Font = .system(size: 24, weight: .semibold)
+#else
+  static let lineLimit = 3
+  static let maxWidth: CGFloat = 560
+  static let font: Font = .system(size: 14, weight: .regular)
+  static let moreFont: Font = .system(size: 14, weight: .semibold)
+#endif
+}
+
+/// Secondary at rest so the synopsis sits behind the title and buttons, solid and
+/// backed once focused so it reads as the control it is.
+private struct PlotButtonStyle: ButtonStyle {
+  func makeBody(configuration: ButtonStyleConfiguration) -> some View {
+    // Not named `Body`: that collides with `ButtonStyle.Body`.
+    PlotLabel(configuration: configuration)
+  }
+
+  private struct PlotLabel: View {
+    let configuration: ButtonStyleConfiguration
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+      configuration.label
+        .foregroundStyle(isFocused ? AnyShapeStyle(Color.KinoPub.text) : AnyShapeStyle(.secondary))
+        .padding(.horizontal, isFocused ? 12 : 0)
+        .padding(.vertical, isFocused ? 8 : 0)
+        .background(
+          RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(Color.KinoPub.selectionBackground.opacity(isFocused ? 0.7 : 0))
+        )
+        .animation(.easeOut(duration: 0.15), value: isFocused)
+    }
+  }
+}
+
+/// The whole synopsis, presented over the page.
+private struct MediaItemPlotFullText: View {
+
+  let title: String
+  let plot: String
+
+  @Environment(\.dismiss) private var dismiss
+
+  var body: some View {
+    ZStack {
+      Color.KinoPub.background.ignoresSafeArea()
+
+      ScrollView(.vertical) {
+        VStack(alignment: .leading, spacing: 24) {
+          Text(title)
+            .font(Self.titleFont)
+            .foregroundStyle(Color.KinoPub.text)
+
+          Text(plot)
+            .font(Self.bodyFont)
+            .foregroundStyle(Color.KinoPub.text)
+            .multilineTextAlignment(.leading)
+
+#if !os(tvOS)
+          Button("Close") { dismiss() }
+            .buttonStyle(.bordered)
+#endif
+        }
+        .frame(maxWidth: Self.maxWidth, alignment: .leading)
+        .padding(Self.padding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+      }
+    }
+  }
+
+#if os(tvOS)
+  static let titleFont: Font = .system(size: 48, weight: .bold)
+  static let bodyFont: Font = .system(size: 30, weight: .regular)
+  static let maxWidth: CGFloat = 1200
+  static let padding: CGFloat = 80
+#else
+  static let titleFont: Font = .system(size: 26, weight: .bold)
+  static let bodyFont: Font = .system(size: 16, weight: .regular)
+  static let maxWidth: CGFloat = 640
+  static let padding: CGFloat = 24
+#endif
+}

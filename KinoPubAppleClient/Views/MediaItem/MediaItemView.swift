@@ -49,8 +49,13 @@ struct MediaItemView: View {
     // Horizontal too, or the hero stops short of the screen edges on tvOS, where the
     // safe area is inset for overscan.
     .ignoresSafeArea(edges: [.top, .horizontal])
-#if os(iOS)
+    // The tab bar belongs to the browse surfaces, not to a pushed detail page.
+    // Going back is the remote's Back button on tvOS and the navigation bar
+    // elsewhere.
+#if os(iOS) || os(tvOS)
     .toolbar(.hidden, for: .tabBar)
+#endif
+#if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
 #endif
     .task {

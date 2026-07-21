@@ -153,6 +153,7 @@ microiptv leaves a lot on the table. We shouldn't.
       tally shown as the tally it is rather than a fake score
 - [x] Cast and crew as round portraits
 - [x] Information · Translation · Audio columns, stacking when the display is narrow
+- [x] Synopsis as a focusable panel that opens the full text, rather than expanding in place
 - [ ] Cast photos and character names — kino.pub sends neither, so portraits are initials.
       See Phase C½: Kinopoisk Unofficial has both
 - [ ] Sweep the rest of the payload (quality, AC3, age rating)
@@ -245,7 +246,19 @@ Two tiers, and the cheap one is worth shipping first:
 
 ## API notes
 
-The service exposes far more than the app currently uses ([API v1.3 docs](https://kinoapi.com)).
+Reference: **[kinoapi.com](https://kinoapi.com)** — the kino.pub API v1.3 documentation. It is the
+right map, but it dates from around 2020 and is not always what the service actually returns, so
+anything load-bearing gets checked against a live response first. Cases where reality differed:
+
+- `/v1/history` entries carry a `media` object (episode still, season/episode numbers, runtime) and
+  an `item` with the **wide** poster. None of that is in the docs, and it is what the landscape
+  Continue Watching cards are built from.
+- `rating` is the **net** vote count and goes negative; `rating_percentage` is the positive share.
+  Reading `rating` as a score would have printed "36 / 10".
+- `/v1/watching/*` omits `posters.wide`, but the same id is served under a `/wide/` path.
+
+Where a payload shape matters, a decoding test pins the real JSON (see `HistoryEntryTests`) so an
+upstream change fails loudly instead of silently emptying a row.
 
 **Already wired** (`Packages/KinoPubBackend/Sources/KinoPubBackend/Requests/`):
 `/v1/items/{hot,fresh,popular}`, `/v1/items/search`, `/v1/items/{id}`, `/v1/user`, `/v1/bookmarks`,

@@ -166,11 +166,7 @@ struct MediaItemHeroView: View {
 
       metadata
 
-      ExpandableText(mediaItem.plot,
-                     lineLimit: 3,
-                     font: Self.plotFont,
-                     buttonFont: Self.buttonFont)
-        .foregroundStyle(Color.KinoPub.text.opacity(0.85))
+      MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot)
         .frame(maxWidth: Self.textMaxWidth, alignment: .leading)
         .multilineSkeleton(enabled: isSkeleton)
 
