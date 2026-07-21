@@ -13,7 +13,8 @@ let package = Package(
   ],
   dependencies: [
     .package(name: "KinoPubBackend", path: "../KinoPubBackend"),
-    .package(url: "https://github.com/CSolanaM/SkeletonUI.git", branch: "master")
+    // Pinned to a release: `master` moved to a new API and silently broke this package.
+    .package(url: "https://github.com/CSolanaM/SkeletonUI.git", from: "2.0.2")
   ],
   targets: [
     .target(

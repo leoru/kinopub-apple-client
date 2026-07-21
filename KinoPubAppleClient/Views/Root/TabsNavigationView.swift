@@ -38,6 +38,7 @@ struct TabsNavigationView: View {
   var body: some View {
     TabView {
       mainTab
+      searchTab
       bookmarksTab
 #if !os(tvOS)
       downloadsTab
@@ -70,6 +71,17 @@ struct TabsNavigationView: View {
     .toolbarBackground(Color.KinoPub.background, for: placement)
   }
   
+  var searchTab: some View {
+    SearchView(catalog: MediaCatalog(itemsService: appContext.contentService,
+                                     authState: authState,
+                                     errorHandler: errorHandler))
+    .tag(NavigationTabs.search)
+    .tabItem {
+      tabLabel("Search", systemImage: "magnifyingglass")
+    }
+    .toolbarBackground(Color.KinoPub.background, for: placement)
+  }
+
   var bookmarksTab: some View {
     BookmarksView(catalog: BookmarksCatalog(itemsService: appContext.contentService,
                                             authState: authState,

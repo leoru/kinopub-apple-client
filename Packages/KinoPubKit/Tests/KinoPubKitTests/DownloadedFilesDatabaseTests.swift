@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  DownloadedFilesDatabaseTests.swift
 //
 //
 //  Created by Kirill Kunst on 22.07.2023.
@@ -13,109 +13,84 @@ class DownloadedFilesDatabaseTests: XCTestCase {
 
   // MARK: - Test Variables
 
-  var downloadedFilesDatabase: DownloadedFilesDatabase!
-  var fileSaverMock: FileSaverMock1!
+  var database: DownloadedFilesDatabase<TestMeta>!
+  var fileSaverMock: FileSaverMock!
 
   // MARK: - Test Setup
 
   override func setUp() {
     super.setUp()
 
-    // Use FileSaverMock instead of the actual FileSaver
-    fileSaverMock = FileSaverMock1()
-    downloadedFilesDatabase = DownloadedFilesDatabase(fileSaver: fileSaverMock)
+    fileSaverMock = FileSaverMock()
+    database = DownloadedFilesDatabase<TestMeta>(fileSaver: fileSaverMock)
   }
 
   override func tearDown() {
-    downloadedFilesDatabase = nil
+    database = nil
     fileSaverMock = nil
     super.tearDown()
   }
 
+  // MARK: - Helpers
+
+  private func makeFileInfo(_ name: String, downloadedAt date: Date = Date()) -> DownloadedFileInfo<TestMeta> {
+    DownloadedFileInfo(originalURL: URL(string: "http://example.com/\(name)")!,
+                       localFilename: name,
+                       downloadDate: date,
+                       metadata: TestMeta(id: name.hashValue, title: name))
+  }
+
   // MARK: - Test Methods
 
-  func testSaveFile_Success() {
-    // Arrange
-    let originalURL = URL(string: "http://example.com/testfile.txt")!
-    let localFilename = "testfile.txt"
-    let downloadDate = Date()
-    let fileInfo = DownloadedFileInfo(originalURL: originalURL, localFilename: localFilename, downloadDate: downloadDate)
-
-    // Act
-    downloadedFilesDatabase.save(fileInfo: fileInfo)
-
-    // Assert
-    XCTAssertTrue(fileSaverMock.didMoveItem)
+  func testReadDataReturnsNilWhenNothingSaved() {
+    XCTAssertNil(database.readData())
   }
 
-  func testSaveFile_ThrowsError() {
-    // Arrange
-    fileSaverMock.shouldThrowError = true
-    let originalURL = URL(string: "http://example.com/testfile.txt")!
-    let localFilename = "testfile.txt"
-    let downloadDate = Date()
-    let fileInfo = DownloadedFileInfo(originalURL: originalURL, localFilename: localFilename, downloadDate: downloadDate)
+  func testSaveThenReadRoundTrips() {
+    let fileInfo = makeFileInfo("testfile.txt")
 
-    // Act & Assert
-    XCTAssertThrowsError(try downloadedFilesDatabase.save(fileInfo: fileInfo))
-    XCTAssertTrue(fileSaverMock.didRemoveItem)
-    XCTAssertFalse(fileSaverMock.didMoveItem)
+    database.save(fileInfo: fileInfo)
+
+    XCTAssertEqual(database.readData(), [fileInfo])
   }
 
-  func testReadData_Success() {
-    // Arrange
-    let originalURL1 = URL(string: "http://example.com/testfile1.txt")!
-    let localFilename1 = "testfile1.txt"
-    let downloadDate1 = Date()
+  func testSaveAppendsRatherThanReplacing() {
+    let first = makeFileInfo("first.txt")
+    let second = makeFileInfo("second.txt")
 
-    let originalURL2 = URL(string: "http://example.com/testfile2.txt")!
-    let localFilename2 = "testfile2.txt"
-    let downloadDate2 = Date()
+    database.save(fileInfo: first)
+    database.save(fileInfo: second)
 
-    let fileInfo1 = DownloadedFileInfo(originalURL: originalURL1, localFilename: localFilename1, downloadDate: downloadDate1)
-    let fileInfo2 = DownloadedFileInfo(originalURL: originalURL2, localFilename: localFilename2, downloadDate: downloadDate2)
-
-    let testData = [fileInfo1, fileInfo2]
-    let encodedData = try? PropertyListEncoder().encode(testData)
-    fileSaverMock.dataToRead = encodedData
-
-    // Act
-    let retrievedData = downloadedFilesDatabase.readData()
-
-    // Assert
-    XCTAssertNotNil(retrievedData)
-    XCTAssertEqual(retrievedData, testData)
+    XCTAssertEqual(database.readData()?.count, 2)
   }
 
-  func testReadData_DecodingError() {
-    // Arrange
-    fileSaverMock.dataToRead = "InvalidData".data(using: .utf8) // Invalid encoded data
+  func testReadDataIsSortedNewestFirst() {
+    let older = makeFileInfo("older.txt", downloadedAt: Date(timeIntervalSince1970: 1_000))
+    let newer = makeFileInfo("newer.txt", downloadedAt: Date(timeIntervalSince1970: 2_000))
 
-    // Act
-    let retrievedData = downloadedFilesDatabase.readData()
+    database.save(fileInfo: older)
+    database.save(fileInfo: newer)
 
-    // Assert
-    XCTAssertNil(retrievedData)
-  }
-}
-
-class FileSaverMock1: FileSaving {
-  var shouldThrowError = false
-  var didRemoveItem = false
-  var didMoveItem = false
-  var dataToRead: Data?
-
-  func saveFile(from sourceURL: URL, to destinationURL: URL) throws {
-    didRemoveItem = true
-    didMoveItem = true
-
-    if shouldThrowError {
-      throw NSError(domain: "FileSaverMockErrorDomain", code: 123, userInfo: nil)
-    }
+    XCTAssertEqual(database.readData()?.map(\.localFilename), ["newer.txt", "older.txt"])
   }
 
-  func getDocumentsDirectoryURL(forFilename filename: String) -> URL {
-    // Provide a mock URL for testing purposes
-    return URL(string: "file:///path/to/documents/")!.appendingPathComponent(filename)
+  func testReadDataReturnsNilOnDecodingError() {
+    let dataFileURL = fileSaverMock.getDocumentsDirectoryURL(forFilename: "downloadedFiles.plist")
+    try? "InvalidData".data(using: .utf8)?.write(to: dataFileURL)
+
+    XCTAssertNil(database.readData())
+  }
+
+  func testRemoveDropsTheRecordAndDeletesTheFile() {
+    let kept = makeFileInfo("kept.txt")
+    let removed = makeFileInfo("removed.txt")
+    database.save(fileInfo: kept)
+    database.save(fileInfo: removed)
+
+    database.remove(fileInfo: removed)
+
+    XCTAssertEqual(database.readData()?.map(\.localFilename), ["kept.txt"])
+    XCTAssertTrue(fileSaverMock.didRemoveFileCalled)
+    XCTAssertEqual(fileSaverMock.removedFileURL, removed.originalURL)
   }
 }

@@ -42,9 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # KinoPubKit and KinoPubUI are excluded on purpose — their test targets do
-        # not currently compile standalone. See "Known issues" in the README.
-        package: [KinoPubBackend, KinoPubLogging]
+        package: [KinoPubKit, KinoPubUI, KinoPubBackend, KinoPubLogging]
     steps:
       - uses: actions/checkout@v4
 

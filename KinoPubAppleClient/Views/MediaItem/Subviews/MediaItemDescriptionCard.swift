@@ -48,7 +48,6 @@ struct MediaItemDescriptionCard: View {
       .font(Font.KinoPub.small)
       .foregroundStyle(Color.KinoPub.text)
       .padding(.top, 8)
-      .skeleton(with: isSkeleton, animated: nil)
       .multilineSkeleton(enabled: isSkeleton)
   }
   
@@ -68,19 +67,42 @@ struct MediaItemDescriptionCard: View {
   
   var actionIcons: some View {
     HStack {
-      Button(action: {
-        if mediaItem.seasons?.count ?? 0 > 0 {
-          showDownloadableItemPicker = true
-        } else {
-          self.selectedDownloadableItem = DownloadableMediaItem(name: mediaItem.title, 
-                                                                files: mediaItem.files,
-                                                                mediaItem: mediaItem,
-                                                                watchingMetadata: WatchingMetadata(id: mediaItem.id, video: nil, season: nil))
-          showDownloadPicker = true
-        }
-      }, label: {
-        image(imageName: "arrow.down.circle")
+      // Downloads are a non-TV feature; there is nowhere on tvOS to play them back from.
+#if !os(tvOS)
+      downloadButton
+#endif
+
+      Button(action: { onWatchedToggle() }, label: {
+        image(imageName: "eye")
       })
+#if os(macOS)
+      .buttonStyle(PlainButtonStyle())
+#endif
+
+      Button(action: { onBookmarkHandle() }, label: {
+        image(imageName: "folder")
+      })
+#if os(macOS)
+      .buttonStyle(PlainButtonStyle())
+#endif
+    }
+  }
+
+#if !os(tvOS)
+  private var downloadButton: some View {
+    Button(action: {
+      if mediaItem.seasons?.count ?? 0 > 0 {
+        showDownloadableItemPicker = true
+      } else {
+        self.selectedDownloadableItem = DownloadableMediaItem(name: mediaItem.title,
+                                                              files: mediaItem.files,
+                                                              mediaItem: mediaItem,
+                                                              watchingMetadata: WatchingMetadata(id: mediaItem.id, video: nil, season: nil))
+        showDownloadPicker = true
+      }
+    }, label: {
+      image(imageName: "arrow.down.circle")
+    })
       // Picker to select quality of the item to download
       .confirmationDialog("", isPresented: $showDownloadPicker, titleVisibility: .hidden) {
         ForEach(selectedDownloadableItem?.files ?? []) { file in
@@ -104,24 +126,9 @@ struct MediaItemDescriptionCard: View {
 #if os(macOS)
       .buttonStyle(PlainButtonStyle())
 #endif
-      
-      Button(action: { onWatchedToggle() }, label: {
-        image(imageName: "eye")
-      })
-#if os(macOS)
-      .buttonStyle(PlainButtonStyle())
-#endif
-      
-      Button(action: { onBookmarkHandle() }, label: {
-        image(imageName: "folder")
-      })
-#if os(macOS)
-      .buttonStyle(PlainButtonStyle())
-#endif
-    }
-    
   }
-  
+#endif
+
   func image(imageName: String) -> some View {
     Image(systemName: imageName)
       .foregroundStyle(Color.KinoPub.accent)

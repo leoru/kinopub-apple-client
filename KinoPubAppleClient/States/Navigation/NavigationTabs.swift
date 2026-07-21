@@ -9,6 +9,7 @@ import Foundation
 
 enum NavigationTabs {
   case main
+  case search
   case bookmarks
   case downloads
   case profile

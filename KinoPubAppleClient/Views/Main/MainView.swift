@@ -14,57 +14,16 @@ struct MainView: View {
   @Environment(\.appContext) var appContext
   
   @StateObject private var catalog: MediaCatalog
-  @State private var showShortCutPicker: Bool = false
-  @State private var showFilterPicker: Bool = false
-  
+
   init(catalog: @autoclosure @escaping () -> MediaCatalog) {
     _catalog = StateObject(wrappedValue: catalog())
   }
-  
-  var toolbarItemPlacement: ToolbarItemPlacement {
-#if os(iOS) || os(tvOS)
-    .topBarTrailing
-#elseif os(macOS)
-    .navigation
-#endif
-  }
-  
+
   var body: some View {
     NavigationStack(path: $navigationState.mainRoutes) {
-      VStack {
-        if catalog.items.isEmpty && !catalog.query.isEmpty {
-          emptyView
-        } else {
-          catalogView
-        }
-      }
-      .searchable(text: $catalog.query, placement: .automatic)
+      catalogView
       .navigationTitle(catalog.title.localized)
-      .toolbar {
-        ToolbarItem(placement: toolbarItemPlacement) {
-          Button {
-            showShortCutPicker = true
-          } label: {
-            Image(systemName: "arrow.up.arrow.down")
-          }
-        }
-        
-        ToolbarItem(placement: toolbarItemPlacement) {
-          Button {
-            showFilterPicker = true
-          } label: {
-            Image(systemName: "line.3.horizontal.decrease.circle")
-          }
-        }
-      }
       .background(Color.KinoPub.background)
-      .sheet(isPresented: $showShortCutPicker, content: {
-        ShortcutSelectionView(shortcut: $catalog.shortcut,
-                              mediaType: $catalog.contentType)
-      })
-      .sheet(isPresented: $showFilterPicker, content: {
-        FilterView(model: FilterModel())
-      })
       .navigationDestination(for: MainRoutes.self) { route in
         switch route {
         case .details(let item):
@@ -108,11 +67,6 @@ struct MainView: View {
     }
   }
   
-  var emptyView: some View {
-    Text("No resuts")
-      .foregroundStyle(Color.KinoPub.text)
-      .font(Font.KinoPub.subheader)
-  }
 }
 
 struct MainView_Previews: PreviewProvider {

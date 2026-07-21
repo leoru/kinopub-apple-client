@@ -37,8 +37,8 @@ class FileSaverTests: XCTestCase {
 
         // Act & Assert
         XCTAssertNoThrow(try fileSaver.saveFile(from: sourceURL, to: destinationURL))
-        XCTAssertTrue(fileManagerMock.didRemoveItem)
-        XCTAssertTrue(fileManagerMock.didMoveItem)
+        XCTAssertTrue(fileManagerMock.didAttemptRemoveItem)
+        XCTAssertTrue(fileManagerMock.didAttemptMoveItem)
     }
 
     func testSaveFile_ThrowsError() {
@@ -48,9 +48,11 @@ class FileSaverTests: XCTestCase {
         fileManagerMock.shouldThrowError = true
 
         // Act & Assert
+        // The pre-emptive removeItem is wrapped in `try?`, so its failure is swallowed
+        // and the move is still attempted — it is the move's error that propagates.
         XCTAssertThrowsError(try fileSaver.saveFile(from: sourceURL, to: destinationURL))
-        XCTAssertTrue(fileManagerMock.didRemoveItem)
-        XCTAssertFalse(fileManagerMock.didMoveItem)
+        XCTAssertTrue(fileManagerMock.didAttemptRemoveItem)
+        XCTAssertTrue(fileManagerMock.didAttemptMoveItem)
     }
 
     func testGetDocumentsDirectoryURL() {
@@ -62,6 +64,6 @@ class FileSaverTests: XCTestCase {
 
         // Assert
         XCTAssertEqual(documentsDirectoryURL.lastPathComponent, filename)
-        XCTAssertEqual(documentsDirectoryURL.pathExtension, "")
+        XCTAssertEqual(documentsDirectoryURL.pathExtension, "txt")
     }
 }

@@ -35,6 +35,33 @@ enum MainRoutes: Hashable {
   }
 }
 
+enum SearchRoutes: Hashable {
+  case details(MediaItem)
+  case seasons([Season])
+  case season(Season)
+  case player(any PlayableItem)
+  case trailerPlayer(any PlayableItem)
+
+  func hash(into hasher: inout Hasher) {
+    switch self {
+    case .details(let item):
+      hasher.combine(item)
+    case .season(let season):
+      hasher.combine(season)
+    case .seasons(let seasons):
+      hasher.combine(seasons)
+    case .player(let item):
+      hasher.combine(item.id)
+    case .trailerPlayer(let item):
+      hasher.combine(item.id)
+    }
+  }
+
+  static func == (lhs: SearchRoutes, rhs: SearchRoutes) -> Bool {
+    rhs.hashValue == lhs.hashValue
+  }
+}
+
 enum BookmarksRoutes: Hashable {
   case bookmark(Bookmark)
   case details(MediaItem)

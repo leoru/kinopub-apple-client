@@ -70,10 +70,8 @@ These are real, verified, and up for grabs:
 - **CC detection is sloppy.** `SubtitleSelector.looksLikeCC` builds a regex by interpolating the marker
   into `#"\b\#(marker)\b"#`, and counts `forced` as a CC marker — forced tracks carry no dialogue and make
   a bad default.
-- **`KinoPubKit` and `KinoPubUI` test targets don't compile.** `DownloadManagerTests` /
-  `DownloadedFilesDatabaseTests` predate the `DownloadManager<Meta>` generics refactor, and
-  `KinoPubUI`'s `View+Skeleton.swift` doesn't build against the SkeletonUI version SPM resolves
-  standalone. Both are excluded from CI until repaired.
+- **Main and Search show the same grid** until the Phase 1 home rebuild lands. Search owns the query,
+  sort and filter controls; Main is a plain catalog grid waiting to become rows.
 
 ## Target UX
 
@@ -85,7 +83,8 @@ What "done" looks like, so nobody has to guess:
 - **Detail page** leads with the **trailer** playing at the top, then title/metadata/cast, then seasons.
   Native tvOS buttons — no green site-styled buttons, no tiny iOS-sized controls.
 - **Tabs** across the top, text-only on tvOS (no SF Symbols — tvOS tab bars are text):
-  Search · Movies · Series · Mine · Library · TV · Settings.
+  Search · Movies · Series · Mine · Library · TV · Settings. Search owns the query field along with
+  the sort and filter controls, on every platform.
   "Mine" = unfinished movies/serials + bookmark folders. "Library" = the full catalog with filters.
 - Downloads tab exists only on non-TV platforms.
 - Apple HIG throughout; if a stock Apple TV app doesn't do it, we probably shouldn't either.
@@ -98,9 +97,11 @@ What "done" looks like, so nobody has to guess:
 - [x] Text-only tab labels on tvOS; Downloads tab hidden there
 - [x] Audit every custom `Button` / `NavigationLink` for focus behaviour on tvOS —
       `KinoPubButtonStyle` and the subtitle word chips now react to focus
-- [ ] Repair the `KinoPubKit` / `KinoPubUI` test targets and add them back to CI
+- [x] Repair the `KinoPubKit` / `KinoPubUI` test targets and add them back to CI
+- [x] Hide the item-page download button on tvOS
 
 ### Phase 1 — Home rebuild
+- [x] Move search, sort and filters out of Main into their own Search tab (all platforms)
 - [ ] Row-based home model (sections of horizontally scrolling cards) replacing the flat `LazyVGrid`
 - [ ] Wire `GET /v1/watching/movies` + `GET /v1/watching/serials` → "Continue watching" row
 - [ ] Rows per shortcut and content type (Hot / Fresh / Popular, Movies / Series)

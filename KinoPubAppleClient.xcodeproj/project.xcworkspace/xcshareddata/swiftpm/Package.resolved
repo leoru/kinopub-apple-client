@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/CSolanaM/SkeletonUI.git",
       "state" : {
-        "branch" : "master",
-        "revision" : "e3cf87cb96a10562bc660c9d48418a395d8385ed"
+        "revision" : "f025e9ba5d051374d7344efa8859df5b9399a181",
+        "version" : "2.0.2"
       }
     },
     {

@@ -59,6 +59,7 @@
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
 		CCA100012C6F000100000001 /* SubtitlePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000002 /* SubtitlePreferences.swift */; };
 		CCA100012C6F000100000003 /* SubtitleSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000004 /* SubtitleSelector.swift */; };
+		CCA100012C6F000100000101 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000102 /* SearchView.swift */; };
 		CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000006 /* SubtitleCueParser.swift */; };
 		CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000008 /* SubtitleOverlayView.swift */; };
 		CCA100012C6F000100000009 /* SubtitleTranslatePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */; };
@@ -148,6 +149,7 @@
 		CC88E1F72A65A42B00E9387F /* KinoPubUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubUI; path = Packages/KinoPubUI; sourceTree = "<group>"; };
 		CCA100012C6F000100000002 /* SubtitlePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitlePreferences.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000004 /* SubtitleSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleSelector.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000102 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000006 /* SubtitleCueParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleCueParser.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000008 /* SubtitleOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleOverlayView.swift; sourceTree = "<group>"; };
 		CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslatePanel.swift; sourceTree = "<group>"; };
@@ -278,6 +280,7 @@
 				CCF388152A71816B00242581 /* MediaItem */,
 				CCF388162A71817300242581 /* Player */,
 				CC71E6F62A6C0600004AFB3F /* Profile */,
+				CCA100012C6F000100000103 /* Search */,
 				CC71E6F22A6C04B5004AFB3F /* Root */,
 			);
 			path = Views;
@@ -290,6 +293,14 @@
 				CC88E1E62A6586E600E9387F /* RootView.swift */,
 			);
 			path = Root;
+			sourceTree = "<group>";
+		};
+		CCA100012C6F000100000103 /* Search */ = {
+			isa = PBXGroup;
+			children = (
+				CCA100012C6F000100000102 /* SearchView.swift */,
+			);
+			path = Search;
 			sourceTree = "<group>";
 		};
 		CC71E6F32A6C05B4004AFB3F /* Main */ = {
@@ -781,6 +792,7 @@
 				CC0904832A7C353200A71F53 /* PlayerManager.swift in Sources */,
 				CCA100012C6F000100000001 /* SubtitlePreferences.swift in Sources */,
 				CCA100012C6F000100000003 /* SubtitleSelector.swift in Sources */,
+				CCA100012C6F000100000101 /* SearchView.swift in Sources */,
 				CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */,
 				CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */,
 				CCA100012C6F000100000009 /* SubtitleTranslatePanel.swift in Sources */,
@@ -1043,8 +1055,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/CSolanaM/SkeletonUI.git";
 			requirement = {
-				branch = master;
-				kind = branch;
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.2;
 			};
 		};
 		CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */ = {
