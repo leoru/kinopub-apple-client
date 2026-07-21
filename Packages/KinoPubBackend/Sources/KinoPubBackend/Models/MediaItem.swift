@@ -92,8 +92,41 @@ public struct MediaItem: Codable, Hashable {
 }
 
 public extension MediaItem {
+  /// Note: `seasons` is nil for films, so the nil default must be `true` here — the
+  /// previous `?? false` reported every film as a series.
   var isSeries: Bool {
-    !(seasons?.isEmpty ?? false)
+    !(seasons?.isEmpty ?? true)
+  }
+
+  /// What the primary button should offer, based on how far the user already got.
+  var playbackAction: PlaybackAction {
+    if isSeries {
+      let episodes = (seasons ?? []).flatMap(\.episodes)
+      guard !episodes.isEmpty else { return .play }
+      if episodes.allSatisfy({ $0.watched > 0 }) { return .playAgain }
+      if episodes.contains(where: { $0.watched > 0 || $0.watching.time > 0 }) { return .resume }
+      return .play
+    }
+
+    guard let video = videos?.first else { return .play }
+    if video.watched > 0 { return .playAgain }
+    return video.watching.time > 0 ? .resume : .play
+  }
+}
+
+/// The three states the primary action on a detail page can be in.
+public enum PlaybackAction: String {
+  case play
+  case resume
+  case playAgain
+
+  /// Localization keys, resolved by the app.
+  public var titleKey: String {
+    switch self {
+    case .play: return "Play"
+    case .resume: return "Continue"
+    case .playAgain: return "Play Again"
+    }
   }
 }
 

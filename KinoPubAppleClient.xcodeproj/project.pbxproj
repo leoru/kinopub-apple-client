@@ -63,12 +63,11 @@
 		CCA100012C6F000100000201 /* HomeCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000202 /* HomeCatalog.swift */; };
 		CCA100012C6F000100000203 /* View+PlatformNavigationTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000204 /* View+PlatformNavigationTitle.swift */; };
 		CCA100012C6F000100000301 /* MediaItemHeroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000302 /* MediaItemHeroView.swift */; };
+		CCA100012C6F000100000401 /* SeasonsRailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000402 /* SeasonsRailView.swift */; };
 		CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000006 /* SubtitleCueParser.swift */; };
 		CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000008 /* SubtitleOverlayView.swift */; };
 		CCA100012C6F000100000009 /* SubtitleTranslatePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */; };
-		CCB4879D2A77D8FE00FA4483 /* MediaItemHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB4879C2A77D8FE00FA4483 /* MediaItemHeaderView.swift */; };
 		CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */; };
-		CCB487A12A77DBC200FA4483 /* MediaItemDescriptionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB487A02A77DBC200FA4483 /* MediaItemDescriptionCard.swift */; };
 		CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */; };
 		CCC70B8A2A7FC15F00274E5F /* BookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B892A7FC15F00274E5F /* BookmarkView.swift */; };
 		CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */; };
@@ -156,12 +155,11 @@
 		CCA100012C6F000100000202 /* HomeCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCatalog.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000204 /* View+PlatformNavigationTitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+PlatformNavigationTitle.swift"; sourceTree = "<group>"; };
 		CCA100012C6F000100000302 /* MediaItemHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemHeroView.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000402 /* SeasonsRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonsRailView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000006 /* SubtitleCueParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleCueParser.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000008 /* SubtitleOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleOverlayView.swift; sourceTree = "<group>"; };
 		CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslatePanel.swift; sourceTree = "<group>"; };
-		CCB4879C2A77D8FE00FA4483 /* MediaItemHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemHeaderView.swift; sourceTree = "<group>"; };
 		CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidthThresholdReader.swift; sourceTree = "<group>"; };
-		CCB487A02A77DBC200FA4483 /* MediaItemDescriptionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDescriptionCard.swift; sourceTree = "<group>"; };
 		CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemFieldsCard.swift; sourceTree = "<group>"; };
 		CCC70B892A7FC15F00274E5F /* BookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkView.swift; sourceTree = "<group>"; };
 		CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkModel.swift; sourceTree = "<group>"; };
@@ -215,9 +213,8 @@
 		CC0146182A7835A200F858AF /* Subviews */ = {
 			isa = PBXGroup;
 			children = (
-				CCB4879C2A77D8FE00FA4483 /* MediaItemHeaderView.swift */,
+				CCA100012C6F000100000402 /* SeasonsRailView.swift */,
 				CCA100012C6F000100000302 /* MediaItemHeroView.swift */,
-				CCB487A02A77DBC200FA4483 /* MediaItemDescriptionCard.swift */,
 				CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */,
 			);
 			path = Subviews;
@@ -765,7 +762,6 @@
 				CC78FC482A82CDF600C5BDFD /* DownloadsCatalog.swift in Sources */,
 				CC60254F2AFF5499003D8391 /* UserActionsServiceImpl.swift in Sources */,
 				CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */,
-				CCB4879D2A77D8FE00FA4483 /* MediaItemHeaderView.swift in Sources */,
 				CC21CEB22AF6B62A00EFCA8E /* SeasonModel.swift in Sources */,
 				CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */,
 				CC8202FD2A8656E70041079A /* BestVideoQualityFinder.swift in Sources */,
@@ -779,7 +775,6 @@
 				CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */,
 				CCC70B922A7FCA0D00274E5F /* ErrorHandler.swift in Sources */,
 				CC21CEAB2AF6B60500EFCA8E /* SeasonsView.swift in Sources */,
-				CCB487A12A77DBC200FA4483 /* MediaItemDescriptionCard.swift in Sources */,
 				CC748DEE2A83CCA200D87C0C /* UserServiceImpl.swift in Sources */,
 				CC78FC4A2A82D5D100C5BDFD /* DownloadedItemView.swift in Sources */,
 				CC844A9D2A7D0E1700E2495A /* FilterModel.swift in Sources */,
@@ -805,6 +800,7 @@
 				CCA100012C6F000100000201 /* HomeCatalog.swift in Sources */,
 				CCA100012C6F000100000203 /* View+PlatformNavigationTitle.swift in Sources */,
 				CCA100012C6F000100000301 /* MediaItemHeroView.swift in Sources */,
+				CCA100012C6F000100000401 /* SeasonsRailView.swift in Sources */,
 				CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */,
 				CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */,
 				CCA100012C6F000100000009 /* SubtitleTranslatePanel.swift in Sources */,

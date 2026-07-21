@@ -87,11 +87,13 @@ What "done" looks like, so nobody has to guess:
 - **Continue watching is ordered by intent, not by update date**: things watched in the last week that
   were never added to the watchlist come first (easiest to forget), then the watchlist itself, then
   everything else unfinished. Most recently played first within each group.
-- **Poster cards carry one combined score** in the top-left: the average of IMDb and Kinopoisk when
+- **Poster cards carry one combined score** in the top-left (detail pages show the two sources
+  separately instead, where there is room): the average of IMDb and Kinopoisk when
   both rated it, otherwise whichever did, hidden when neither. Colour by tier — gold with laurel wings
   at 8.0+, green from 7.0, grey from 6.0, red below. The tier follows the *displayed* value, so a card
   reading "8.0" always gets the gold treatment.
-- **Detail page** leads with the **trailer** playing at the top, then title/metadata/cast, then seasons.
+- **Detail page** leads with artwork that gives way to the **trailer**, blurred progressively toward
+  the overlaid title, metadata and plot; then season tabs over a rail of episode stills.
   Native tvOS buttons — no tiny iOS-sized controls.
 - **White is the accent colour**, as on Apple TV. The site's green is gone; the only coloured chrome
   left is semantic (rating tiers, destructive actions).
@@ -123,11 +125,12 @@ What "done" looks like, so nobody has to guess:
 - [ ] Cache the home rows so returning to the tab doesn't refetch everything
 
 ### Phase 2 — Detail page
-- [x] Full-bleed blurred artwork hero that gives way to the trailer once it is ready
-- [x] Native tvOS action buttons (Watch/Seasons · Trailer · Watched · Bookmark)
-- [x] Title, combined rating, metadata line and plot laid over the hero
-- [x] Seasons as a row of tiles with per-season watched counts
-- [ ] Episodes as rows with stills and progress (still a plain list)
+- [x] Full-bleed hero with a progressive blur — sharp at the top, dissolving into the text
+- [x] Trailer takes over the hero once the player reports it is ready
+- [x] Native tvOS action buttons; the primary one reads Play / Continue / Play Again
+- [x] IMDb and Kinopoisk shown separately with their own marks
+- [x] Plot appears once, expandable via More
+- [x] Season tabs over a horizontal rail of episode stills, opening on the unfinished season
 - [ ] Wire the Watched and Bookmark buttons — they render but do nothing yet
 - [ ] Similar items row via `GET /v1/items/similar`
 

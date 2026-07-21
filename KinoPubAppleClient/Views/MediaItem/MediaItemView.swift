@@ -30,7 +30,7 @@ struct MediaItemView: View {
                           onBookmarkHandle: {})
 
         if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
-          seasonsSection(seasons)
+          SeasonsRailView(seasons: seasons, linkProvider: itemModel.linkProvider)
         }
 
         detailsSection
@@ -38,7 +38,9 @@ struct MediaItemView: View {
       .padding(.bottom, Self.sectionSpacing)
     }
     .background(Color.KinoPub.background)
-    .ignoresSafeArea(edges: .top)
+    // Horizontal too, or the hero stops short of the screen edges on tvOS, where the
+    // safe area is inset for overscan.
+    .ignoresSafeArea(edges: [.top, .horizontal])
 #if os(iOS)
     .toolbar(.hidden, for: .tabBar)
     .navigationBarTitleDisplayMode(.inline)
@@ -49,39 +51,12 @@ struct MediaItemView: View {
     .handleError(state: $errorHandler.state)
   }
 
-  private func seasonsSection(_ seasons: [Season]) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
-      sectionHeader("Seasons")
-
-      ScrollView(.horizontal, showsIndicators: false) {
-        LazyHStack(spacing: 16) {
-          ForEach(seasons) { season in
-            NavigationLink(value: itemModel.linkProvider.season(for: season)) {
-              SeasonChip(season: season)
-            }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.roundedRectangle)
-          }
-        }
-        .padding(.horizontal, Self.horizontalInset)
-        .padding(.vertical, 8)
-      }
-    }
-  }
-
   private var detailsSection: some View {
     VStack(alignment: .leading, spacing: 12) {
-      sectionHeader("MediaItem_Description")
+      sectionHeader("MediaItem_Details")
 
-      VStack(alignment: .leading, spacing: 10) {
-        Text(itemModel.mediaItem.plot)
-          .font(Self.bodyFont)
-          .foregroundStyle(Color.KinoPub.text)
-          .multilineSkeleton(enabled: !itemModel.itemLoaded)
-
-        MediaItemFieldsCard(mediaItem: itemModel.mediaItem,
-                            isSkeleton: !itemModel.itemLoaded)
-      }
+      MediaItemFieldsCard(mediaItem: itemModel.mediaItem,
+                          isSkeleton: !itemModel.itemLoaded)
       .frame(maxWidth: Self.textMaxWidth, alignment: .leading)
       .padding(.horizontal, Self.horizontalInset)
     }
@@ -112,37 +87,6 @@ struct MediaItemView: View {
   static let textMaxWidth: CGFloat = 700
   static let headerFont: Font = .system(size: 20, weight: .semibold)
   static let bodyFont: Font = .system(size: 15, weight: .regular)
-#endif
-}
-
-/// A season tile: number, episode count and how far through it the user is.
-private struct SeasonChip: View {
-  let season: Season
-
-  private var watchedCount: Int {
-    season.episodes.filter { $0.watched > 0 }.count
-  }
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      Text(season.fixedTitle)
-        .font(Self.titleFont)
-        .lineLimit(1)
-      Text("\(watchedCount)/\(season.episodes.count)")
-        .font(Self.captionFont)
-        .foregroundStyle(Color.KinoPub.subtitle)
-    }
-    .frame(width: Self.width, alignment: .leading)
-  }
-
-#if os(tvOS)
-  static let width: CGFloat = 240
-  static let titleFont: Font = .system(size: 28, weight: .medium)
-  static let captionFont: Font = .system(size: 22, weight: .regular)
-#else
-  static let width: CGFloat = 120
-  static let titleFont: Font = .system(size: 15, weight: .medium)
-  static let captionFont: Font = .system(size: 13, weight: .regular)
 #endif
 }
 

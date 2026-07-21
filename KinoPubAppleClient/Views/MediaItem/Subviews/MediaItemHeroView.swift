@@ -111,15 +111,15 @@ struct MediaItemHeroView: View {
   @ViewBuilder
   private var backdrop: some View {
     ZStack {
-      AsyncImage(url: URL(string: backdropURL)) { image in
-        image
-          .resizable()
-          .aspectRatio(contentMode: .fill)
-          // Blurred, so overlaid text stays readable over any artwork.
-          .blur(radius: 24)
-          .scaleEffect(1.15)
-      } placeholder: {
-        Color.KinoPub.skeleton
+      // Sharp at the top, dissolving toward the text at the bottom.
+      ProgressiveBlur(startPoint: 0.35, maxRadius: 44, layers: 5) {
+        AsyncImage(url: URL(string: backdropURL)) { image in
+          image
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+        } placeholder: {
+          Color.KinoPub.skeleton
+        }
       }
 
       if let player = trailer.player, trailer.isReady {
@@ -134,9 +134,12 @@ struct MediaItemHeroView: View {
   }
 
   private var scrim: some View {
+    // Reaches the background colour before the very bottom: landing on it only at
+    // the last pixel leaves a visible seam where the hero meets the page.
     LinearGradient(stops: [
-      .init(color: Color.KinoPub.background.opacity(0.15), location: 0),
-      .init(color: Color.KinoPub.background.opacity(0.75), location: 0.55),
+      .init(color: Color.KinoPub.background.opacity(0.1), location: 0),
+      .init(color: Color.KinoPub.background.opacity(0.6), location: 0.5),
+      .init(color: Color.KinoPub.background, location: 0.88),
       .init(color: Color.KinoPub.background, location: 1)
     ], startPoint: .top, endPoint: .bottom)
   }
@@ -160,10 +163,11 @@ struct MediaItemHeroView: View {
 
       metadata
 
-      Text(mediaItem.plot)
-        .font(Self.plotFont)
+      ExpandableText(mediaItem.plot,
+                     lineLimit: 3,
+                     font: Self.plotFont,
+                     buttonFont: Self.buttonFont)
         .foregroundStyle(Color.KinoPub.text.opacity(0.85))
-        .lineLimit(3)
         .frame(maxWidth: Self.textMaxWidth, alignment: .leading)
         .multilineSkeleton(enabled: isSkeleton)
 
@@ -177,9 +181,7 @@ struct MediaItemHeroView: View {
 
   private var metadata: some View {
     HStack(spacing: 12) {
-      if let rating = Rating(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating) {
-        RatingBadgeView(rating: rating)
-      }
+      MediaScoresView(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating)
 
       Text(metadataLine)
         .font(Self.metaFont)
@@ -236,21 +238,31 @@ struct MediaItemHeroView: View {
 
   @ViewBuilder
   private var primaryAction: some View {
-    if isSeries, let seasons = mediaItem.seasons {
-      NavigationLink(value: linkProvider.seasons(for: seasons)) {
-        Label("Seasons", systemImage: "play.fill")
-      }
-      .buttonStyle(.borderedProminent)
-      .buttonBorderShape(.capsule)
-      .tint(Color.KinoPub.accent)
-    } else {
-      NavigationLink(value: linkProvider.player(for: mediaItem)) {
-        Label("Watch", systemImage: "play.fill")
-      }
-      .buttonStyle(.borderedProminent)
-      .buttonBorderShape(.capsule)
-      .tint(Color.KinoPub.accent)
+    NavigationLink(value: linkProvider.player(for: playTarget)) {
+      Label(mediaItem.playbackAction.titleKey.localized, systemImage: "play.fill")
     }
+    .buttonStyle(.borderedProminent)
+    .buttonBorderShape(.capsule)
+    .tint(Color.KinoPub.accent)
+  }
+
+  /// For a series, play the first episode that still has something left; the rail
+  /// below is there for picking any other one.
+  private var playTarget: any PlayableItem {
+    guard isSeries, let seasons = mediaItem.seasons else { return mediaItem }
+    for season in seasons {
+      if let episode = season.episodes.first(where: { $0.watched == 0 }) {
+        episode.seasonNumber = season.number
+        episode.mediaId = season.mediaId
+        return episode
+      }
+    }
+    if let season = seasons.first, let episode = season.episodes.first {
+      episode.seasonNumber = season.number
+      episode.mediaId = season.mediaId
+      return episode
+    }
+    return mediaItem
   }
 
   // MARK: - Metrics
