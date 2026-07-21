@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AVKit
+import AVFoundation
 import Combine
 import KinoPubUI
 import KinoPubBackend
@@ -19,36 +20,66 @@ final class TrailerPreviewModel: ObservableObject {
 
   private var statusObservation: NSKeyValueObservation?
   private var endObserver: Any?
+  private var startedURL: URL?
 
-  func start(url: URL?) {
-    guard player == nil, let url else { return }
+  /// Plays the trailer muted behind the artwork. A repeat call for the URL already
+  /// running is ignored, so a re-rendered hero doesn't restart it from the top.
+  func start(url: URL) {
+    guard startedURL != url else { return }
+    teardown()
+    startedURL = url
 
-    let player = AVPlayer(url: url)
+    let item = AVPlayerItem(url: url)
+    let player = AVPlayer(playerItem: item)
     player.isMuted = true
+    // Nothing here is worth keeping the screen awake for — the real player is.
+    player.preventsDisplaySleepDuringVideoPlayback = false
+    // The artwork comes back at the end rather than the trailer looping.
+    player.actionAtItemEnd = .pause
     self.player = player
 
-    statusObservation = player.observe(\.currentItem?.status, options: [.new]) { [weak self] player, _ in
-      guard player.currentItem?.status == .readyToPlay else { return }
+    // Observed on the item: `\.currentItem?.status` through the player is a key path
+    // through an optional and does not reliably deliver.
+    statusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
+      let status = item.status
       Task { @MainActor in
-        // A failed trailer simply never flips this, leaving the artwork in place.
-        self?.isReady = true
-        player.play()
+        self?.handle(status: status)
       }
     }
 
     endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime,
-                                                        object: player.currentItem,
+                                                        object: item,
                                                         queue: .main) { [weak self] _ in
       Task { @MainActor in
-        self?.stop()
+        self?.teardown()
       }
     }
   }
 
-  /// Drops back to the artwork — used when the trailer ends or the view goes away.
+  private func handle(status: AVPlayerItem.Status) {
+    switch status {
+    case .readyToPlay:
+      isReady = true
+      player?.play()
+    case .failed:
+      // A trailer that won't load just leaves the artwork in place.
+      teardown()
+    default:
+      break
+    }
+  }
+
+  /// Drops back to the artwork and forgets what was playing, so leaving the page and
+  /// coming back starts the trailer over.
   func stop() {
+    teardown()
+    startedURL = nil
+  }
+
+  private func teardown() {
     player?.pause()
     isReady = false
+    statusObservation?.invalidate()
     statusObservation = nil
     if let endObserver {
       NotificationCenter.default.removeObserver(endObserver)
@@ -61,8 +92,83 @@ final class TrailerPreviewModel: ObservableObject {
     if let endObserver {
       NotificationCenter.default.removeObserver(endObserver)
     }
+    statusObservation?.invalidate()
   }
 }
+
+/// The trailer as a bare `AVPlayerLayer`. `VideoPlayer` brings the transport UI and
+/// its own focus behaviour along, and fits the video inside the frame — behind a
+/// title it has to fill the hero and stay out of the way instead.
+struct TrailerVideoLayer {
+  let player: AVPlayer
+}
+
+#if os(macOS)
+extension TrailerVideoLayer: NSViewRepresentable {
+  func makeNSView(context: Context) -> TrailerLayerHostView {
+    TrailerLayerHostView(player: player)
+  }
+
+  func updateNSView(_ view: TrailerLayerHostView, context: Context) {
+    view.playerLayer.player = player
+  }
+}
+
+final class TrailerLayerHostView: NSView {
+
+  let playerLayer = AVPlayerLayer()
+
+  init(player: AVPlayer) {
+    super.init(frame: .zero)
+    playerLayer.player = player
+    playerLayer.videoGravity = .resizeAspectFill
+    wantsLayer = true
+    layer = CALayer()
+    layer?.addSublayer(playerLayer)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  override func layout() {
+    super.layout()
+    // Without this the layer animates its way to every new size as the window resizes.
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    playerLayer.frame = bounds
+    CATransaction.commit()
+  }
+}
+#else
+extension TrailerVideoLayer: UIViewRepresentable {
+  func makeUIView(context: Context) -> TrailerLayerHostView {
+    TrailerLayerHostView(player: player)
+  }
+
+  func updateUIView(_ view: TrailerLayerHostView, context: Context) {
+    view.playerLayer.player = player
+  }
+}
+
+final class TrailerLayerHostView: UIView {
+
+  override class var layerClass: AnyClass { AVPlayerLayer.self }
+
+  var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+
+  init(player: AVPlayer) {
+    super.init(frame: .zero)
+    playerLayer.player = player
+    playerLayer.videoGravity = .resizeAspectFill
+    isUserInteractionEnabled = false
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+}
+#endif
 
 /// Full-bleed artwork that gives way to the trailer, with the title, metadata and
 /// actions laid over it — the shape the Apple TV app uses.
@@ -100,9 +206,16 @@ struct MediaItemHeroView: View {
         }
       }
       .clipped()
-    .task {
-      guard !isSkeleton else { return }
-      trailer.start(url: mediaItem.trailerURL)
+    // Keyed on the URL, not on appearance: the details arrive after the first render,
+    // so at `onAppear` there is no trailer to start yet and a plain `.task` never
+    // looked again.
+    .task(id: mediaItem.trailerURL) {
+      guard !isSkeleton, let url = mediaItem.trailerURL else { return }
+      // The artwork holds the frame for a beat before the trailer takes over, the way
+      // the Apple TV app does it — and a quick scroll past doesn't spin up a video.
+      try? await Task.sleep(for: .seconds(Self.trailerLeadIn))
+      guard !Task.isCancelled else { return }
+      trailer.start(url: url)
     }
     .onDisappear {
       trailer.stop()
@@ -125,15 +238,31 @@ struct MediaItemHeroView: View {
         }
       }
 
+      // Left unblurred where the artwork behind it is blurred: a SwiftUI layer effect
+      // over an `AVPlayerLayer` does not render, so the extra scrim carries the text
+      // instead.
       if let player = trailer.player, trailer.isReady {
-        VideoPlayer(player: player)
-          .disabled(true)
+        TrailerVideoLayer(player: player)
           .allowsHitTesting(false)
+          .transition(.opacity)
+
+        trailerScrim
           .transition(.opacity)
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .animation(.easeInOut(duration: 0.6), value: trailer.isReady)
+  }
+
+  /// Extra shade over the trailer only. The artwork arrives softened by the
+  /// progressive blur; a sharp, bright, moving frame does not, and white text on a
+  /// cartoon sky is unreadable without it.
+  private var trailerScrim: some View {
+    LinearGradient(stops: [
+      .init(color: .clear, location: 0),
+      .init(color: Color.KinoPub.background.opacity(0.5), location: 0.6),
+      .init(color: Color.KinoPub.background.opacity(0.5), location: 1)
+    ], startPoint: .top, endPoint: .bottom)
   }
 
   private var scrim: some View {
@@ -292,6 +421,9 @@ struct MediaItemHeroView: View {
   }
 
   // MARK: - Metrics
+
+  /// Seconds of artwork before the trailer takes over.
+  static let trailerLeadIn: Double = 2
 
 #if os(tvOS)
   static let heroHeight: CGFloat = 720

@@ -83,6 +83,9 @@ These are real, verified, and up for grabs:
   disabled on an account with none.
 - **The hero trailer only appears when the API returns `trailer.url`.** Some items carry a `trailer`
   object with no link; the button is hidden and the artwork stays.
+- **Some trailer files carry black borders baked into the picture** («Обсессия» is one), so the hero
+  shows them. The player layer fills the frame — the padding is in the source, and cropping it away
+  would cut into trailers that don't have it.
 
 ## Target UX
 
@@ -122,8 +125,8 @@ that line is polish, and everything above it is unfinished business.
 - tvOS build hygiene, CI across tvOS/iOS/macOS, all four package test suites green
 - Row-based home led by Continue Watching, ordered by intent and rendered as landscape cards with
   episode stills, resume bars and "S1, E7 · 51 min"
-- Detail page: full-bleed hero with a Metal variable blur, trailer takeover, native action buttons,
-  season tabs over a rail of episode stills
+- Detail page: full-bleed hero with a Metal variable blur, the trailer playing muted behind the
+  artwork, native action buttons, season tabs over a rail of episode stills
 - Tabs: Search · Home · Movies · Series · Saved · Settings, icon-only where it should be
 - Combined score badges on posters, separate IMDb/Kinopoisk marks on detail pages
 - White accent throughout; the site's green is gone
@@ -147,6 +150,8 @@ Nothing exotic. A working, good-looking client that does what microiptv does.
 
 microiptv leaves a lot on the table. We shouldn't.
 
+- [x] **The trailer plays behind the hero artwork** — muted, a beat after the page settles, filling
+      the frame with no transport chrome, dropping back to the artwork when it ends
 - [ ] Trailers on the detail page as a proper section, not only the hero takeover
 - [ ] Awards
 - [ ] Collections (`GET /v1/collections`, `/v1/collections/view?id=`)
