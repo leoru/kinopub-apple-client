@@ -56,10 +56,16 @@ public struct MediaRowsView: View {
       ScrollView(.horizontal, showsIndicators: false) {
         LazyHStack(alignment: .top, spacing: Self.cardSpacing) {
           ForEach(row.cards) { card in
-            NavigationLink(value: navigationLinkProvider(card)) {
+            if card.isPlaceholder {
+              // Skeleton cards carry index ids, not item ids — leaving them tappable
+              // navigates straight to a 404.
               MediaCardView(card: card)
+            } else {
+              NavigationLink(value: navigationLinkProvider(card)) {
+                MediaCardView(card: card)
+              }
+              .buttonStyle(MediaCardButtonStyle())
             }
-            .buttonStyle(MediaCardButtonStyle())
           }
         }
         .padding(.horizontal, Self.horizontalInset)

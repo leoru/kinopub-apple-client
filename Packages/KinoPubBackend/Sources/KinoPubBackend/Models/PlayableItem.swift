@@ -14,3 +14,14 @@ public protocol PlayableItem: Identifiable, Hashable, Equatable {
   var metadata: WatchingMetadata { get }
   var subtitles: [Subtitle] { get }
 }
+
+public extension PlayableItem {
+  /// A trailer is only offerable when the API actually gave us a link — `trailer`
+  /// can be present with a nil or empty `url`.
+  var trailerURL: URL? {
+    guard let url = trailer?.url, !url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+      return nil
+    }
+    return URL(string: url)
+  }
+}

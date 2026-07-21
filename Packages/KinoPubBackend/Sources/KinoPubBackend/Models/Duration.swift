@@ -13,6 +13,19 @@ public struct Duration: Codable, Hashable {
 }
 
 public extension Duration {
+  /// "2 h 11 min" style, for the metadata line. `totalFormatted` is positional
+  /// ("2:11:58") and only sets `allowedUnits` on iOS, so it reads badly elsewhere.
+  var hoursMinutesFormatted: String {
+    let totalMinutes = Int((total / 60).rounded())
+    guard totalMinutes > 0 else { return "" }
+    let hours = totalMinutes / 60
+    let minutes = totalMinutes % 60
+    if hours > 0 {
+      return minutes > 0 ? "\(hours) h \(minutes) min" : "\(hours) h"
+    }
+    return "\(minutes) min"
+  }
+
   var totalFormatted: String {
     let formatter = DateComponentsFormatter()
     #if os(iOS)

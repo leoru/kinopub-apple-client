@@ -73,6 +73,9 @@ These are real, verified, and up for grabs:
 - **Home rows show only the first page** of each shortcut and refetch every time the tab appears.
 - **Continue watching cards have no score badge** — `/v1/watching/*` returns no ratings, and fetching
   details per card just to show a number isn't worth the requests.
+- **The detail page's Watched and Bookmark buttons are inert.** They are wired to empty closures.
+- **The hero trailer only appears when the API returns `trailer.url`.** Some items carry a `trailer`
+  object with no link; the button is hidden and the artwork stays.
 
 ## Target UX
 
@@ -120,9 +123,12 @@ What "done" looks like, so nobody has to guess:
 - [ ] Cache the home rows so returning to the tab doesn't refetch everything
 
 ### Phase 2 — Detail page
-- [ ] Trailer at the top, autoplaying, muted-until-focused
-- [ ] Native tvOS action buttons (Watch / Trailer / Bookmark / Watched)
-- [ ] Seasons & episodes redesigned as rows with stills and progress
+- [x] Full-bleed blurred artwork hero that gives way to the trailer once it is ready
+- [x] Native tvOS action buttons (Watch/Seasons · Trailer · Watched · Bookmark)
+- [x] Title, combined rating, metadata line and plot laid over the hero
+- [x] Seasons as a row of tiles with per-season watched counts
+- [ ] Episodes as rows with stills and progress (still a plain list)
+- [ ] Wire the Watched and Bookmark buttons — they render but do nothing yet
 - [ ] Similar items row via `GET /v1/items/similar`
 
 ### Phase 3 — Navigation & Library

@@ -62,6 +62,7 @@
 		CCA100012C6F000100000101 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000102 /* SearchView.swift */; };
 		CCA100012C6F000100000201 /* HomeCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000202 /* HomeCatalog.swift */; };
 		CCA100012C6F000100000203 /* View+PlatformNavigationTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000204 /* View+PlatformNavigationTitle.swift */; };
+		CCA100012C6F000100000301 /* MediaItemHeroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000302 /* MediaItemHeroView.swift */; };
 		CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000006 /* SubtitleCueParser.swift */; };
 		CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000008 /* SubtitleOverlayView.swift */; };
 		CCA100012C6F000100000009 /* SubtitleTranslatePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */; };
@@ -154,6 +155,7 @@
 		CCA100012C6F000100000102 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000202 /* HomeCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCatalog.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000204 /* View+PlatformNavigationTitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+PlatformNavigationTitle.swift"; sourceTree = "<group>"; };
+		CCA100012C6F000100000302 /* MediaItemHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemHeroView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000006 /* SubtitleCueParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleCueParser.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000008 /* SubtitleOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleOverlayView.swift; sourceTree = "<group>"; };
 		CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslatePanel.swift; sourceTree = "<group>"; };
@@ -214,6 +216,7 @@
 			isa = PBXGroup;
 			children = (
 				CCB4879C2A77D8FE00FA4483 /* MediaItemHeaderView.swift */,
+				CCA100012C6F000100000302 /* MediaItemHeroView.swift */,
 				CCB487A02A77DBC200FA4483 /* MediaItemDescriptionCard.swift */,
 				CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */,
 			);
@@ -801,6 +804,7 @@
 				CCA100012C6F000100000101 /* SearchView.swift in Sources */,
 				CCA100012C6F000100000201 /* HomeCatalog.swift in Sources */,
 				CCA100012C6F000100000203 /* View+PlatformNavigationTitle.swift in Sources */,
+				CCA100012C6F000100000301 /* MediaItemHeroView.swift in Sources */,
 				CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */,
 				CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */,
 				CCA100012C6F000100000009 /* SubtitleTranslatePanel.swift in Sources */,

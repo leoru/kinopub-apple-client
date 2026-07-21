@@ -29,7 +29,13 @@ class PlayerManager: ObservableObject {
   @Published var subtitlesEnabled: Bool = false
   @Published var currentPlaybackTime: TimeInterval = 0
 
-  lazy var player = AVPlayer(url: fileURL)
+  lazy var player: AVPlayer = {
+    guard let fileURL else {
+      Logger.app.error("No playable URL for item \(self.playItem.id) in \(String(describing: self.watchMode)) mode")
+      return AVPlayer()
+    }
+    return AVPlayer(url: fileURL)
+  }()
   private var playerTimeObserver: PlayerTimeObserver?
   private var cueObserverToken: Any?
   private var playItem: any PlayableItem
@@ -41,16 +47,18 @@ class PlayerManager: ObservableObject {
   private var cues: [SubtitleCue] = []
   private var selectedSubtitle: Subtitle?
 
-  private var fileURL: URL {
+  /// Optional on purpose: both of these used to force-unwrap, and `URL(string: "")`
+  /// is nil — an item without a trailer link crashed the app on open.
+  private var fileURL: URL? {
     switch watchMode {
     case .media:
       let downloadedFiles = downloadedFilesDatabase.readData()
       if let file = downloadedFiles?.filter({ $0.metadata.id == playItem.id }).first {
         return file.localFileURL
       }
-      return URL(string: BestVideoQualityFinder.findBestURL(for: playItem.files))!
+      return URL(string: BestVideoQualityFinder.findBestURL(for: playItem.files))
     case .trailer:
-      return URL(string: playItem.trailer?.url ?? "")!
+      return playItem.trailerURL
     }
   }
 

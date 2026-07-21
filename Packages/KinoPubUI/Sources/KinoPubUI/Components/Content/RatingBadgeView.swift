@@ -87,7 +87,7 @@ public struct RatingBadgeView: View {
     }
     .padding(.horizontal, Self.horizontalPadding)
     .padding(.vertical, Self.verticalPadding)
-    .background(rating.tier.color.opacity(0.7), in: Capsule())
+    .background(rating.tier.color, in: Capsule())
   }
 
   private func wing(mirrored: Bool) -> some View {
