@@ -33,23 +33,36 @@ final class MediaItemDetailsTests: XCTestCase {
                      skeleton: mock.skeleton)
   }
 
-  // MARK: - kino.pub rating
+  // MARK: - kino.pub community votes
 
-  /// Verified against the live API: 55% over 328 votes displays as 5.5. The bare
-  /// `rating` field is the net vote count and goes negative, so it is never shown.
-  func testKinopubRatingComesFromThePercentage() {
-    let value = item(rating: 36, ratingVotes: 328, ratingPercentage: 55).kinopubRating
-    XCTAssertEqual(value ?? 0, 5.5, accuracy: 0.001)
+  /// Real API values: 36 net over 328 votes. Likes and dislikes recover exactly, and
+  /// 182/328 is the 55% the API reports.
+  func testLikesAndDislikesRecoverFromNetAndTotal() {
+    let votes = item(rating: 36, ratingVotes: 328, ratingPercentage: 55).communityVotes
+    XCTAssertEqual(votes?.likes, 182)
+    XCTAssertEqual(votes?.dislikes, 146)
   }
 
-  func testNegativeNetRatingStillProducesAPositiveScore() {
-    let value = item(rating: -5, ratingVotes: 25, ratingPercentage: 40).kinopubRating
-    XCTAssertEqual(value ?? 0, 4.0, accuracy: 0.001)
+  /// A net score below zero is normal — more dislikes than likes.
+  func testNegativeNetMeansMoreDislikes() {
+    let votes = item(rating: -5, ratingVotes: 25, ratingPercentage: 40).communityVotes
+    XCTAssertEqual(votes?.likes, 10)
+    XCTAssertEqual(votes?.dislikes, 15)
   }
 
-  func testUnratedItemHasNoScore() {
-    XCTAssertNil(item(ratingVotes: 0, ratingPercentage: 0).kinopubRating)
-    XCTAssertNil(item(ratingVotes: 10, ratingPercentage: 0).kinopubRating)
+  func testSmallTallyStillSplitsCorrectly() {
+    let votes = item(rating: 2, ratingVotes: 4, ratingPercentage: 75).communityVotes
+    XCTAssertEqual(votes?.likes, 3)
+    XCTAssertEqual(votes?.dislikes, 1)
+  }
+
+  func testUnvotedItemHasNoTally() {
+    XCTAssertNil(item(ratingVotes: 0).communityVotes)
+  }
+
+  /// Nonsense input must not produce a negative count on screen.
+  func testInconsistentCountsAreRejected() {
+    XCTAssertNil(item(rating: 500, ratingVotes: 10).communityVotes)
   }
 
   // MARK: - Names
@@ -78,12 +91,26 @@ final class MediaItemDetailsTests: XCTestCase {
     XCTAssertEqual(film.displayDuration, "1 h 48 min")
   }
 
-  /// A series' `total` is the sum of every episode, which reads as nonsense.
+  /// A series' `total` is the sum of every episode, which reads as nonsense as *the*
+  /// runtime — but is worth showing on its own line.
   func testSeriesUsesThePerEpisodeAverage() {
+    let series = seriesItem(duration: Duration(average: 51 * 60, total: 21600))
+    XCTAssertEqual(series.displayDuration, "51 min")
+  }
+
+  func testSeriesAlsoReportsItsTotalRuntime() {
+    let series = seriesItem(duration: Duration(average: 51 * 60, total: 21600))
+    XCTAssertEqual(series.totalDurationDisplay, "6 h")
+  }
+
+  func testFilmHasNoSeparateTotal() {
+    XCTAssertNil(item(duration: Duration(average: 0, total: 108 * 60)).totalDurationDisplay)
+  }
+
+  private func seriesItem(duration: Duration) -> MediaItem {
     let season = Season(id: 1, title: "S1", number: 1,
                         watching: SeasonWatching(status: 0), episodes: [])
-    let series = item(seasons: [season], duration: Duration(average: 51 * 60, total: 21600))
-    XCTAssertEqual(series.displayDuration, "51 min")
+    return item(seasons: [season], duration: duration)
   }
 
   // MARK: - Language names

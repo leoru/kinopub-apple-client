@@ -21,7 +21,7 @@ struct Sidebar: View {
       row(.series, title: "Series", icon: "tv")
       row(.saved, title: "Saved", icon: "bookmark")
       row(.downloads, title: "Downloads", icon: "arrow.down.circle")
-      row(.settings, title: "Settings", icon: "gearshape")
+      row(.settings, title: "Settings", icon: "gear")
     }
     .scrollContentBackground(.hidden)
     .background(Color.KinoPub.background)

@@ -7,14 +7,19 @@ import Foundation
 
 public extension MediaItem {
 
-  /// kino.pub's own score, 0–10.
+  /// kino.pub's own vote is a thumbs up/down tally, not a score, so it is reported
+  /// as one.
   ///
-  /// Derived from `rating_percentage`: the bare `rating` field is the *net* vote
-  /// count (upvotes minus downvotes) and goes negative, so it is not a display value.
-  /// Verified against the API — 55% with 328 votes renders as 5.5.
-  var kinopubRating: Double? {
-    guard ratingVotes > 0, ratingPercentage > 0 else { return nil }
-    return ratingPercentage / 10
+  /// `rating` is the net count (likes minus dislikes, negative when disliked) and
+  /// `rating_votes` the total, which recovers both exactly:
+  /// likes = (total + net) / 2, dislikes = (total − net) / 2.
+  /// Checked against the API: 36 net over 328 votes → 182/146, matching its 55%.
+  var communityVotes: (likes: Int, dislikes: Int)? {
+    guard ratingVotes > 0 else { return nil }
+    let likes = (ratingVotes + rating) / 2
+    let dislikes = ratingVotes - likes
+    guard likes >= 0, dislikes >= 0 else { return nil }
+    return (likes, dislikes)
   }
 
   /// Every production country. The API returns them all; only showing the first
@@ -36,10 +41,17 @@ public extension MediaItem {
   }
 
   /// Runtime to display: the per-episode average for a series, whose `total` is the
-  /// sum of every episode and reads as nonsense.
+  /// sum of every episode and reads as nonsense on its own.
   var displayDuration: String {
     let seconds = isSeries ? duration.average : duration.total
     return Duration.hoursMinutes(seconds: Int(seconds))
+  }
+
+  /// Everything end to end — only meaningful for a series, where it is shown as its
+  /// own row alongside the per-episode runtime.
+  var totalDurationDisplay: String? {
+    guard isSeries, duration.total > 0 else { return nil }
+    return Duration.hoursMinutes(seconds: Int(duration.total))
   }
 
   /// Subtitle languages offered, de-duplicated and human readable.

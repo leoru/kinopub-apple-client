@@ -149,11 +149,12 @@ microiptv leaves a lot on the table. We shouldn't.
 - [ ] Awards
 - [ ] Collections (`GET /v1/collections`, `/v1/collections/view?id=`)
 - [x] **Every production country**, not just the first — microiptv shows one
-- [x] Ratings section: kino.pub / IMDb / Kinopoisk with vote counts
+- [x] Ratings section: IMDb and Kinopoisk with vote counts, then kino.pub's own thumbs up/down
+      tally shown as the tally it is rather than a fake score
 - [x] Cast and crew as round portraits
 - [x] Information · Translation · Audio columns, stacking when the display is narrow
 - [ ] Cast photos and character names — kino.pub sends neither, so portraits are initials.
-      Would need TMDb by IMDb id
+      See Phase C½: Kinopoisk Unofficial has both
 - [ ] Sweep the rest of the payload (quality, AC3, age rating)
 - [ ] Similar items (`GET /v1/items/similar`)
 
@@ -168,6 +169,21 @@ rather than the system language). What's missing is memory of what the user pick
 - [ ] Same for the audio track
 - [ ] **Dual subtitles** — Russian on top, English below, for watching in English with a safety net.
       Nothing else does this; the cue overlay already exists to build on.
+
+### Phase C½ — Kinopoisk Unofficial API
+
+kino.pub itself pulls from **Kinopoisk API Unofficial** (`kinopoiskapiunofficial.tech`), which is
+where richer Russian-language data lives: staff with photos and character names, awards, premiere
+dates, similar titles, box office. Worth wiring around the same time as Phase C, since it fills gaps
+the kino.pub payload simply doesn't have.
+
+- Some endpoints answer without a key; the fuller ones need a free key. Confirm which we need before
+  deciding whether to ship a key at all.
+- Matching is by IMDb or Kinopoisk id — `MediaItem.imdb` and `MediaItem.kinopoisk` both exist.
+
+- [ ] Confirm what works keyless versus keyed
+- [ ] Cast photos and character names — the one gap that makes our round portraits initials
+- [ ] Awards, premiere dates, similar titles
 
 ### Phase D — Exploratory: IMDb-sourced top lists
 

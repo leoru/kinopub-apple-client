@@ -145,7 +145,7 @@ struct TabsNavigationView: View {
                                     authState: authState))
       .tag(NavigationTabs.settings)
       .tabItem {
-        tabLabel("Settings", systemImage: "gearshape", iconOnly: true)
+        tabLabel("Settings", systemImage: "gear", iconOnly: true)
       }
       .toolbarBackground(Color.KinoPub.background, for: placement)
   }

@@ -21,11 +21,10 @@ struct MediaItemRatingsSection: View {
     let votes: Int?
   }
 
+  /// IMDb and Kinopoisk lead. kino.pub's own tally goes last: it is a thumbs
+  /// up/down from a handful of users, not a score worth ranking above the others.
   private var scores: [Score] {
     var result: [Score] = []
-    if let kinopub = mediaItem.kinopubRating {
-      result.append(Score(id: "Kinopub", value: kinopub, votes: mediaItem.ratingVotes))
-    }
     if let imdb = mediaItem.imdbRating, imdb > 0 {
       result.append(Score(id: "IMDb", value: imdb, votes: mediaItem.imdbVotes))
     }
@@ -36,7 +35,7 @@ struct MediaItemRatingsSection: View {
   }
 
   var body: some View {
-    if !scores.isEmpty {
+    if !scores.isEmpty || mediaItem.communityVotes != nil {
       VStack(alignment: .leading, spacing: 12) {
         MediaItemSectionHeader("Ratings")
 
@@ -44,10 +43,33 @@ struct MediaItemRatingsSection: View {
           ForEach(scores) { score in
             tile(score)
           }
+          if let votes = mediaItem.communityVotes {
+            communityTile(likes: votes.likes, dislikes: votes.dislikes)
+          }
         }
         .padding(.horizontal, MediaItemLayout.horizontalInset)
       }
     }
+  }
+
+  /// Shown as the tally it actually is, rather than dressed up as a score.
+  private func communityTile(likes: Int, dislikes: Int) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 16) {
+        Label("\(likes)", systemImage: "hand.thumbsup.fill")
+        Label("\(dislikes)", systemImage: "hand.thumbsdown.fill")
+      }
+      .font(Self.votesFont)
+      .foregroundStyle(Color.KinoPub.text)
+
+      Text("Kinopub")
+        .font(Self.captionFont)
+        .foregroundStyle(Color.KinoPub.subtitle)
+    }
+    .frame(width: Self.tileWidth, alignment: .leading)
+    .padding(Self.tilePadding)
+    .background(Color.KinoPub.selectionBackground.opacity(0.5),
+                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
   }
 
   private func tile(_ score: Score) -> some View {
@@ -96,6 +118,7 @@ struct MediaItemRatingsSection: View {
   static let valueFont: Font = .system(size: 40, weight: .semibold)
   static let captionFont: Font = .system(size: 22, weight: .regular)
   static let starSize: CGFloat = 22
+  static let votesFont: Font = .system(size: 28, weight: .semibold)
 #else
   static let spacing: CGFloat = 12
   static let tileWidth: CGFloat = 150
@@ -103,6 +126,7 @@ struct MediaItemRatingsSection: View {
   static let valueFont: Font = .system(size: 24, weight: .semibold)
   static let captionFont: Font = .system(size: 13, weight: .regular)
   static let starSize: CGFloat = 12
+  static let votesFont: Font = .system(size: 17, weight: .semibold)
 #endif
 }
 
@@ -214,6 +238,9 @@ struct MediaItemInfoColumns: View {
     let duration = mediaItem.displayDuration
     if !duration.isEmpty {
       rows.append(("MediaItem_Duration", duration))
+    }
+    if let total = mediaItem.totalDurationDisplay {
+      rows.append(("Total duration", total))
     }
     rows.append(("Added", Self.date(mediaItem.createdAt)))
     rows.append(("Updated", Self.date(mediaItem.updatedAt)))

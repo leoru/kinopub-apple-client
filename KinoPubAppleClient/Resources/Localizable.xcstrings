@@ -626,6 +626,29 @@
         }
       }
     },
+    "Total duration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total duration"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bendra trukmė"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Общая длительность"
+          }
+        }
+      }
+    },
     "Translation" : {
       "extractionState" : "manual",
       "localizations" : {
