@@ -43,12 +43,12 @@ struct MediaItemHeaderView: View {
             NavigationLink(value: linkProvider.seasons(for: seasons)) {
               Text("Seasons")
                 .modifier(KinoPubButtonTextStyle())
-            }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
+            }.buttonStyle(KinoPubButtonStyle(buttonColor: .accent))
           } else {
             NavigationLink(value: linkProvider.player(for: mediaItem)) {
               Text("Watch")
                 .modifier(KinoPubButtonTextStyle())
-            }.buttonStyle(KinoPubButtonStyle(buttonColor: .green))
+            }.buttonStyle(KinoPubButtonStyle(buttonColor: .accent))
           }
           NavigationLink(value: linkProvider.trailerPlayer(for: mediaItem)) {
             Text("Trailer")

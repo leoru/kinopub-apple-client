@@ -79,13 +79,20 @@ class HomeCatalog: ObservableObject {
 
   private func fetchContinueWatchingRow() async -> MediaRow? {
     async let moviesTask = try? itemsService.fetchWatchingMovies().items
-    async let serialsTask = try? itemsService.fetchWatchingSerials().items
+    async let allSerialsTask = try? itemsService.fetchWatchingSerials(subscribedOnly: false).items
+    async let watchlistTask = try? itemsService.fetchWatchingSerials(subscribedOnly: true).items
+    async let historyTask = try? itemsService.fetchHistory().history
 
-    let serials = await serialsTask ?? []
     let movies = await moviesTask ?? []
+    let serials = await allSerialsTask ?? []
+    let watchlistIDs = Set((await watchlistTask ?? []).map(\.id))
+    let lastSeen = ContinueWatchingOrder.lastSeenByItemID(await historyTask ?? [])
 
-    // Serials with new episodes are the reason to open the app, so they lead.
-    let cards = (serials + movies).map(Self.card(for:))
+    let ordered = ContinueWatchingOrder.ordered(items: serials + movies,
+                                                watchlistIDs: watchlistIDs,
+                                                lastSeen: lastSeen)
+
+    let cards = ordered.map(Self.card(for:))
     guard !cards.isEmpty else { return nil }
 
     return MediaRow(id: Self.continueWatchingRowID,
@@ -93,6 +100,8 @@ class HomeCatalog: ObservableObject {
                     cards: cards)
   }
 
+  /// The watching endpoints carry no ratings, so these cards show progress and the
+  /// new-episode count instead of a score.
   private static func card(for item: WatchingItem) -> MediaCard {
     MediaCard(id: item.id,
               posterURL: item.posters.medium,

@@ -11,14 +11,16 @@ import SwiftUI
 public struct KinoPubButton: View {
 
   public enum ButtonColor {
-    case green
+    /// The primary action colour — white, as on Apple TV. Named for its role rather
+    /// than its shade so it can be restyled without lying about it.
+    case accent
     case gray
     case red
     case blue
 
     internal var color: Color {
       switch self {
-      case .green:
+      case .accent:
         return Color.KinoPub.accent
       case .red:
         return Color.KinoPub.accentRed
@@ -26,6 +28,16 @@ public struct KinoPubButton: View {
         return Color.KinoPub.selectionBackground
       case .blue:
         return Color.KinoPub.accentBlue
+      }
+    }
+
+    /// Label colour that stays legible on `color`.
+    internal var foreground: Color {
+      switch self {
+      case .accent:
+        return .black
+      case .red, .gray, .blue:
+        return .white
       }
     }
   }
@@ -54,7 +66,7 @@ public struct KinoPubButton: View {
 
 struct KinoPubButton_Previews: PreviewProvider {
   static var previews: some View {
-    KinoPubButton(title: "Watch", color: .green, action: {
+    KinoPubButton(title: "Watch", color: .accent, action: {
 
     })
   }

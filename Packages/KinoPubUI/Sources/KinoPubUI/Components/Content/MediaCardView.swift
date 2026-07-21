@@ -15,6 +15,11 @@ public struct MediaCard: Identifiable, Hashable {
   public let subtitle: String?
   public let imdbRating: Double?
   public let kinopoiskRating: Double?
+
+  /// The combined score shown on the poster, or nil when neither source rated it.
+  public var rating: Rating? {
+    Rating(imdb: imdbRating, kinopoisk: kinopoiskRating)
+  }
   /// 0…1 for partially watched serials, nil when there is nothing to show.
   public let progress: Double?
   public let badge: String?
@@ -70,12 +75,14 @@ public struct MediaCardView: View {
       .frame(width: Self.cardWidth, height: Self.posterHeight)
       .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-      if !card.isPlaceholder {
-        ratings
-      }
-
       if let progress = card.progress {
         progressBar(progress)
+      }
+    }
+    .overlay(alignment: .topLeading) {
+      if !card.isPlaceholder, let rating = card.rating {
+        RatingBadgeView(rating: rating)
+          .padding(6)
       }
     }
     .overlay(alignment: .topTrailing) {
@@ -85,20 +92,12 @@ public struct MediaCardView: View {
           .padding(.horizontal, 8)
           .padding(.vertical, 4)
           .background(Color.KinoPub.accent, in: Capsule())
-          .foregroundStyle(.white)
+          .foregroundStyle(.black)
           .padding(6)
       }
     }
     .skeleton(enabled: card.isPlaceholder,
               size: CGSize(width: Self.cardWidth, height: Self.posterHeight))
-  }
-
-  private var ratings: some View {
-    VStack {
-      Spacer()
-      ContentItemRatingView(imdbScore: card.imdbRating, kinopoiskScore: card.kinopoiskRating)
-        .padding(.bottom, card.progress == nil ? 8 : 16)
-    }
   }
 
   private func progressBar(_ progress: Double) -> some View {

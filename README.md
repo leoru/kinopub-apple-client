@@ -19,7 +19,7 @@ Plus one thing neither of them does: **language learning while watching** — En
 
 | Platform | Priority | State |
 | --- | --- | --- |
-| tvOS 17+ | **Primary** | Builds and runs; UI is still the iOS layout. Active work. |
+| tvOS 17+ | **Primary** | Builds and runs. Home is rebuilt; detail page and player still to go. |
 | iOS / iPadOS 16+ | Secondary | Works (inherited from upstream). Kept building, not designed for. |
 | macOS 15+ | Secondary | Works (sidebar layout). Kept building, not designed for. |
 
@@ -61,8 +61,8 @@ These are real, verified, and up for grabs:
   inside the private `TranslatedBody` wrapper with a *separate*, never-assigned configuration — so
   `performTranslation(session:)` has no caller. `TranslationTransformModifier` is dead code.
   See `KinoPubAppleClient/Views/Player/SubtitleTranslatePanel.swift`.
-- **Word chips aren't focusable on tvOS.** They are `.buttonStyle(.plain)` inside a `LazyVGrid`, so the
-  Siri Remote can't reach them.
+- **The pause panel's focus behaviour is unverified on a real remote.** The word chips now use a
+  focus-reactive button style, but nobody has driven it with a Siri Remote yet.
 - **Subtitles don't follow the episode.** `MediaItem.subtitles` returns `videos?.first?.subtitles`, so a
   series always uses the first video's tracks. See `Packages/KinoPubBackend/.../Models/MediaItem.swift`.
 - **Player chrome conflicts on tvOS.** `PlayerView` layers a custom back button and subtitle views over
@@ -71,16 +71,27 @@ These are real, verified, and up for grabs:
   into `#"\b\#(marker)\b"#`, and counts `forced` as a CC marker — forced tracks carry no dialogue and make
   a bad default.
 - **Home rows show only the first page** of each shortcut and refetch every time the tab appears.
+- **Continue watching cards have no score badge** — `/v1/watching/*` returns no ratings, and fetching
+  details per card just to show a number isn't worth the requests.
 
 ## Target UX
 
 What "done" looks like, so nobody has to guess:
 
-- **Home** is rows, not a grid. First row is **Continue watching**, then category/collection rows with
-  artwork and IMDb/Kinopoisk ratings on the cards. **No hero banner** — there are no personalized
-  recommendations to justify one; it would just be a big advert.
+- **Home** is rows, not a grid. First row is **Continue watching**, then category/collection rows.
+  **No hero banner** — there are no personalized recommendations to justify one; it would just be a
+  big advert.
+- **Continue watching is ordered by intent, not by update date**: things watched in the last week that
+  were never added to the watchlist come first (easiest to forget), then the watchlist itself, then
+  everything else unfinished. Most recently played first within each group.
+- **Poster cards carry one combined score** in the top-left: the average of IMDb and Kinopoisk when
+  both rated it, otherwise whichever did, hidden when neither. Colour by tier — gold with laurel wings
+  at 8.0+, green from 7.0, grey from 6.0, red below. The tier follows the *displayed* value, so a card
+  reading "8.0" always gets the gold treatment.
 - **Detail page** leads with the **trailer** playing at the top, then title/metadata/cast, then seasons.
-  Native tvOS buttons — no green site-styled buttons, no tiny iOS-sized controls.
+  Native tvOS buttons — no tiny iOS-sized controls.
+- **White is the accent colour**, as on Apple TV. The site's green is gone; the only coloured chrome
+  left is semantic (rating tiers, destructive actions).
 - **Tabs** across the top, text-only on tvOS (no SF Symbols — tvOS tab bars are text):
   Search · Movies · Series · Mine · Library · TV · Settings. Search owns the query field along with
   the sort and filter controls, on every platform.
@@ -140,20 +151,18 @@ The service exposes far more than the app currently uses ([API v1.3 docs](https:
 
 **Already wired** (`Packages/KinoPubBackend/Sources/KinoPubBackend/Requests/`):
 `/v1/items/{hot,fresh,popular}`, `/v1/items/search`, `/v1/items/{id}`, `/v1/user`, `/v1/bookmarks`,
-`/v1/bookmarks/{id}`, `/v1/watching`, `/v1/watching/marktime`, `/v1/watching/toggle`, `/v1/genres`,
-`/v1/countries`, device-code auth.
+`/v1/bookmarks/{id}`, `/v1/watching`, `/v1/watching/movies`, `/v1/watching/serials`,
+`/v1/watching/marktime`, `/v1/watching/toggle`, `/v1/history`, `/v1/genres`, `/v1/countries`,
+device-code auth.
 
 **Available, not yet wired:**
 
 | Endpoint | Use |
 | --- | --- |
-| `GET /v1/watching/movies` | Unfinished movies → Continue watching |
-| `GET /v1/watching/serials?subscribed=` | Serials with new episodes → Continue watching / Mine |
 | `GET /v1/items` | Library with `type,genre,country,year,finished,actor,director,letter,quality,sort` (`sort`: id, year, title, created, updated, rating, views, watchers; `-` prefix = descending) |
 | `GET /v1/items/similar?id=` | Similar titles on the detail page |
-| `GET /v1/collections`, `/v1/collections/view?id=` | Curated rows |
 | `GET /v1/tv/index` | TV channels tab |
-| `GET /v1/history` | Viewing history |
+| `GET /v1/collections`, `/v1/collections/view?id=` | Curated rows |
 | `GET /v1/types` | Content-type reference for filters |
 
 ## App structure

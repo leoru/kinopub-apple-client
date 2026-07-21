@@ -24,7 +24,7 @@ struct ShortcutSelectionView: View {
           shortcutPicker
         }
 #if os(macOS)
-        KinoPubButton(title: "Apply".localized, color: .green) {
+        KinoPubButton(title: "Apply".localized, color: .accent) {
           dismiss()
         }
         .frame(width: 100, height: 30)

@@ -25,7 +25,7 @@ struct PlayerContinueWatchingView: View {
         KinoPubButton(title: "Yes".localized, color: .blue) {
           onContinueWatching()
         }.frame(width: 60, height: 30)
-        KinoPubButton(title: "\("No".localized)", color: .green) {
+        KinoPubButton(title: "\("No".localized)", color: .accent) {
           onCancelContinueWatching()
         }.frame(width: 60, height: 30)
       }

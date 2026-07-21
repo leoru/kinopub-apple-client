@@ -35,7 +35,7 @@ struct FilterView: View {
           dismiss()
         }
         .frame(width: 120, height: 30)
-        KinoPubButton(title: "Apply".localized, color: .green) {
+        KinoPubButton(title: "Apply".localized, color: .accent) {
           dismiss()
         }
         .frame(width: 120, height: 30)

@@ -58,10 +58,17 @@ final class VideoContentServiceImpl: VideoContentService {
     return response
   }
 
-  func fetchWatchingSerials() async throws -> ArrayData<WatchingItem> {
-    let request = WatchingSerialsRequest()
+  func fetchWatchingSerials(subscribedOnly: Bool) async throws -> ArrayData<WatchingItem> {
+    let request = WatchingSerialsRequest(subscribedOnly: subscribedOnly)
     let response = try await apiClient.performRequest(with: request,
                                                       decodingType: ArrayData<WatchingItem>.self)
+    return response
+  }
+
+  func fetchHistory() async throws -> HistoryData {
+    let request = HistoryRequest()
+    let response = try await apiClient.performRequest(with: request,
+                                                      decodingType: HistoryData.self)
     return response
   }
 

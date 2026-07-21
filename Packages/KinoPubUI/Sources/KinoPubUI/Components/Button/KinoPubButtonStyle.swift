@@ -30,7 +30,7 @@ public struct KinoPubButtonStyle: ButtonStyle {
 
     var body: some View {
       configuration.label
-        .foregroundColor(.white)
+        .foregroundColor(buttonColor.foreground)
         .background(buttonColor.color.opacity(isFocused ? 1.0 : 0.8))
         .cornerRadius(6.0)
         .scaleEffect(isFocused ? 1.05 : (configuration.isPressed ? 0.97 : 1.0))
