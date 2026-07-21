@@ -32,6 +32,13 @@ custom theming that fights the platform HIG.
 - Swift 5.9
 - Deployment targets: tvOS 17.0, iOS 16.0, macOS 15.0
 
+`KinoPubUI` contains a Metal shader (`Shaders/VariableBlur.metal`). Xcode 26+ ships the Metal
+toolchain as a separate component — if the build fails with "missing Metal Toolchain", run:
+
+```
+xcodebuild -downloadComponent MetalToolchain
+```
+
 There is a **single multiplatform target** (`KinoPubAppleClient`, product name `KinoPub`) covering all
 platforms. Platform differences live in `#if os(tvOS)` / `#if os(iOS)` / `#if os(macOS)` blocks — please
 do not add a second target.
@@ -125,7 +132,8 @@ What "done" looks like, so nobody has to guess:
 - [ ] Cache the home rows so returning to the tab doesn't refetch everything
 
 ### Phase 2 — Detail page
-- [x] Full-bleed hero with a progressive blur — sharp at the top, dissolving into the text
+- [x] Full-bleed hero with a true variable blur (Metal `layerEffect`) — sharp at the top,
+      dissolving into the text; stacked-layer fallback below tvOS 17 / macOS 14
 - [x] Trailer takes over the hero once the player reports it is ready
 - [x] Native tvOS action buttons; the primary one reads Play / Continue / Play Again
 - [x] IMDb and Kinopoisk shown separately with their own marks

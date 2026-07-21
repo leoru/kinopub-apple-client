@@ -27,6 +27,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # KinoPubUI contains a .metal shader. Xcode 26+ moved the Metal toolchain out
+      # into a separate downloadable component; earlier Xcodes bundle it, so this is
+      # a no-op there and a real download on newer runner images.
+      - name: Ensure Metal toolchain
+        run: xcodebuild -downloadComponent MetalToolchain || echo "bundled with this Xcode"
+
       - name: xcodebuild
         run: |
           set -o pipefail
