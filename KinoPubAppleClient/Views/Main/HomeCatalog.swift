@@ -86,13 +86,15 @@ class HomeCatalog: ObservableObject {
     let movies = await moviesTask ?? []
     let serials = await allSerialsTask ?? []
     let watchlistIDs = Set((await watchlistTask ?? []).map(\.id))
-    let lastSeen = ContinueWatchingOrder.lastSeenByItemID(await historyTask ?? [])
+    let history = await historyTask ?? []
+    let lastSeen = ContinueWatchingOrder.lastSeenByItemID(history)
+    let newestEntry = Self.newestEntryByItemID(history)
 
     let ordered = ContinueWatchingOrder.ordered(items: serials + movies,
                                                 watchlistIDs: watchlistIDs,
                                                 lastSeen: lastSeen)
 
-    let cards = ordered.map(Self.card(for:))
+    let cards = ordered.map { Self.card(for: $0, history: newestEntry[$0.id]) }
     guard !cards.isEmpty else { return nil }
 
     return MediaRow(id: Self.continueWatchingRowID,
@@ -100,15 +102,50 @@ class HomeCatalog: ObservableObject {
                     cards: cards)
   }
 
-  /// The watching endpoints carry no ratings, so these cards show progress and the
-  /// new-episode count instead of a score.
-  private static func card(for item: WatchingItem) -> MediaCard {
+  private static func newestEntryByItemID(_ history: [HistoryEntry]) -> [Int: HistoryEntry] {
+    history.reduce(into: [Int: HistoryEntry]()) { result, entry in
+      guard let date = entry.lastSeenDate else { return }
+      if let existing = result[entry.item.id], let seen = existing.lastSeenDate, seen >= date { return }
+      result[entry.item.id] = entry
+    }
+  }
+
+  /// Continue-watching cards are landscape, showing where playback stopped. History
+  /// supplies the episode still and the wide poster; `/v1/watching/*` has neither.
+  private static func card(for item: WatchingItem, history: HistoryEntry?) -> MediaCard {
     MediaCard(id: item.id,
               posterURL: item.posters.medium,
               title: item.localizedTitle,
               subtitle: item.originalTitle,
-              progress: item.progress,
-              badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil)
+              progress: history?.progress ?? item.progress,
+              badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil,
+              landscapeImageURL: landscapeImageURL(for: item, history: history),
+              overlayLabel: overlayLabel(for: history))
+  }
+
+  /// Prefer the still of the episode actually being watched, then the title's wide
+  /// artwork, and fall back to the poster — cropped to the landscape frame — so the
+  /// row never mixes shapes.
+  private static func landscapeImageURL(for item: WatchingItem, history: HistoryEntry?) -> String {
+    if let thumbnail = history?.media?.thumbnail, !thumbnail.isEmpty, history?.isEpisode == true {
+      return thumbnail
+    }
+    if let wide = history?.item.posters?.wide, !wide.isEmpty {
+      return wide
+    }
+    return item.posters.big
+  }
+
+  private static func overlayLabel(for history: HistoryEntry?) -> String? {
+    guard let history else { return nil }
+    var parts: [String] = []
+    if history.isEpisode, let season = history.media?.snumber, let episode = history.media?.number {
+      parts.append("S\(season), E\(episode)")
+    }
+    if let duration = history.media?.duration, duration >= 60 {
+      parts.append("\(duration / 60) \("min".localized)")
+    }
+    return parts.isEmpty ? nil : parts.joined(separator: " · ")
   }
 
   // MARK: - Catalog shortcuts

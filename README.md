@@ -78,8 +78,10 @@ These are real, verified, and up for grabs:
   into `#"\b\#(marker)\b"#`, and counts `forced` as a CC marker — forced tracks carry no dialogue and make
   a bad default.
 - **Home rows show only the first page** of each shortcut and refetch every time the tab appears.
-- **Continue watching cards have no score badge** — `/v1/watching/*` returns no ratings, and fetching
-  details per card just to show a number isn't worth the requests.
+- **Continue watching shows the last-played episode, not the next one.** Working out "next" needs a
+  per-item `/v1/watching?id=` call; the row shows where playback stopped instead.
+- **A title played longer ago than the last 50 history entries** falls back to its poster, cropped to
+  the landscape frame, with no episode label.
 - **The detail page's Watched and Bookmark buttons are inert.** They are wired to empty closures.
 - **The hero trailer only appears when the API returns `trailer.url`.** Some items carry a `trailer`
   object with no link; the button is hidden and the artwork stays.
@@ -91,6 +93,9 @@ What "done" looks like, so nobody has to guess:
 - **Home** is rows, not a grid. First row is **Continue watching**, then category/collection rows.
   **No hero banner** — there are no personalized recommendations to justify one; it would just be a
   big advert.
+- **Continue watching is a landscape row** — episode stills for series, wide artwork for films, with
+  a play glyph, resume bar and "S2, E5 · 42 min" over the image. It reads as a different kind of row
+  from the poster shelves below it, the way the Apple TV app treats it.
 - **Continue watching is ordered by intent, not by update date**: things watched in the last week that
   were never added to the watchlist come first (easiest to forget), then the watchlist itself, then
   everything else unfinished. Most recently played first within each group.
