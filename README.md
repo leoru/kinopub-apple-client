@@ -92,13 +92,23 @@ These are real, verified, and up for grabs:
   remote pops the stack. If that turns out not to fire, it is a real bug, not a design choice.
 - **Subtitles don't follow the episode.** `MediaItem.subtitles` returns `videos?.first?.subtitles`, so a
   series always uses the first video's tracks. See `Packages/KinoPubBackend/.../Models/MediaItem.swift`.
-- **Player chrome conflicts on tvOS.** `PlayerView` layers a custom back button, a captions button and
-  subtitle views over `VideoPlayer`; on tvOS the native transport UI fights them. The chrome is now
-  disabled while it is hidden, so it no longer takes focus during playback, but the two layers still
-  compete when it is showing.
-- **The subtitle picker has not been driven with a Siri Remote.** `SubtitleTrackPickerView` is a sheet
-  of focusable rows over the player; it builds and the rows are standard `Button`s, but nobody has
-  opened it on a real Apple TV against a real stream.
+- **tvOS player is unverified on a real remote.** `PlayerView` now drives `AVPlayerViewController`
+  directly on tvOS (`TVVideoPlayer` in `Views/Player/PlayerView.swift`) — no hand-rolled chrome, subtitle
+  and audio pickers live in `transportBarCustomMenuItems`, and Menu-to-exit is wired through
+  `AVPlayerViewControllerDelegate.playerViewControllerShouldDismiss` rather than assumed. Builds and
+  reads correctly, but the whole thing — Menu exit, the Subtitles/Audio menus, the Up-swipe that takes
+  the item page's inline trailer full-screen — has only been read, not driven with a real Siri Remote.
+- **The player's title only shows the series name when reached from the item page.** `Episode` carries
+  a `seriesTitle` filled in by `MediaItemHeroView`/`SeasonsRailView` right before playback; the
+  standalone season-browsing route (`Routes.season`, opened from Catalog/Search/Bookmarks/Main without
+  going through the item page) never had the series name to begin with, so the player falls back to the
+  episode's own title there. Plumbing it through means widening `Season`/`Routes.season` — a bigger,
+  shared-navigation change than a punch-list fix.
+- **Default audio-track ranking reads the option's display name, not real channel data.**
+  `AVMediaSelectionOption` exposes no channel count before the asset loads, so `AudioTrackRanker` in
+  `PlayerManager.swift` parses "5.1" / "стерео" etc. out of the label kino.pub already puts there. Works
+  for the labels seen so far; an HLS stream whose dub descriptions don't follow that convention falls
+  back to kind + Russian-first ranking alone.
 - **Home and Saved rows show only the first page** of each shortcut or folder, and refetch every
   time the tab appears. `/v1/bookmarks/{id}` is not paginated in `BookmarkItemsRequest`, so a folder
   row stops at what one request returns — the folder's own screen has the same limit.
@@ -187,9 +197,13 @@ Nothing exotic. A working, good-looking client that does what microiptv does.
 - [x] **Wire the Watched and Bookmark buttons** — Watched hits `/v1/watching/toggle`; Bookmark opens
   the account's folders and toggles membership via `/v1/bookmarks/toggle-item`
 - [ ] Paginate home rows; cache them so returning to the tab doesn't refetch everything
-- [ ] Fix the player issues listed under Known issues (subtitle track per episode, tvOS transport
-      conflicts) — CC/forced detection is done: `SubtitleTracks` matches markers as whole words and
-      treats forced as its own flag, never a default
+- [x] **tvOS player chrome is native** — `AVPlayerViewController` driven directly, Subtitles/Audio in
+      the transport bar's own menu, no hand-rolled buttons left to fight it (unverified on a real
+      remote, see Known issues)
+- [ ] Fix the remaining player issue under Known issues: subtitles don't follow the episode
+      (`MediaItem.subtitles` always reads the first video's tracks) — CC/forced detection is done:
+      `SubtitleTracks` matches markers as whole words and treats forced as its own flag, never a
+      default
 
 ### Phase B — All of kino.pub's data
 
