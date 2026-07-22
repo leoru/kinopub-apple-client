@@ -88,6 +88,19 @@ final class TrailerPreviewModel: ObservableObject {
     }
   }
 
+  /// Hands the preview over to the full-screen presentation and back. It is the same
+  /// `AVPlayer` either way — that is the whole point of the gesture, the trailer keeps
+  /// running rather than starting over — so all that changes is the sound and whether
+  /// it is worth keeping the screen awake for.
+  func setFullScreen(_ fullScreen: Bool) {
+    guard let player else { return }
+    player.isMuted = !fullScreen
+    player.preventsDisplaySleepDuringVideoPlayback = fullScreen
+    if fullScreen, isActive, isReady {
+      player.play()
+    }
+  }
+
   /// Drops back to the artwork and forgets what was playing, so leaving the page and
   /// coming back starts the trailer over.
   func stop() {
@@ -120,16 +133,20 @@ final class TrailerPreviewModel: ObservableObject {
 /// title it has to fill the hero and stay out of the way instead.
 struct TrailerVideoLayer {
   let player: AVPlayer
+  /// `.resizeAspectFill` behind the title so the trailer fills the hero; the
+  /// full-screen presentation asks for `.resizeAspect` so nothing is cropped away.
+  var gravity: AVLayerVideoGravity = .resizeAspectFill
 }
 
 #if os(macOS)
 extension TrailerVideoLayer: NSViewRepresentable {
   func makeNSView(context: Context) -> TrailerLayerHostView {
-    TrailerLayerHostView(player: player)
+    TrailerLayerHostView(player: player, gravity: gravity)
   }
 
   func updateNSView(_ view: TrailerLayerHostView, context: Context) {
     view.playerLayer.player = player
+    view.playerLayer.videoGravity = gravity
   }
 }
 
@@ -137,10 +154,10 @@ final class TrailerLayerHostView: NSView {
 
   let playerLayer = AVPlayerLayer()
 
-  init(player: AVPlayer) {
+  init(player: AVPlayer, gravity: AVLayerVideoGravity) {
     super.init(frame: .zero)
     playerLayer.player = player
-    playerLayer.videoGravity = .resizeAspectFill
+    playerLayer.videoGravity = gravity
     wantsLayer = true
     layer = CALayer()
     layer?.addSublayer(playerLayer)
@@ -162,11 +179,12 @@ final class TrailerLayerHostView: NSView {
 #else
 extension TrailerVideoLayer: UIViewRepresentable {
   func makeUIView(context: Context) -> TrailerLayerHostView {
-    TrailerLayerHostView(player: player)
+    TrailerLayerHostView(player: player, gravity: gravity)
   }
 
   func updateUIView(_ view: TrailerLayerHostView, context: Context) {
     view.playerLayer.player = player
+    view.playerLayer.videoGravity = gravity
   }
 }
 
@@ -176,10 +194,10 @@ final class TrailerLayerHostView: UIView {
 
   var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
 
-  init(player: AVPlayer) {
+  init(player: AVPlayer, gravity: AVLayerVideoGravity) {
     super.init(frame: .zero)
     playerLayer.player = player
-    playerLayer.videoGravity = .resizeAspectFill
+    playerLayer.videoGravity = gravity
     isUserInteractionEnabled = false
   }
 
@@ -207,6 +225,9 @@ struct MediaItemHeroView: View {
 
   @StateObject private var trailer = TrailerPreviewModel()
   @State private var isOnScreen = true
+  /// tvOS only: the Up gesture lifts the muted inline preview into a real full-screen
+  /// player. Kept here so the same view that owns the preview owns its promotion.
+  @State private var isTrailerFullScreen = false
 
   private var backdropURL: String {
     mediaItem.posters.wideURL ?? mediaItem.posters.big
@@ -246,7 +267,30 @@ struct MediaItemHeroView: View {
     .onDisappear {
       trailer.stop()
     }
+#if os(tvOS)
+    // The same muted preview, promoted to sound and full screen without restarting.
+    // Menu on the remote dismisses it — no chrome of our own over the picture.
+    .fullScreenCover(isPresented: $isTrailerFullScreen, onDismiss: { trailer.setFullScreen(false) }) {
+      fullScreenTrailer
+    }
+#endif
   }
+
+#if os(tvOS)
+  /// The trailer with nothing on it: black surround, aspect-fit so nothing is cropped,
+  /// and the preview's own player so it carries on from where the hero left it.
+  @ViewBuilder
+  private var fullScreenTrailer: some View {
+    ZStack {
+      Color.black.ignoresSafeArea()
+      if let player = trailer.player {
+        TrailerVideoLayer(player: player, gravity: .resizeAspect)
+          .ignoresSafeArea()
+      }
+    }
+    .onAppear { trailer.setFullScreen(true) }
+  }
+#endif
 
   // MARK: - Background
 
@@ -433,19 +477,33 @@ struct MediaItemHeroView: View {
         NavigationLink(value: linkProvider.trailerPlayer(for: mediaItem)) {
           Label("Trailer", systemImage: "film")
         }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
+        .heroButtonStyle()
       }
 
-      Button(action: onWatchedToggle) {
-        Image(systemName: isWatched ? "checkmark.circle.fill" : "checkmark")
+      // A watched flag is a movie's; a series is marked episode by episode on the rail.
+      // Once a movie is watched the control simply goes away rather than inverting into
+      // a filled circle — there is nothing left to do to it from here.
+      if !isSeries && !isWatched {
+        Button(action: onWatchedToggle) {
+          Image(systemName: "checkmark")
+        }
+        .heroButtonStyle()
       }
-      .buttonStyle(.bordered)
-      .buttonBorderShape(.capsule)
 
       bookmarkMenu
     }
     .font(Self.buttonFont)
+#if os(tvOS)
+    // The focus engine only forwards a move it can't act on, so this fires exactly when
+    // a hero button is focused and there is nowhere above to go — the hero is the top of
+    // the page. Left/right between the buttons and Down to the rail still navigate as
+    // usual; only the dead-end Up is repurposed, and only when a trailer is actually up.
+    .onMoveCommand { direction in
+      if direction == .up, trailer.player != nil, trailer.isReady {
+        isTrailerFullScreen = true
+      }
+    }
+#endif
   }
 
   /// kino.pub bookmarks are folders, so this offers the list rather than a single
@@ -458,8 +516,7 @@ struct MediaItemHeroView: View {
       } label: {
         Image(systemName: "bookmark")
       }
-      .buttonStyle(.bordered)
-      .buttonBorderShape(.capsule)
+      .heroButtonStyle()
       .disabled(true)
     } else {
       Menu {
@@ -474,19 +531,25 @@ struct MediaItemHeroView: View {
       } label: {
         Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
       }
-      .buttonStyle(.bordered)
-      .buttonBorderShape(.capsule)
+      .heroButtonStyle()
+      // The folder ids arrive after the first render, and a `Menu` renders its label
+      // once and holds onto it — the ternary above was already right, but the flip from
+      // `bookmark` to `bookmark.fill` never reached the screen because the label was
+      // never asked to redraw. Keying the menu on the state it depends on rebuilds it
+      // the moment the item turns out to be filed somewhere.
+      .id(isBookmarked)
     }
   }
 
   @ViewBuilder
   private var primaryAction: some View {
+    // Black at rest like the rest of the row, but it keeps its title label while the
+    // others are glyph-only, and it holds default focus — so it still reads as the one
+    // thing to press without a coloured fill setting it apart.
     let link = NavigationLink(value: linkProvider.player(for: playTarget)) {
       Label(mediaItem.playbackAction.titleKey.localized, systemImage: "play.fill")
     }
-      .buttonStyle(.borderedProminent)
-      .buttonBorderShape(.capsule)
-      .tint(Color.KinoPub.accent)
+      .heroButtonStyle()
 
     link.focused($focus, equals: .play)
   }
@@ -499,12 +562,14 @@ struct MediaItemHeroView: View {
       if let episode = season.episodes.first(where: { $0.watched == 0 }) {
         episode.seasonNumber = season.number
         episode.mediaId = season.mediaId
+        episode.seriesTitle = mediaItem.localizedTitle
         return episode
       }
     }
     if let season = seasons.first, let episode = season.episodes.first {
       episode.seasonNumber = season.number
       episode.mediaId = season.mediaId
+      episode.seriesTitle = mediaItem.localizedTitle
       return episode
     }
     return mediaItem
@@ -586,5 +651,17 @@ private extension View {
   /// instead of over the whole frame, so the trailer stays readable behind the text.
   func heroTextShadow() -> some View {
     shadow(color: .black.opacity(0.8), radius: 22, y: 6)
+  }
+
+  /// The one look every hero action wears: a solid black capsule at rest, the way the
+  /// user asked — no accent-green primary among them. Black is the *prominent* fill
+  /// rather than a `.bordered` tint so the button is a solid shape and not a faint
+  /// wash, and because it is the system prominent style tvOS still does its own thing
+  /// on focus — lifting the control and turning it bright — so a focused button is
+  /// unmistakable at ten feet even though its resting colour is black.
+  func heroButtonStyle() -> some View {
+    buttonStyle(.borderedProminent)
+      .buttonBorderShape(.capsule)
+      .tint(.black)
   }
 }
