@@ -175,7 +175,9 @@ final class TrailerLayerHostView: UIView {
 struct MediaItemHeroView: View {
 
   var mediaItem: MediaItem
-  var isSkeleton: Bool
+  /// The page's focus target — the primary action claims it, so a page whose content
+  /// lands late still opens at the top rather than wherever the focus engine drifted.
+  @FocusState.Binding var focus: MediaItemFocusTarget?
   var linkProvider: NavigationLinkProvider
   var isWatched: Bool
   var isBookmarked: Bool
@@ -210,7 +212,7 @@ struct MediaItemHeroView: View {
     // so at `onAppear` there is no trailer to start yet and a plain `.task` never
     // looked again.
     .task(id: mediaItem.trailerURL) {
-      guard !isSkeleton, let url = mediaItem.trailerURL else { return }
+      guard let url = mediaItem.trailerURL else { return }
       // The artwork holds the frame for a beat before the trailer takes over, the way
       // the Apple TV app does it — and a quick scroll past doesn't spin up a video.
       try? await Task.sleep(for: .seconds(Self.trailerLeadIn))
@@ -229,12 +231,16 @@ struct MediaItemHeroView: View {
     ZStack {
       // Sharp at the top, dissolving toward the text at the bottom.
       ProgressiveBlur(startPoint: 0.35, maxRadius: 44, layers: 5) {
-        AsyncImage(url: URL(string: backdropURL)) { image in
-          image
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-        } placeholder: {
-          Color.KinoPub.skeleton
+        AsyncImage(url: URL(string: backdropURL),
+                   transaction: Transaction(animation: .easeIn(duration: 0.3))) { phase in
+          if let image = phase.image {
+            image
+              .resizable()
+              .aspectRatio(contentMode: .fill)
+              .transition(.opacity)
+          } else {
+            Color.KinoPub.placeholder
+          }
         }
       }
 
@@ -284,7 +290,6 @@ struct MediaItemHeroView: View {
         .font(Self.titleFont)
         .foregroundStyle(Color.KinoPub.text)
         .lineLimit(2)
-        .skeleton(enabled: isSkeleton, size: CGSize(width: 420, height: 44))
 
       if mediaItem.originalTitle != mediaItem.localizedTitle {
         Text(mediaItem.originalTitle)
@@ -297,7 +302,6 @@ struct MediaItemHeroView: View {
 
       MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot)
         .frame(maxWidth: Self.textMaxWidth, alignment: .leading)
-        .multilineSkeleton(enabled: isSkeleton)
 
       actions
         .padding(.top, 4)
@@ -311,29 +315,11 @@ struct MediaItemHeroView: View {
     HStack(spacing: 12) {
       MediaScoresView(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating)
 
-      Text(metadataLine)
+      Text(mediaItem.metadataLine)
         .font(Self.metaFont)
         .foregroundStyle(Color.KinoPub.subtitle)
         .lineLimit(1)
     }
-    .skeleton(enabled: isSkeleton, size: CGSize(width: 320, height: 24))
-  }
-
-  private var metadataLine: String {
-    var parts: [String] = []
-    if mediaItem.year > 0 { parts.append("\(mediaItem.year)") }
-    if isSeries, let seasons = mediaItem.seasons {
-      // `duration.total` sums every episode, which reads as a nonsense runtime for a
-      // series — season count is what the Apple TV app shows.
-      parts.append("\(seasons.count) \(seasons.count == 1 ? "season" : "seasons")")
-    } else {
-      let duration = mediaItem.duration.hoursMinutesFormatted
-      if !duration.isEmpty { parts.append(duration) }
-    }
-    let genres = mediaItem.genres.compactMap(\.title).prefix(2)
-    if !genres.isEmpty { parts.append(genres.joined(separator: ", ")) }
-    if let country = mediaItem.countries.first?.title { parts.append(country) }
-    return parts.joined(separator: " · ")
   }
 
   private var actions: some View {
@@ -357,7 +343,6 @@ struct MediaItemHeroView: View {
       bookmarkMenu
     }
     .font(Self.buttonFont)
-    .disabled(isSkeleton)
   }
 
   /// kino.pub bookmarks are folders, so this offers the list rather than a single
@@ -393,12 +378,14 @@ struct MediaItemHeroView: View {
 
   @ViewBuilder
   private var primaryAction: some View {
-    NavigationLink(value: linkProvider.player(for: playTarget)) {
+    let link = NavigationLink(value: linkProvider.player(for: playTarget)) {
       Label(mediaItem.playbackAction.titleKey.localized, systemImage: "play.fill")
     }
-    .buttonStyle(.borderedProminent)
-    .buttonBorderShape(.capsule)
-    .tint(Color.KinoPub.accent)
+      .buttonStyle(.borderedProminent)
+      .buttonBorderShape(.capsule)
+      .tint(Color.KinoPub.accent)
+
+    link.focused($focus, equals: .play)
   }
 
   /// For a series, play the first episode that still has something left; the rail

@@ -40,10 +40,9 @@ public struct UserData: Codable {
   public let settings: Settings
   public let subscription: Subscription
   public let profile: Profile
-  public let skeleton: Bool?
   
   private enum CodingKeys: String, CodingKey {
-    case username, subscription, profile, settings, skeleton
+    case username, subscription, profile, settings
     case registrationDate = "reg_date"
   }
 }
@@ -60,7 +59,6 @@ public extension UserData {
              registrationDate: 0,
              settings: Settings(showErotic: true, showUncertain: true),
              subscription: Subscription(active: true, endTime: 3333333, days: 20.5),
-             profile: Profile(name: "Test User Full", avatar: ""),
-             skeleton: true)
+             profile: Profile(name: "Test User Full", avatar: ""))
   }
 }

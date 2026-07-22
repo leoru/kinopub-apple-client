@@ -12,16 +12,13 @@ let package = Package(
       targets: ["KinoPubUI"])
   ],
   dependencies: [
-    .package(name: "KinoPubBackend", path: "../KinoPubBackend"),
-    // Pinned to a release: `master` moved to a new API and silently broke this package.
-    .package(url: "https://github.com/CSolanaM/SkeletonUI.git", from: "2.0.2")
+    .package(name: "KinoPubBackend", path: "../KinoPubBackend")
   ],
   targets: [
     .target(
       name: "KinoPubUI",
       dependencies: [
-        .product(name: "KinoPubBackend", package: "KinoPubBackend"),
-        .product(name: "SkeletonUI", package: "SkeletonUI")
+        .product(name: "KinoPubBackend", package: "KinoPubBackend")
       ],
       // Declared explicitly: relying on SwiftPM to infer the asset catalogue meant
       // `Bundle.module` was not generated on every toolchain, and every

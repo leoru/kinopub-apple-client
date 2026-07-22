@@ -39,7 +39,7 @@ public struct SeasonItemView: View {
         .renderingMode(.original)
         .posterStyle(size: .regular, orientation: .horizontal)
     } placeholder: {
-      Color.KinoPub.skeleton
+      Color.KinoPub.placeholder
         .frame(width: PosterStyle.Size.regular.height,
                height: PosterStyle.Size.regular.width)
     }

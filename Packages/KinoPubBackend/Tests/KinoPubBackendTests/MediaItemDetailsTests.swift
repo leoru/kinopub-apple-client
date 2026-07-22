@@ -29,8 +29,7 @@ final class MediaItemDetailsTests: XCTestCase {
                      finished: mock.finished, advert: mock.advert, poorQuality: mock.poorQuality,
                      createdAt: mock.createdAt, updatedAt: mock.updatedAt,
                      inWatchlist: mock.inWatchlist, subscribed: mock.subscribed, ac3: mock.ac3,
-                     bookmarks: mock.bookmarks, seasons: seasons, videos: nil,
-                     skeleton: mock.skeleton)
+                     bookmarks: mock.bookmarks, seasons: seasons, videos: nil)
   }
 
   // MARK: - kino.pub community votes

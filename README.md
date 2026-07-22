@@ -60,6 +60,18 @@ open KinoPubAppleClient.xcodeproj
 - **Dual subtitles**: any two of the item's tracks at once, stacked at the bottom of the frame, picked
   from a captions button in the player and remembered for the next episode
 - On-pause word panel translating EN→RU on device (iOS 18 / macOS 15; not available on tvOS)
+- **Home and Saved lead with a focus preview on tvOS.** The top ~560 points of the page belong to
+  whatever the remote is on: its wide artwork fills the screen (cross-fading as focus moves, blurring
+  into the background toward the rows), with the title, original title, rating, metadata and plot over
+  it. The preview is a link — clicking it opens the item — and the trailer will play in the same frame.
+  Cards under it carry no captions at all; grids, which have no preview, show the title of the focused
+  card only. The remote lands on the first card of the first row — Continue Watching when there is one.
+- **Backgrounds and type are the system's** (`Color.KinoPub.background` / `.text` / `.subtitle`): black
+  and true white on a TV in dark appearance, instead of the old hand-picked #1C202B grey and #B0B1B5
+  "white".
+- **Loading is Apple-TV-shaped, not skeleton-shaped**: a screen stays empty and shows a plain spinner
+  once the wait is noticeable (300 ms on listings, 700 ms on an item page), then fades the content in.
+  Artwork fades up out of a dark tile. `LoadingIndicatorView` in `KinoPubUI` is the one spinner.
 
 ## Known issues / half-finished
 
@@ -87,6 +99,10 @@ These are real, verified, and up for grabs:
   the landscape frame, with no episode label.
 - **Bookmarking needs an existing folder.** There is no create-folder flow yet, so the button is
   disabled on an account with none.
+- **Opening an item by id starts with a bare background.** Rows built from the watching/history
+  endpoints route by id (`MainRoutes.detailsById`), so there is no poster to wash the page with until
+  the details land; routes that carry the whole `MediaItem` seed `MediaItemModel(knownItem:)` and
+  colour the page immediately.
 - **The hero trailer only appears when the API returns `trailer.url`.** Some items carry a `trailer`
   object with no link; the button is hidden and the artwork stays.
 - **Some trailer files carry black borders baked into the picture** («Обсессия» is one), so the hero
@@ -335,7 +351,6 @@ Inside the app target:
 ## Third-party libraries
 
 - [KeychainAccess](https://github.com/kishikawakatsumi/KeychainAccess) — token storage
-- [SkeletonUI](https://github.com/CSolanaM/SkeletonUI) — loading placeholders
 - [PopupView](https://github.com/exyte/PopupView) — error toasts
 - [Reachability](https://github.com/ashleymills/Reachability.swift) — connectivity
 

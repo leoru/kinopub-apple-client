@@ -170,7 +170,7 @@ private struct EpisodeCardView: View {
         AsyncImage(url: URL(string: episode.thumbnail)) { image in
           image.resizable().aspectRatio(contentMode: .fill)
         } placeholder: {
-          Color.KinoPub.skeleton
+          Color.KinoPub.placeholder
         }
         .frame(width: Self.width, height: Self.imageHeight)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import KinoPubUI
+import KinoPubBackend
 
 struct BookmarksView: View {
   @EnvironmentObject var navigationState: NavigationState
@@ -30,7 +31,7 @@ struct BookmarksView: View {
         .navigationDestination(for: BookmarksRoutes.self) { route in
           switch route {
           case .details(let item):
-            detailsView(for: item.id)
+            detailsView(for: item.id, knownItem: item)
           case .detailsById(let id):
             detailsView(for: id)
           case .bookmark(let bookmark):
@@ -57,8 +58,9 @@ struct BookmarksView: View {
     }
   }
   
-  private func detailsView(for id: Int) -> some View {
+  private func detailsView(for id: Int, knownItem: MediaItem? = nil) -> some View {
     MediaItemView(model: MediaItemModel(mediaItemId: id,
+                                        knownItem: knownItem,
                                         itemsService: appContext.contentService,
                                         downloadManager: appContext.downloadManager,
                                         linkProvider: BookmarksRoutesLinkProvider(),
@@ -67,7 +69,16 @@ struct BookmarksView: View {
 
   /// One row per folder, titles leading to the folder's own screen — the same shape as
   /// Home, so Saved does not make you open a folder before seeing anything.
+  @ViewBuilder
   var bookmarksRows: some View {
+    if catalog.rows.isEmpty && !catalog.isLoaded {
+      LoadingIndicatorView()
+    } else {
+      rows
+    }
+  }
+
+  private var rows: some View {
     MediaRowsView(rows: catalog.rows, navigationLinkProvider: { card in
       BookmarksRoutes.detailsById(card.id)
     })

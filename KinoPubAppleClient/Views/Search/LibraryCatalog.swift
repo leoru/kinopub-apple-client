@@ -14,7 +14,10 @@ import OSLog
 @MainActor
 class LibraryCatalog: ObservableObject {
 
-  @Published public var items: [MediaItem] = MediaItem.skeletonMock()
+  @Published public var items: [MediaItem] = []
+  /// Drives the spinner: only true while the first page is on its way, so paging
+  /// further down never blanks the grid.
+  @Published public private(set) var isLoading: Bool = false
   @Published public var query: String = ""
   @Published public var filter: LibraryFilter = LibraryFilter()
 
@@ -49,6 +52,10 @@ class LibraryCatalog: ObservableObject {
       await loadPickerData()
     }
 
+    let isFirstPage = pagination == nil
+    if isFirstPage { isLoading = true }
+    defer { isLoading = false }
+
     do {
       let page = pagination.map { $0.current + 1 }
       let data: PaginatedData<MediaItem>
@@ -57,7 +64,7 @@ class LibraryCatalog: ObservableObject {
       } else {
         data = try await itemsService.fetchItems(filter: filter, page: page)
       }
-      handle(data)
+      handle(data, isFirstPage: isFirstPage)
     } catch {
       Logger.app.error("Library fetch failed: \(error)")
       errorHandler.setError(error)
@@ -72,8 +79,8 @@ class LibraryCatalog: ObservableObject {
     countries = (await countriesTask ?? []).sorted { $0.title < $1.title }
   }
 
-  private func handle(_ data: PaginatedData<MediaItem>) {
-    if items.first(where: { $0.skeleton ?? false }) != nil {
+  private func handle(_ data: PaginatedData<MediaItem>, isFirstPage: Bool) {
+    if isFirstPage {
       items = data.items
     } else {
       items.append(contentsOf: data.items)
@@ -90,7 +97,7 @@ class LibraryCatalog: ObservableObject {
   }
 
   func refresh() async {
-    items = MediaItem.skeletonMock()
+    items = []
     pagination = nil
     errorHandler.reset()
     await load()

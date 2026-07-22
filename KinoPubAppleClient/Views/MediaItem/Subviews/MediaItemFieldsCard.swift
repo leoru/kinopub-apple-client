@@ -8,19 +8,16 @@
 import Foundation
 import SwiftUI
 import KinoPubBackend
-import SkeletonUI
 
 struct MediaItemFieldsCard: View {
 
   var mediaItem: MediaItem
-  var isSkeleton: Bool
 
   var body: some View {
     VStack(alignment: .leading) {
       Label("MediaItem_Description", systemImage: "book.pages")
         .foregroundStyle(Color.KinoPub.text)
         .font(Font.KinoPub.subheader)
-        .skeleton(enabled: isSkeleton, size: CGSize(width: 200, height: 50))
 
       VStack {
         data(key: "MediaItem_Title", value: "\(mediaItem.originalTitle)")
@@ -39,10 +36,8 @@ struct MediaItemFieldsCard: View {
   func data(key: String, value: String) -> some View {
     HStack(content: {
       dataTitle(text: key)
-        .skeleton(enabled: isSkeleton, size: CGSize(width: 100, height: 20))
       Spacer()
       dataValue(text: value)
-        .skeleton(enabled: isSkeleton, size: CGSize(width: 200, height: 20))
     })
     .padding(.top, 8)
   }
@@ -74,7 +69,7 @@ struct MediaItemFieldsCard: View {
 struct MediaItemFieldsCard_Previews: PreviewProvider {
   struct Preview: View {
     var body: some View {
-      MediaItemFieldsCard(mediaItem: MediaItem.mock(), isSkeleton: true)
+      MediaItemFieldsCard(mediaItem: MediaItem.mock())
     }
   }
 

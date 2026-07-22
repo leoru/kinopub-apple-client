@@ -19,6 +19,17 @@ Read this before changing code. The product direction, current state and roadmap
 - **Everything must be focus-navigable on tvOS.** Any `Button`, `NavigationLink` or interactive chip you
   add has to be reachable and visibly focusable with the remote. `.buttonStyle(.plain)` usually breaks
   this — check before shipping.
+- **Focus drives the page on TV.** Rows screens describe the focused card in the preview at the top of
+  `MediaRowsView` — artwork, title, plot — and hand the remote the first card rather than the tab bar.
+  Anything new built out of rows should inherit that by using `MediaRowsView`, not a hand-rolled stack.
+  Whatever fills reserved space above a row **must be focusable**: 560 points of inert space swallows
+  every press of Up and strands the user with the tab bar out of reach.
+- **Colours come from the system.** `Color.KinoPub.background`, `.text` and `.subtitle` resolve to the
+  platform's own background and label colours. Don't reintroduce hand-picked greys; accents stay in the
+  asset catalogue.
+- **No skeletons.** A screen that is waiting shows nothing, then `LoadingIndicatorView` once the wait
+  is long enough to notice, then fades the real content in. Don't reintroduce stand-in cards, shimmer
+  or greyed-out text — Apple's own apps don't.
 - **No analytics, no crash reporting.** Firebase was deliberately removed; don't reintroduce it or
   anything like it.
 - **Downloads is non-TV only.** Don't wire download UI into tvOS surfaces.
