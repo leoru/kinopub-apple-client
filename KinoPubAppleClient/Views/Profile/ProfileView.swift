@@ -7,7 +7,6 @@
 import SwiftUI
 import KinoPubBackend
 import KinoPubKit
-import SkeletonUI
 
 struct ProfileView: View {
   
@@ -35,11 +34,8 @@ struct ProfileView: View {
           Form {
             Section {
               LabeledContent("User Name", value: model.userData.username)
-                .skeleton(enabled: model.userData.skeleton ?? false)
               LabeledContent("User Subscription", value: "\(model.userData.subscription.days) \("days".localized)")
-                .skeleton(enabled: model.userData.skeleton ?? false)
               LabeledContent("Registration Date", value: "\(model.userData.registrationDateFormatted)")
-                .skeleton(enabled: model.userData.skeleton ?? false)
               LabeledContent("App version", value: Bundle.main.appVersionLong)
             }
               
@@ -52,7 +48,6 @@ struct ProfileView: View {
               }, label: {
                 Text("Logout").foregroundStyle(Color.red)
               })
-              .skeleton(enabled: model.userData.skeleton ?? false)
 #if os(macOS)
               .buttonStyle(PlainButtonStyle())
 #endif

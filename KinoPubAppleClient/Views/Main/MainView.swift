@@ -28,7 +28,7 @@ struct MainView: View {
         .navigationDestination(for: MainRoutes.self) { route in
           switch route {
           case .details(let item):
-            detailsView(for: item.id)
+            detailsView(for: item.id, knownItem: item)
           case .detailsById(let id):
             detailsView(for: id)
           case .player(let item):
@@ -60,15 +60,27 @@ struct MainView: View {
     }
   }
 
-  private func detailsView(for id: Int) -> some View {
+  private func detailsView(for id: Int, knownItem: MediaItem? = nil) -> some View {
     MediaItemView(model: MediaItemModel(mediaItemId: id,
+                                        knownItem: knownItem,
                                         itemsService: appContext.contentService,
                                         downloadManager: appContext.downloadManager,
                                         linkProvider: MainRoutesLinkProvider(),
                                         errorHandler: errorHandler))
   }
 
+  /// Nothing on screen until the rows arrive, then a spinner if the wait drags on —
+  /// the Apple TV app's own loading behaviour.
+  @ViewBuilder
   var rowsView: some View {
+    if catalog.rows.isEmpty && !catalog.isLoaded {
+      LoadingIndicatorView()
+    } else {
+      rows
+    }
+  }
+
+  private var rows: some View {
     MediaRowsView(rows: catalog.rows, navigationLinkProvider: { card in
       MainRoutes.detailsById(card.id)
     })

@@ -11,44 +11,40 @@ import KinoPubUI
 import KinoPubBackend
 import KinoPubKit
 
+/// What the item page can put focus on by itself.
+enum MediaItemFocusTarget: Hashable {
+  case play
+}
+
 struct MediaItemView: View {
 
   @EnvironmentObject var errorHandler: ErrorHandler
   @StateObject private var itemModel: MediaItemModel
+
+  /// The content arrives after the first render, so the focus engine has nothing to
+  /// focus when the page appears — this names the Play button as where focus belongs
+  /// once there is something to focus.
+  ///
+  /// The ScrollView has to stay the root for it to work: with the page wrapped in a
+  /// `ZStack` instead, tvOS gave up on the late-arriving content entirely — the page
+  /// opened scrolled past the hero with nothing focusable and the remote dead.
+  @FocusState private var focus: MediaItemFocusTarget?
 
   init(model: @autoclosure @escaping () -> MediaItemModel) {
     _itemModel = StateObject(wrappedValue: model())
   }
 
   var body: some View {
-    ScrollView(.vertical) {
-      VStack(alignment: .leading, spacing: MediaItemLayout.sectionSpacing) {
-        MediaItemHeroView(mediaItem: itemModel.mediaItem,
-                          isSkeleton: !itemModel.itemLoaded,
-                          linkProvider: itemModel.linkProvider,
-                          isWatched: itemModel.isWatched,
-                          isBookmarked: itemModel.isBookmarked,
-                          folders: itemModel.folders,
-                          folderIDsContainingItem: itemModel.folderIDsContainingItem,
-                          onWatchedToggle: { itemModel.toggleWatched() },
-                          onFolderToggle: { itemModel.toggleFolder($0) })
-
-        if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
-          SeasonsRailView(seasons: seasons, linkProvider: itemModel.linkProvider)
-        }
-
-        if itemModel.itemLoaded {
-          MediaItemRatingsSection(mediaItem: itemModel.mediaItem)
-          MediaItemCastSection(mediaItem: itemModel.mediaItem, linkProvider: itemModel.linkProvider)
-          MediaItemInfoColumns(mediaItem: itemModel.mediaItem)
+    details
+      .background(ambientBackground)
+      .overlay {
+        // Nothing but the artwork wash while the details are in flight, and a spinner
+        // only once the wait becomes noticeable — how the Apple TV app opens a page.
+        if !itemModel.itemLoaded {
+          LoadingIndicatorView(delay: .milliseconds(700))
         }
       }
-      .padding(.bottom, MediaItemLayout.sectionSpacing)
-    }
-    // Named so the hero can measure itself against the visible frame rather than
-    // against the whole scrollable content.
-    .coordinateSpace(name: MediaItemLayout.scrollSpace)
-    .background(ambientBackground)
+      .animation(.easeInOut(duration: 0.3), value: itemModel.itemLoaded)
     // Horizontal too, or the hero stops short of the screen edges on tvOS, where the
     // safe area is inset for overscan.
     .ignoresSafeArea(edges: [.top, .horizontal])
@@ -65,6 +61,36 @@ struct MediaItemView: View {
       itemModel.fetchData()
     }
     .handleError(state: $errorHandler.state)
+  }
+
+  private var details: some View {
+    ScrollView(.vertical) {
+      VStack(alignment: .leading, spacing: MediaItemLayout.sectionSpacing) {
+        if itemModel.itemLoaded {
+          MediaItemHeroView(mediaItem: itemModel.mediaItem,
+                            focus: $focus,
+                            linkProvider: itemModel.linkProvider,
+                            isWatched: itemModel.isWatched,
+                            isBookmarked: itemModel.isBookmarked,
+                            folders: itemModel.folders,
+                            folderIDsContainingItem: itemModel.folderIDsContainingItem,
+                            onWatchedToggle: { itemModel.toggleWatched() },
+                            onFolderToggle: { itemModel.toggleFolder($0) })
+
+          if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
+            SeasonsRailView(seasons: seasons, linkProvider: itemModel.linkProvider)
+          }
+
+          MediaItemRatingsSection(mediaItem: itemModel.mediaItem)
+          MediaItemCastSection(mediaItem: itemModel.mediaItem, linkProvider: itemModel.linkProvider)
+          MediaItemInfoColumns(mediaItem: itemModel.mediaItem)
+        }
+      }
+      .padding(.bottom, MediaItemLayout.sectionSpacing)
+    }
+#if os(tvOS)
+    .defaultFocus($focus, .play)
+#endif
   }
 
   /// The artwork, blurred far past recognition, tinting the whole page — the colour

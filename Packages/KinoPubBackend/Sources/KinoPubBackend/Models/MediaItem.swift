@@ -46,7 +46,6 @@ public struct MediaItem: Codable, Hashable {
   public let bookmarks: [TypeClass]?
   public var seasons: [Season]?
   public let videos: [Video]?
-  public let skeleton: Bool?
 
   private enum CodingKeys: String, CodingKey {
     case id = "id"
@@ -87,7 +86,6 @@ public struct MediaItem: Codable, Hashable {
     case ac3 = "ac3"
     case seasons = "seasons"
     case videos = "videos"
-    case skeleton = "skeleton"
   }
 }
 
@@ -162,13 +160,7 @@ public extension MediaItem {
 }
 
 public extension MediaItem {
-  static func skeletonMock() -> [MediaItem] {
-    (0..<15).map { id in
-      mock(id: id, skeleton: true)
-    }
-  }
-
-  static func mock(id: Int = 1, skeleton: Bool = false) -> MediaItem {
+  static func mock(id: Int = 1) -> MediaItem {
     MediaItem(id: id, type: "test",
               subtype: "test",
               title: "Стражи Галактики. Часть 3 / Guardians of the Galaxy Vol. 3",
@@ -215,14 +207,32 @@ public extension MediaItem {
               ac3: nil,
               bookmarks: nil,
               seasons: nil,
-              videos: nil,
-              skeleton: skeleton)
+              videos: nil)
   }
 }
 
 extension MediaItem: Identifiable { }
 
 public extension MediaItem {
+  /// "2025 · 1 h 55 min · Боевик, Драма · Япония" — the line under the title on the
+  /// item page and in the home screen's focus preview.
+  var metadataLine: String {
+    var parts: [String] = []
+    if year > 0 { parts.append("\(year)") }
+    if isSeries, let seasons {
+      // `duration.total` sums every episode, which reads as a nonsense runtime for a
+      // series — season count is what the Apple TV app shows.
+      parts.append("\(seasons.count) \(seasons.count == 1 ? "season" : "seasons")")
+    } else {
+      let duration = duration.hoursMinutesFormatted
+      if !duration.isEmpty { parts.append(duration) }
+    }
+    let genres = genres.compactMap(\.title).prefix(2)
+    if !genres.isEmpty { parts.append(genres.joined(separator: ", ")) }
+    if let country = countries.first?.title { parts.append(country) }
+    return parts.joined(separator: " · ")
+  }
+
   var originalTitle: String {
     title.split(separator: "/").last?.trimmingCharacters(in: .whitespaces) ?? title
   }

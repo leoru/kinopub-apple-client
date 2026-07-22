@@ -14,7 +14,6 @@ public struct Bookmark: Codable {
   public let count: String
   public let created: Int
   public let updated: Int
-  public var skeleton: Bool?
 
   private enum CodingKeys: String, CodingKey {
     case id
@@ -23,7 +22,6 @@ public struct Bookmark: Codable {
     case count
     case created
     case updated
-    case skeleton
   }
 
   public init(id: Int,
@@ -31,15 +29,13 @@ public struct Bookmark: Codable {
               views: Int,
               count: String,
               created: Int,
-              updated: Int,
-              skeleton: Bool? = nil) {
+              updated: Int) {
     self.id = id
     self.title = title
     self.views = views
     self.count = count
     self.created = created
     self.updated = updated
-    self.skeleton = skeleton
   }
 
   public init(from decoder: Decoder) throws {
@@ -50,7 +46,6 @@ public struct Bookmark: Codable {
     views = try container.decode(Int.self, forKey: .views)
     created = try container.decode(Int.self, forKey: .created)
     updated = try container.decode(Int.self, forKey: .updated)
-    skeleton = try container.decodeIfPresent(Bool.self, forKey: .skeleton)
 
     if let numericCount = try? container.decode(Int.self, forKey: .count) {
       count = String(numericCount)
@@ -79,14 +74,8 @@ public extension Array where Element == Bookmark {
 }
 
 public extension Bookmark {
-  static func skeletonMock() -> [Bookmark] {
-    (0..<4).map { id in
-      mock(id: id, skeleton: true)
-    }
-  }
-
-  static func mock(id: Int = 1, skeleton: Bool = false) -> Bookmark {
-    Bookmark(id: id, title: "", views: 0, count: "", created: 0, updated: 0, skeleton: skeleton)
+  static func mock(id: Int = 1) -> Bookmark {
+    Bookmark(id: id, title: "", views: 0, count: "", created: 0, updated: 0)
   }
 }
 

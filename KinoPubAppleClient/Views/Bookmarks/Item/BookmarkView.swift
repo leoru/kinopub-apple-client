@@ -33,7 +33,16 @@ struct BookmarkView: View {
     .handleError(state: $errorHandler.state)
   }
 
+  @ViewBuilder
   var listView: some View {
+    if model.items.isEmpty && model.isLoading {
+      LoadingIndicatorView()
+    } else {
+      grid
+    }
+  }
+
+  private var grid: some View {
     GeometryReader { geometryProxy in
       ContentItemsListView(width: geometryProxy.size.width, items: $model.items, onLoadMoreContent: { item in
         

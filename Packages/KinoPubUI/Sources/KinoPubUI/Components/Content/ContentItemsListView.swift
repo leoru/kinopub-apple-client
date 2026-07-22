@@ -53,6 +53,13 @@ public struct ContentItemsListView: View {
 #endif
   }
 
+  /// A grid has no preview above it, so the focused card is what names the item.
+#if os(tvOS)
+  static let cardCaption: MediaCardCaption = .onFocus
+#else
+  static let cardCaption: MediaCardCaption = .always
+#endif
+
   var gridLayout: [GridItem] {
     [GridItem(.adaptive(minimum: cellSize), spacing: 25, alignment: .top)]
   }
@@ -73,21 +80,14 @@ public struct ContentItemsListView: View {
     ScrollView {
       LazyVGrid(columns: gridLayout, content: {
         ForEach(items, id: \.id) { item in
-          let card = MediaCard(item)
-          // Skeleton rows carry placeholder ids, so they must not be tappable.
-          if card.isPlaceholder {
-            MediaCardView(card: card)
+          NavigationLink(value: navigationLinkProvider(item)) {
+            MediaCardView(card: MediaCard(item), caption: Self.cardCaption)
               .padding(.vertical, 20)
-          } else {
-            NavigationLink(value: navigationLinkProvider(item)) {
-              MediaCardView(card: card)
-                .padding(.vertical, 20)
-                .onAppear {
-                  onLoadMoreContent(item)
-                }
-            }
-            .buttonStyle(MediaCardButtonStyle())
+              .onAppear {
+                onLoadMoreContent(item)
+              }
           }
+          .buttonStyle(MediaCardButtonStyle())
         }
       })
       .padding(.horizontal, 16)
@@ -100,7 +100,7 @@ public struct ContentItemsListView: View {
 struct ContentItemsListView_Previews: PreviewProvider {
 
   struct Preview: View {
-    @State var items: [MediaItem] = MediaItem.skeletonMock()
+    @State var items: [MediaItem] = [MediaItem.mock()]
 
     var body: some View {
       GeometryReader { geometryProxy in

@@ -24,12 +24,15 @@ class BookmarksCatalog: ObservableObject {
   private var errorHandler: ErrorHandler
   private var bag = Set<AnyCancellable>()
 
-  @Published public private(set) var rows: [MediaRow] = BookmarksCatalog.placeholderRows()
+  /// Empty until the watchlist or the first folder lands; the screen shows a spinner
+  /// until then rather than stand-in artwork.
+  @Published public private(set) var rows: [MediaRow] = []
+  @Published public private(set) var isLoaded: Bool = false
 
   /// The two halves of the screen are filled by separate requests that land at their own
   /// pace; keeping them apart means neither has to know the other's row indices.
   private var watchlistRow: MediaRow?
-  private var folderRows: [MediaRow] = BookmarksCatalog.placeholderRows()
+  private var folderRows: [MediaRow] = []
 
   init(itemsService: VideoContentService, authState: AuthState, errorHandler: ErrorHandler) {
     self.contentService = itemsService
@@ -46,20 +49,17 @@ class BookmarksCatalog: ObservableObject {
     async let watchlistTask = fetchWatchlistRow()
     async let foldersTask = fetchFolders()
 
-    // The row that matters most goes up as soon as it lands; the folders below stay
-    // skeletons until their own request answers.
+    // The row that matters most goes up as soon as it lands.
     watchlistRow = await watchlistTask
     publish()
 
     let folders = await foldersTask
-    folderRows = folders.map(Self.placeholderRow(for:))
-    publish()
-
     await fillRows(for: folders)
     // A folder the service still counts but returns nothing for would draw as a bare
     // title over empty space.
     folderRows = folderRows.filter { !$0.cards.isEmpty }
     publish()
+    isLoaded = true
   }
 
   private func fetchFolders() async -> [Bookmark] {
@@ -96,9 +96,12 @@ class BookmarksCatalog: ObservableObject {
     }
   }
 
-  /// Rows show their real titles as soon as the folder list lands, then each swaps its
-  /// placeholder cards for artwork as its own request comes back.
+  /// Each folder appears as soon as its own request comes back, in folder order. A
+  /// folder the service still counts but returns nothing for never draws — a bare
+  /// title over empty space is worse than no row at all.
   private func fillRows(for folders: [Bookmark]) async {
+    var built = [MediaRow?](repeating: nil, count: folders.count)
+
     await withTaskGroup(of: (Int, [MediaItem]).self) { group in
       for (index, folder) in folders.enumerated() {
         group.addTask { [contentService] in
@@ -113,8 +116,9 @@ class BookmarksCatalog: ObservableObject {
       }
 
       for await (index, items) in group {
-        guard folderRows.indices.contains(index) else { continue }
-        folderRows[index] = Self.row(for: folders[index], items: items)
+        guard !items.isEmpty else { continue }
+        built[index] = Self.row(for: folders[index], items: items)
+        folderRows = built.compactMap { $0 }
         publish()
       }
     }
@@ -127,8 +131,9 @@ class BookmarksCatalog: ObservableObject {
   @Sendable @MainActor
   func refresh() async {
     watchlistRow = nil
-    folderRows = Self.placeholderRows()
-    rows = Self.placeholderRows()
+    folderRows = []
+    rows = []
+    isLoaded = false
     Logger.app.debug("refetch bookmarks")
     await fetchItems()
   }
@@ -145,7 +150,8 @@ class BookmarksCatalog: ObservableObject {
               title: item.localizedTitle,
               subtitle: item.originalTitle,
               progress: item.progress,
-              badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil)
+              badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil,
+              backdropURL: item.posters.wideURL ?? item.posters.big)
   }
 
   private static func row(for bookmark: Bookmark, items: [MediaItem]) -> MediaRow {
@@ -154,29 +160,6 @@ class BookmarksCatalog: ObservableObject {
              count: bookmark.count,
              cards: items.map(MediaCard.init),
              destination: BookmarksRoutes.bookmark(bookmark))
-  }
-
-  private static func placeholderRow(for bookmark: Bookmark) -> MediaRow {
-    MediaRow(id: rowID(for: bookmark),
-             title: bookmark.title,
-             count: bookmark.count,
-             cards: placeholderCards(),
-             destination: BookmarksRoutes.bookmark(bookmark))
-  }
-
-  private static func placeholderRows() -> [MediaRow] {
-    (0..<3).map { index in
-      MediaRow(id: "placeholder-\(index)",
-               title: " ",
-               cards: placeholderCards(),
-               isPlaceholder: true)
-    }
-  }
-
-  private static func placeholderCards() -> [MediaCard] {
-    (0..<6).map { index in
-      MediaCard(id: index, posterURL: "", title: " ", subtitle: " ", isPlaceholder: true)
-    }
   }
 
   private func subscribeForAuth() {

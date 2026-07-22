@@ -24,7 +24,15 @@ public struct MediaCard: Identifiable, Hashable {
   /// 0…1 for partially watched serials, nil when there is nothing to show.
   public let progress: Double?
   public let badge: String?
-  public let isPlaceholder: Bool
+
+  /// Wide artwork for the page behind the card, shown while it holds focus. Nil
+  /// falls back to whatever the card itself draws.
+  public let backdropURL: String?
+
+  /// "2025 · 1 h 55 min · Боевик" — shown in the focus preview, not on the card.
+  public let metaLine: String?
+  /// The plot, for the focus preview.
+  public let overview: String?
 
   /// When set the card renders wide instead of as a poster — used by Continue
   /// Watching, where the artwork is an episode still.
@@ -34,6 +42,12 @@ public struct MediaCard: Identifiable, Hashable {
 
   public var isLandscape: Bool { landscapeImageURL != nil }
 
+  /// What the focus backdrop draws: the wide artwork where the payload carried one,
+  /// the card's own image otherwise.
+  public var backdropImageURL: String {
+    backdropURL ?? landscapeImageURL ?? posterURL
+  }
+
   public init(id: Int,
               posterURL: String,
               title: String,
@@ -42,7 +56,9 @@ public struct MediaCard: Identifiable, Hashable {
               kinopoiskRating: Double? = nil,
               progress: Double? = nil,
               badge: String? = nil,
-              isPlaceholder: Bool = false,
+              backdropURL: String? = nil,
+              metaLine: String? = nil,
+              overview: String? = nil,
               landscapeImageURL: String? = nil,
               overlayLabel: String? = nil) {
     self.id = id
@@ -53,7 +69,9 @@ public struct MediaCard: Identifiable, Hashable {
     self.kinopoiskRating = kinopoiskRating
     self.progress = progress
     self.badge = badge
-    self.isPlaceholder = isPlaceholder
+    self.backdropURL = backdropURL
+    self.metaLine = metaLine
+    self.overview = overview
     self.landscapeImageURL = landscapeImageURL
     self.overlayLabel = overlayLabel
   }
@@ -68,17 +86,33 @@ public extension MediaCard {
               subtitle: item.originalTitle,
               imdbRating: item.imdbRating,
               kinopoiskRating: item.kinopoiskRating,
-              isPlaceholder: item.skeleton ?? false)
+              backdropURL: item.posters.wideURL ?? item.posters.big,
+              metaLine: item.metadataLine,
+              overview: item.plot)
   }
+}
+
+/// Where a card's name is drawn, if anywhere.
+public enum MediaCardCaption {
+  /// Never — the screen names the focused item somewhere else, as the home rows do
+  /// in their preview.
+  case none
+  /// Only while the card holds focus, over space kept free for it so the grid does
+  /// not shift as focus moves. What a grid with no preview of its own uses.
+  case onFocus
+  /// Always, for platforms with no focus at all.
+  case always
 }
 
 /// A poster card sized for the platform, with a tvOS focus lift.
 public struct MediaCardView: View {
 
   private let card: MediaCard
+  private let caption: MediaCardCaption
 
-  public init(card: MediaCard) {
+  public init(card: MediaCard, caption: MediaCardCaption = .always) {
     self.card = card
+    self.caption = caption
   }
 
   @Environment(\.cardFocused) private var cardFocused
@@ -86,9 +120,24 @@ public struct MediaCardView: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       poster
-      titles
+
+      if caption != .none {
+        title
+      }
     }
     .frame(width: width)
+  }
+
+  /// Hidden rather than absent while unfocused, so neighbouring cards keep their
+  /// baselines and the row does not jump as focus travels along it.
+  private var title: some View {
+    Text(card.title)
+      .lineLimit(1)
+      .font(Self.titleFont)
+      .foregroundStyle(Color.KinoPub.text)
+      .opacity(caption == .always || cardFocused ? 1 : 0)
+      .animation(.easeOut(duration: 0.12), value: cardFocused)
+      .frame(width: width, alignment: .leading)
   }
 
   private var width: CGFloat {
@@ -115,7 +164,7 @@ public struct MediaCardView: View {
     }
     .overlay(alignment: .topLeading) {
       // Continue-watching cards lead with playback state; a score there is clutter.
-      if !card.isPlaceholder, !card.isLandscape, let rating = card.rating {
+      if !card.isLandscape, let rating = card.rating {
         RatingBadgeView(rating: rating)
           .padding(6)
       }
@@ -131,20 +180,24 @@ public struct MediaCardView: View {
           .padding(6)
       }
     }
-    .skeleton(enabled: card.isPlaceholder,
-              size: CGSize(width: width, height: imageHeight))
   }
 
   @ViewBuilder
   private var artwork: some View {
-    let image = AsyncImage(url: URL(string: imageURL)) { image in
-      image
-        .resizable()
-        .aspectRatio(contentMode: .fill)
-        .frame(width: width, height: imageHeight)
-    } placeholder: {
-      Color.KinoPub.skeleton
-        .frame(width: width, height: imageHeight)
+    // Artwork fades up out of the placeholder tile rather than popping in — with no
+    // skeletons left, this is what covers the gap while a poster downloads.
+    let image = AsyncImage(url: URL(string: imageURL),
+                           transaction: Transaction(animation: .easeIn(duration: 0.25))) { phase in
+      if let image = phase.image {
+        image
+          .resizable()
+          .aspectRatio(contentMode: .fill)
+          .frame(width: width, height: imageHeight)
+          .transition(.opacity)
+      } else {
+        Color.KinoPub.placeholder
+          .frame(width: width, height: imageHeight)
+      }
     }
 
     Group {
@@ -204,55 +257,16 @@ public struct MediaCardView: View {
     .padding(.bottom, 8)
   }
 
-  /// Continue-watching cards show their title only while focused; poster cards keep
-  /// the localized title but reveal the original (English) one on focus, since a
-  /// Russian audience rarely needs it. Off tvOS there is no focus, so the localized
-  /// title always shows and the original stays hidden.
-  private var showsLocalizedTitle: Bool {
-#if os(tvOS)
-    return card.isLandscape ? cardFocused : true
-#else
-    return true
-#endif
-  }
-
-  private var showsOriginalTitle: Bool {
-#if os(tvOS)
-    return cardFocused
-#else
-    return false
-#endif
-  }
-
-  private var titles: some View {
-    VStack(alignment: .leading, spacing: 2) {
-      if showsLocalizedTitle {
-        Text(card.title)
-          .lineLimit(1)
-          .font(Self.titleFont)
-          .foregroundStyle(Color.KinoPub.text)
-      }
-      if showsOriginalTitle, let subtitle = card.subtitle, !subtitle.isEmpty {
-        Text(subtitle)
-          .lineLimit(1)
-          .font(Self.subtitleFont)
-          .foregroundStyle(Color.KinoPub.subtitle)
-      }
-    }
-    .animation(.easeOut(duration: 0.12), value: cardFocused)
-    .skeleton(enabled: card.isPlaceholder, size: CGSize(width: width, height: 18))
-  }
-
   // MARK: - Metrics
 
 #if os(tvOS)
-  static let cardWidth: CGFloat = 260
-  static let posterHeight: CGFloat = 390
-  static let landscapeWidth: CGFloat = 480
-  static let landscapeHeight: CGFloat = 270
-  static let footerFont: Font = .system(size: 22, weight: .semibold)
-  static let footerGlyphSize: CGFloat = 20
-  static let footerBarWidth: CGFloat = 70
+  static let cardWidth: CGFloat = 200
+  static let posterHeight: CGFloat = 300
+  static let landscapeWidth: CGFloat = 360
+  static let landscapeHeight: CGFloat = 203
+  static let footerFont: Font = .system(size: 18, weight: .semibold)
+  static let footerGlyphSize: CGFloat = 16
+  static let footerBarWidth: CGFloat = 56
   static let titleFont: Font = .system(size: 24, weight: .medium)
   static let subtitleFont: Font = .system(size: 20, weight: .regular)
 #elseif os(macOS)

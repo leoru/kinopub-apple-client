@@ -36,7 +36,6 @@
 		CC71E7062A6DD119004AFB3F /* KinoPubKit in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7052A6DD119004AFB3F /* KinoPubKit */; };
 		CC71E7082A6DD119004AFB3F /* KinoPubLogging in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7072A6DD119004AFB3F /* KinoPubLogging */; };
 		CC71E70A2A6DD119004AFB3F /* KinoPubUI in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7092A6DD119004AFB3F /* KinoPubUI */; };
-		CC71E70D2A6DD56A004AFB3F /* SkeletonUI in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E70C2A6DD56A004AFB3F /* SkeletonUI */; };
 		CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E7252A6DD643004AFB3F /* AppDelegate.swift */; };
 		CC748DEE2A83CCA200D87C0C /* UserServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC748DED2A83CCA200D87C0C /* UserServiceImpl.swift */; };
 		CC7734482A86BBBC00FE56CF /* TabsNavigationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7734472A86BBBC00FE56CF /* TabsNavigationView.swift */; };
@@ -71,7 +70,6 @@
 		CCA100012C6F000100000703 /* LibraryFiltersBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000704 /* LibraryFiltersBar.swift */; };
 		CCA100012C6F000100000901 /* PersonItemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000902 /* PersonItemsView.swift */; };
 		CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */; };
-		CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */; };
 		CCC70B8A2A7FC15F00274E5F /* BookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B892A7FC15F00274E5F /* BookmarkView.swift */; };
 		CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */; };
 		CCC70B922A7FCA0D00274E5F /* ErrorHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B912A7FCA0D00274E5F /* ErrorHandler.swift */; };
@@ -166,7 +164,6 @@
 		CCA100012C6F000100000704 /* LibraryFiltersBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFiltersBar.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000902 /* PersonItemsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonItemsView.swift; sourceTree = "<group>"; };
 		CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidthThresholdReader.swift; sourceTree = "<group>"; };
-		CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemFieldsCard.swift; sourceTree = "<group>"; };
 		CCC70B892A7FC15F00274E5F /* BookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkView.swift; sourceTree = "<group>"; };
 		CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkModel.swift; sourceTree = "<group>"; };
 		CCC70B912A7FCA0D00274E5F /* ErrorHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorHandler.swift; sourceTree = "<group>"; };
@@ -202,7 +199,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CC71E70D2A6DD56A004AFB3F /* SkeletonUI in Frameworks */,
 				CC71E7082A6DD119004AFB3F /* KinoPubLogging in Frameworks */,
 				CC71E7062A6DD119004AFB3F /* KinoPubKit in Frameworks */,
 				CC71E7042A6DD119004AFB3F /* KinoPubBackend in Frameworks */,
@@ -222,7 +218,6 @@
 				CCA100012C6F000100000402 /* SeasonsRailView.swift */,
 				CCA100012C6F000100000602 /* MediaItemDetailSections.swift */,
 				CCA100012C6F000100000302 /* MediaItemHeroView.swift */,
-				CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */,
 			);
 			path = Subviews;
 			sourceTree = "<group>";
@@ -687,7 +682,6 @@
 				CC71E7052A6DD119004AFB3F /* KinoPubKit */,
 				CC71E7072A6DD119004AFB3F /* KinoPubLogging */,
 				CC71E7092A6DD119004AFB3F /* KinoPubUI */,
-				CC71E70C2A6DD56A004AFB3F /* SkeletonUI */,
 				CCF388342A71C83500242581 /* KeychainAccess */,
 				CC7FCE932A730DA400DFC0A9 /* PopupView */,
 				CC8202FF2A8657BA0041079A /* Reachability */,
@@ -721,7 +715,6 @@
 			);
 			mainGroup = CC88E1D82A6586E600E9387F;
 			packageReferences = (
-				CC71E70B2A6DD56A004AFB3F /* XCRemoteSwiftPackageReference "SkeletonUI" */,
 				CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */,
 				CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */,
@@ -790,7 +783,6 @@
 				CC21CEAB2AF6B60500EFCA8E /* SeasonsView.swift in Sources */,
 				CC748DEE2A83CCA200D87C0C /* UserServiceImpl.swift in Sources */,
 				CC78FC4A2A82D5D100C5BDFD /* DownloadedItemView.swift in Sources */,
-				CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */,
 				CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */,
 				CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */,
 				CC87E6392B021E7F0096BDC3 /* PlayerContinueWatchingView.swift in Sources */,
@@ -1080,14 +1072,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		CC71E70B2A6DD56A004AFB3F /* XCRemoteSwiftPackageReference "SkeletonUI" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/CSolanaM/SkeletonUI.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.2;
-			};
-		};
 		CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/exyte/PopupView.git";
@@ -1130,11 +1114,6 @@
 		CC71E7092A6DD119004AFB3F /* KinoPubUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = KinoPubUI;
-		};
-		CC71E70C2A6DD56A004AFB3F /* SkeletonUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CC71E70B2A6DD56A004AFB3F /* XCRemoteSwiftPackageReference "SkeletonUI" */;
-			productName = SkeletonUI;
 		};
 		CC7FCE932A730DA400DFC0A9 /* PopupView */ = {
 			isa = XCSwiftPackageProductDependency;
