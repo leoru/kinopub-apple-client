@@ -88,6 +88,9 @@ struct MediaItemView: View {
       }
       .padding(.bottom, MediaItemLayout.sectionSpacing)
     }
+    // Named so the hero can measure itself against the visible frame rather than
+    // against the whole scrollable content.
+    .coordinateSpace(name: MediaItemLayout.scrollSpace)
 #if os(tvOS)
     .defaultFocus($focus, .play)
 #endif
