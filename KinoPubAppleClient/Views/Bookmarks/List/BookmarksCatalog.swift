@@ -142,14 +142,15 @@ class BookmarksCatalog: ObservableObject {
 
   private static func rowID(for bookmark: Bookmark) -> String { "bookmark-\(bookmark.id)" }
 
-  /// Watchlist cards stay portrait like the folders below them, with how far through the
-  /// serial the user is and a "+2" badge when episodes are waiting.
+  /// Watchlist cards stay portrait like the folders below them, with a "+2" badge when
+  /// episodes are waiting. No progress bar: Saved is a shelf of what was put aside, not
+  /// a report on how far through each one the user got — that belongs on Home's
+  /// continue-watching row.
   private static func card(for item: WatchingItem) -> MediaCard {
     MediaCard(id: item.id,
               posterURL: item.posters.medium,
               title: item.localizedTitle,
               subtitle: item.originalTitle,
-              progress: item.progress,
               badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil,
               backdropURL: item.posters.wideURL ?? item.posters.big)
   }
