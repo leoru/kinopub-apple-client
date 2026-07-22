@@ -36,7 +36,14 @@ final class VideoContentServiceImpl: VideoContentService {
                                                       decodingType: SingleItemData<MediaItem>.self)
     return response
   }
-  
+
+  func fetchSimilar(for id: String) async throws -> ArrayData<MediaItem> {
+    let request = SimilarItemsRequest(id: id)
+    let response = try await apiClient.performRequest(with: request,
+                                                      decodingType: ArrayData<MediaItem>.self)
+    return response
+  }
+
   func fetchBookmarks() async throws -> ArrayData<Bookmark> {
     let request = BookmarksRequest()
     let response = try await apiClient.performRequest(with: request,

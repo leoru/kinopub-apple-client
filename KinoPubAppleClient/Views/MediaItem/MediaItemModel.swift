@@ -23,6 +23,10 @@ class MediaItemModel: ObservableObject {
   @Published public var mediaItem: MediaItem = MediaItem.mock()
   @Published public var itemLoaded: Bool = false
 
+  /// "More like this", loaded alongside the page. Empty until it arrives, and left
+  /// empty when it fails — the section hides itself rather than erroring over the art.
+  @Published public var similarItems: [MediaItem] = []
+
   /// All bookmark folders, and the ids of those already holding this item.
   @Published public var folders: [Bookmark] = []
   @Published public var folderIDsContainingItem: Set<Int> = []
@@ -68,6 +72,9 @@ class MediaItemModel: ObservableObject {
     Task {
       await loadBookmarkState()
     }
+    Task {
+      await loadSimilar()
+    }
   }
 
   // MARK: - Actions
@@ -82,6 +89,16 @@ class MediaItemModel: ObservableObject {
       folderIDsContainingItem = Set(try await itemFolders.map(\.id))
     } catch {
       Logger.app.error("Failed to load bookmark state for \(self.mediaItemId): \(error)")
+    }
+  }
+
+  /// Related items are a tail-end extra, so — like the bookmark state — a failure is
+  /// logged and swallowed rather than thrown at the user over the artwork.
+  private func loadSimilar() async {
+    do {
+      similarItems = try await itemsService.fetchSimilar(for: "\(mediaItemId)").items
+    } catch {
+      Logger.app.error("Failed to load similar items for \(self.mediaItemId): \(error)")
     }
   }
 

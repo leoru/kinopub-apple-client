@@ -12,6 +12,7 @@ protocol VideoContentService {
   func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?) async throws -> PaginatedData<MediaItem>
   func search(query: String?, page: Int?) async throws -> PaginatedData<MediaItem>
   func fetchDetails(for id: String) async throws -> SingleItemData<MediaItem>
+  func fetchSimilar(for id: String) async throws -> ArrayData<MediaItem>
   func fetchBookmarks() async throws -> ArrayData<Bookmark>
   func fetchBookmarkItems(id: String) async throws -> ArrayData<MediaItem>
   func fetchWatchingMovies() async throws -> ArrayData<WatchingItem>
@@ -41,7 +42,11 @@ struct VideoContentServiceMock: VideoContentService {
   func fetchDetails(for id: String) async throws -> SingleItemData<MediaItem> {
     return SingleItemData.mock(data: MediaItem.mock())
   }
-  
+
+  func fetchSimilar(for id: String) async throws -> ArrayData<MediaItem> {
+    return ArrayData.mock(data: [])
+  }
+
   func fetchBookmarks() async throws -> ArrayData<Bookmark> {
     return ArrayData.mock(data: [])
   }

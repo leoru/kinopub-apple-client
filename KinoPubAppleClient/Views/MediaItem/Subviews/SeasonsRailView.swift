@@ -13,6 +13,9 @@ struct SeasonsRailView: View {
 
   let seasons: [Season]
   let linkProvider: NavigationLinkProvider
+  /// Filled into every episode handed to the player, so its transport bar can show the
+  /// series name rather than just the episode's own title.
+  let seriesTitle: String
 
   @State private var selectedSeasonID: Int?
 
@@ -83,6 +86,7 @@ struct SeasonsRailView: View {
   private func filled(_ episode: Episode, in season: Season) -> Episode {
     episode.seasonNumber = season.number
     episode.mediaId = season.mediaId
+    episode.seriesTitle = seriesTitle
     return episode
   }
 

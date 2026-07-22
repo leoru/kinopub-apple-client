@@ -73,9 +73,24 @@ struct MediaItemRatingsSection: View {
   //                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
   //  }
 
+  /// A rating is not an action, but on tvOS a row of inert tiles is a row the remote
+  /// skips over entirely — the focus engine only scrolls to what it can focus. So each
+  /// tile is a control: it lifts under focus like the cast portraits do, selecting it
+  /// does nothing, and the D-pad always moves back out of it. The button carries no
+  /// visible chrome of its own; the tile already looks like the panel it is.
+  private func tile(_ score: Score) -> some View {
+    Button {
+      // Nothing to open — a score is a fact, not a destination. The tile earns its
+      // focus stop by making the row reachable, not by doing something when pressed.
+    } label: {
+      tileContent(score)
+    }
+    .buttonStyle(RatingTileButtonStyle())
+  }
+
   /// The number carries the tile, so it is left to stand on its own: no "/ 10"
   /// spelling out a scale everyone knows, and no star row restating it in pictures.
-  private func tile(_ score: Score) -> some View {
+  private func tileContent(_ score: Score) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(String(format: "%.1f", score.value))
         .font(Self.valueFont)
@@ -127,6 +142,27 @@ struct MediaItemRatingsSection: View {
   static let imdbLogoHeight: CGFloat = 13
   static let kinopoiskLogoHeight: CGFloat = 14
 #endif
+}
+
+/// The lift a score tile takes under focus, matched to the cast portraits: a small
+/// scale and a shadow, no filled highlight — the tile is already a solid panel, so a
+/// backed focus state would double up on it. Same shape as `PortraitButtonStyle`.
+private struct RatingTileButtonStyle: ButtonStyle {
+  func makeBody(configuration: ButtonStyleConfiguration) -> some View {
+    Tile(configuration: configuration)
+  }
+
+  private struct Tile: View {
+    let configuration: ButtonStyleConfiguration
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+      configuration.label
+        .scaleEffect(isFocused ? 1.05 : (configuration.isPressed ? 0.98 : 1.0))
+        .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 14, y: 6)
+        .animation(.easeOut(duration: 0.18), value: isFocused)
+    }
+  }
 }
 
 // MARK: - Cast
@@ -228,6 +264,71 @@ private struct PortraitButtonStyle: ButtonStyle {
       configuration.label
         .scaleEffect(isFocused ? 1.05 : (configuration.isPressed ? 0.98 : 1.0))
         .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 14, y: 6)
+        .animation(.easeOut(duration: 0.18), value: isFocused)
+    }
+  }
+}
+
+// MARK: - Similar
+
+/// "More like this": the related items kino.pub returns for this one, drawn with the
+/// same poster cards as every catalog row so the page ends the way a browse screen
+/// does. Each card leads to that item's own page, which is also what makes the rail
+/// reachable on tvOS — a scroll view moves by focus, so plain artwork past the right
+/// edge would strand the user. The whole section is absent until there is something
+/// to show.
+struct MediaItemSimilarSection: View {
+
+  let items: [MediaItem]
+  let linkProvider: NavigationLinkProvider
+
+  var body: some View {
+    if !items.isEmpty {
+      VStack(alignment: .leading, spacing: 12) {
+        MediaItemSectionHeader("More like this")
+
+        ScrollView(.horizontal, showsIndicators: false) {
+          LazyHStack(alignment: .top, spacing: Self.spacing) {
+            ForEach(items, id: \.id) { item in
+              NavigationLink(value: linkProvider.link(for: item)) {
+                MediaCardView(card: MediaCard(item), caption: .always)
+              }
+              .buttonStyle(SimilarCardButtonStyle())
+            }
+          }
+          .padding(.horizontal, MediaItemLayout.horizontalInset)
+          .padding(.vertical, Self.focusPadding)
+        }
+      }
+    }
+  }
+
+#if os(tvOS)
+  static let spacing: CGFloat = 36
+  static let focusPadding: CGFloat = 32
+#else
+  static let spacing: CGFloat = 16
+  static let focusPadding: CGFloat = 6
+#endif
+}
+
+/// The poster lift the catalog rows use, kept here so the related rail reads the same
+/// as every other row on the page. Mirrors `MediaCardButtonStyle` in KinoPubUI, which
+/// is internal to that package.
+private struct SimilarCardButtonStyle: ButtonStyle {
+  func makeBody(configuration: ButtonStyleConfiguration) -> some View {
+    Card(configuration: configuration)
+  }
+
+  private struct Card: View {
+    let configuration: ButtonStyleConfiguration
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+      configuration.label
+        .environment(\.cardFocused, isFocused)
+        .scaleEffect(isFocused ? 1.08 : (configuration.isPressed ? 0.97 : 1.0))
+        .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 18, y: 10)
         .animation(.easeOut(duration: 0.18), value: isFocused)
     }
   }
@@ -462,6 +563,23 @@ enum MediaItemLayout {
 
 // MARK: - Plot
 
+/// The clamped synopsis' drawn height, and the same text measured with no line limit.
+/// Two keys rather than one so the plot view can compare them without either
+/// measurement having to know the other's value.
+private struct PlotClampedHeightKey: PreferenceKey {
+  static var defaultValue: CGFloat = 0
+  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+    value = max(value, nextValue())
+  }
+}
+
+private struct PlotFullHeightKey: PreferenceKey {
+  static var defaultValue: CGFloat = 0
+  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+    value = max(value, nextValue())
+  }
+}
+
 /// The synopsis, clamped to a few lines and focusable as a single control. Selecting
 /// it opens the full text, rather than expanding in place and pushing the artwork
 /// around.
@@ -470,47 +588,100 @@ struct MediaItemPlotView: View {
   let title: String
   let plot: String
 
-  @State private var isTruncated = false
+  /// The two heights the truncation decision is made from, kept as state so it is
+  /// remade every time the layout changes — the old `ViewThatFits` probe latched
+  /// `isTruncated` to true in an `onAppear` that fired once and never reset, so a
+  /// paragraph that fit still wore a "More" once the real plot replaced the mock, or
+  /// once a wider layout un-clipped it. Measuring both heights on every pass instead
+  /// lets the answer go back to false when the text genuinely fits.
+  @State private var fullHeight: CGFloat = 0
+  @State private var clampedHeight: CGFloat = 0
   @State private var showsFullText = false
 
+  /// The full copy needs more room than the clamped three lines leave it. A point of
+  /// slack absorbs sub-pixel rounding so a paragraph that exactly fills the clamp is
+  /// not called truncated. Both heights start at zero, so until the first measurement
+  /// lands this reads false — the page opens without a "More" that then vanishes,
+  /// rather than the other way round.
+  private var isTruncated: Bool {
+    fullHeight > 0 && clampedHeight > 0 && fullHeight > clampedHeight + 1
+  }
+
   var body: some View {
-    Button {
-      showsFullText = true
-    } label: {
-      HStack(alignment: .lastTextBaseline, spacing: 14) {
-        Text(plot)
-          .font(Self.font)
-          .lineLimit(Self.lineLimit)
-          .multilineTextAlignment(.leading)
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .background {
-            // Sized to the clamped text: if the full copy fits, nothing is hidden.
-            ViewThatFits(in: .vertical) {
-              Text(plot).font(Self.font)
-              Color.clear.onAppear { isTruncated = true }
+    content
+      .frame(maxWidth: Self.maxWidth, alignment: .leading)
+      // Measured whichever branch is showing, so the decision keeps up with the plot
+      // changing and with the frame it is laid out in.
+      .onPreferenceChange(PlotClampedHeightKey.self) { clampedHeight = $0 }
+      .onPreferenceChange(PlotFullHeightKey.self) { fullHeight = $0 }
+  }
+
+  /// A focusable, openable control only when there is more to read. When the whole plot
+  /// fits it is plain text: no "More", and — the part that matters on tvOS — not a
+  /// button, so it does not sit in the page as a focus stop that opens a sheet showing
+  /// exactly what is already on screen.
+  @ViewBuilder
+  private var content: some View {
+    if isTruncated {
+      Button {
+        showsFullText = true
+      } label: {
+        paragraph(showsMore: true)
+      }
+      .buttonStyle(ExpandableButtonStyle())
+      .sheet(isPresented: $showsFullText) {
+        MediaItemDetailSheet(title: Text(title)) {
+          Text(plot)
+            .font(MediaItemSheetLayout.bodyFont)
+            .foregroundStyle(Color.KinoPub.text)
+            .multilineTextAlignment(.leading)
+        }
+      }
+    } else {
+      paragraph(showsMore: false)
+    }
+  }
+
+  private func paragraph(showsMore: Bool) -> some View {
+    HStack(alignment: .lastTextBaseline, spacing: 14) {
+      Text(plot)
+        .font(Self.font)
+        .lineLimit(Self.lineLimit)
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // The clamped text reports its own drawn height, and the same copy is measured
+        // unclamped in the same width beside it. Both are backgrounds of the visible
+        // line, so both are proposed the width it actually got — the width already
+        // narrowed by the "More" label when one is shown.
+        .background {
+          GeometryReader { geometry in
+            Color.clear.preference(key: PlotClampedHeightKey.self, value: geometry.size.height)
+          }
+        }
+        .background {
+          Text(plot)
+            .font(Self.font)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+              GeometryReader { geometry in
+                Color.clear.preference(key: PlotFullHeightKey.self, value: geometry.size.height)
+              }
             }
             .hidden()
-          }
+        }
 
-        // Always laid out, only shown when there is something more to read: bringing
-        // the label in afterwards would narrow the paragraph and change the very
-        // measurement that decided to show it.
+      // Only laid out when shown: with the plot fitting there is nothing more to read,
+      // so the label is gone rather than reserved-and-invisible — its width no longer
+      // narrows a paragraph that has room to spare.
+      if showsMore {
         Text("More")
           .font(Self.moreFont.weight(.semibold))
           .textCase(.uppercase)
           .tracking(Self.moreTracking)
-          .opacity(isTruncated ? Self.moreOpacity : 0)
+          .opacity(Self.moreOpacity)
           .fixedSize()
-      }
-      .frame(maxWidth: Self.maxWidth, alignment: .leading)
-    }
-    .buttonStyle(ExpandableButtonStyle())
-    .sheet(isPresented: $showsFullText) {
-      MediaItemDetailSheet(title: Text(title)) {
-        Text(plot)
-          .font(MediaItemSheetLayout.bodyFont)
-          .foregroundStyle(Color.KinoPub.text)
-          .multilineTextAlignment(.leading)
       }
     }
   }

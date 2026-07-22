@@ -78,12 +78,15 @@ struct MediaItemView: View {
                             onFolderToggle: { itemModel.toggleFolder($0) })
 
           if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
-            SeasonsRailView(seasons: seasons, linkProvider: itemModel.linkProvider)
+            SeasonsRailView(seasons: seasons,
+                            linkProvider: itemModel.linkProvider,
+                            seriesTitle: itemModel.mediaItem.localizedTitle)
           }
 
           MediaItemRatingsSection(mediaItem: itemModel.mediaItem)
           MediaItemCastSection(mediaItem: itemModel.mediaItem, linkProvider: itemModel.linkProvider)
           MediaItemInfoColumns(mediaItem: itemModel.mediaItem)
+          MediaItemSimilarSection(items: itemModel.similarItems, linkProvider: itemModel.linkProvider)
         }
       }
       .padding(.bottom, MediaItemLayout.sectionSpacing)

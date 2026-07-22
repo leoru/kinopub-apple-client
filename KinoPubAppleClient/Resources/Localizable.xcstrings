@@ -1422,6 +1422,23 @@
         }
       }
     },
+    "More like this" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More like this"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Похожее"
+          }
+        }
+      }
+    },
     "Movie" : {
       "extractionState" : "manual",
       "localizations" : {
