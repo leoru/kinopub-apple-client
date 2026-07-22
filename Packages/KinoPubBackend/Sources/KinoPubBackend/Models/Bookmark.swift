@@ -68,6 +68,16 @@ public struct Bookmark: Codable {
   }
 }
 
+public extension Array where Element == Bookmark {
+  /// Folders in the order Saved shows them: whichever gained an item most recently comes
+  /// first, so a list added to last week outranks one last touched two months ago.
+  /// `updated` moves with the folder's contents — items themselves carry no "added"
+  /// date, so it is the only signal the API gives for this.
+  func recentlyUpdatedFirst() -> [Bookmark] {
+    sorted { ($0.updated, $0.created, $0.id) > ($1.updated, $1.created, $1.id) }
+  }
+}
+
 public extension Bookmark {
   static func skeletonMock() -> [Bookmark] {
     (0..<4).map { id in

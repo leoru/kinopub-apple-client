@@ -98,17 +98,23 @@ enum SearchRoutes: Hashable {
 enum BookmarksRoutes: Hashable {
   case bookmark(Bookmark)
   case details(MediaItem)
+  /// The folder rows are built from cards, which carry an id and artwork only, so they
+  /// route by id — `MediaItemView` fetches the full item anyway.
+  case detailsById(Int)
   case seasons([Season])
   case season(Season)
   case player(any PlayableItem)
   case trailerPlayer(any PlayableItem)
-  
+
   func hash(into hasher: inout Hasher) {
     switch self {
     case .bookmark(let bookmark):
       hasher.combine(bookmark)
     case .details(let item):
       hasher.combine(item)
+    case .detailsById(let id):
+      hasher.combine("detailsById")
+      hasher.combine(id)
     case .season(let season):
       hasher.combine(season)
     case .seasons(let seasons):

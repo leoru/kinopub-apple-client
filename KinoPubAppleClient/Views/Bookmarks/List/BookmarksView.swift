@@ -7,7 +7,6 @@
 
 import SwiftUI
 import KinoPubUI
-import SkeletonUI
 
 struct BookmarksView: View {
   @EnvironmentObject var navigationState: NavigationState
@@ -22,56 +21,60 @@ struct BookmarksView: View {
   
   var body: some View {
     NavigationStack(path: $navigationState.bookmarksRoutes) {
-      VStack {
-        bookmarksList
-      }
-      .platformNavigationTitle("Bookmarks")
-      .background(Color.KinoPub.background)
-      .refreshable(action: catalog.refresh)
-      .task {
-        await catalog.fetchItems()
-      }
-      .navigationDestination(for: BookmarksRoutes.self) { route in
-        switch route {
-        case .details(let item):
-          MediaItemView(model: MediaItemModel(mediaItemId: item.id,
-                                              itemsService: appContext.contentService,
-                                              downloadManager: appContext.downloadManager,
-                                              linkProvider: BookmarksRoutesLinkProvider(),
-                                              errorHandler: errorHandler))
-        case .bookmark(let bookmark):
-          BookmarkView(model: BookmarkModel(bookmark: bookmark,
-                                            itemsService: appContext.contentService,
-                                            errorHandler: errorHandler))
-        case .player(let item):
-          PlayerView(manager: PlayerManager(playItem: item,
-                                            watchMode: .media,
-                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                            actionsService: appContext.actionsService))
-        case .trailerPlayer(let item):
-          PlayerView(manager: PlayerManager(playItem: item,
-                                            watchMode: .trailer,
-                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                            actionsService: appContext.actionsService))
-        case .seasons(let seasons):
-          SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: BookmarksRoutesLinkProvider()))
-        case .season(let season):
-          SeasonView(model: SeasonModel(season: season, linkProvider: BookmarksRoutesLinkProvider()))
+      bookmarksRows
+        .platformNavigationTitle("Bookmarks")
+        .background(Color.KinoPub.background)
+        .task {
+          await catalog.fetchItems()
         }
-      }
-      .handleError(state: $errorHandler.state)
+        .navigationDestination(for: BookmarksRoutes.self) { route in
+          switch route {
+          case .details(let item):
+            detailsView(for: item.id)
+          case .detailsById(let id):
+            detailsView(for: id)
+          case .bookmark(let bookmark):
+            BookmarkView(model: BookmarkModel(bookmark: bookmark,
+                                              itemsService: appContext.contentService,
+                                              errorHandler: errorHandler))
+          case .player(let item):
+            PlayerView(manager: PlayerManager(playItem: item,
+                                              watchMode: .media,
+                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
+                                              actionsService: appContext.actionsService))
+          case .trailerPlayer(let item):
+            PlayerView(manager: PlayerManager(playItem: item,
+                                              watchMode: .trailer,
+                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
+                                              actionsService: appContext.actionsService))
+          case .seasons(let seasons):
+            SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: BookmarksRoutesLinkProvider()))
+          case .season(let season):
+            SeasonView(model: SeasonModel(season: season, linkProvider: BookmarksRoutesLinkProvider()))
+          }
+        }
+        .handleError(state: $errorHandler.state)
     }
-    
   }
   
-  var bookmarksList: some View {
-    List(catalog.items) { bookmark in
-      NavigationLink(value: BookmarksRoutes.bookmark(bookmark)) {
-        Text(bookmark.title)
-      }
-    }
+  private func detailsView(for id: Int) -> some View {
+    MediaItemView(model: MediaItemModel(mediaItemId: id,
+                                        itemsService: appContext.contentService,
+                                        downloadManager: appContext.downloadManager,
+                                        linkProvider: BookmarksRoutesLinkProvider(),
+                                        errorHandler: errorHandler))
+  }
+
+  /// One row per folder, titles leading to the folder's own screen — the same shape as
+  /// Home, so Saved does not make you open a folder before seeing anything.
+  var bookmarksRows: some View {
+    MediaRowsView(rows: catalog.rows, navigationLinkProvider: { card in
+      BookmarksRoutes.detailsById(card.id)
+    })
 #if !os(tvOS)
-    .scrollContentBackground(.hidden)
+    .refreshable {
+      await catalog.refresh()
+    }
 #endif
   }
 }

@@ -72,7 +72,9 @@ These are real, verified, and up for grabs:
 - **CC detection is sloppy.** `SubtitleSelector.looksLikeCC` builds a regex by interpolating the marker
   into `#"\b\#(marker)\b"#`, and counts `forced` as a CC marker — forced tracks carry no dialogue and make
   a bad default.
-- **Home rows show only the first page** of each shortcut and refetch every time the tab appears.
+- **Home and Saved rows show only the first page** of each shortcut or folder, and refetch every
+  time the tab appears. `/v1/bookmarks/{id}` is not paginated in `BookmarkItemsRequest`, so a folder
+  row stops at what one request returns — the folder's own screen has the same limit.
 - **Year filtering is by decade**, not an arbitrary from/to — a two-ended numeric picker is painful
   with a remote. The API accepts any range if that changes.
 - **Continue watching shows the last-played episode, not the next one.** Working out "next" needs a
@@ -91,6 +93,9 @@ These are real, verified, and up for grabs:
 
 What "done" looks like, so nobody has to guess:
 
+- **Saved is rows too** — one per bookmark folder, the one added to most recently on top, the count
+  beside the title in secondary type. The title leads to the folder's own full screen; the artwork
+  is on the tab itself, so nothing has to be opened before you can see what's in it.
 - **Home** is rows, not a grid. First row is **Continue watching**, then category/collection rows.
   **No hero banner** — there are no personalized recommendations to justify one; it would just be a
   big advert.
@@ -263,6 +268,10 @@ anything load-bearing gets checked against a live response first. Cases where re
 - `rating` is the **net** vote count and goes negative; `rating_percentage` is the positive share.
   Reading `rating` as a score would have printed "36 / 10".
 - `/v1/watching/*` omits `posters.wide`, but the same id is served under a `/wide/` path.
+- A bookmark folder's `updated` tracks its **contents**, not views — reading the folder repeatedly
+  leaves it alone, and `/v1/bookmarks/{id}` echoes the same value under `folder`. The items it
+  returns carry no per-membership date, so `updated` is the only way to order folders by when
+  something was last added to them (`Bookmark.recentlyUpdatedFirst`).
 
 Where a payload shape matters, a decoding test pins the real JSON (see `HistoryEntryTests`) so an
 upstream change fails loudly instead of silently emptying a row.
