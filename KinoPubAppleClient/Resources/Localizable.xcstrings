@@ -2348,6 +2348,29 @@
         }
       }
     },
+    "Watchlist" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watchlist"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stebimi serialai"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Слежу за новыми сериями"
+          }
+        }
+      }
+    },
     "Years" : {
       "extractionState" : "manual",
       "localizations" : {

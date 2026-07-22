@@ -100,6 +100,10 @@ What "done" looks like, so nobody has to guess:
 - **Saved is rows too** — one per bookmark folder, the one added to most recently on top, the count
   beside the title in secondary type. The title leads to the folder's own full screen; the artwork
   is on the tab itself, so nothing has to be opened before you can see what's in it.
+- **The watchlist leads Saved** — `/v1/watching/serials?subscribed=1`, above every folder, in the
+  order the API returns it: whatever got a new episode most recently is first. Following a show for
+  new episodes is the point of saving anything; a folder of films abandoned half-way is not. Cards
+  carry the "+12" badge and the resume bar, and the row is dropped when the watchlist is empty.
 - **Home** is rows, not a grid. First row is **Continue watching**, then category/collection rows.
   **No hero banner** — there are no personalized recommendations to justify one; it would just be a
   big advert.
@@ -279,6 +283,11 @@ anything load-bearing gets checked against a live response first. Cases where re
 - `rating` is the **net** vote count and goes negative; `rating_percentage` is the positive share.
   Reading `rating` as a score would have printed "36 / 10".
 - `/v1/watching/*` omits `posters.wide`, but the same id is served under a `/wide/` path.
+- `/v1/watching/serials` carries **no date of any kind** — only `total`, `watched` and `new` — but it
+  arrives sorted by the item's `updated_at`, newest first. Checked against `/v1/items/{id}` for all 14
+  entries of a live watchlist: the order matched `updated_at` descending exactly, from 2026-07 down to
+  2018-09. So Saved keeps that order as-is; sorting by `new` (or anything else we can see) buries the
+  show that got an episode yesterday under a finished one with 171 unwatched.
 - A bookmark folder's `updated` tracks its **contents**, not views — reading the folder repeatedly
   leaves it alone, and `/v1/bookmarks/{id}` echoes the same value under `folder`. The items it
   returns carry no per-membership date, so `updated` is the only way to order folders by when
