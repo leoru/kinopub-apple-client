@@ -55,6 +55,11 @@
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
 		CCA100012C6F000100000001 /* SubtitlePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000002 /* SubtitlePreferences.swift */; };
 		CCA100012C6F000100000003 /* SubtitleSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000004 /* SubtitleSelector.swift */; };
+		CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000006 /* SubtitleCueParser.swift */; };
+		CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000008 /* SubtitleOverlayView.swift */; };
+		CCA100012C6F000100000009 /* SubtitleTranslatePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */; };
+		CCA100012C6F00010000000B /* SubtitleTrackMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F00010000000C /* SubtitleTrackMemory.swift */; };
+		CCA100012C6F00010000000D /* SubtitleTrackPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F00010000000E /* SubtitleTrackPickerView.swift */; };
 		CCA100012C6F000100000101 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000102 /* SearchView.swift */; };
 		CCA100012C6F000100000201 /* HomeCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000202 /* HomeCatalog.swift */; };
 		CCA100012C6F000100000203 /* View+PlatformNavigationTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000204 /* View+PlatformNavigationTitle.swift */; };
@@ -64,11 +69,7 @@
 		CCA100012C6F000100000601 /* MediaItemDetailSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000602 /* MediaItemDetailSections.swift */; };
 		CCA100012C6F000100000701 /* LibraryCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000702 /* LibraryCatalog.swift */; };
 		CCA100012C6F000100000703 /* LibraryFiltersBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000704 /* LibraryFiltersBar.swift */; };
-		CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000006 /* SubtitleCueParser.swift */; };
-		CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000008 /* SubtitleOverlayView.swift */; };
-		CCA100012C6F000100000009 /* SubtitleTranslatePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */; };
-		CCA100012C6F00010000000B /* SubtitleTrackMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F00010000000C /* SubtitleTrackMemory.swift */; };
-		CCA100012C6F00010000000D /* SubtitleTrackPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F00010000000E /* SubtitleTrackPickerView.swift */; };
+		CCA100012C6F000100000901 /* PersonItemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000902 /* PersonItemsView.swift */; };
 		CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */; };
 		CCB487A32A77DBF200FA4483 /* MediaItemFieldsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */; };
 		CCC70B8A2A7FC15F00274E5F /* BookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B892A7FC15F00274E5F /* BookmarkView.swift */; };
@@ -149,6 +150,11 @@
 		CC88E1F72A65A42B00E9387F /* KinoPubUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubUI; path = Packages/KinoPubUI; sourceTree = "<group>"; };
 		CCA100012C6F000100000002 /* SubtitlePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitlePreferences.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000004 /* SubtitleSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleSelector.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000006 /* SubtitleCueParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleCueParser.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000008 /* SubtitleOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleOverlayView.swift; sourceTree = "<group>"; };
+		CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslatePanel.swift; sourceTree = "<group>"; };
+		CCA100012C6F00010000000C /* SubtitleTrackMemory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTrackMemory.swift; sourceTree = "<group>"; };
+		CCA100012C6F00010000000E /* SubtitleTrackPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTrackPickerView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000102 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000202 /* HomeCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCatalog.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000204 /* View+PlatformNavigationTitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+PlatformNavigationTitle.swift"; sourceTree = "<group>"; };
@@ -158,11 +164,7 @@
 		CCA100012C6F000100000602 /* MediaItemDetailSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDetailSections.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000702 /* LibraryCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryCatalog.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000704 /* LibraryFiltersBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFiltersBar.swift; sourceTree = "<group>"; };
-		CCA100012C6F000100000006 /* SubtitleCueParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleCueParser.swift; sourceTree = "<group>"; };
-		CCA100012C6F000100000008 /* SubtitleOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleOverlayView.swift; sourceTree = "<group>"; };
-		CCA100012C6F00010000000A /* SubtitleTranslatePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslatePanel.swift; sourceTree = "<group>"; };
-		CCA100012C6F00010000000C /* SubtitleTrackMemory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTrackMemory.swift; sourceTree = "<group>"; };
-		CCA100012C6F00010000000E /* SubtitleTrackPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTrackPickerView.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000902 /* PersonItemsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonItemsView.swift; sourceTree = "<group>"; };
 		CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidthThresholdReader.swift; sourceTree = "<group>"; };
 		CCB487A22A77DBF200FA4483 /* MediaItemFieldsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemFieldsCard.swift; sourceTree = "<group>"; };
 		CCC70B892A7FC15F00274E5F /* BookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkView.swift; sourceTree = "<group>"; };
@@ -301,24 +303,6 @@
 				CC88E1E62A6586E600E9387F /* RootView.swift */,
 			);
 			path = Root;
-			sourceTree = "<group>";
-		};
-		CCA100012C6F000100000503 /* Catalog */ = {
-			isa = PBXGroup;
-			children = (
-				CCA100012C6F000100000502 /* CatalogView.swift */,
-			);
-			path = Catalog;
-			sourceTree = "<group>";
-		};
-		CCA100012C6F000100000103 /* Search */ = {
-			isa = PBXGroup;
-			children = (
-				CCA100012C6F000100000102 /* SearchView.swift */,
-				CCA100012C6F000100000704 /* LibraryFiltersBar.swift */,
-				CCA100012C6F000100000702 /* LibraryCatalog.swift */,
-			);
-			path = Search;
 			sourceTree = "<group>";
 		};
 		CC71E6F32A6C05B4004AFB3F /* Main */ = {
@@ -462,6 +446,25 @@
 				CC88E1F72A65A42B00E9387F /* KinoPubUI */,
 			);
 			name = Packages;
+			sourceTree = "<group>";
+		};
+		CCA100012C6F000100000103 /* Search */ = {
+			isa = PBXGroup;
+			children = (
+				CCA100012C6F000100000102 /* SearchView.swift */,
+				CCA100012C6F000100000704 /* LibraryFiltersBar.swift */,
+				CCA100012C6F000100000702 /* LibraryCatalog.swift */,
+				CCA100012C6F000100000902 /* PersonItemsView.swift */,
+			);
+			path = Search;
+			sourceTree = "<group>";
+		};
+		CCA100012C6F000100000503 /* Catalog */ = {
+			isa = PBXGroup;
+			children = (
+				CCA100012C6F000100000502 /* CatalogView.swift */,
+			);
+			path = Catalog;
 			sourceTree = "<group>";
 		};
 		CCA5023B2AF24FB400B18283 /* macOS */ = {
@@ -685,7 +688,6 @@
 				CC71E7072A6DD119004AFB3F /* KinoPubLogging */,
 				CC71E7092A6DD119004AFB3F /* KinoPubUI */,
 				CC71E70C2A6DD56A004AFB3F /* SkeletonUI */,
-
 				CCF388342A71C83500242581 /* KeychainAccess */,
 				CC7FCE932A730DA400DFC0A9 /* PopupView */,
 				CC8202FF2A8657BA0041079A /* Reachability */,
@@ -814,6 +816,7 @@
 				CCA100012C6F000100000501 /* CatalogView.swift in Sources */,
 				CCA100012C6F000100000601 /* MediaItemDetailSections.swift in Sources */,
 				CCA100012C6F000100000701 /* LibraryCatalog.swift in Sources */,
+				CCA100012C6F000100000901 /* PersonItemsView.swift in Sources */,
 				CCA100012C6F000100000703 /* LibraryFiltersBar.swift in Sources */,
 				CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */,
 				CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */,
@@ -965,17 +968,17 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = KinoPubAppleClient/Resources/KinoPubAppleClient.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = Z9BGBYPL8S;
+				DEVELOPMENT_TEAM = Z2PQ733PSP;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KinoPubAppleClient/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = KinoPub;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -989,13 +992,14 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.kunst.kinopub;
+				PRODUCT_BUNDLE_IDENTIFIER = com.soda.kinopub;
 				PRODUCT_NAME = KinoPub;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx appletvos appletvsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1011,17 +1015,17 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = KinoPubAppleClient/Resources/KinoPubAppleClient.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = Z9BGBYPL8S;
+				DEVELOPMENT_TEAM = Z2PQ733PSP;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KinoPubAppleClient/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = KinoPub;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -1035,13 +1039,14 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.kunst.kinopub;
+				PRODUCT_BUNDLE_IDENTIFIER = com.soda.kinopub;
 				PRODUCT_NAME = KinoPub;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx appletvos appletvsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;

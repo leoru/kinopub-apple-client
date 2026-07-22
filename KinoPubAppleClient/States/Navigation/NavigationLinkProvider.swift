@@ -14,6 +14,8 @@ protocol NavigationLinkProvider {
   func trailerPlayer(for item: any PlayableItem) -> any Hashable
   func seasons(for seasons: [Season]) -> any Hashable
   func season(for season: Season) -> any Hashable
+  /// Where a name in the credits leads: the catalog narrowed to that person.
+  func person(for person: MediaPerson) -> any Hashable
 }
 
 struct MainRoutesLinkProvider: NavigationLinkProvider {
@@ -36,6 +38,10 @@ struct MainRoutesLinkProvider: NavigationLinkProvider {
   func season(for season: Season) -> any Hashable {
     MainRoutes.season(season)
   }
+
+  func person(for person: MediaPerson) -> any Hashable {
+    MainRoutes.person(person)
+  }
 }
 
 struct CatalogRoutesLinkProvider: NavigationLinkProvider {
@@ -44,6 +50,7 @@ struct CatalogRoutesLinkProvider: NavigationLinkProvider {
   func trailerPlayer(for item: any PlayableItem) -> any Hashable { CatalogRoutes.trailerPlayer(item) }
   func seasons(for seasons: [Season]) -> any Hashable { CatalogRoutes.seasons(seasons) }
   func season(for season: Season) -> any Hashable { CatalogRoutes.season(season) }
+  func person(for person: MediaPerson) -> any Hashable { CatalogRoutes.person(person) }
 }
 
 struct SearchRoutesLinkProvider: NavigationLinkProvider {
@@ -65,6 +72,10 @@ struct SearchRoutesLinkProvider: NavigationLinkProvider {
 
   func season(for season: Season) -> any Hashable {
     SearchRoutes.season(season)
+  }
+
+  func person(for person: MediaPerson) -> any Hashable {
+    SearchRoutes.person(person)
   }
 }
 
@@ -88,6 +99,10 @@ struct BookmarksRoutesLinkProvider: NavigationLinkProvider {
   func season(for season: Season) -> any Hashable {
     BookmarksRoutes.season(season)
   }
+
+  func person(for person: MediaPerson) -> any Hashable {
+    BookmarksRoutes.person(person)
+  }
 }
 
 struct DownloadsRoutesLinkProvider: NavigationLinkProvider {
@@ -108,6 +123,10 @@ struct DownloadsRoutesLinkProvider: NavigationLinkProvider {
   }
   
   func season(for season: Season) -> any Hashable {
+    ""
+  }
+
+  func person(for person: MediaPerson) -> any Hashable {
     ""
   }
 }

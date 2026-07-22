@@ -6,101 +6,131 @@
 //
 import SwiftUI
 import KinoPubUI
-import PopupView
 
+/// Full-screen device activation, modelled on the system AirPlay-code screen: system type styles,
+/// a material background, the code split into per-character tiles. There is no way out of it — the
+/// app is unusable until the device is activated — so it carries no dismiss affordance and no
+/// error toasts; a failure just keeps the spinner going while the code is fetched again.
 struct AuthView: View {
-  
+
   @StateObject var model: AuthModel
-  @EnvironmentObject var errorHandler: ErrorHandler
-  @Environment(\.dismiss) var dismiss
-  
+
   init(model: @autoclosure @escaping () -> AuthModel) {
     _model = StateObject(wrappedValue: model())
   }
-  
+
   var body: some View {
     ZStack {
-      Color.KinoPub.background.edgesIgnoringSafeArea(.all)
-      VStack(spacing: 50) {
-        titleView
-        deviceCodeView
-        activateButton
+      // Static backdrop, not the live app behind glass: the catalog underneath used to blink
+      // through the blur every time a poster or the hero swapped.
+      Color.KinoPub.background
+        .ignoresSafeArea()
+      Rectangle()
+        .fill(.ultraThinMaterial)
+        .ignoresSafeArea()
+
+      VStack(spacing: Metrics.blockSpacing) {
+        header
+        codeView
+        footer
       }
-      .padding(EdgeInsets.init(top: 0, leading: 16, bottom: 0, trailing: 16))
+      .padding(.horizontal, Metrics.horizontalPadding)
+      .frame(maxWidth: Metrics.contentWidth)
     }
-    .interactiveDismissDisabled(true)
     .task {
-      model.fetchDeviceCode()
+      await model.run()
     }
-    .onReceive(model.$close, perform: { shouldClose in
-      if shouldClose {
-        dismiss()
-      }
-    })
-    .handleError(state: $errorHandler.state)
   }
-  
-  var titleView: some View {
-    VStack(spacing: 20) {
+
+  private var header: some View {
+    VStack(spacing: Metrics.headerSpacing) {
       Text("Auth_CodeActivationTitle")
-        .font(.system(size: 24, weight: Font.Weight.semibold))
-        .frame(alignment: .leading)
-        .foregroundColor(Color.KinoPub.text)
+        .font(Metrics.titleFont)
+        .foregroundStyle(.primary)
+
       Text("Auth_CodeActivationText")
-        .lineLimit(nil)
-        .font(.system(size: 16, weight: Font.Weight.regular))
-        .foregroundColor(Color.KinoPub.text)
+        .font(Metrics.descriptionFont)
+        .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
-        .padding(.top, 16)
-    }
-    .background(Color.KinoPub.background)
-    .fixedSize(horizontal: false, vertical: true)
-  }
-  
-  var deviceCodeView: some View {
-    VStack(spacing: 5) {
-      Text(model.deviceCode)
-        .font(.system(size: deviceCodeFontSize, weight: Font.Weight.bold))
-        .foregroundColor(Color.KinoPub.text)
-        .frame(minHeight: 44, idealHeight: 44, maxHeight: 80)
-      Text("Auth_DeviceCode")
-        .foregroundColor(Color.KinoPub.text)
-        .font(.system(size: 16, weight: Font.Weight.regular))
+
 #if os(tvOS)
-      Text("Enter this code on the KinoPub device activation page.")
-        .foregroundColor(Color.KinoPub.text.opacity(0.8))
-        .font(.system(size: 18, weight: .regular))
-        .multilineTextAlignment(.center)
-        .padding(.top, 12)
+      if !model.verificationURL.isEmpty {
+        Text(model.verificationURL)
+          .font(Metrics.urlFont)
+          .foregroundStyle(.primary)
+      }
 #endif
     }
     .fixedSize(horizontal: false, vertical: true)
   }
 
-  private var deviceCodeFontSize: CGFloat {
-#if os(tvOS)
-    return 64
-#else
-    return 40
-#endif
+  private var codeView: some View {
+    HStack(spacing: Metrics.tileSpacing) {
+      ForEach(Array(model.deviceCode.enumerated()), id: \.offset) { _, character in
+        Text(String(character))
+          .font(.system(size: Metrics.tileFontSize, weight: .semibold, design: .rounded))
+          .foregroundStyle(.primary)
+          .frame(width: Metrics.tileSize.width, height: Metrics.tileSize.height)
+          // Quaternary fill, not a material: with a static backdrop a material has nothing to blur
+          // and the tiles sink into the background.
+          .background(.quaternary, in: RoundedRectangle(cornerRadius: Metrics.tileCornerRadius,
+                                                        style: .continuous))
+      }
+    }
+    .animation(.default, value: model.deviceCode)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text("Auth_DeviceCode"))
+    .accessibilityValue(Text(model.deviceCode.map(String.init).joined(separator: " ")))
   }
-  
-  var activateButton: some View {
-    Button("Auth_Activate", action: { model.openActivationURL() })
-#if os(macOS)
-      .buttonStyle(PlainButtonStyle())
+
+  /// A spinner while the next code is on its way, the system button everywhere a browser exists.
+  /// Fixed height so the layout does not jump when the two swap.
+  private var footer: some View {
+    ZStack {
+      if model.isRefreshing {
+        ProgressView()
+#if os(tvOS)
+          .scaleEffect(1.5)
 #endif
-      .foregroundColor(Color.KinoPub.text)
-      .padding(.all, 20.0)
-      .overlay(
-        RoundedRectangle(cornerRadius: 10)
-          .stroke(Color.KinoPub.text, lineWidth: 2)
-      )
+      } else {
+#if !os(tvOS)
+        Button("Auth_Activate") {
+          model.openActivationURL()
+        }
+#endif
+      }
+    }
+    .frame(height: Metrics.footerHeight)
+    .animation(.default, value: model.isRefreshing)
   }
 }
 
-// struct AuthView_Previews: PreviewProvider {
-//  static var previews: some View {
-//    AuthView()
-//  }
-// }
+private enum Metrics {
+#if os(tvOS)
+  static let blockSpacing: CGFloat = 44
+  static let headerSpacing: CGFloat = 14
+  static let horizontalPadding: CGFloat = 90
+  static let contentWidth: CGFloat = 820
+  static let titleFont: Font = .title2.weight(.semibold)
+  static let descriptionFont: Font = .caption
+  static let urlFont: Font = .body.weight(.semibold)
+  static let tileSpacing: CGFloat = 16
+  static let tileSize = CGSize(width: 92, height: 120)
+  static let tileCornerRadius: CGFloat = 18
+  static let tileFontSize: CGFloat = 60
+  static let footerHeight: CGFloat = 60
+#else
+  static let blockSpacing: CGFloat = 28
+  static let headerSpacing: CGFloat = 10
+  static let horizontalPadding: CGFloat = 24
+  static let contentWidth: CGFloat = 460
+  static let titleFont: Font = .title2.weight(.semibold)
+  static let descriptionFont: Font = .footnote
+  static let urlFont: Font = .subheadline.weight(.semibold)
+  static let tileSpacing: CGFloat = 8
+  static let tileSize = CGSize(width: 48, height: 64)
+  static let tileCornerRadius: CGFloat = 10
+  static let tileFontSize: CGFloat = 32
+  static let footerHeight: CGFloat = 44
+#endif
+}

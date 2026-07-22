@@ -11,6 +11,7 @@ import KinoPubBackend
 struct MainView: View {
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var errorHandler: ErrorHandler
+  @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
 
   @StateObject private var catalog: HomeCatalog
@@ -44,6 +45,12 @@ struct MainView: View {
             SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: MainRoutesLinkProvider()))
           case .season(let season):
             SeasonView(model: SeasonModel(season: season, linkProvider: MainRoutesLinkProvider()))
+          case .person(let person):
+            PersonItemsView.make(person: person,
+                                 linkProvider: MainRoutesLinkProvider(),
+                                 context: appContext,
+                                 authState: authState,
+                                 errorHandler: errorHandler)
           }
         }
         .handleError(state: $errorHandler.state)

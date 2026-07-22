@@ -83,17 +83,21 @@ public struct LibraryFilter: Equatable, Hashable {
   public var genreID: Int?
   public var countryID: Int?
   public var years: YearRange?
+  /// Set for a person's credits, which are the same listing narrowed to one name.
+  public var person: MediaPerson?
 
   public init(contentType: MediaType? = nil,
               sort: MediaSortOrder = .recentlyAdded,
               genreID: Int? = nil,
               countryID: Int? = nil,
-              years: YearRange? = nil) {
+              years: YearRange? = nil,
+              person: MediaPerson? = nil) {
     self.contentType = contentType
     self.sort = sort
     self.genreID = genreID
     self.countryID = countryID
     self.years = years
+    self.person = person
   }
 
   /// True when anything other than the default sort is in play.

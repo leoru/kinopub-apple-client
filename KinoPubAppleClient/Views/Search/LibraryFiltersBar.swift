@@ -20,7 +20,7 @@ struct LibraryFiltersBar: View {
   var body: some View {
     ScrollView(.horizontal, showsIndicators: false) {
       HStack(spacing: Self.spacing) {
-        sortMenu
+        LibrarySortMenu(catalog: catalog)
         typeMenu
         genreMenu
         countryMenu
@@ -44,35 +44,20 @@ struct LibraryFiltersBar: View {
 
   // MARK: - Menus
 
-  private var sortMenu: some View {
-    menu(label: LocalizedStringKey(catalog.filter.sort.titleKey),
-         icon: "arrow.up.arrow.down",
-         isActive: false) {
-      ForEach(MediaSortOrder.allCases) { order in
-        Button {
-          catalog.update { $0.sort = order }
-        } label: {
-          checkmarkLabel(LocalizedStringKey(order.titleKey),
-                         selected: catalog.filter.sort == order)
-        }
-      }
-    }
-  }
-
   private var typeMenu: some View {
-    menu(label: catalog.filter.contentType.map { LocalizedStringKey($0.title) } ?? "Type",
-         icon: "square.grid.2x2",
-         isActive: catalog.filter.contentType != nil) {
+    Self.menu(label: catalog.filter.contentType.map { LocalizedStringKey($0.title) } ?? "Type",
+              icon: "square.grid.2x2",
+              isActive: catalog.filter.contentType != nil) {
       Button {
         catalog.update { $0.contentType = nil }
       } label: {
-        checkmarkLabel("Any", selected: catalog.filter.contentType == nil)
+        Self.checkmarkLabel("Any", selected: catalog.filter.contentType == nil)
       }
       ForEach(MediaType.allCases) { type in
         Button {
           catalog.update { $0.contentType = type }
         } label: {
-          checkmarkLabel(LocalizedStringKey(type.title), selected: catalog.filter.contentType == type)
+          Self.checkmarkLabel(LocalizedStringKey(type.title), selected: catalog.filter.contentType == type)
         }
       }
     }
@@ -80,19 +65,19 @@ struct LibraryFiltersBar: View {
 
   private var genreMenu: some View {
     let selected = catalog.genres.first { $0.id == catalog.filter.genreID }
-    return menu(label: selected.map { LocalizedStringKey($0.title) } ?? "Genre",
-                icon: "theatermasks",
-                isActive: catalog.filter.genreID != nil) {
+    return Self.menu(label: selected.map { LocalizedStringKey($0.title) } ?? "Genre",
+                     icon: "theatermasks",
+                     isActive: catalog.filter.genreID != nil) {
       Button {
         catalog.update { $0.genreID = nil }
       } label: {
-        checkmarkLabel("Any", selected: catalog.filter.genreID == nil)
+        Self.checkmarkLabel("Any", selected: catalog.filter.genreID == nil)
       }
       ForEach(catalog.genres) { genre in
         Button {
           catalog.update { $0.genreID = genre.id }
         } label: {
-          checkmarkLabel(LocalizedStringKey(genre.title), selected: catalog.filter.genreID == genre.id)
+          Self.checkmarkLabel(LocalizedStringKey(genre.title), selected: catalog.filter.genreID == genre.id)
         }
       }
     }
@@ -100,38 +85,38 @@ struct LibraryFiltersBar: View {
 
   private var countryMenu: some View {
     let selected = catalog.countries.first { $0.id == catalog.filter.countryID }
-    return menu(label: selected.map { LocalizedStringKey($0.title) } ?? "Country",
-                icon: "globe",
-                isActive: catalog.filter.countryID != nil) {
+    return Self.menu(label: selected.map { LocalizedStringKey($0.title) } ?? "Country",
+                     icon: "globe",
+                     isActive: catalog.filter.countryID != nil) {
       Button {
         catalog.update { $0.countryID = nil }
       } label: {
-        checkmarkLabel("Any", selected: catalog.filter.countryID == nil)
+        Self.checkmarkLabel("Any", selected: catalog.filter.countryID == nil)
       }
       ForEach(catalog.countries, id: \.id) { country in
         Button {
           catalog.update { $0.countryID = country.id }
         } label: {
-          checkmarkLabel(LocalizedStringKey(country.title), selected: catalog.filter.countryID == country.id)
+          Self.checkmarkLabel(LocalizedStringKey(country.title), selected: catalog.filter.countryID == country.id)
         }
       }
     }
   }
 
   private var yearMenu: some View {
-    menu(label: catalog.filter.years.map { LocalizedStringKey($0.title) } ?? "Years",
-         icon: "calendar",
-         isActive: catalog.filter.years != nil) {
+    Self.menu(label: catalog.filter.years.map { LocalizedStringKey($0.title) } ?? "Years",
+              icon: "calendar",
+              isActive: catalog.filter.years != nil) {
       Button {
         catalog.update { $0.years = nil }
       } label: {
-        checkmarkLabel("Any", selected: catalog.filter.years == nil)
+        Self.checkmarkLabel("Any", selected: catalog.filter.years == nil)
       }
       ForEach(years) { range in
         Button {
           catalog.update { $0.years = range }
         } label: {
-          checkmarkLabel(LocalizedStringKey(range.title), selected: catalog.filter.years == range)
+          Self.checkmarkLabel(LocalizedStringKey(range.title), selected: catalog.filter.years == range)
         }
       }
     }
@@ -140,10 +125,10 @@ struct LibraryFiltersBar: View {
   // MARK: - Building blocks
 
   @ViewBuilder
-  private func menu<Content: View>(label: LocalizedStringKey,
-                                   icon: String,
-                                   isActive: Bool,
-                                   @ViewBuilder content: () -> Content) -> some View {
+  static func menu<Content: View>(label: LocalizedStringKey,
+                                  icon: String,
+                                  isActive: Bool,
+                                  @ViewBuilder content: () -> Content) -> some View {
     // Branching on the style rather than erasing it: a wrapper that can hold either
     // concrete style has to conform to the protocol itself, which is more machinery
     // than two short branches.
@@ -168,7 +153,7 @@ struct LibraryFiltersBar: View {
   }
 
   /// Menus on tvOS don't mark the selected row themselves.
-  private func checkmarkLabel(_ title: LocalizedStringKey, selected: Bool) -> some View {
+  static func checkmarkLabel(_ title: LocalizedStringKey, selected: Bool) -> some View {
     Label(title, systemImage: selected ? "checkmark" : "")
   }
 
@@ -183,4 +168,26 @@ struct LibraryFiltersBar: View {
   static let verticalPadding: CGFloat = 8
   static let font: Font = .system(size: 14, weight: .semibold)
 #endif
+}
+
+/// The sort dropdown on its own. A person's credits are the same listing narrowed to
+/// one name, so they get sorting without the filter pickers around it.
+struct LibrarySortMenu: View {
+
+  @ObservedObject var catalog: LibraryCatalog
+
+  var body: some View {
+    LibraryFiltersBar.menu(label: LocalizedStringKey(catalog.filter.sort.titleKey),
+                           icon: "arrow.up.arrow.down",
+                           isActive: false) {
+      ForEach(MediaSortOrder.allCases) { order in
+        Button {
+          catalog.update { $0.sort = order }
+        } label: {
+          LibraryFiltersBar.checkmarkLabel(LocalizedStringKey(order.titleKey),
+                                           selected: catalog.filter.sort == order)
+        }
+      }
+    }
+  }
 }

@@ -12,6 +12,7 @@ import KinoPubBackend
 struct SearchView: View {
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var errorHandler: ErrorHandler
+  @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
 
   @StateObject private var catalog: LibraryCatalog
@@ -59,6 +60,12 @@ struct SearchView: View {
           SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: SearchRoutesLinkProvider()))
         case .season(let season):
           SeasonView(model: SeasonModel(season: season, linkProvider: SearchRoutesLinkProvider()))
+        case .person(let person):
+          PersonItemsView.make(person: person,
+                               linkProvider: SearchRoutesLinkProvider(),
+                               context: appContext,
+                               authState: authState,
+                               errorHandler: errorHandler)
         }
       }
       .handleError(state: $errorHandler.state)

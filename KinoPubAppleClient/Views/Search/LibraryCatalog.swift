@@ -30,10 +30,14 @@ class LibraryCatalog: ObservableObject {
 
   var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
-  init(itemsService: VideoContentService, authState: AuthState, errorHandler: ErrorHandler) {
+  init(itemsService: VideoContentService,
+       authState: AuthState,
+       errorHandler: ErrorHandler,
+       filter: LibraryFilter = LibraryFilter()) {
     self.itemsService = itemsService
     self.authState = authState
     self.errorHandler = errorHandler
+    self.filter = filter
     subscribe()
   }
 
@@ -45,7 +49,9 @@ class LibraryCatalog: ObservableObject {
       return
     }
 
-    if genres.isEmpty || countries.isEmpty {
+    // A person's credits show a sort control and nothing else, so their pickers would
+    // be two requests for lists nobody can open.
+    if filter.person == nil, genres.isEmpty || countries.isEmpty {
       await loadPickerData()
     }
 

@@ -51,6 +51,12 @@ struct BookmarksView: View {
             SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: BookmarksRoutesLinkProvider()))
           case .season(let season):
             SeasonView(model: SeasonModel(season: season, linkProvider: BookmarksRoutesLinkProvider()))
+          case .person(let person):
+            PersonItemsView.make(person: person,
+                                 linkProvider: BookmarksRoutesLinkProvider(),
+                                 context: appContext,
+                                 authState: authState,
+                                 errorHandler: errorHandler)
           }
         }
         .handleError(state: $errorHandler.state)

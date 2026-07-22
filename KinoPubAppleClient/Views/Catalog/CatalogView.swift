@@ -12,6 +12,7 @@ import KinoPubBackend
 struct CatalogView: View {
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var errorHandler: ErrorHandler
+  @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
 
   private let title: LocalizedStringKey
@@ -76,6 +77,12 @@ struct CatalogView: View {
             SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: CatalogRoutesLinkProvider()))
           case .season(let season):
             SeasonView(model: SeasonModel(season: season, linkProvider: CatalogRoutesLinkProvider()))
+          case .person(let person):
+            PersonItemsView.make(person: person,
+                                 linkProvider: CatalogRoutesLinkProvider(),
+                                 context: appContext,
+                                 authState: authState,
+                                 errorHandler: errorHandler)
           }
         }
         .handleError(state: $errorHandler.state)

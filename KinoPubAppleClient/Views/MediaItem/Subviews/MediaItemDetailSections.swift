@@ -17,25 +17,24 @@ struct MediaItemRatingsSection: View {
 
   private struct Score: Identifiable {
     let id: String
+    let logo: MediaScoreLogo.Source
     let value: Double
     let votes: Int?
   }
 
-  /// IMDb and Kinopoisk lead. kino.pub's own tally goes last: it is a thumbs
-  /// up/down from a handful of users, not a score worth ranking above the others.
   private var scores: [Score] {
     var result: [Score] = []
     if let imdb = mediaItem.imdbRating, imdb > 0 {
-      result.append(Score(id: "IMDb", value: imdb, votes: mediaItem.imdbVotes))
+      result.append(Score(id: "IMDb", logo: .imdb, value: imdb, votes: mediaItem.imdbVotes))
     }
     if let kp = mediaItem.kinopoiskRating, kp > 0 {
-      result.append(Score(id: "Kinopoisk", value: kp, votes: mediaItem.kinopoiskVotes))
+      result.append(Score(id: "Kinopoisk", logo: .kinopoisk, value: kp, votes: mediaItem.kinopoiskVotes))
     }
     return result
   }
 
   var body: some View {
-    if !scores.isEmpty || mediaItem.communityVotes != nil {
+    if !scores.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
         MediaItemSectionHeader("Ratings")
 
@@ -43,46 +42,51 @@ struct MediaItemRatingsSection: View {
           ForEach(scores) { score in
             tile(score)
           }
-          if let votes = mediaItem.communityVotes {
-            communityTile(likes: votes.likes, dislikes: votes.dislikes)
-          }
+          // kino.pub's own thumbs up/down tally, parked until we know what it
+          // actually counts — it comes back empty on everything we have looked at.
+          //          if let votes = mediaItem.communityVotes {
+          //            communityTile(likes: votes.likes, dislikes: votes.dislikes)
+          //          }
         }
         .padding(.horizontal, MediaItemLayout.horizontalInset)
       }
     }
   }
 
-  /// Shown as the tally it actually is, rather than dressed up as a score.
-  private func communityTile(likes: Int, dislikes: Int) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      HStack(spacing: 16) {
-        Label("\(likes)", systemImage: "hand.thumbsup.fill")
-        Label("\(dislikes)", systemImage: "hand.thumbsdown.fill")
-      }
-      .font(Self.votesFont)
-      .foregroundStyle(Color.KinoPub.text)
+  //  /// Shown as the tally it actually is, rather than dressed up as a score.
+  //  private func communityTile(likes: Int, dislikes: Int) -> some View {
+  //    VStack(alignment: .leading, spacing: 8) {
+  //      HStack(spacing: 16) {
+  //        Label("\(likes)", systemImage: "hand.thumbsup.fill")
+  //        Label("\(dislikes)", systemImage: "hand.thumbsdown.fill")
+  //      }
+  //      .font(Self.votesFont)
+  //      .foregroundStyle(Color.KinoPub.text)
+  //
+  //      Text("Kinopub")
+  //        .font(Self.captionFont)
+  //        .foregroundStyle(Color.KinoPub.subtitle)
+  //    }
+  //    .frame(width: Self.tileWidth, alignment: .leading)
+  //    .padding(Self.tilePadding)
+  //    .background(Color.KinoPub.selectionBackground.opacity(0.5),
+  //                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+  //  }
 
-      Text("Kinopub")
-        .font(Self.captionFont)
-        .foregroundStyle(Color.KinoPub.subtitle)
-    }
-    .frame(width: Self.tileWidth, alignment: .leading)
-    .padding(Self.tilePadding)
-    .background(Color.KinoPub.selectionBackground.opacity(0.5),
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-  }
-
+  /// The number carries the tile, so it is left to stand on its own: no "/ 10"
+  /// spelling out a scale everyone knows, and no star row restating it in pictures.
   private func tile(_ score: Score) -> some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text(String(format: "%.1f / 10", score.value))
+      Text(String(format: "%.1f", score.value))
         .font(Self.valueFont)
         .foregroundStyle(Color.KinoPub.text)
 
-      Text(score.id)
-        .font(Self.captionFont)
-        .foregroundStyle(Color.KinoPub.subtitle)
-
-      stars(for: score.value)
+      HStack(spacing: 8) {
+        MediaScoreLogo(score.logo, height: Self.logoHeight(score.logo))
+        Text(score.id)
+          .font(Self.captionFont)
+      }
+      .foregroundStyle(Color.KinoPub.subtitle)
 
       if let votes = score.votes, votes > 0 {
         Text("\(votes.formatted(.number.grouping(.automatic))) \("votes".localized)")
@@ -97,17 +101,12 @@ struct MediaItemRatingsSection: View {
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous))
   }
 
-  /// Five stars over a ten-point score, halves included.
-  private func stars(for value: Double) -> some View {
-    let filled = value / 2
-    return HStack(spacing: 4) {
-      ForEach(0..<5, id: \.self) { index in
-        let position = Double(index)
-        Image(systemName: filled >= position + 1 ? "star.fill"
-              : (filled >= position + 0.5 ? "star.leadinghalf.filled" : "star"))
-          .font(.system(size: Self.starSize))
-          .foregroundStyle(Color.KinoPub.text.opacity(filled >= position + 0.5 ? 1 : 0.35))
-      }
+  /// The two marks are drawn to different proportions: matched by height they read
+  /// as one bigger than the other, so Kinopoisk's gets a little more room.
+  private static func logoHeight(_ source: MediaScoreLogo.Source) -> CGFloat {
+    switch source {
+    case .imdb: return imdbLogoHeight
+    case .kinopoisk: return kinopoiskLogoHeight
     }
   }
 
@@ -117,16 +116,16 @@ struct MediaItemRatingsSection: View {
   static let tilePadding: CGFloat = 24
   static let valueFont: Font = .system(size: 40, weight: .semibold)
   static let captionFont: Font = .system(size: 22, weight: .regular)
-  static let starSize: CGFloat = 22
-  static let votesFont: Font = .system(size: 28, weight: .semibold)
+  static let imdbLogoHeight: CGFloat = 22
+  static let kinopoiskLogoHeight: CGFloat = 24
 #else
   static let spacing: CGFloat = 12
   static let tileWidth: CGFloat = 150
   static let tilePadding: CGFloat = 14
   static let valueFont: Font = .system(size: 24, weight: .semibold)
   static let captionFont: Font = .system(size: 13, weight: .regular)
-  static let starSize: CGFloat = 12
-  static let votesFont: Font = .system(size: 17, weight: .semibold)
+  static let imdbLogoHeight: CGFloat = 13
+  static let kinopoiskLogoHeight: CGFloat = 14
 #endif
 }
 
@@ -134,23 +133,18 @@ struct MediaItemRatingsSection: View {
 
 /// Round portraits, as on Apple TV. kino.pub sends only names — no photos and no
 /// character names — so these are initials rather than faces.
+///
+/// Each one leads to that person's credits, which is also what makes the rail
+/// reachable: a tvOS scroll view moves by focus, and portraits that were plain text
+/// left everyone past the right edge of the screen unreachable.
 struct MediaItemCastSection: View {
 
   let mediaItem: MediaItem
+  let linkProvider: NavigationLinkProvider
 
-  private var members: [(role: String, names: [String])] {
-    var result: [(String, [String])] = []
-    if !mediaItem.directorNames.isEmpty {
-      result.append(("Director", mediaItem.directorNames))
-    }
-    if !mediaItem.castMembers.isEmpty {
-      result.append(("Cast", mediaItem.castMembers))
-    }
-    return result
-  }
-
-  private var people: [(name: String, role: String)] {
-    members.flatMap { group in group.names.map { ($0, group.role) } }
+  private var people: [MediaPerson] {
+    mediaItem.directorNames.map { MediaPerson(name: $0, role: .director) }
+      + mediaItem.castMembers.map { MediaPerson(name: $0, role: .actor) }
   }
 
   var body: some View {
@@ -160,34 +154,37 @@ struct MediaItemCastSection: View {
 
         ScrollView(.horizontal, showsIndicators: false) {
           LazyHStack(alignment: .top, spacing: Self.spacing) {
-            ForEach(Array(people.enumerated()), id: \.offset) { _, person in
-              portrait(name: person.name, role: person.role)
+            ForEach(people) { person in
+              NavigationLink(value: linkProvider.person(for: person)) {
+                portrait(person)
+              }
+              .buttonStyle(PortraitButtonStyle())
             }
           }
           .padding(.horizontal, MediaItemLayout.horizontalInset)
-          .padding(.vertical, 4)
+          .padding(.vertical, Self.focusPadding)
         }
       }
     }
   }
 
-  private func portrait(name: String, role: String) -> some View {
+  private func portrait(_ person: MediaPerson) -> some View {
     VStack(spacing: 8) {
       Circle()
         .fill(Color.KinoPub.selectionBackground)
         .frame(width: Self.avatarSize, height: Self.avatarSize)
         .overlay {
-          Text(initials(of: name))
+          Text(initials(of: person.name))
             .font(Self.initialsFont)
             .foregroundStyle(Color.KinoPub.text)
         }
 
-      Text(name)
+      Text(person.name)
         .font(Self.nameFont)
         .foregroundStyle(Color.KinoPub.text)
         .lineLimit(1)
 
-      Text(LocalizedStringKey(role))
+      Text(LocalizedStringKey(person.role.titleKey))
         .font(Self.roleFont)
         .foregroundStyle(Color.KinoPub.subtitle)
         .lineLimit(1)
@@ -202,27 +199,69 @@ struct MediaItemCastSection: View {
 #if os(tvOS)
   static let spacing: CGFloat = 28
   static let avatarSize: CGFloat = 140
+  static let focusPadding: CGFloat = 16
   static let initialsFont: Font = .system(size: 44, weight: .medium)
   static let nameFont: Font = .system(size: 24, weight: .medium)
   static let roleFont: Font = .system(size: 20, weight: .regular)
 #else
   static let spacing: CGFloat = 16
   static let avatarSize: CGFloat = 72
+  static let focusPadding: CGFloat = 4
   static let initialsFont: Font = .system(size: 24, weight: .medium)
   static let nameFont: Font = .system(size: 14, weight: .medium)
   static let roleFont: Font = .system(size: 12, weight: .regular)
 #endif
 }
 
+/// The lift the episode cards use, kept a touch smaller: these are round and sit in a
+/// denser rail, where the same jump reads as a wobble.
+private struct PortraitButtonStyle: ButtonStyle {
+  func makeBody(configuration: ButtonStyleConfiguration) -> some View {
+    Portrait(configuration: configuration)
+  }
+
+  private struct Portrait: View {
+    let configuration: ButtonStyleConfiguration
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+      configuration.label
+        .scaleEffect(isFocused ? 1.05 : (configuration.isPressed ? 0.98 : 1.0))
+        .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 14, y: 6)
+        .animation(.easeOut(duration: 0.18), value: isFocused)
+    }
+  }
+}
+
 // MARK: - Information columns
 
 /// Information · Translation · Audio, side by side where there is room and stacked
 /// where there isn't — the shape Apple uses for Information · Languages · Accessibility.
+///
+/// Each column is a control rather than a block of text. tvOS scrolls by moving
+/// focus, so a page whose bottom half holds nothing focusable cannot be scrolled to
+/// at all — these columns were unreachable. Selecting one opens it in full, which is
+/// also where the lists clipped down here (the subtitle languages above all) are
+/// shown whole.
 struct MediaItemInfoColumns: View {
 
   let mediaItem: MediaItem
 
   private static let maxSubtitleLanguages = 6
+
+  private struct Row: Identifiable {
+    let id: Int
+    /// Nil for the audio tracks, which are a numbered list rather than a table.
+    let key: String?
+    let value: String
+  }
+
+  private struct Column: Identifiable {
+    let id: String
+    let rows: [Row]
+    /// What the column shows once opened: the same rows without the clamping.
+    let fullRows: [Row]
+  }
 
   private var informationRows: [(String, String)] {
     var rows: [(String, String)] = []
@@ -247,82 +286,118 @@ struct MediaItemInfoColumns: View {
     return rows
   }
 
-  private var translationRows: [(String, String)] {
+  /// Some items carry 20+ subtitle languages; the full list swamps the column, so it
+  /// is clamped here and left whole for the opened version.
+  private func translationRows(clamped: Bool) -> [(String, String)] {
     var rows: [(String, String)] = []
     if let voice = mediaItem.voice, !voice.isEmpty {
       rows.append(("MediaItem_Voice", voice))
     }
     let subtitles = mediaItem.subtitleLanguages
     if !subtitles.isEmpty {
-      // Some items carry 20+ subtitle languages; the full list swamps the column.
-      let shown = subtitles.prefix(Self.maxSubtitleLanguages).joined(separator: ", ")
       let remainder = subtitles.count - Self.maxSubtitleLanguages
-      rows.append(("Subtitles", remainder > 0 ? "\(shown) +\(remainder)" : shown))
+      if clamped, remainder > 0 {
+        let shown = subtitles.prefix(Self.maxSubtitleLanguages).joined(separator: ", ")
+        rows.append(("Subtitles", "\(shown) +\(remainder)"))
+      } else {
+        rows.append(("Subtitles", subtitles.joined(separator: ", ")))
+      }
     }
     return rows
+  }
+
+  private var audioRows: [Row] {
+    mediaItem.audioTrackDescriptions.enumerated().map { index, track in
+      Row(id: index, key: nil, value: "\(index + 1). \(track)")
+    }
+  }
+
+  private var columns: [Column] {
+    let information = Self.rows(informationRows)
+    var result = [Column(id: "Information", rows: information, fullRows: information)]
+
+    let translation = translationRows(clamped: true)
+    if !translation.isEmpty {
+      result.append(Column(id: "Translation",
+                           rows: Self.rows(translation),
+                           fullRows: Self.rows(translationRows(clamped: false))))
+    }
+
+    if !mediaItem.audioTrackDescriptions.isEmpty {
+      result.append(Column(id: "Audio", rows: audioRows, fullRows: audioRows))
+    }
+    return result
+  }
+
+  private static func rows(_ pairs: [(String, String)]) -> [Row] {
+    pairs.enumerated().map { Row(id: $0.offset, key: $0.element.0, value: $0.element.1) }
   }
 
   var body: some View {
     ViewThatFits(in: .horizontal) {
       HStack(alignment: .top, spacing: Self.columnSpacing) {
-        columns
+        columnViews
       }
       VStack(alignment: .leading, spacing: Self.columnSpacing) {
-        columns
+        columnViews
       }
     }
     .padding(.horizontal, MediaItemLayout.horizontalInset)
   }
 
-  @ViewBuilder
-  private var columns: some View {
-    column(title: "Information", rows: informationRows)
-
-    if !translationRows.isEmpty {
-      column(title: "Translation", rows: translationRows)
-    }
-
-    if !mediaItem.audioTrackDescriptions.isEmpty {
-      audioColumn
-    }
+  private var columnViews: some View {
+    ForEach(columns) { ColumnView(column: $0) }
   }
 
-  private func column(title: LocalizedStringKey, rows: [(String, String)]) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text(title)
-        .font(Self.headerFont)
-        .foregroundStyle(Color.KinoPub.text)
+  private struct ColumnView: View {
 
-      ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-        HStack(alignment: .top, spacing: 12) {
-          Text(LocalizedStringKey(row.0))
-            .font(Self.keyFont)
-            .foregroundStyle(Color.KinoPub.subtitle)
-            .frame(width: Self.keyWidth, alignment: .leading)
-          Text(row.1)
-            .font(Self.valueFont)
+    let column: Column
+
+    @State private var showsFullText = false
+
+    var body: some View {
+      Button {
+        showsFullText = true
+      } label: {
+        VStack(alignment: .leading, spacing: 12) {
+          Text(LocalizedStringKey(column.id))
+            .font(MediaItemInfoColumns.headerFont)
             .foregroundStyle(Color.KinoPub.text)
-            .fixedSize(horizontal: false, vertical: true)
+
+          ForEach(column.rows) { row in
+            MediaItemInfoColumns.rowView(row, keyWidth: MediaItemInfoColumns.keyWidth)
+          }
+          .font(MediaItemInfoColumns.rowFont)
+        }
+        .frame(width: MediaItemInfoColumns.columnWidth, alignment: .leading)
+      }
+      .buttonStyle(ExpandableButtonStyle())
+      .sheet(isPresented: $showsFullText) {
+        MediaItemDetailSheet(title: Text(LocalizedStringKey(column.id))) {
+          VStack(alignment: .leading, spacing: 12) {
+            ForEach(column.fullRows) { row in
+              MediaItemInfoColumns.rowView(row, keyWidth: MediaItemInfoColumns.sheetKeyWidth)
+            }
+          }
+          .font(MediaItemSheetLayout.bodyFont)
         }
       }
     }
-    .frame(width: Self.columnWidth, alignment: .leading)
   }
 
-  private var audioColumn: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Audio")
-        .font(Self.headerFont)
-        .foregroundStyle(Color.KinoPub.text)
-
-      ForEach(Array(mediaItem.audioTrackDescriptions.enumerated()), id: \.offset) { index, track in
-        Text("\(index + 1). \(track)")
-          .font(Self.valueFont)
-          .foregroundStyle(Color.KinoPub.text)
-          .fixedSize(horizontal: false, vertical: true)
+  /// Fonts come from whichever context the row is dropped into — the column and the
+  /// opened sheet set the same face at two sizes. Key and value only differ in colour.
+  private static func rowView(_ row: Row, keyWidth: CGFloat) -> some View {
+    HStack(alignment: .top, spacing: 12) {
+      if let key = row.key {
+        Text(LocalizedStringKey(key))
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .frame(width: keyWidth, alignment: .leading)
       }
+      Text(row.value)
+        .foregroundStyle(Color.KinoPub.text)
+        .fixedSize(horizontal: false, vertical: true)
     }
-    .frame(width: Self.columnWidth, alignment: .leading)
   }
 
   private static func date(_ timestamp: Int) -> String {
@@ -335,16 +410,16 @@ struct MediaItemInfoColumns: View {
   static let columnSpacing: CGFloat = 60
   static let columnWidth: CGFloat = 480
   static let keyWidth: CGFloat = 150
+  static let sheetKeyWidth: CGFloat = 220
   static let headerFont: Font = .system(size: 30, weight: .semibold)
-  static let keyFont: Font = .system(size: 22, weight: .regular)
-  static let valueFont: Font = .system(size: 22, weight: .regular)
+  static let rowFont: Font = .system(size: 22, weight: .regular)
 #else
   static let columnSpacing: CGFloat = 28
   static let columnWidth: CGFloat = 260
   static let keyWidth: CGFloat = 90
+  static let sheetKeyWidth: CGFloat = 120
   static let headerFont: Font = .system(size: 18, weight: .semibold)
-  static let keyFont: Font = .system(size: 13, weight: .regular)
-  static let valueFont: Font = .system(size: 13, weight: .regular)
+  static let rowFont: Font = .system(size: 13, weight: .regular)
 #endif
 }
 
@@ -366,6 +441,10 @@ struct MediaItemSectionHeader: View {
 }
 
 enum MediaItemLayout {
+  /// The page's scroll view names its own frame so the hero can tell where it sits
+  /// relative to what is on screen — see `MediaItemHeroView.visibilityProbe`.
+  static let scrollSpace = "MediaItemScroll"
+
 #if os(tvOS)
   static let horizontalInset: CGFloat = 80
   static let sectionSpacing: CGFloat = 44
@@ -398,78 +477,115 @@ struct MediaItemPlotView: View {
     Button {
       showsFullText = true
     } label: {
-      HStack(alignment: .bottom, spacing: 8) {
+      HStack(alignment: .lastTextBaseline, spacing: 14) {
         Text(plot)
+          .font(Self.font)
           .lineLimit(Self.lineLimit)
           .multilineTextAlignment(.leading)
+          .frame(maxWidth: .infinity, alignment: .leading)
           .background {
             // Sized to the clamped text: if the full copy fits, nothing is hidden.
             ViewThatFits(in: .vertical) {
-              Text(plot)
+              Text(plot).font(Self.font)
               Color.clear.onAppear { isTruncated = true }
             }
             .hidden()
           }
 
-        if isTruncated {
-          Text("More")
-            .font(Self.moreFont)
-            .fixedSize()
-        }
+        // Always laid out, only shown when there is something more to read: bringing
+        // the label in afterwards would narrow the paragraph and change the very
+        // measurement that decided to show it.
+        Text("More")
+          .font(Self.moreFont.weight(.semibold))
+          .textCase(.uppercase)
+          .tracking(Self.moreTracking)
+          .opacity(isTruncated ? Self.moreOpacity : 0)
+          .fixedSize()
       }
-      .font(Self.font)
       .frame(maxWidth: Self.maxWidth, alignment: .leading)
     }
-    .buttonStyle(PlotButtonStyle())
+    .buttonStyle(ExpandableButtonStyle())
     .sheet(isPresented: $showsFullText) {
-      MediaItemPlotFullText(title: title, plot: plot)
+      MediaItemDetailSheet(title: Text(title)) {
+        Text(plot)
+          .font(MediaItemSheetLayout.bodyFont)
+          .foregroundStyle(Color.KinoPub.text)
+          .multilineTextAlignment(.leading)
+      }
     }
   }
+
+  /// A step below the paragraph, so it reads as a hint rather than as a fourth line.
+  static let moreOpacity: Double = 0.65
+
+  /// System text styles rather than hand-picked point sizes: the synopsis sits next
+  /// to real tvOS controls and has to be on the same scale they are. A step below the
+  /// metadata line above it, and the label a step below that again.
+  static let font: Font = .caption
+  static let moreFont: Font = .caption2
 
 #if os(tvOS)
   static let lineLimit = 3
   static let maxWidth: CGFloat = 900
-  static let font: Font = .system(size: 26, weight: .regular)
-  static let moreFont: Font = .system(size: 24, weight: .semibold)
+  static let moreTracking: CGFloat = 1.2
 #else
   static let lineLimit = 3
   static let maxWidth: CGFloat = 560
-  static let font: Font = .system(size: 14, weight: .regular)
-  static let moreFont: Font = .system(size: 14, weight: .semibold)
+  static let moreTracking: CGFloat = 0.8
 #endif
 }
 
-/// Secondary at rest so the synopsis sits behind the title and buttons, solid and
-/// backed once focused so it reads as the control it is.
-private struct PlotButtonStyle: ButtonStyle {
+/// Anything on this page that can be opened in full: the synopsis and the info
+/// columns. Secondary at rest so it sits behind the title and buttons, solid and
+/// backed once focused so it reads as the control it is. Text that sets its own
+/// colour — the columns do — keeps it and picks up only the highlight.
+private struct ExpandableButtonStyle: ButtonStyle {
   func makeBody(configuration: ButtonStyleConfiguration) -> some View {
     // Not named `Body`: that collides with `ButtonStyle.Body`.
-    PlotLabel(configuration: configuration)
+    ExpandableLabel(configuration: configuration)
   }
 
-  private struct PlotLabel: View {
+  private struct ExpandableLabel: View {
     let configuration: ButtonStyleConfiguration
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
       configuration.label
-        .foregroundStyle(isFocused ? AnyShapeStyle(Color.KinoPub.text) : AnyShapeStyle(.secondary))
-        .padding(.horizontal, isFocused ? 12 : 0)
-        .padding(.vertical, isFocused ? 8 : 0)
+        // At rest this is a step down from the title, not the full 40% fade of the
+        // subtitle colour: the synopsis sits over artwork now, and at 0.6 it went
+        // soft against a bright frame.
+        .foregroundStyle(isFocused ? Color.KinoPub.text : Color.KinoPub.text.opacity(0.8))
+        // Inset whether or not it is focused and then pulled back out again: making
+        // the padding appear on focus kept the frame the same width and re-wrapped
+        // the paragraph inside it. The highlight bleeds into the surrounding gaps
+        // instead, which is what it does on tvOS anyway.
+        .padding(.horizontal, Self.horizontalInset)
+        .padding(.vertical, Self.verticalInset)
         .background(
-          RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(Color.KinoPub.selectionBackground.opacity(isFocused ? 0.7 : 0))
+          RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(Color.KinoPub.selectionBackground.opacity(isFocused ? 0.85 : 0))
         )
+        .padding(.horizontal, -Self.horizontalInset)
+        .padding(.vertical, -Self.verticalInset)
         .animation(.easeOut(duration: 0.15), value: isFocused)
     }
+
+#if os(tvOS)
+    static let horizontalInset: CGFloat = 16
+    static let verticalInset: CGFloat = 8
+#else
+    static let horizontalInset: CGFloat = 10
+    static let verticalInset: CGFloat = 6
+#endif
   }
 }
 
-/// The whole synopsis, presented over the page.
-private struct MediaItemPlotFullText: View {
+/// Whatever was clipped on the page, presented over it in full: the synopsis, or a
+/// column with its lists unclamped.
+private struct MediaItemDetailSheet<Content: View>: View {
 
-  let title: String
-  let plot: String
+  let title: Text
+  @ViewBuilder let content: () -> Content
 
   @Environment(\.dismiss) private var dismiss
 
@@ -479,27 +595,33 @@ private struct MediaItemPlotFullText: View {
 
       ScrollView(.vertical) {
         VStack(alignment: .leading, spacing: 24) {
-          Text(title)
-            .font(Self.titleFont)
+          title
+            .font(MediaItemSheetLayout.titleFont)
             .foregroundStyle(Color.KinoPub.text)
 
-          Text(plot)
-            .font(Self.bodyFont)
-            .foregroundStyle(Color.KinoPub.text)
-            .multilineTextAlignment(.leading)
+          content()
 
 #if !os(tvOS)
           Button("Close") { dismiss() }
             .buttonStyle(.bordered)
 #endif
         }
-        .frame(maxWidth: Self.maxWidth, alignment: .leading)
-        .padding(Self.padding)
+        .frame(maxWidth: MediaItemSheetLayout.maxWidth, alignment: .leading)
+        .padding(MediaItemSheetLayout.padding)
         .frame(maxWidth: .infinity, alignment: .leading)
       }
+      // Nothing in here is a control, and on tvOS a scroll view with nothing
+      // focusable inside it will not move. This lets the remote pan it directly.
+#if os(tvOS)
+      .focusable()
+#endif
     }
   }
+}
 
+/// Its own type because the sheet is generic over its content, and generic types
+/// cannot hold static storage.
+private enum MediaItemSheetLayout {
 #if os(tvOS)
   static let titleFont: Font = .system(size: 48, weight: .bold)
   static let bodyFont: Font = .system(size: 30, weight: .regular)

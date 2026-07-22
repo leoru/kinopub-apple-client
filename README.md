@@ -50,7 +50,10 @@ open KinoPubAppleClient.xcodeproj
 
 ## What works today
 
-- Device-code authorization against the kino.pub API, tokens in the Keychain
+- Device-code authorization against the kino.pub API, tokens in the Keychain, shown on a full-screen
+  activation page modelled on the system AirPlay-code screen (`Views/Auth/`): material background,
+  the code split into per-character tiles, no dismiss affordance, and a spinner underneath while an
+  expired code is silently replaced
 - Catalog browsing: `hot` / `fresh` / `popular` per content type, paginated
 - Search, bookmarks (folders + items), item details, seasons and episodes
 - Playback with resume ("continue watching" prompt) and watch-mark reporting
@@ -67,6 +70,11 @@ These are real, verified, and up for grabs:
 
 - **The pause panel's focus behaviour is unverified on a real remote.** The word chips now use a
   focus-reactive button style, but nobody has driven it with a Siri Remote yet.
+- **The detail page's default focus is unverified on a real remote.** `MediaItemHeroView` states a
+  `prefersDefaultFocus` preference on Play inside a `focusScope`; a headless simulator draws no focus
+  at all, so this has only been read, not seen.
+- **The detail page has no on-screen back button**, matching the stock Apple TV app — Back/Menu on the
+  remote pops the stack. If that turns out not to fire, it is a real bug, not a design choice.
 - **Subtitles don't follow the episode.** `MediaItem.subtitles` returns `videos?.first?.subtitles`, so a
   series always uses the first video's tracks. See `Packages/KinoPubBackend/.../Models/MediaItem.swift`.
 - **Player chrome conflicts on tvOS.** `PlayerView` layers a custom back button, a captions button and
@@ -170,9 +178,10 @@ microiptv leaves a lot on the table. We shouldn't.
 - [ ] Awards
 - [ ] Collections (`GET /v1/collections`, `/v1/collections/view?id=`)
 - [x] **Every production country**, not just the first — microiptv shows one
-- [x] Ratings section: IMDb and Kinopoisk with vote counts, then kino.pub's own thumbs up/down
-      tally shown as the tally it is rather than a fake score
-- [x] Cast and crew as round portraits
+- [x] Ratings section: IMDb and Kinopoisk with vote counts. kino.pub's own thumbs up/down tally is
+      commented out in `MediaItemRatingsSection` — it reads empty on everything we have looked at
+- [x] Cast and crew as round portraits, each opening that person's credits (`/v1/items?actor=`,
+      `?director=` — the web client's `mode=actor` search)
 - [x] Information · Translation · Audio columns, stacking when the display is narrow
 - [x] Synopsis as a focusable panel that opens the full text, rather than expanding in place
 - [ ] Cast photos and character names — kino.pub sends neither, so portraits are initials.
@@ -300,13 +309,13 @@ upstream change fails loudly instead of silently emptying a row.
 `/v1/items/{hot,fresh,popular}`, `/v1/items/search`, `/v1/items/{id}`, `/v1/user`, `/v1/bookmarks`,
 `/v1/bookmarks/{id}`, `/v1/watching`, `/v1/watching/movies`, `/v1/watching/serials`,
 `/v1/watching/marktime`, `/v1/watching/toggle`, `/v1/history`, `/v1/genres`, `/v1/countries`,
-device-code auth.
+`/v1/items` (library filters plus `actor`/`director`), device-code auth.
 
 **Available, not yet wired:**
 
 | Endpoint | Use |
 | --- | --- |
-| `GET /v1/items` | Library with `type,genre,country,year,finished,actor,director,letter,quality,sort` (`sort`: id, year, title, created, updated, rating, views, watchers; `-` prefix = descending) |
+| `GET /v1/items` | Still unused there: `finished`, `letter`, `quality`, `conditions` |
 | `GET /v1/items/similar?id=` | Similar titles on the detail page |
 | `GET /v1/tv/index` | TV channels tab |
 | `GET /v1/collections`, `/v1/collections/view?id=` | Curated rows |

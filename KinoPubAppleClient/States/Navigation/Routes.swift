@@ -15,6 +15,8 @@ enum MainRoutes: Hashable {
   case detailsById(Int)
   case seasons([Season])
   case season(Season)
+  /// A person's credits, listed from `/v1/items` by name.
+  case person(MediaPerson)
   case player(any PlayableItem)
   case trailerPlayer(any PlayableItem)
 
@@ -27,6 +29,8 @@ enum MainRoutes: Hashable {
       hasher.combine(id)
     case .season(let season):
       hasher.combine(season)
+    case .person(let person):
+      hasher.combine(person)
     case .seasons(let seasons):
       hasher.combine(seasons)
     case .player(let item):
@@ -45,6 +49,8 @@ enum CatalogRoutes: Hashable {
   case details(MediaItem)
   case seasons([Season])
   case season(Season)
+  /// A person's credits, listed from `/v1/items` by name.
+  case person(MediaPerson)
   case player(any PlayableItem)
   case trailerPlayer(any PlayableItem)
 
@@ -54,6 +60,8 @@ enum CatalogRoutes: Hashable {
       hasher.combine(item)
     case .season(let season):
       hasher.combine(season)
+    case .person(let person):
+      hasher.combine(person)
     case .seasons(let seasons):
       hasher.combine(seasons)
     case .player(let item):
@@ -72,6 +80,8 @@ enum SearchRoutes: Hashable {
   case details(MediaItem)
   case seasons([Season])
   case season(Season)
+  /// A person's credits, listed from `/v1/items` by name.
+  case person(MediaPerson)
   case player(any PlayableItem)
   case trailerPlayer(any PlayableItem)
 
@@ -81,6 +91,8 @@ enum SearchRoutes: Hashable {
       hasher.combine(item)
     case .season(let season):
       hasher.combine(season)
+    case .person(let person):
+      hasher.combine(person)
     case .seasons(let seasons):
       hasher.combine(seasons)
     case .player(let item):
@@ -103,6 +115,8 @@ enum BookmarksRoutes: Hashable {
   case detailsById(Int)
   case seasons([Season])
   case season(Season)
+  /// A person's credits, listed from `/v1/items` by name.
+  case person(MediaPerson)
   case player(any PlayableItem)
   case trailerPlayer(any PlayableItem)
 
@@ -117,6 +131,8 @@ enum BookmarksRoutes: Hashable {
       hasher.combine(id)
     case .season(let season):
       hasher.combine(season)
+    case .person(let person):
+      hasher.combine(person)
     case .seasons(let seasons):
       hasher.combine(seasons)
     case .player(let item):

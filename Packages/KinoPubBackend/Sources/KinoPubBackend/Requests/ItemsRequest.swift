@@ -38,6 +38,11 @@ public struct ItemsRequest: Endpoint {
     if let years = filter.years {
       params["year"] = years.apiValue
     }
+    // `actor` / `director`, matched on the name as it appears in the credits. Commas
+    // and pluses are this parameter's OR and AND, so a single name goes as written.
+    if let person = filter.person {
+      params[person.role.rawValue] = person.name
+    }
     if let page {
       params["page"] = "\(page)"
     }

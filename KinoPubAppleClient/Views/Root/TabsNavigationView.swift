@@ -55,18 +55,8 @@ struct TabsNavigationView: View {
       settingsTab
     }
     .accentColor(Color.KinoPub.accent)
-    .sheet(isPresented: $authState.shouldShowAuthentication, content: {
-      AuthView(model: AuthModel(authService: appContext.authService,
-                                authState: authState,
-                                errorHandler: errorHandler))
-    })
     .environmentObject(navigationState)
     .environmentObject(errorHandler)
-    .task {
-      Task {
-        await authState.check()
-      }
-    }
   }
 
   var searchTab: some View {

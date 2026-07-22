@@ -19,7 +19,6 @@ Read this before changing code. The product direction, current state and roadmap
 - **Everything must be focus-navigable on tvOS.** Any `Button`, `NavigationLink` or interactive chip you
   add has to be reachable and visibly focusable with the remote. `.buttonStyle(.plain)` usually breaks
   this — check before shipping.
-- **No analytics, no crash reporting.** Firebase was deliberately removed; don't reintroduce it or
   anything like it.
 - **Downloads is non-TV only.** Don't wire download UI into tvOS surfaces.
 - **New API calls go through `KinoPubBackend`.** Add an `Endpoint` in `Requests/`, a model in `Models/`,
@@ -36,56 +35,6 @@ Read this before changing code. The product direction, current state and roadmap
 - Services are protocol + `…Impl` + `…Mock`; view models are `ObservableObject`, `@MainActor` where they
   touch UI state.
 - Keep `PreviewProvider` / `#Preview` blocks working.
-
-## Verifying a change
-
-Build for Apple TV before claiming a UI change works. `name=Apple TV` matches nothing on a machine
-whose only TV runtime is a 4K one — take the id from the device list rather than guessing a name:
-
-```
-xcrun simctl list devices available | grep -i "apple tv"
-```
-
-```
-xcodebuild -project KinoPubAppleClient.xcodeproj -scheme KinoPubAppleClient \
-  -destination 'id=<udid>' build
-```
-
-Package tests:
-
-```
-swift test --package-path Packages/KinoPubKit
-swift test --package-path Packages/KinoPubBackend
-```
-
-**A green build is not a working feature.** The hero trailer compiled on all three platforms for
-weeks and never once played: it was started from `.task`, which fires before the details arrive, so
-the URL was always nil. Nothing but running it would have shown that. For anything visual, run it and
-look.
-
-### Running it without asking the user to look
-
-Almost all of this is headless — no simulator window is involved.
-
-```
-xcrun simctl io booted screenshot /tmp/shot.png
-```
-
-Full device-resolution PNG, no UI needed. The rest of the loop is `xcodebuild -derivedDataPath` into a
-scratch directory, then `simctl terminate` → `simctl install <udid> <path>/KinoPub.app` →
-`simctl launch <udid> com.kunst.kinopub`. Check `simctl listapps <udid>` first — the app is often
-already installed and signed in, which saves re-doing device-code auth.
-
-**Logging.** `print()` does not reach the unified log, and a `log stream` backgrounded from a shell
-dies with that shell. Log through `Logger` (`KinoPubLogging`) and read it after the fact:
-
-```
-xcrun simctl spawn booted log show --last 60s --style compact --predicate 'eventMessage CONTAINS "MARKER"'
-```
-
-That is how you settle a layout question with facts instead of squinting at pixels — logging
-`AVPlayerLayer.videoRect` against its bounds proved the black bars on some trailers are baked into
-the source file, not our geometry.
 
 ### Driving the remote
 
