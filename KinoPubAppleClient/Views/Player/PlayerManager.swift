@@ -25,9 +25,15 @@ class PlayerManager: ObservableObject {
   @Published var watchMark: WatchData?
   @Published var continueTime: TimeInterval?
   @Published var activeCue: SubtitleCue?
+  @Published var activeSecondaryCue: SubtitleCue?
   @Published var lastCue: SubtitleCue?
   @Published var subtitlesEnabled: Bool = false
   @Published var currentPlaybackTime: TimeInterval = 0
+
+  /// Every subtitle track this item offers, and the two that are showing.
+  @Published private(set) var subtitleTracks: [SubtitleTrack] = []
+  @Published private(set) var primaryTrack: SubtitleTrack?
+  @Published private(set) var secondaryTrack: SubtitleTrack?
 
   lazy var player: AVPlayer = {
     guard let fileURL else {
@@ -45,7 +51,8 @@ class PlayerManager: ObservableObject {
   private var itemObservation: NSKeyValueObservation?
   private var actionsService: UserActionsService
   private var cues: [SubtitleCue] = []
-  private var selectedSubtitle: Subtitle?
+  private var secondaryCues: [SubtitleCue] = []
+  private var cueLoadTasks: [Task<Void, Never>] = []
 
   /// Optional on purpose: both of these used to force-unwrap, and `URL(string: "")`
   /// is nil — an item without a trailer link crashed the app on open.
@@ -85,6 +92,7 @@ class PlayerManager: ObservableObject {
   }
 
   deinit {
+    cueLoadTasks.forEach { $0.cancel() }
     if let cueObserverToken {
       player.removeTimeObserver(cueObserverToken)
     }
@@ -92,31 +100,98 @@ class PlayerManager: ObservableObject {
 
   // MARK: - Subtitles
 
+  /// Nothing to pick from on a trailer, or on an item the API gave no tracks for.
+  var canChooseSubtitles: Bool {
+    watchMode == .media && !subtitleTracks.isEmpty
+  }
+
+  /// The tracks to open with: what was picked last time on this title, otherwise the
+  /// defaults from Profile → Playback.
   private func configureSubtitles() {
     guard watchMode == .media else { return }
-    guard SubtitlePreferences.preferEnglishSubtitles else {
-      subtitlesEnabled = false
+
+    subtitleTracks = SubtitleSelector.tracks(in: playItem.subtitles)
+    let remembered = SubtitleTrackMemory.choice(for: playItem.metadata.id)
+    let selection = SubtitleSelector.selection(in: subtitleTracks, remembered: remembered)
+    apply(selection, remember: false)
+  }
+
+  /// Picking a track is also a statement about the next episode, so every change from
+  /// the picker is written down.
+  ///
+  /// Turning the first line off turns the pair off: a second line on its own, with the
+  /// first row reading "Off", is a screen that lies about what it is showing.
+  func select(primary track: SubtitleTrack?) {
+    guard let track else {
+      apply(SubtitleSelector.Selection(primary: nil, secondary: nil), remember: true)
+      return
+    }
+    var selection = SubtitleSelector.Selection(primary: track, secondary: secondaryTrack)
+    if selection.secondary == track { selection.secondary = nil }
+    apply(selection, remember: true)
+  }
+
+  func select(secondary track: SubtitleTrack?) {
+    var selection = SubtitleSelector.Selection(primary: primaryTrack, secondary: track)
+    if selection.primary == track { selection.primary = nil }
+    if selection.primary == nil {
+      selection.primary = selection.secondary
+      selection.secondary = nil
+    }
+    apply(selection, remember: true)
+  }
+
+  private func apply(_ selection: SubtitleSelector.Selection, remember: Bool) {
+    cueLoadTasks.forEach { $0.cancel() }
+    cueLoadTasks = []
+    // A pending embedded-track fallback belongs to the tracks being replaced; leaving it
+    // armed turns an embedded English track back on under the new pick.
+    itemObservation = nil
+
+    primaryTrack = selection.primary
+    secondaryTrack = selection.secondary
+    cues = []
+    secondaryCues = []
+    activeCue = nil
+    activeSecondaryCue = nil
+    lastCue = nil
+    subtitlesEnabled = false
+
+    if remember {
+      SubtitleTrackMemory.remember(SubtitleChoice(primary: selection.primary?.reference,
+                                                  secondary: selection.secondary?.reference),
+                                   for: playItem.metadata.id)
+    }
+
+    guard let primary = selection.primary else {
+      disableSystemLegibleSelection()
       return
     }
 
-    selectedSubtitle = SubtitleSelector.preferred(
-      from: playItem.subtitles,
-      preferNonCC: SubtitlePreferences.preferNonCCSubtitles
-    )
-
-    if let selectedSubtitle, let url = URL(string: selectedSubtitle.url), !selectedSubtitle.url.isEmpty {
-      Task { [weak self] in
-        await self?.loadSidecarSubtitles(from: url, shift: selectedSubtitle.shift)
-      }
+    if let url = sidecarURL(for: primary) {
+      cueLoadTasks.append(Task { [weak self] in
+        await self?.loadSidecarSubtitles(from: url, shift: primary.subtitle.shift, isPrimary: true)
+      })
     } else {
-      // Fallback: try embedded HLS legible track once the item is ready.
+      // Fallback: try an embedded HLS legible track once the item is ready.
       itemObservation = player.observe(\.currentItem, options: [.new, .initial]) { [weak self] _, _ in
         self?.selectEmbeddedEnglishTrackIfNeeded()
       }
     }
+
+    if let secondary = selection.secondary, let url = sidecarURL(for: secondary) {
+      cueLoadTasks.append(Task { [weak self] in
+        await self?.loadSidecarSubtitles(from: url, shift: secondary.subtitle.shift, isPrimary: false)
+      })
+    }
   }
 
-  private func loadSidecarSubtitles(from url: URL, shift: Int) async {
+  private func sidecarURL(for track: SubtitleTrack) -> URL? {
+    guard track.hasSidecar else { return nil }
+    return URL(string: track.url)
+  }
+
+  private func loadSidecarSubtitles(from url: URL, shift: Int, isPrimary: Bool) async {
     do {
       let (data, _) = try await URLSession.shared.data(from: url)
       guard let content = String(data: data, encoding: .utf8)
@@ -125,15 +200,21 @@ class PlayerManager: ObservableObject {
         return
       }
       let parsed = SubtitleCueParser.parse(content, shiftMilliseconds: shift)
+      guard !Task.isCancelled else { return }
       await MainActor.run {
-        self.cues = parsed
-        self.subtitlesEnabled = !parsed.isEmpty
-        // Avoid double captions if the stream also has embedded tracks.
-        self.disableSystemLegibleSelection()
-        Logger.app.debug("Loaded \(parsed.count) subtitle cues")
+        if isPrimary {
+          self.cues = parsed
+          self.subtitlesEnabled = !parsed.isEmpty
+          // Avoid double captions if the stream also has embedded tracks.
+          self.disableSystemLegibleSelection()
+        } else {
+          self.secondaryCues = parsed
+        }
+        Logger.app.debug("Loaded \(parsed.count) subtitle cues (primary: \(isPrimary))")
       }
     } catch {
       Logger.app.error("Failed to load subtitles: \(error)")
+      guard isPrimary, !Task.isCancelled else { return }
       await MainActor.run {
         self.selectEmbeddedEnglishTrackIfNeeded()
       }
@@ -153,6 +234,7 @@ class PlayerManager: ObservableObject {
         || name.lowercased().contains("english")
         || name.lowercased().hasPrefix("en")
       if !isEnglish { return false }
+      if SubtitleSelector.isForcedDisplayName(name) { return false }
       if SubtitlePreferences.preferNonCCSubtitles && SubtitleSelector.looksLikeCCDisplayName(name) {
         return false
       }
@@ -181,6 +263,7 @@ class PlayerManager: ObservableObject {
       self.currentPlaybackTime = seconds
       guard self.subtitlesEnabled, !self.cues.isEmpty else {
         if self.activeCue != nil { self.activeCue = nil }
+        if self.activeSecondaryCue != nil { self.activeSecondaryCue = nil }
         return
       }
       let cue = SubtitleCueParser.cue(at: seconds, in: self.cues)
@@ -189,6 +272,16 @@ class PlayerManager: ObservableObject {
         if let cue {
           self.lastCue = cue
         }
+      }
+      guard !self.secondaryCues.isEmpty else {
+        if self.activeSecondaryCue != nil { self.activeSecondaryCue = nil }
+        return
+      }
+      // The two tracks have their own timings, so the second line is looked up on its
+      // own rather than paired with the first.
+      let secondary = SubtitleCueParser.cue(at: seconds, in: self.secondaryCues)
+      if secondary != self.activeSecondaryCue {
+        self.activeSecondaryCue = secondary
       }
     }
   }

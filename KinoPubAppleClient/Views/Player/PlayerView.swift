@@ -14,6 +14,7 @@ struct PlayerView: View {
 
   @StateObject private var playerManager: PlayerManager
   @State private var hideNavigationBar = false
+  @State private var showsSubtitlePicker = false
   @Environment(\.dismiss) private var dismiss
   @EnvironmentObject var navigationState: NavigationState
 
@@ -25,7 +26,7 @@ struct PlayerView: View {
     GeometryReader { _ in
       ZStack(alignment: .top) {
         videoPlayer
-        backButton
+        playerChrome
         if let continueTime = playerManager.continueTime {
           continueWatching(to: continueTime)
         }
@@ -34,6 +35,13 @@ struct PlayerView: View {
       .ignoresSafeArea(.all)
     }
     .ignoresSafeArea(.all)
+    .sheet(isPresented: $showsSubtitlePicker, onDismiss: { playerManager.player.play() }) {
+      SubtitleTrackPickerView(tracks: playerManager.subtitleTracks,
+                              primary: playerManager.primaryTrack,
+                              secondary: playerManager.secondaryTrack,
+                              selectPrimary: { playerManager.select(primary: $0) },
+                              selectSecondary: { playerManager.select(secondary: $0) })
+    }
 #if os(macOS)
     .toolbar(.hidden, for: .windowToolbar)
     .onAppear(perform: {
@@ -98,7 +106,8 @@ struct PlayerView: View {
       if playerManager.subtitlesEnabled,
          playerManager.isPlaying,
          let cue = playerManager.activeCue {
-        SubtitleOverlayView(text: cue.displayText)
+        SubtitleOverlayView(text: cue.displayText,
+                            secondaryText: playerManager.activeSecondaryCue?.displayText)
           .padding(.bottom, 48)
           .transition(.opacity)
       }
@@ -114,9 +123,10 @@ struct PlayerView: View {
     }
     .animation(.easeOut(duration: 0.2), value: playerManager.isPlaying)
     .animation(.easeOut(duration: 0.2), value: playerManager.activeCue)
+    .animation(.easeOut(duration: 0.2), value: playerManager.activeSecondaryCue)
   }
 
-  var backButton: some View {
+  var playerChrome: some View {
     HStack(alignment: .top) {
       Button(action: { dismiss() }, label: {
         Image(systemName: "chevron.backward")
@@ -131,9 +141,32 @@ struct PlayerView: View {
       .padding(.top, 16)
       .contentShape(Rectangle())
       Spacer()
+      if playerManager.canChooseSubtitles {
+        subtitlesButton
+      }
     }
     .fixedSize(horizontal: false, vertical: true)
     .opacity(hideNavigationBar ? 0.0 : 1.0)
+    // Invisible chrome must not keep taking focus or taps while playback runs.
+    .disabled(hideNavigationBar)
+  }
+
+  private var subtitlesButton: some View {
+    Button(action: {
+      playerManager.player.pause()
+      showsSubtitlePicker = true
+    }, label: {
+      Image(systemName: "captions.bubble")
+        .font(.system(size: 24))
+        .tint(Color.KinoPub.accent)
+    })
+#if os(macOS)
+    .buttonStyle(PlainButtonStyle())
+#endif
+    .frame(width: 70, height: 70)
+    .padding(.trailing, 32)
+    .padding(.top, 16)
+    .contentShape(Rectangle())
   }
 
   func continueWatching(to continueTime: TimeInterval) -> some View {

@@ -57,6 +57,8 @@ open KinoPubAppleClient.xcodeproj
 - Downloads and offline playback (iOS/iPadOS/macOS only)
 - **English subtitles by default**, preferring non-CC/SDH sidecar tracks, parsed into synced cues and
   rendered as an overlay (`Views/Player/Subtitle*.swift`); toggles live in Profile → Playback
+- **Dual subtitles**: any two of the item's tracks at once, stacked at the bottom of the frame, picked
+  from a captions button in the player and remembered for the next episode
 - On-pause word panel translating EN→RU on device (iOS 18 / macOS 15; not available on tvOS)
 
 ## Known issues / half-finished
@@ -67,11 +69,13 @@ These are real, verified, and up for grabs:
   focus-reactive button style, but nobody has driven it with a Siri Remote yet.
 - **Subtitles don't follow the episode.** `MediaItem.subtitles` returns `videos?.first?.subtitles`, so a
   series always uses the first video's tracks. See `Packages/KinoPubBackend/.../Models/MediaItem.swift`.
-- **Player chrome conflicts on tvOS.** `PlayerView` layers a custom back button and subtitle views over
-  `VideoPlayer`; on tvOS the native transport UI fights them.
-- **CC detection is sloppy.** `SubtitleSelector.looksLikeCC` builds a regex by interpolating the marker
-  into `#"\b\#(marker)\b"#`, and counts `forced` as a CC marker — forced tracks carry no dialogue and make
-  a bad default.
+- **Player chrome conflicts on tvOS.** `PlayerView` layers a custom back button, a captions button and
+  subtitle views over `VideoPlayer`; on tvOS the native transport UI fights them. The chrome is now
+  disabled while it is hidden, so it no longer takes focus during playback, but the two layers still
+  compete when it is showing.
+- **The subtitle picker has not been driven with a Siri Remote.** `SubtitleTrackPickerView` is a sheet
+  of focusable rows over the player; it builds and the rows are standard `Button`s, but nobody has
+  opened it on a real Apple TV against a real stream.
 - **Home and Saved rows show only the first page** of each shortcut or folder, and refetch every
   time the tab appears. `/v1/bookmarks/{id}` is not paginated in `BookmarkItemsRequest`, so a folder
   row stops at what one request returns — the folder's own screen has the same limit.
@@ -149,7 +153,8 @@ Nothing exotic. A working, good-looking client that does what microiptv does.
   the account's folders and toggles membership via `/v1/bookmarks/toggle-item`
 - [ ] Paginate home rows; cache them so returning to the tab doesn't refetch everything
 - [ ] Fix the player issues listed under Known issues (subtitle track per episode, tvOS transport
-      conflicts, CC/forced detection)
+      conflicts) — CC/forced detection is done: `SubtitleTracks` matches markers as whole words and
+      treats forced as its own flag, never a default
 
 ### Phase B — All of kino.pub's data
 
@@ -176,12 +181,18 @@ microiptv leaves a lot on the table. We shouldn't.
 The subtitle *default* already exists (Profile → Playback: on/off and prefer-non-CC, English first
 rather than the system language). What's missing is memory of what the user picked mid-watch.
 
-- [ ] Remember the last subtitle track chosen for a series and pre-select it for the next episode,
+- [x] **Remember the last subtitle track chosen for a series** and pre-select it for the next episode,
       falling back to the default preference — microiptv forgets every episode, which is the thing
-      worth beating
+      worth beating. Sidecar URLs differ per episode, so the choice is stored as language + CC-ness +
+      position within that language (`SubtitleTrackReference`) and re-resolved against each episode's
+      tracks; "off" is remembered as a choice too.
 - [ ] Same for the audio track
-- [ ] **Dual subtitles** — Russian on top, English below, for watching in English with a safety net.
-      Nothing else does this; the cue overlay already exists to build on.
+- [x] **Dual subtitles** — an option, off by default, showing any two of the item's tracks at once.
+      Which two is the user's call: a captions button in the player lists every track the item offers
+      and takes a first and a second pick, in any language. They render as one block at the bottom of
+      the frame, the second line under the first and slightly smaller, rather than split top and
+      bottom — eyes that have to travel across the screen miss both. Each track keeps its own timings.
+      Profile → Playback only seeds the default second language for items nothing was picked on yet.
 
 ### Phase C½ — Kinopoisk Unofficial API
 

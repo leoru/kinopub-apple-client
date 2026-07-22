@@ -18,6 +18,8 @@ struct ProfileView: View {
   @AppStorage("selectedLanguage") private var selectedLanguage: String = (Locale.current.language.languageCode?.identifier ?? "en")
   @AppStorage(SubtitlePreferences.preferEnglishKey) private var preferEnglishSubtitles: Bool = true
   @AppStorage(SubtitlePreferences.preferNonCCKey) private var preferNonCCSubtitles: Bool = true
+  @AppStorage(SubtitlePreferences.dualSubtitlesKey) private var dualSubtitlesEnabled: Bool = false
+  @AppStorage(SubtitlePreferences.secondSubtitleLanguageKey) private var secondSubtitleLanguage: String = "ru"
 
   @State private var showLogoutAlert: Bool = false
     
@@ -101,10 +103,23 @@ struct ProfileView: View {
     }
 
     private var playbackSection: some View {
-      Section(header: Text("Playback")) {
+      Section(header: Text("Playback"),
+              footer: Text("A track picked in the player wins over these, and is remembered for the next episode.")) {
         Toggle("Default English subtitles", isOn: $preferEnglishSubtitles)
         Toggle("Prefer non-CC / non-SDH", isOn: $preferNonCCSubtitles)
           .disabled(!preferEnglishSubtitles)
+        Toggle("Dual subtitles", isOn: $dualSubtitlesEnabled)
+        Picker("Second subtitle language", selection: $secondSubtitleLanguage) {
+          ForEach(SubtitlePreferences.secondLanguageOptions, id: \.self) { code in
+            Text(LanguageNames.name(for: code)).tag(code)
+          }
+        }
+#if os(tvOS)
+        .pickerStyle(.automatic)
+#else
+        .pickerStyle(MenuPickerStyle())
+#endif
+        .disabled(!dualSubtitlesEnabled)
       }
     }
 }

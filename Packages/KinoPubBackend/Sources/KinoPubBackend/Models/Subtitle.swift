@@ -12,4 +12,11 @@ public struct Subtitle: Codable, Hashable {
   public let shift: Int
   public let embed: Bool
   public let url: String
+
+  public init(lang: String, shift: Int, embed: Bool, url: String) {
+    self.lang = lang
+    self.shift = shift
+    self.embed = embed
+    self.url = url
+  }
 }
