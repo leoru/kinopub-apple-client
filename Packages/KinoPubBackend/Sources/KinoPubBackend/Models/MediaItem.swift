@@ -214,9 +214,8 @@ public extension MediaItem {
 extension MediaItem: Identifiable { }
 
 public extension MediaItem {
-  /// "2025 · 1 h 55 min · Боевик, Драма · Япония" — the line under the title on the
-  /// item page and in the home screen's focus preview.
-  var metadataLine: String {
+  /// When it came out and how long it runs.
+  private var releaseParts: [String] {
     var parts: [String] = []
     if year > 0 { parts.append("\(year)") }
     if isSeries, let seasons {
@@ -227,8 +226,23 @@ public extension MediaItem {
       let duration = duration.hoursMinutesFormatted
       if !duration.isEmpty { parts.append(duration) }
     }
+    return parts
+  }
+
+  /// "2025 · 1 h 55 min · Боевик, Драма · Япония" — everything about a title in one
+  /// line, for the home screen's focus preview.
+  var metadataLine: String {
+    var parts = releaseParts
     let genres = genres.compactMap(\.title).prefix(2)
     if !genres.isEmpty { parts.append(genres.joined(separator: ", ")) }
+    if let country = countries.first?.title { parts.append(country) }
+    return parts.joined(separator: " · ")
+  }
+
+  /// "2025 · 1 h 55 min · Япония" — the same line without the genres, for the item
+  /// page, where they sit in their own column beside the cast.
+  var runtimeLine: String {
+    var parts = releaseParts
     if let country = countries.first?.title { parts.append(country) }
     return parts.joined(separator: " · ")
   }

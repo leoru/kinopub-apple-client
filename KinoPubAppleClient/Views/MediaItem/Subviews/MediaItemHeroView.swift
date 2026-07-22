@@ -230,7 +230,7 @@ struct MediaItemHeroView: View {
   private var backdrop: some View {
     ZStack {
       // Sharp at the top, dissolving toward the text at the bottom.
-      ProgressiveBlur(startPoint: 0.35, maxRadius: 44, layers: 5) {
+      ProgressiveBlur(startPoint: 0.5, maxRadius: 44, layers: 5) {
         AsyncImage(url: URL(string: backdropURL),
                    transaction: Transaction(animation: .easeIn(duration: 0.3))) { phase in
           if let image = phase.image {
@@ -266,18 +266,22 @@ struct MediaItemHeroView: View {
   private var trailerScrim: some View {
     LinearGradient(stops: [
       .init(color: .clear, location: 0),
-      .init(color: Color.KinoPub.background.opacity(0.5), location: 0.6),
-      .init(color: Color.KinoPub.background.opacity(0.5), location: 1)
+      .init(color: .clear, location: 0.4),
+      .init(color: Color.KinoPub.background.opacity(0.45), location: 0.75),
+      .init(color: Color.KinoPub.background.opacity(0.55), location: 1)
     ], startPoint: .top, endPoint: .bottom)
   }
 
   private var scrim: some View {
-    // Reaches the background colour before the very bottom: landing on it only at
-    // the last pixel leaves a visible seam where the hero meets the page.
+    // Weighted to the bottom third, where the text sits: shading the whole frame
+    // evenly turned the artwork into a grey slab. It still lands on the background
+    // colour a little before the last pixel, or the hero meets the page on a
+    // visible seam.
     LinearGradient(stops: [
-      .init(color: Color.KinoPub.background.opacity(0.1), location: 0),
-      .init(color: Color.KinoPub.background.opacity(0.6), location: 0.5),
-      .init(color: Color.KinoPub.background, location: 0.88),
+      .init(color: .clear, location: 0),
+      .init(color: Color.KinoPub.background.opacity(0.15), location: 0.45),
+      .init(color: Color.KinoPub.background.opacity(0.7), location: 0.8),
+      .init(color: Color.KinoPub.background, location: 0.97),
       .init(color: Color.KinoPub.background, location: 1)
     ], startPoint: .top, endPoint: .bottom)
   }
@@ -285,41 +289,115 @@ struct MediaItemHeroView: View {
   // MARK: - Foreground
 
   private var content: some View {
-    VStack(alignment: .leading, spacing: Self.contentSpacing) {
-      Text(mediaItem.localizedTitle)
-        .font(Self.titleFont)
-        .foregroundStyle(Color.KinoPub.text)
-        .lineLimit(2)
-
-      if mediaItem.originalTitle != mediaItem.localizedTitle {
-        Text(mediaItem.originalTitle)
-          .font(Self.subtitleFont)
-          .foregroundStyle(Color.KinoPub.subtitle)
-          .lineLimit(1)
-      }
-
-      metadata
-
-      MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot)
-        .frame(maxWidth: Self.textMaxWidth, alignment: .leading)
-
-      actions
-        .padding(.top, 4)
+    HStack(alignment: .bottom, spacing: Self.creditsGutter) {
+      mainColumn
+      Spacer(minLength: 0)
+      credits
     }
     .padding(.horizontal, Self.horizontalInset)
     .padding(.bottom, Self.bottomInset)
     .frame(maxWidth: .infinity, alignment: .leading)
   }
 
-  private var metadata: some View {
-    HStack(spacing: 12) {
-      MediaScoresView(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating)
+  private var mainColumn: some View {
+    VStack(alignment: .leading, spacing: Self.contentSpacing) {
+      // Above the localized title, as an eyebrow: it is the same title, not a second
+      // piece of information, so it leads into the big one rather than trailing it.
+      if mediaItem.originalTitle != mediaItem.localizedTitle {
+        Text(mediaItem.originalTitle)
+          .font(Self.secondaryFont)
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .lineLimit(1)
+      }
 
-      Text(mediaItem.metadataLine)
-        .font(Self.metaFont)
-        .foregroundStyle(Color.KinoPub.subtitle)
-        .lineLimit(1)
+      Text(mediaItem.localizedTitle)
+        .font(Self.titleFont)
+        .foregroundStyle(Color.KinoPub.text)
+        .lineLimit(2)
+
+      metadata
+
+      MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot)
+
+      actions
+        .padding(.top, Self.actionsGap)
     }
+    .frame(maxWidth: Self.textMaxWidth, alignment: .leading)
+  }
+
+  /// Year, runtime, country, then the scores. One font and one colour across the
+  /// whole line — the scores used to be primary next to a secondary run of text, and
+  /// the row read as two different things bolted together.
+  private var metadata: some View {
+    HStack(spacing: Self.metaSpacing) {
+      Text(mediaItem.runtimeLine)
+        .lineLimit(1)
+
+      MediaScoresView(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating)
+    }
+    .font(Self.secondaryFont)
+    .foregroundStyle(Self.metaStyle)
+  }
+
+  /// Genres and names in the far corner of the artwork, the block the Apple TV app
+  /// puts there: labels greyed, names picked out, and nothing competing with the
+  /// title on the other side.
+  @ViewBuilder
+  private var credits: some View {
+    if !genreLine.isEmpty || !creditLines.isEmpty {
+      VStack(alignment: .leading, spacing: 2) {
+        if !genreLine.isEmpty {
+          Text(genreLine)
+            .foregroundStyle(Color.KinoPub.subtitle)
+        }
+
+        ForEach(creditLines, id: \.role) { line in
+          Text(creditLine(line))
+        }
+      }
+      .font(Self.secondaryFont)
+      .multilineTextAlignment(.leading)
+      .frame(maxWidth: Self.creditsMaxWidth, alignment: .leading)
+      .fixedSize(horizontal: false, vertical: true)
+    }
+  }
+
+  /// One run of attributed text rather than two concatenated `Text`s: the styling
+  /// overloads that return `Text` are either iOS 17 or deprecated, and the label has
+  /// to flow into the names on the same line anyway.
+  private func creditLine(_ line: (role: String, names: String)) -> AttributedString {
+    var label = AttributedString(line.role.localized + " ")
+    label.foregroundColor = Color.KinoPub.subtitle
+
+    var names = AttributedString(line.names)
+    names.foregroundColor = Color.KinoPub.text
+    names.font = Self.secondaryFont.weight(.semibold)
+
+    return label + names
+  }
+
+  /// Genres carry no label — the words say what they are, and a "Genre:" in front of
+  /// them is the kind of form-field caption the Apple TV app never shows.
+  private var genreLine: String {
+    mediaItem.genres.compactMap(\.title).prefix(Self.genreLimit).joined(separator: ", ")
+  }
+
+  /// A handful of leads and whoever directed it — the whole cast is what the section
+  /// further down the page is for. A series has no one director to name, so it gets
+  /// the cast alone.
+  private var creditLines: [(role: String, names: String)] {
+    var lines: [(String, String)] = []
+    let cast = mediaItem.castMembers.prefix(Self.creditNameLimit)
+    if !cast.isEmpty {
+      lines.append(("Starring", cast.joined(separator: ", ")))
+    }
+    if !isSeries {
+      let directors = mediaItem.directorNames.prefix(Self.creditNameLimit)
+      if !directors.isEmpty {
+        lines.append(("Director", directors.joined(separator: ", ")))
+      }
+    }
+    return lines
   }
 
   private var actions: some View {
@@ -412,17 +490,36 @@ struct MediaItemHeroView: View {
   /// Seconds of artwork before the trailer takes over.
   static let trailerLeadIn: Double = 2
 
+  /// Leads and directors named in the corner, before the list turns into a paragraph.
+  static let creditNameLimit = 3
+
+  /// Genres shown beside the names; kino.pub happily returns six.
+  static let genreLimit = 3
+
+  /// Everything under the title is one size, taken from the system scale rather than
+  /// picked by hand — a bespoke 24/26/28 next to real tvOS controls reads as foreign.
+  /// 29 pt on tvOS.
+  static let secondaryFont: Font = .subheadline
+
+  /// Not `text`, not `subtitle`: the row Apple puts under the title looks like primary
+  /// text with the artwork faintly coming through it.
+  static let metaStyle = Color.KinoPub.text.opacity(0.85)
+
 #if os(tvOS)
-  static let heroHeight: CGFloat = 720
+  // tvOS lays out in a fixed 1920×1080, so this is 83% of the screen — the artwork
+  // owns the page the way it does on Apple TV, and stops short of a full 16:9 so the
+  // sections underneath still peek in and say there is more to scroll to.
+  static let heroHeight: CGFloat = 900
   static let horizontalInset: CGFloat = 80
   static let bottomInset: CGFloat = 60
   static let contentSpacing: CGFloat = 12
   static let textMaxWidth: CGFloat = 900
   static let titleFont: Font = .system(size: 62, weight: .bold)
-  static let subtitleFont: Font = .system(size: 28, weight: .regular)
-  static let metaFont: Font = .system(size: 24, weight: .medium)
-  static let plotFont: Font = .system(size: 26, weight: .regular)
   static let buttonFont: Font = .system(size: 26, weight: .semibold)
+  static let metaSpacing: CGFloat = 20
+  static let actionsGap: CGFloat = 20
+  static let creditsMaxWidth: CGFloat = 520
+  static let creditsGutter: CGFloat = 60
 #elseif os(macOS)
   static let heroHeight: CGFloat = 460
   static let horizontalInset: CGFloat = 32
@@ -430,10 +527,11 @@ struct MediaItemHeroView: View {
   static let contentSpacing: CGFloat = 8
   static let textMaxWidth: CGFloat = 620
   static let titleFont: Font = .system(size: 36, weight: .bold)
-  static let subtitleFont: Font = .system(size: 18, weight: .regular)
-  static let metaFont: Font = .system(size: 14, weight: .medium)
-  static let plotFont: Font = .system(size: 15, weight: .regular)
   static let buttonFont: Font = .system(size: 15, weight: .semibold)
+  static let metaSpacing: CGFloat = 12
+  static let actionsGap: CGFloat = 12
+  static let creditsMaxWidth: CGFloat = 300
+  static let creditsGutter: CGFloat = 28
 #else
   static let heroHeight: CGFloat = 380
   static let horizontalInset: CGFloat = 20
@@ -441,9 +539,10 @@ struct MediaItemHeroView: View {
   static let contentSpacing: CGFloat = 8
   static let textMaxWidth: CGFloat = 560
   static let titleFont: Font = .system(size: 28, weight: .bold)
-  static let subtitleFont: Font = .system(size: 16, weight: .regular)
-  static let metaFont: Font = .system(size: 13, weight: .medium)
-  static let plotFont: Font = .system(size: 14, weight: .regular)
   static let buttonFont: Font = .system(size: 14, weight: .semibold)
+  static let metaSpacing: CGFloat = 10
+  static let actionsGap: CGFloat = 10
+  static let creditsMaxWidth: CGFloat = 240
+  static let creditsGutter: CGFloat = 16
 #endif
 }

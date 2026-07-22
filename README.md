@@ -82,9 +82,9 @@ These are real, verified, and up for grabs:
 
 - **The pause panel's focus behaviour is unverified on a real remote.** The word chips now use a
   focus-reactive button style, but nobody has driven it with a Siri Remote yet.
-- **The detail page's default focus is unverified on a real remote.** `MediaItemHeroView` states a
-  `prefersDefaultFocus` preference on Play inside a `focusScope`; a headless simulator draws no focus
-  at all, so this has only been read, not seen.
+- **The detail page's default focus is unverified on a real remote.** `MediaItemView` names Play with
+  `.defaultFocus($focus, .play)`; a headless simulator draws no focus at all, so this has only been
+  read, not seen.
 - **Card tilt-parallax is unverified on a real remote.** `SiriRemoteTilt` reads the Siri Remote's touch
   surface as an absolute-position joystick via `GCController`; `simctl` and the on-screen remote only
   drive discrete arrow-key presses, not a continuous thumb drag, so the tilt has been read, not felt.
