@@ -63,8 +63,7 @@ final class PlaybackActionTests: XCTestCase {
                      finished: item.finished, advert: item.advert, poorQuality: item.poorQuality,
                      createdAt: item.createdAt, updatedAt: item.updatedAt,
                      inWatchlist: item.inWatchlist, subscribed: item.subscribed, ac3: item.ac3,
-                     bookmarks: item.bookmarks, seasons: seasons, videos: videos,
-                     skeleton: item.skeleton)
+                     bookmarks: item.bookmarks, seasons: seasons, videos: videos)
   }
 
   // MARK: - isSeries

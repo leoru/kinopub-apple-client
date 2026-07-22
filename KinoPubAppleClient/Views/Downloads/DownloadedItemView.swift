@@ -54,7 +54,7 @@ public struct DownloadedItemView: View {
         .renderingMode(.original)
         .posterStyle(size: .small, orientation: .vertical)
     } placeholder: {
-      Color.KinoPub.skeleton
+      Color.KinoPub.placeholder
         .frame(width: PosterStyle.Size.small.width,
                height: PosterStyle.Size.small.height)
     }

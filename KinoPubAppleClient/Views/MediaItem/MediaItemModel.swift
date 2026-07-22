@@ -32,7 +32,11 @@ class MediaItemModel: ObservableObject {
 
   public var isBookmarked: Bool { !folderIDsContainingItem.isEmpty }
 
+  /// - Parameter knownItem: the listing's copy of the item, where the caller has one.
+  ///   Only the artwork is used from it — the page waits for the full details before
+  ///   drawing anything else, so a stale title or missing seasons can't leak through.
   init(mediaItemId: Int,
+       knownItem: MediaItem? = nil,
        itemsService: VideoContentService,
        downloadManager: DownloadManager<DownloadMeta>,
        linkProvider: NavigationLinkProvider,
@@ -44,6 +48,9 @@ class MediaItemModel: ObservableObject {
     self.errorHandler = errorHandler
     self.downloadManager = downloadManager
     self.actionsService = actionsService
+    if let knownItem {
+      self.mediaItem = knownItem
+    }
   }
 
   func fetchData() {

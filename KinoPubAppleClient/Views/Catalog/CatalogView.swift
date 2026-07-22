@@ -58,6 +58,7 @@ struct CatalogView: View {
           switch route {
           case .details(let item):
             MediaItemView(model: MediaItemModel(mediaItemId: item.id,
+                                                knownItem: item,
                                                 itemsService: appContext.contentService,
                                                 downloadManager: appContext.downloadManager,
                                                 linkProvider: CatalogRoutesLinkProvider(),
@@ -85,7 +86,16 @@ struct CatalogView: View {
     }
   }
 
+  @ViewBuilder
   var catalogView: some View {
+    if catalog.items.isEmpty && catalog.isLoading {
+      LoadingIndicatorView()
+    } else {
+      grid
+    }
+  }
+
+  private var grid: some View {
     GeometryReader { geometryProxy in
       ContentItemsListView(width: geometryProxy.size.width, items: $catalog.items, onLoadMoreContent: { item in
         catalog.loadMoreContent(after: item)

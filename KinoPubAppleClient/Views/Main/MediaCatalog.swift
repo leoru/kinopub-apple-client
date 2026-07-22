@@ -19,7 +19,10 @@ class MediaCatalog: ObservableObject {
   private var itemsService: VideoContentService
   private var bag = Set<AnyCancellable>()
 
-  @Published public var items: [MediaItem] = MediaItem.skeletonMock()
+  @Published public var items: [MediaItem] = []
+  /// Drives the spinner: only true while the first page is on its way, so paging
+  /// further down never blanks the grid.
+  @Published public private(set) var isLoading: Bool = false
   @Published public var pagination: Pagination?
   @Published public var contentType: MediaType = .movie
   @Published public var shortcut: MediaShortcut = .hot
@@ -46,14 +49,18 @@ class MediaCatalog: ObservableObject {
       return
     }
 
+    let isFirstPage = pagination == nil
+    if isFirstPage { isLoading = true }
+    defer { isLoading = false }
+
     do {
-      let page = pagination != nil ? pagination!.current + 1 : nil
+      let page = isFirstPage ? nil : pagination!.current + 1
       if !query.isEmpty {
         let data = try await itemsService.search( query: query, page: page)
-        handleData(data)
+        handleData(data, isFirstPage: isFirstPage)
       } else {
         let data = try await itemsService.fetch(shortcut: shortcut, contentType: contentType, page: page)
-        handleData(data)
+        handleData(data, isFirstPage: isFirstPage)
       }
     } catch {
       Logger.app.debug("fetch items error: \(error)")
@@ -61,8 +68,8 @@ class MediaCatalog: ObservableObject {
     }
   }
 
-  private func handleData(_ data: PaginatedData<MediaItem>) {    
-    if items.first(where: { $0.skeleton ?? false }) != nil {
+  private func handleData(_ data: PaginatedData<MediaItem>, isFirstPage: Bool) {
+    if isFirstPage {
       items = data.items
     } else {
       items.append(contentsOf: data.items)
@@ -86,7 +93,7 @@ class MediaCatalog: ObservableObject {
 
   @MainActor
   func refresh() {
-    items = MediaItem.skeletonMock()
+    items = []
     pagination = nil
     errorHandler.reset()
     Task {
@@ -115,7 +122,6 @@ class MediaCatalog: ObservableObject {
       .removeDuplicates()
       .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
       .sink { [weak self] _ in
-      self?.items = MediaItem.skeletonMock()
       self?.refresh()
     }.store(in: &bag)
   }

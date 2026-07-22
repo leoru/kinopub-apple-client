@@ -35,7 +35,9 @@ class HomeCatalog: ObservableObject {
 
   static let continueWatchingRowID = "continue-watching"
 
-  @Published public private(set) var rows: [MediaRow] = HomeCatalog.placeholderRows()
+  /// Empty until the first fetch lands — the screen shows a spinner rather than
+  /// stand-in artwork, the way the Apple TV app waits.
+  @Published public private(set) var rows: [MediaRow] = []
   @Published public private(set) var isLoaded: Bool = false
 
   private var authState: AuthState
@@ -69,7 +71,6 @@ class HomeCatalog: ObservableObject {
   }
 
   func refresh() async {
-    rows = Self.placeholderRows()
     isLoaded = false
     errorHandler.reset()
     await fetch()
@@ -119,6 +120,8 @@ class HomeCatalog: ObservableObject {
               subtitle: item.originalTitle,
               progress: history?.progress ?? item.progress,
               badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil,
+              backdropURL: landscapeImageURL(for: item, history: history),
+              metaLine: overlayLabel(for: history),
               landscapeImageURL: landscapeImageURL(for: item, history: history),
               overlayLabel: overlayLabel(for: history))
   }
@@ -177,19 +180,9 @@ class HomeCatalog: ObservableObject {
               subtitle: item.originalTitle,
               imdbRating: item.imdbRating,
               kinopoiskRating: item.kinopoiskRating,
-              isPlaceholder: item.skeleton ?? false)
-  }
-
-  // MARK: - Placeholders
-
-  private static func placeholderRows() -> [MediaRow] {
-    shortcuts.prefix(3).map { shortcut in
-      MediaRow(id: shortcut.id,
-               title: shortcut.title.localized,
-               cards: (0..<6).map { index in
-                 MediaCard(id: index, posterURL: "", title: " ", subtitle: " ", isPlaceholder: true)
-               })
-    }
+              backdropURL: item.posters.wideURL ?? item.posters.big,
+              metaLine: item.metadataLine,
+              overview: item.plot)
   }
 
   private func subscribeForAuth() {

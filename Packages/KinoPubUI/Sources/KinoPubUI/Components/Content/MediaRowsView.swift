@@ -16,21 +16,17 @@ public struct MediaRow: Identifiable {
   /// Where the title leads: the same content as a full screen. Nil leaves the title
   /// as plain text, for rows that have no page of their own.
   public let destination: (any Hashable)?
-  /// Draws the title as a skeleton, for rows whose name has not arrived yet.
-  public let isPlaceholder: Bool
 
   public init(id: String,
               title: String,
               count: String? = nil,
               cards: [MediaCard],
-              destination: (any Hashable)? = nil,
-              isPlaceholder: Bool = false) {
+              destination: (any Hashable)? = nil) {
     self.id = id
     self.title = title
     self.count = count
     self.cards = cards
     self.destination = destination
-    self.isPlaceholder = isPlaceholder
   }
 }
 
@@ -41,6 +37,24 @@ public struct MediaRowsView: View {
   private let navigationLinkProvider: (MediaCard) -> any Hashable
   private let onRowAppear: ((MediaRow) -> Void)?
 
+  /// Identifies one card in one row. The same item can sit in two rows — Continue
+  /// Watching and Hot Series both — so the card's own id is not unique enough to
+  /// track focus by.
+  private struct CardKey: Hashable {
+    let row: String
+    let card: Int
+  }
+
+  @FocusState private var focusedCard: CardKey?
+
+  /// What the backdrop is showing. Separate from `focusedCard` so the artwork holds
+  /// when focus leaves for the tab bar instead of dropping to a bare background.
+  @State private var backdropCard: CardKey?
+
+  /// Set once the screen has handed focus to its first card, so coming back from an
+  /// item page restores where the user was instead of snapping to the top again.
+  @State private var hasClaimedFocus: Bool = false
+
   public init(rows: [MediaRow],
               navigationLinkProvider: @escaping (MediaCard) -> any Hashable,
               onRowAppear: ((MediaRow) -> Void)? = nil) {
@@ -50,15 +64,175 @@ public struct MediaRowsView: View {
   }
 
   public var body: some View {
+#if os(tvOS)
+    scroll
+      .background(backdrop)
+      .defaultFocus($focusedCard, firstCardKey, priority: .userInitiated)
+      .onChange(of: focusedCard) { _, newValue in
+        // Nil means focus went to the tab bar or a pushed screen; keep the artwork.
+        if let newValue { backdropCard = newValue }
+      }
+      // The remote should land on the first card of the first row — Continue Watching
+      // when there is one — rather than on the tab bar above. `.defaultFocus` alone
+      // does not do it: the rows arrive after the screen does, and by then the tab
+      // bar already holds focus. So claim it once the first card actually exists.
+      .task {
+        guard !hasClaimedFocus, let firstCardKey else { return }
+        // The stack is lazy — the card is not there to focus on the same runloop pass.
+        try? await Task.sleep(for: .milliseconds(120))
+        guard !Task.isCancelled, focusedCard == nil else { return }
+        focusedCard = firstCardKey
+        hasClaimedFocus = true
+      }
+#else
+    scroll
+#endif
+  }
+
+  private var scroll: some View {
     ScrollView(.vertical) {
       LazyVStack(alignment: .leading, spacing: Self.rowSpacing) {
+#if os(tvOS)
+        // Part of the scroll, not a fixed layer: the preview belongs to the top of the
+        // page and slides away as focus moves down the rows. Pinned instead, the rows
+        // scroll straight over the title and plot.
+        previewZone
+#endif
+
         ForEach(rows) { row in
           section(for: row)
         }
       }
-      .padding(.vertical, Self.rowSpacing)
+      .padding(.bottom, Self.rowSpacing)
     }
   }
+
+  // MARK: - Focus backdrop
+
+#if os(tvOS)
+  private var firstCardKey: CardKey? {
+    guard let row = rows.first, let card = row.cards.first else { return nil }
+    return CardKey(row: row.id, card: card.id)
+  }
+
+  private func card(for key: CardKey?) -> MediaCard? {
+    guard let key else { return nil }
+    return rows.first { $0.id == key.row }?.cards.first { $0.id == key.card }
+  }
+
+  /// The focused item's wide artwork behind the whole screen, with its title and plot
+  /// over the reserved space above the rows — how the Apple TV app dresses its home
+  /// screen. The trailer will play in this same frame later; the space is laid out for
+  /// it now.
+  @ViewBuilder
+  private var backdrop: some View {
+    ZStack(alignment: .topLeading) {
+      Color.KinoPub.background
+
+      if let card = card(for: backdropCard) {
+        ProgressiveBlur(startPoint: 0.3, maxRadius: 60, layers: 5) {
+          AsyncImage(url: URL(string: card.backdropImageURL)) { image in
+            image
+              .resizable()
+              .aspectRatio(contentMode: .fill)
+          } placeholder: {
+            Color.clear
+          }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+        // Keyed on the URL so a new backdrop is a new view, and the two cross-fade
+        // instead of the same image view swapping its contents.
+        .id(card.backdropImageURL)
+        .transition(.opacity)
+
+        scrim
+      }
+    }
+    .animation(.easeInOut(duration: 0.45), value: backdropCard)
+    .ignoresSafeArea()
+  }
+
+  /// The space the rows leave free at the top of the page, holding what the cards no
+  /// longer say under themselves. The trailer will play in this same frame later.
+  ///
+  /// It is a link, not a label: 560 points of unfocusable space above the first row
+  /// swallows every press of Up, and the tab bar above it becomes unreachable. Being
+  /// focusable also earns its keep — Up from the first row lands here, and clicking
+  /// opens the item, the way a Netflix hero does.
+  @ViewBuilder
+  private var previewZone: some View {
+    if let card = card(for: backdropCard) {
+      NavigationLink(value: navigationLinkProvider(card)) {
+        preview(for: card)
+      }
+      .buttonStyle(PreviewButtonStyle())
+      .id(card.id)
+      .transition(.opacity)
+      .animation(.easeInOut(duration: 0.3), value: backdropCard)
+    } else {
+      Color.clear
+        .frame(height: Self.previewHeight)
+    }
+  }
+
+  private func preview(for card: MediaCard) -> some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Spacer(minLength: 0)
+
+      Text(card.title)
+        .font(Self.previewTitleFont)
+        .foregroundStyle(Color.KinoPub.text)
+        .lineLimit(2)
+
+      if let subtitle = card.subtitle, !subtitle.isEmpty, subtitle != card.title {
+        Text(subtitle)
+          .font(Self.previewSubtitleFont)
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .lineLimit(1)
+      }
+
+      HStack(spacing: 12) {
+        if let rating = card.rating {
+          RatingBadgeView(rating: rating)
+        }
+        if let meta = card.metaLine, !meta.isEmpty {
+          Text(meta)
+            .font(Self.previewMetaFont)
+            .foregroundStyle(Color.KinoPub.subtitle)
+            .lineLimit(1)
+        }
+      }
+
+      if let overview = card.overview, !overview.isEmpty {
+        Text(overview)
+          .font(Self.previewOverviewFont)
+          .foregroundStyle(Color.KinoPub.text.opacity(0.85))
+          .lineLimit(3)
+          .frame(maxWidth: Self.previewTextWidth, alignment: .leading)
+      }
+    }
+    .frame(height: Self.previewHeight, alignment: .bottomLeading)
+    .padding(.horizontal, Self.horizontalInset)
+    .padding(.bottom, Self.previewBottomInset)
+    // A shadow rather than a scrim: the artwork stays at full brightness and the type
+    // still holds up over a pale frame.
+    .shadow(color: .black.opacity(0.7), radius: 12, y: 2)
+  }
+
+  /// Light: enough to seat the rows on the artwork, not enough to hide it. The
+  /// backdrop is meant to be seen — the blur toward the bottom does the work of
+  /// keeping the lower rows readable.
+  private var scrim: some View {
+    LinearGradient(stops: [
+      .init(color: Color.KinoPub.background.opacity(0.35), location: 0),
+      .init(color: Color.KinoPub.background.opacity(0.65), location: 0.35),
+      .init(color: Color.KinoPub.background.opacity(0.92), location: 0.7),
+      .init(color: Color.KinoPub.background, location: 1)
+    ], startPoint: .top, endPoint: .bottom)
+  }
+
+#endif
 
   @ViewBuilder
   private func section(for row: MediaRow) -> some View {
@@ -69,16 +243,11 @@ public struct MediaRowsView: View {
       ScrollView(.horizontal, showsIndicators: false) {
         LazyHStack(alignment: .top, spacing: Self.cardSpacing) {
           ForEach(row.cards) { card in
-            if card.isPlaceholder {
-              // Skeleton cards carry index ids, not item ids — leaving them tappable
-              // navigates straight to a 404.
-              MediaCardView(card: card)
-            } else {
-              NavigationLink(value: navigationLinkProvider(card)) {
-                MediaCardView(card: card)
-              }
-              .buttonStyle(MediaCardButtonStyle())
+            NavigationLink(value: navigationLinkProvider(card)) {
+              MediaCardView(card: card, caption: Self.cardCaption)
             }
+            .buttonStyle(MediaCardButtonStyle())
+            .focused($focusedCard, equals: CardKey(row: row.id, card: card.id))
           }
         }
         .padding(.horizontal, Self.horizontalInset)
@@ -93,7 +262,7 @@ public struct MediaRowsView: View {
   /// the rest stay plain text.
   @ViewBuilder
   private func header(for row: MediaRow) -> some View {
-    if let destination = row.destination, !row.isPlaceholder {
+    if let destination = row.destination {
       NavigationLink(value: destination) {
         RowHeader(row: row, isLink: true)
       }
@@ -106,6 +275,20 @@ public struct MediaRowsView: View {
   // MARK: - Metrics
 
 #if os(tvOS)
+  /// Free space above the rows, for the focused item's artwork, name and plot — and,
+  /// later, its trailer. A little over half the 1080-point screen, so the first row
+  /// sits low and the second only peeks, the way Netflix laid its home screen out.
+  /// The preview says what the focused card is, so the cards themselves stay bare.
+  static let cardCaption: MediaCardCaption = .none
+
+  static let previewHeight: CGFloat = 560
+  static let previewBottomInset: CGFloat = 28
+  static let previewTextWidth: CGFloat = 900
+  static let previewTitleFont: Font = .system(size: 52, weight: .bold)
+  static let previewSubtitleFont: Font = .system(size: 26, weight: .regular)
+  static let previewMetaFont: Font = .system(size: 24, weight: .medium)
+  static let previewOverviewFont: Font = .system(size: 24, weight: .regular)
+
   static let rowSpacing: CGFloat = 40
   static let cardSpacing: CGFloat = 36
   static let horizontalInset: CGFloat = 48
@@ -114,6 +297,10 @@ public struct MediaRowsView: View {
   static let countFont: Font = .system(size: 26, weight: .regular)
   static let chevronFont: Font = .system(size: 24, weight: .semibold)
 #else
+  /// No focus off TV, so no preview and no reserved room for one — the cards have to
+  /// name themselves.
+  static let cardCaption: MediaCardCaption = .always
+
   static let rowSpacing: CGFloat = 24
   static let cardSpacing: CGFloat = 16
   static let horizontalInset: CGFloat = 16
@@ -150,7 +337,6 @@ private struct RowHeader: View {
           .opacity(chevronOpacity)
       }
     }
-    .skeleton(enabled: row.isPlaceholder, size: CGSize(width: 240, height: 24))
     // The title is short, but the focus engine only moves up into what sits directly
     // above the focused card — anything narrower is unreachable from most of the row.
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -184,6 +370,28 @@ struct RowHeaderButtonStyle: ButtonStyle {
         .environment(\.cardFocused, isFocused)
         .scaleEffect(isFocused ? 1.06 : 1.0, anchor: .leading)
         .opacity(configuration.isPressed ? 0.6 : 1)
+        .animation(.easeOut(duration: 0.18), value: isFocused)
+    }
+  }
+}
+
+/// The home preview's focus feedback. The block is the width of the screen, so a lift
+/// like the cards get would read as the whole page jumping — it grows a little from its
+/// bottom-left corner instead, where the text is anchored.
+struct PreviewButtonStyle: ButtonStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    Preview(configuration: configuration)
+  }
+
+  private struct Preview: View {
+    let configuration: ButtonStyleConfiguration
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+      configuration.label
+        .environment(\.cardFocused, isFocused)
+        .scaleEffect(isFocused ? 1.03 : 1, anchor: .bottomLeading)
+        .opacity(configuration.isPressed ? 0.7 : 1)
         .animation(.easeOut(duration: 0.18), value: isFocused)
     }
   }

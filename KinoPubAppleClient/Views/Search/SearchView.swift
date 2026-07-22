@@ -28,7 +28,9 @@ struct SearchView: View {
           LibraryFiltersBar(catalog: catalog)
         }
 
-        if catalog.items.isEmpty && catalog.isSearching {
+        if catalog.items.isEmpty && catalog.isLoading {
+          LoadingIndicatorView()
+        } else if catalog.items.isEmpty && catalog.isSearching {
           emptyView
         } else {
           catalogView
@@ -41,6 +43,7 @@ struct SearchView: View {
         switch route {
         case .details(let item):
           MediaItemView(model: MediaItemModel(mediaItemId: item.id,
+                                              knownItem: item,
                                               itemsService: appContext.contentService,
                                               downloadManager: appContext.downloadManager,
                                               linkProvider: SearchRoutesLinkProvider(),

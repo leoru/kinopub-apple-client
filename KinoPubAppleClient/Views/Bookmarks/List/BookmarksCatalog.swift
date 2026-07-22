@@ -22,7 +22,10 @@ class BookmarksCatalog: ObservableObject {
   private var errorHandler: ErrorHandler
   private var bag = Set<AnyCancellable>()
 
-  @Published public private(set) var rows: [MediaRow] = BookmarksCatalog.placeholderRows()
+  /// Empty until the folders and their contents land; the screen shows a spinner
+  /// until then rather than stand-in artwork.
+  @Published public private(set) var rows: [MediaRow] = []
+  @Published public private(set) var isLoaded: Bool = false
 
   init(itemsService: VideoContentService, authState: AuthState, errorHandler: ErrorHandler) {
     self.contentService = itemsService
@@ -42,20 +45,20 @@ class BookmarksCatalog: ObservableObject {
         .filter { $0.count != "0" }
         .recentlyUpdatedFirst()
 
-      rows = folders.map(Self.placeholderRow(for:))
       await fillRows(for: folders)
-      // A folder the service still counts but returns nothing for would draw as a bare
-      // title over empty space.
-      rows = rows.filter { !$0.cards.isEmpty }
     } catch {
       Logger.app.debug("fetch bookmarks error: \(error)")
       errorHandler.setError(error)
     }
+    isLoaded = true
   }
 
-  /// Rows show their real titles as soon as the folder list lands, then each swaps its
-  /// placeholder cards for artwork as its own request comes back.
+  /// Each folder appears as soon as its own request comes back, in folder order. A
+  /// folder the service still counts but returns nothing for never draws — a bare
+  /// title over empty space is worse than no row at all.
   private func fillRows(for folders: [Bookmark]) async {
+    var built = [MediaRow?](repeating: nil, count: folders.count)
+
     await withTaskGroup(of: (Int, [MediaItem]).self) { group in
       for (index, folder) in folders.enumerated() {
         group.addTask { [contentService] in
@@ -70,15 +73,17 @@ class BookmarksCatalog: ObservableObject {
       }
 
       for await (index, items) in group {
-        guard rows.indices.contains(index) else { continue }
-        rows[index] = Self.row(for: folders[index], items: items)
+        guard !items.isEmpty else { continue }
+        built[index] = Self.row(for: folders[index], items: items)
+        rows = built.compactMap { $0 }
       }
     }
   }
 
   @Sendable @MainActor
   func refresh() async {
-    rows = Self.placeholderRows()
+    rows = []
+    isLoaded = false
     Logger.app.debug("refetch bookmarks")
     await fetchItems()
   }
@@ -93,29 +98,6 @@ class BookmarksCatalog: ObservableObject {
              count: bookmark.count,
              cards: items.map(MediaCard.init),
              destination: BookmarksRoutes.bookmark(bookmark))
-  }
-
-  private static func placeholderRow(for bookmark: Bookmark) -> MediaRow {
-    MediaRow(id: rowID(for: bookmark),
-             title: bookmark.title,
-             count: bookmark.count,
-             cards: placeholderCards(),
-             destination: BookmarksRoutes.bookmark(bookmark))
-  }
-
-  private static func placeholderRows() -> [MediaRow] {
-    (0..<3).map { index in
-      MediaRow(id: "placeholder-\(index)",
-               title: " ",
-               cards: placeholderCards(),
-               isPlaceholder: true)
-    }
-  }
-
-  private static func placeholderCards() -> [MediaCard] {
-    (0..<6).map { index in
-      MediaCard(id: index, posterURL: "", title: " ", subtitle: " ", isPlaceholder: true)
-    }
   }
 
   private func subscribeForAuth() {
