@@ -73,6 +73,9 @@ These are real, verified, and up for grabs:
 - **The detail page's default focus is unverified on a real remote.** `MediaItemHeroView` states a
   `prefersDefaultFocus` preference on Play inside a `focusScope`; a headless simulator draws no focus
   at all, so this has only been read, not seen.
+- **Card tilt-parallax is unverified on a real remote.** `SiriRemoteTilt` reads the Siri Remote's touch
+  surface as an absolute-position joystick via `GCController`; `simctl` and the on-screen remote only
+  drive discrete arrow-key presses, not a continuous thumb drag, so the tilt has been read, not felt.
 - **The detail page has no on-screen back button**, matching the stock Apple TV app — Back/Menu on the
   remote pops the stack. If that turns out not to fire, it is a real bug, not a design choice.
 - **Subtitles don't follow the episode.** `MediaItem.subtitles` returns `videos?.first?.subtitles`, so a
@@ -151,6 +154,10 @@ that line is polish, and everything above it is unfinished business.
 - Tabs: Search · Home · Movies · Series · Saved · Settings, icon-only where it should be
 - Combined score badges on posters, separate IMDb/Kinopoisk marks on detail pages
 - White accent throughout; the site's green is gone
+- Poster/card tilt-parallax on focus, following the thumb on the Siri Remote's touch
+  surface (`Packages/KinoPubUI/Sources/KinoPubUI/Extensions/SiriRemoteTilt.swift`) —
+  read via `GCController`'s `microGamepad` in absolute-position mode, since SwiftUI
+  exposes no native equivalent of TVUIKit's parallax focus effect
 
 ### Phase A — Plan-minimum: parity with what I already use
 
@@ -277,7 +284,6 @@ Two tiers, and the cheap one is worth shipping first:
 - [ ] TV channels tab (`GET /v1/tv/index`)
 - [ ] Viewing history screen
 - [ ] Top Shelf extension
-- [ ] tvOS card parallax — needs TVUIKit via `UIViewRepresentable`; SwiftUI has no equivalent
 
 
 ## API notes

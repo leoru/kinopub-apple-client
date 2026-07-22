@@ -199,11 +199,30 @@ struct MediaCardButtonStyle: ButtonStyle {
   private struct Card: View {
     let configuration: ButtonStyleConfiguration
     @Environment(\.isFocused) private var isFocused
+#if os(tvOS)
+    /// -1...1, centred; only meaningful while this card is focused.
+    @State private var tilt: CGSize = .zero
+    private static let maxTiltDegrees: Double = 9
+#endif
 
     var body: some View {
       configuration.label
         .environment(\.cardFocused, isFocused)
         .scaleEffect(isFocused ? 1.08 : (configuration.isPressed ? 0.97 : 1.0))
+#if os(tvOS)
+        .rotation3DEffect(.degrees(isFocused ? -tilt.height * Self.maxTiltDegrees : 0),
+                           axis: (x: 1, y: 0, z: 0), anchor: .center, perspective: 0.3)
+        .rotation3DEffect(.degrees(isFocused ? tilt.width * Self.maxTiltDegrees : 0),
+                           axis: (x: 0, y: 1, z: 0), anchor: .center, perspective: 0.3)
+        .onReceive(SiriRemoteTilt.shared.$position) { newValue in
+          guard isFocused else { return }
+          tilt = newValue
+        }
+        .onChange(of: isFocused) { focused in
+          if !focused { tilt = .zero }
+        }
+        .animation(.easeOut(duration: 0.1), value: tilt)
+#endif
         .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 18, y: 10)
         .animation(.easeOut(duration: 0.18), value: isFocused)
         .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
