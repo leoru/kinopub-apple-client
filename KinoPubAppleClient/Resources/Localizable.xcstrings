@@ -1870,6 +1870,23 @@
         }
       }
     },
+    "Season" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Season"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сезон"
+          }
+        }
+      }
+    },
     "Seasons" : {
       "extractionState" : "manual",
       "localizations" : {

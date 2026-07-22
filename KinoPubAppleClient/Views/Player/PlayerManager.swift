@@ -13,6 +13,10 @@ import KinoPubKit
 import AVFoundation
 import KinoPubLogging
 import OSLog
+#if os(tvOS)
+import AVKit
+import UIKit
+#endif
 
 enum WatchMode {
   case media
@@ -23,7 +27,6 @@ class PlayerManager: ObservableObject {
 
   @Published var isPlaying: Bool = false
   @Published var watchMark: WatchData?
-  @Published var continueTime: TimeInterval?
   @Published var activeCue: SubtitleCue?
   @Published var activeSecondaryCue: SubtitleCue?
   @Published var lastCue: SubtitleCue?
@@ -53,6 +56,21 @@ class PlayerManager: ObservableObject {
   private var cues: [SubtitleCue] = []
   private var secondaryCues: [SubtitleCue] = []
   private var cueLoadTasks: [Task<Void, Never>] = []
+
+#if os(tvOS)
+  /// The system player screen we drive on tvOS. Held weakly: AVKit owns it, we only
+  /// reach in to hang metadata and the transport-bar menus off it.
+  private weak var playerViewController: AVPlayerViewController?
+  /// Fires once the asset has published its audio renditions, which is when a sensible
+  /// default track can be chosen.
+  private var audioReadyObservation: NSKeyValueObservation?
+  /// The `.audible` group and its options, cached once the item is ready so the menu and
+  /// the checkmarks don't have to re-read the asset on every rebuild.
+  private var audibleGroup: AVMediaSelectionGroup?
+  /// Set once we've auto-picked a default, so a later readiness callback can't stomp a
+  /// manual choice the user made in the meantime.
+  private var didChooseDefaultAudio = false
+#endif
 
   /// Optional on purpose: both of these used to force-unwrap, and `URL(string: "")`
   /// is nil — an item without a trailer link crashed the app on open.
@@ -96,6 +114,9 @@ class PlayerManager: ObservableObject {
     if let cueObserverToken {
       player.removeTimeObserver(cueObserverToken)
     }
+#if os(tvOS)
+    audioReadyObservation?.invalidate()
+#endif
   }
 
   // MARK: - Subtitles
@@ -162,6 +183,12 @@ class PlayerManager: ObservableObject {
                                                   secondary: selection.secondary?.reference),
                                    for: playItem.metadata.id)
     }
+
+    // The transport-bar menu is the only place these tracks are shown on tvOS, so its
+    // checkmarks have to move the instant the selection does.
+#if os(tvOS)
+    rebuildTransportBarMenus()
+#endif
 
     guard let primary = selection.primary else {
       disableSystemLegibleSelection()
@@ -300,33 +327,303 @@ class PlayerManager: ObservableObject {
     }
   }
 
+  /// Pick up where the title was left off. There is no prompt any more: the remembered
+  /// time is where playback resumes, and the transport bar's own scrubber is right there
+  /// for anyone who meant to start over.
   func fetchWatchMark() async {
     do {
       watchMark = try await actionsService.fetchWatchMark(id: playItem.metadata.id, video: playItem.metadata.video, season: playItem.metadata.season)
       if let watchMark {
         let remoteContinueTime = watchMark.item.videos?.first?.time ?? watchMark.item.seasons?.first?.episodes.first?.time
-        self.continueTime = remoteContinueTime ?? 0 > 0 ? remoteContinueTime : nil
+        if let resume = remoteContinueTime, resume > 0 {
+          seek(to: resume)
+        }
       }
     } catch {
       Logger.app.error("Failed to fetch watch mark: \(error)")
     }
   }
 
-  // MARK: - Continue watching
-
-  func seekToContinueWatching() {
-    guard let continueTime else {
-      return
-    }
-
-    let seekTime = CMTime(seconds: continueTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+  private func seek(to time: TimeInterval) {
+    let seekTime = CMTime(seconds: time, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
     player.seek(to: seekTime)
-
-    self.continueTime = nil
   }
 
-  func cancelContinueWatching() {
-    self.continueTime = nil
+  // MARK: - Title / subtitle
+
+  /// The film or series name for the transport bar's info panel. The `PlayableItem`
+  /// protocol doesn't carry a display name, so we recover it from the concrete type —
+  /// the only place the name actually lives.
+  var displayTitle: String? {
+    if let media = playItem as? MediaItem {
+      let name = media.localizedTitle
+      return name.isEmpty ? nil : name
+    }
+    if let download = playItem as? DownloadMeta {
+      return download.localizedTitle.isEmpty ? nil : download.localizedTitle
+    }
+    if let episode = playItem as? Episode {
+      // The item page fills `seriesTitle` in before handing the episode to the player;
+      // a bare `Episode` from elsewhere falls back to its own title, the best we have.
+      if let seriesTitle = episode.seriesTitle, !seriesTitle.isEmpty {
+        return seriesTitle
+      }
+      return episode.fixedTitle
+    }
+    return nil
+  }
+
+  /// "Season 2, Episode 5 — <episode title>" for a series episode; nothing for a movie.
+  var displaySubtitle: String? {
+    guard let episode = playItem as? Episode else { return nil }
+    var parts: [String] = []
+    if let season = episode.seasonNumber {
+      parts.append("\("Season".localized) \(season)")
+    }
+    parts.append("\("Episode".localized) \(episode.number)")
+    let line = parts.joined(separator: ", ")
+    // The title line already shows the episode name, so only append it when it adds
+    // something the "Episode N" label doesn't already say.
+    let epTitle = episode.title.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !epTitle.isEmpty, epTitle != displayTitle {
+      return "\(line) — \(epTitle)"
+    }
+    return line
   }
 
 }
+
+#if os(tvOS)
+
+// MARK: - tvOS transport bar
+
+extension PlayerManager {
+
+  /// Hand the system player screen everything it needs: the title/subtitle for the info
+  /// panel, and the Subtitles + Audio menus for the transport bar. Called from the
+  /// `UIViewControllerRepresentable` once AVKit has made the controller.
+  func attach(to controller: AVPlayerViewController) {
+    playerViewController = controller
+    configureExternalMetadata()
+    configureDefaultAudioWhenReady()
+    rebuildTransportBarMenus()
+  }
+
+  private func configureExternalMetadata() {
+    guard let item = player.currentItem else { return }
+    var metadata: [AVMetadataItem] = []
+    if let title = displayTitle {
+      metadata.append(makeMetadataItem(.commonIdentifierTitle, value: title))
+    }
+    if let subtitle = displaySubtitle {
+      metadata.append(makeMetadataItem(.iTunesMetadataTrackSubTitle, value: subtitle))
+    }
+    item.externalMetadata = metadata
+  }
+
+  private func makeMetadataItem(_ identifier: AVMetadataIdentifier, value: String) -> AVMetadataItem {
+    let item = AVMutableMetadataItem()
+    item.identifier = identifier
+    item.value = value as NSString
+    item.extendedLanguageTag = "und"
+    return item
+  }
+
+  // MARK: Audio
+
+  /// AVFoundation's own default is "first rendition in the system language", which on a
+  /// kino.pub HLS stream lands on an arbitrary Russian dub. We wait for the renditions to
+  /// publish, then pick a good one — or the user's remembered pick — instead.
+  private func configureDefaultAudioWhenReady() {
+    guard watchMode == .media, let item = player.currentItem else { return }
+    if item.status == .readyToPlay {
+      applyAudibleGroup(from: item)
+      return
+    }
+    audioReadyObservation?.invalidate()
+    audioReadyObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+      guard item.status == .readyToPlay else { return }
+      DispatchQueue.main.async {
+        self?.applyAudibleGroup(from: item)
+      }
+    }
+  }
+
+  private func applyAudibleGroup(from item: AVPlayerItem) {
+    guard audibleGroup == nil,
+          let group = item.asset.mediaSelectionGroup(forMediaCharacteristic: .audible) else { return }
+    audibleGroup = group
+
+    if !didChooseDefaultAudio {
+      didChooseDefaultAudio = true
+      let remembered = AudioTrackMemory.choice(for: playItem.metadata.id)
+      let chosen = remembered.flatMap { name in
+        group.options.first { $0.displayName == name }
+      } ?? AudioTrackRanker.best(in: group.options)
+      if let chosen {
+        item.select(chosen, in: group)
+      }
+    }
+    rebuildTransportBarMenus()
+  }
+
+  private func selectAudio(_ option: AVMediaSelectionOption) {
+    guard let item = player.currentItem, let group = audibleGroup else { return }
+    item.select(option, in: group)
+    AudioTrackMemory.remember(option.displayName, for: playItem.metadata.id)
+    rebuildTransportBarMenus()
+  }
+
+  // MARK: Menus
+
+  /// Rebuild both custom menus from scratch. `UIMenu` is immutable, so tracking the
+  /// current pick means handing AVKit a freshly-built array every time anything changes.
+  func rebuildTransportBarMenus() {
+    guard let controller = playerViewController else { return }
+    var items: [UIMenuElement] = []
+    if let subtitles = subtitlesMenu() { items.append(subtitles) }
+    if let audio = audioMenu() { items.append(audio) }
+    controller.transportBarCustomMenuItems = items
+  }
+
+  private func subtitlesMenu() -> UIMenu? {
+    guard canChooseSubtitles else { return nil }
+    let first = UIMenu(title: "First subtitles".localized,
+                       options: .singleSelection,
+                       children: subtitleActions(current: primaryTrack) { [weak self] track in
+                         self?.select(primary: track)
+                       })
+    let second = UIMenu(title: "Second subtitles".localized,
+                        options: .singleSelection,
+                        children: subtitleActions(current: secondaryTrack) { [weak self] track in
+                          self?.select(secondary: track)
+                        })
+    return UIMenu(title: "Subtitles".localized,
+                  image: UIImage(systemName: "captions.bubble"),
+                  children: [first, second])
+  }
+
+  private func subtitleActions(current: SubtitleTrack?,
+                               pick: @escaping (SubtitleTrack?) -> Void) -> [UIAction] {
+    let off = UIAction(title: "Off".localized,
+                       state: current == nil ? .on : .off) { _ in pick(nil) }
+    let tracks = subtitleTracks.map { track in
+      UIAction(title: track.displayName,
+               state: current == track ? .on : .off) { _ in pick(track) }
+    }
+    return [off] + tracks
+  }
+
+  private func audioMenu() -> UIMenu? {
+    guard let group = audibleGroup, group.options.count > 1 else { return nil }
+    let selected = player.currentItem?.currentMediaSelection.selectedMediaOption(in: group)
+    let actions = group.options.map { option in
+      UIAction(title: option.displayName,
+               state: option == selected ? .on : .off) { [weak self] _ in
+        self?.selectAudio(option)
+      }
+    }
+    return UIMenu(title: "Audio".localized,
+                  image: UIImage(systemName: "waveform"),
+                  options: .singleSelection,
+                  children: actions)
+  }
+}
+
+/// The user's manually chosen audio track, kept per title the same way subtitles are, so
+/// the next episode opens with the same dub. The option's `displayName` is the stable
+/// handle — it carries the dub kind and studio, and it's what the menu shows.
+enum AudioTrackMemory {
+  private static let storageKey = "audioTrackChoices"
+
+  static func choice(for itemID: Int, defaults: UserDefaults = .standard) -> String? {
+    stored(defaults)[String(itemID)]
+  }
+
+  static func remember(_ displayName: String, for itemID: Int, defaults: UserDefaults = .standard) {
+    var choices = stored(defaults)
+    choices[String(itemID)] = displayName
+    guard let data = try? JSONEncoder().encode(choices) else { return }
+    defaults.set(data, forKey: storageKey)
+  }
+
+  private static func stored(_ defaults: UserDefaults) -> [String: String] {
+    guard let data = defaults.data(forKey: storageKey),
+          let choices = try? JSONDecoder().decode([String: String].self, from: data) else {
+      return [:]
+    }
+    return choices
+  }
+}
+
+/// Picks a sensible default audio rendition when nothing was remembered.
+///
+/// kino.pub labels every dub in the option's display name — its kind (дубляж / многоголосый
+/// / двухголосый / одноголосый / оригинал) and often the studio. We read that label and
+/// rank Russian first, then by kind, then by channel count, then a named studio over an
+/// anonymous one. Latin spellings are recognised alongside the Cyrillic ones.
+enum AudioTrackRanker {
+
+  static func best(in options: [AVMediaSelectionOption]) -> AVMediaSelectionOption? {
+    options.max { lhs, rhs in rank(lhs) < rank(rhs) }
+  }
+
+  private struct Rank: Comparable {
+    let isRussian: Bool
+    let kind: Int
+    let channels: Int
+    let hasStudio: Bool
+
+    static func < (l: Rank, r: Rank) -> Bool {
+      if l.isRussian != r.isRussian { return !l.isRussian && r.isRussian }
+      if l.kind != r.kind { return l.kind < r.kind }
+      if l.channels != r.channels { return l.channels < r.channels }
+      if l.hasStudio != r.hasStudio { return !l.hasStudio && r.hasStudio }
+      return false
+    }
+  }
+
+  private static func rank(_ option: AVMediaSelectionOption) -> Rank {
+    let name = option.displayName.lowercased()
+    let langTag = (option.extendedLanguageTag ?? "").lowercased()
+    let langCode = option.locale?.language.languageCode?.identifier.lowercased() ?? ""
+    return Rank(isRussian: isRussian(name: name, langTag: langTag, langCode: langCode),
+                kind: kindScore(name),
+                channels: channelScore(name),
+                hasStudio: hasStudio(name))
+  }
+
+  private static func isRussian(name: String, langTag: String, langCode: String) -> Bool {
+    if langCode == "ru" || langTag.hasPrefix("ru") { return true }
+    return name.contains("рус") || name.contains("rus") || name.contains("russian")
+  }
+
+  /// Higher wins. Dubbing over a full cast over two voices over one; original is last so
+  /// a lone Russian voice-over still beats the untranslated track.
+  private static func kindScore(_ name: String) -> Int {
+    if name.contains("дубляж") || name.contains("дублир")
+        || name.contains("dubbed") || name.contains("dub") { return 5 }
+    if name.contains("многоголос") || name.contains("multi") || name.contains("mvo") { return 4 }
+    if name.contains("двухголос") || name.contains("two") || name.contains("dvo") { return 3 }
+    if name.contains("одноголос") || name.contains("single") || name.contains("ovo") { return 2 }
+    if name.contains("оригинал") || name.contains("original") { return 1 }
+    return 0
+  }
+
+  /// Best-effort channel count read off the label ("5.1", "стерео", "mono").
+  private static func channelScore(_ name: String) -> Int {
+    if name.contains("7.1") { return 8 }
+    if name.contains("5.1") { return 6 }
+    if name.contains("2.0") || name.contains("стерео") || name.contains("stereo") { return 2 }
+    if name.contains("mono") || name.contains("моно") { return 1 }
+    return 2
+  }
+
+  /// A named studio usually appears in parentheses ("(LostFilm)"); an anonymous track
+  /// has none. Not perfect, but it breaks ties toward the labelled release.
+  private static func hasStudio(_ name: String) -> Bool {
+    name.contains("(") && name.contains(")")
+  }
+}
+
+#endif

@@ -23,7 +23,12 @@ public class Episode: Codable, Hashable, Identifiable {
   public let files: [FileInfo]
   public var seasonNumber: Int?
   public var mediaId: Int?
-  
+  /// The series' own name. `Episode` arrives from the API with none of its parent's
+  /// context, the same way `seasonNumber`/`mediaId` do — callers that already hold the
+  /// series fill it in once they hand the episode to the player, so the transport bar's
+  /// title line can read "Breaking Bad" instead of just the episode's own title.
+  public var seriesTitle: String?
+
   public var fixedTitle: String {
     if title.isEmpty {
       return "Серия \(number)"

@@ -48,7 +48,6 @@
 		CC8203002A8657BA0041079A /* Reachability in Frameworks */ = {isa = PBXBuildFile; productRef = CC8202FF2A8657BA0041079A /* Reachability */; };
 		CC8203022A86BB0F0041079A /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8203012A86BB0F0041079A /* SidebarView.swift */; };
 		CC87E6372B020F730096BDC3 /* PlayerTimeObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC87E6362B020F730096BDC3 /* PlayerTimeObserver.swift */; };
-		CC87E6392B021E7F0096BDC3 /* PlayerContinueWatchingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC87E6382B021E7F0096BDC3 /* PlayerContinueWatchingView.swift */; };
 		CC88E1E52A6586E600E9387F /* KinoPubAppleClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */; };
 		CC88E1E72A6586E600E9387F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC88E1E62A6586E600E9387F /* RootView.swift */; };
 		CC88E1E92A6586E700E9387F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC88E1E82A6586E700E9387F /* Assets.xcassets */; };
@@ -138,7 +137,6 @@
 		CC8202FC2A8656E70041079A /* BestVideoQualityFinder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BestVideoQualityFinder.swift; sourceTree = "<group>"; };
 		CC8203012A86BB0F0041079A /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		CC87E6362B020F730096BDC3 /* PlayerTimeObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerTimeObserver.swift; sourceTree = "<group>"; };
-		CC87E6382B021E7F0096BDC3 /* PlayerContinueWatchingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerContinueWatchingView.swift; sourceTree = "<group>"; };
 		CC88E1E12A6586E600E9387F /* KinoPub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KinoPub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC88E1E42A6586E600E9387F /* KinoPubAppleClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KinoPubAppleClientApp.swift; sourceTree = "<group>"; };
 		CC88E1E62A6586E600E9387F /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -579,7 +577,6 @@
 			children = (
 				CC0904802A7C34D200A71F53 /* PlayerView.swift */,
 				CC0904822A7C353200A71F53 /* PlayerManager.swift */,
-				CC87E6382B021E7F0096BDC3 /* PlayerContinueWatchingView.swift */,
 				CCA100012C6F000100000002 /* SubtitlePreferences.swift */,
 				CCA100012C6F000100000004 /* SubtitleSelector.swift */,
 				CCA100012C6F000100000006 /* SubtitleCueParser.swift */,
@@ -785,7 +782,6 @@
 				CC78FC4A2A82D5D100C5BDFD /* DownloadedItemView.swift in Sources */,
 				CC71E6FC2A6C0678004AFB3F /* MainView.swift in Sources */,
 				CCE9C6DA2A73DB73007923C0 /* MediaItemView.swift in Sources */,
-				CC87E6392B021E7F0096BDC3 /* PlayerContinueWatchingView.swift in Sources */,
 				CCE221B32A83CE9E007AF382 /* ProfileModel.swift in Sources */,
 				CC439CF52A83CC1400E00B36 /* UserService.swift in Sources */,
 				CCC70B942A7FCADC00274E5F /* View+ErrorState.swift in Sources */,

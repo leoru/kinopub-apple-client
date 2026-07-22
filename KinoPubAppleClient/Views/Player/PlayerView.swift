@@ -26,15 +26,17 @@ struct PlayerView: View {
     GeometryReader { _ in
       ZStack(alignment: .top) {
         videoPlayer
+#if !os(tvOS)
+        // The Menu button leaves the player on tvOS, and subtitles/audio live in the
+        // system transport bar — so the hand-rolled chrome only ships off-TV.
         playerChrome
-        if let continueTime = playerManager.continueTime {
-          continueWatching(to: continueTime)
-        }
+#endif
         subtitleLayers
       }
       .ignoresSafeArea(.all)
     }
     .ignoresSafeArea(.all)
+#if !os(tvOS)
     .sheet(isPresented: $showsSubtitlePicker, onDismiss: { playerManager.player.play() }) {
       SubtitleTrackPickerView(tracks: playerManager.subtitleTracks,
                               primary: playerManager.primaryTrack,
@@ -42,6 +44,7 @@ struct PlayerView: View {
                               selectPrimary: { playerManager.select(primary: $0) },
                               selectSecondary: { playerManager.select(secondary: $0) })
     }
+#endif
 #if os(macOS)
     .toolbar(.hidden, for: .windowToolbar)
     .onAppear(perform: {
@@ -76,9 +79,6 @@ struct PlayerView: View {
         await playerManager.fetchWatchMark()
       }
     }
-    .onChange(of: playerManager.isPlaying) { isPlaying in
-      hideNavigationBar = isPlaying
-    }
 #endif
 #if os(macOS)
     .onAppear {
@@ -92,11 +92,20 @@ struct PlayerView: View {
 #endif
   }
 
+  @ViewBuilder
   var videoPlayer: some View {
+#if os(tvOS)
+    // The system player screen is the whole point: its transport bar is the only chrome,
+    // and it's fully Siri-Remote navigable. `PlayerManager` hangs the title, subtitle and
+    // the Subtitles/Audio menus off the controller.
+    TVVideoPlayer(manager: playerManager, onMenuPress: { dismiss() })
+      .onAppear { playerManager.player.play() }
+#else
     VideoPlayer(player: playerManager.player)
       .onAppear(perform: {
         playerManager.player.play()
       })
+#endif
   }
 
   @ViewBuilder
@@ -112,6 +121,11 @@ struct PlayerView: View {
           .transition(.opacity)
       }
 
+#if !os(tvOS)
+      // Translation is unavailable on tvOS (canImport(Translation) excludes it), so the
+      // panel there could only ever say so — and it sat as a SwiftUI overlay above the
+      // system AVPlayerViewController, where the Siri Remote could never actually focus
+      // its word chips. Not worth shipping a dead control for a feature with no payoff.
       if !playerManager.isPlaying,
          let cue = playerManager.activeCue ?? playerManager.lastCue,
          !cue.displayText.isEmpty {
@@ -120,12 +134,14 @@ struct PlayerView: View {
           .padding(.bottom, 56)
           .transition(.opacity)
       }
+#endif
     }
     .animation(.easeOut(duration: 0.2), value: playerManager.isPlaying)
     .animation(.easeOut(duration: 0.2), value: playerManager.activeCue)
     .animation(.easeOut(duration: 0.2), value: playerManager.activeSecondaryCue)
   }
 
+#if !os(tvOS)
   var playerChrome: some View {
     HStack(alignment: .top) {
       Button(action: { dismiss() }, label: {
@@ -168,22 +184,59 @@ struct PlayerView: View {
     .padding(.top, 16)
     .contentShape(Rectangle())
   }
-
-  func continueWatching(to continueTime: TimeInterval) -> some View {
-    VStack(alignment: .center) {
-      Spacer()
-      PlayerContinueWatchingView(time: continueTime, onContinueWatching: {
-        playerManager.seekToContinueWatching()
-      }, onCancelContinueWatching: {
-        playerManager.cancelContinueWatching()
-      })
-      .frame(width: 180, height: 50)
-      .padding(.bottom, 50)
-    }
-
-  }
+#endif
 
   private func toggleSidebar() {
     navigationState.columnVisibility = .detailOnly
   }
 }
+
+#if os(tvOS)
+
+/// Drives `AVPlayerViewController` directly so the system transport bar is the only
+/// chrome — title/subtitle in the info panel, Subtitles and Audio in the transport-bar
+/// menu, all reachable with the Siri Remote. `PlayerManager` owns the configuration; this
+/// is just the bridge into UIKit.
+private struct TVVideoPlayer: UIViewControllerRepresentable {
+  let manager: PlayerManager
+  /// This controller is a plain `NavigationStack` push, not a full-screen presentation —
+  /// so AVKit's own "end full-screen presentation" dismiss path never fires. Menu is
+  /// wired to exit through `playerViewControllerShouldDismiss` instead, the delegate
+  /// call AVKit makes specifically for a Menu press on an embedded (non-presented)
+  /// player, so leaving the player never depends on how the hosting navigation happens
+  /// to react to the hardware button.
+  let onMenuPress: () -> Void
+
+  func makeUIViewController(context: Context) -> AVPlayerViewController {
+    let controller = AVPlayerViewController()
+    controller.player = manager.player
+    controller.delegate = context.coordinator
+    manager.attach(to: controller)
+    return controller
+  }
+
+  func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
+    if controller.player !== manager.player {
+      controller.player = manager.player
+    }
+  }
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator(onMenuPress: onMenuPress)
+  }
+
+  final class Coordinator: NSObject, AVPlayerViewControllerDelegate {
+    let onMenuPress: () -> Void
+
+    init(onMenuPress: @escaping () -> Void) {
+      self.onMenuPress = onMenuPress
+    }
+
+    func playerViewControllerShouldDismiss(_ playerViewController: AVPlayerViewController) -> Bool {
+      onMenuPress()
+      return false
+    }
+  }
+}
+
+#endif
