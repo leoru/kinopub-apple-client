@@ -39,11 +39,16 @@ Read this before changing code. The product direction, current state and roadmap
 
 ## Verifying a change
 
-Build for Apple TV before claiming a UI change works:
+Build for Apple TV before claiming a UI change works. `name=Apple TV` matches nothing on a machine
+whose only TV runtime is a 4K one — take the id from the device list rather than guessing a name:
+
+```
+xcrun simctl list devices available | grep -i "apple tv"
+```
 
 ```
 xcodebuild -project KinoPubAppleClient.xcodeproj -scheme KinoPubAppleClient \
-  -destination 'platform=tvOS Simulator,name=Apple TV' build
+  -destination 'id=<udid>' build
 ```
 
 Package tests:
@@ -53,8 +58,50 @@ swift test --package-path Packages/KinoPubKit
 swift test --package-path Packages/KinoPubBackend
 ```
 
-For anything visual, run it in the tvOS simulator and drive it with the remote — focus bugs do not show
-up in previews.
+**A green build is not a working feature.** The hero trailer compiled on all three platforms for
+weeks and never once played: it was started from `.task`, which fires before the details arrive, so
+the URL was always nil. Nothing but running it would have shown that. For anything visual, run it and
+look.
+
+### Running it without asking the user to look
+
+Almost all of this is headless — no simulator window is involved.
+
+```
+xcrun simctl io booted screenshot /tmp/shot.png
+```
+
+Full device-resolution PNG, no UI needed. The rest of the loop is `xcodebuild -derivedDataPath` into a
+scratch directory, then `simctl terminate` → `simctl install <udid> <path>/KinoPub.app` →
+`simctl launch <udid> com.kunst.kinopub`. Check `simctl listapps <udid>` first — the app is often
+already installed and signed in, which saves re-doing device-code auth.
+
+**Logging.** `print()` does not reach the unified log, and a `log stream` backgrounded from a shell
+dies with that shell. Log through `Logger` (`KinoPubLogging`) and read it after the fact:
+
+```
+xcrun simctl spawn booted log show --last 60s --style compact --predicate 'eventMessage CONTAINS "MARKER"'
+```
+
+That is how you settle a layout question with facts instead of squinting at pixels — logging
+`AVPlayerLayer.videoRect` against its bounds proved the black bars on some trailers are baked into
+the source file, not our geometry.
+
+### Driving the remote
+
+Only input needs a window; `simctl` has no key-press API.
+
+**There is no Simulator.app on current Xcode.** `tell application "Simulator"` fails with `-1728` and
+the process list has no such entry. The simulator window is hosted by **Device Hub**
+(`com.apple.dt.Devices`), which also draws an on-screen remote along the bottom edge. If you are using
+computer-use, request access to `Device Hub` — asking for "Simulator" returns notInstalled and sends
+agents off believing the device cannot be driven at all.
+
+Then: click the window's title bar to focus it, and use arrow keys + Return as the D-pad. **Escape is
+not Menu** — it does not go back and does not dismiss a sheet; use the `‹` button on the on-screen
+remote for that.
+
+Focus bugs do not show up in previews, so anything focusable gets driven this way before it ships.
 
 ## Housekeeping
 
