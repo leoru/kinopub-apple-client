@@ -40,6 +40,24 @@ public struct MediaCard: Identifiable, Hashable {
   /// Overlaid on a landscape card, e.g. "S2, E5 · 42 min".
   public let overlayLabel: String?
 
+  /// The title this card belongs to. For an episode card this is the series id;
+  /// for a normal poster it matches `id`.
+  public let itemID: Int
+  /// Episode/video number for `/v1/watching/toggle`. Nil when the card is just a poster.
+  public let video: Int?
+  /// Season number for series episodes. Nil for films.
+  public let season: Int?
+  /// History media id for `/v1/history/clear-for-media`. Nil clears the whole item.
+  public let mediaID: Int?
+  /// Whether this video is already marked watched — drives the context-menu label.
+  public let isWatched: Bool
+  /// True for serials, so the context menu can say "Go to Show" rather than "Go to Movie".
+  public let isSeries: Bool
+  /// Title appears in `/v1/history` — context menu can offer Browse History.
+  public let isInHistory: Bool
+  /// Title is on the user's watchlist — context menu can offer Browse Watchlist.
+  public let isInWatchlist: Bool
+
   public var isLandscape: Bool { landscapeImageURL != nil }
 
   /// What the focus backdrop draws: the wide artwork where the payload carried one,
@@ -47,6 +65,9 @@ public struct MediaCard: Identifiable, Hashable {
   public var backdropImageURL: String {
     backdropURL ?? landscapeImageURL ?? posterURL
   }
+
+  /// Whether a long-press can toggle watched for this card (needs a video target).
+  public var canToggleWatched: Bool { video != nil }
 
   public init(id: Int,
               posterURL: String,
@@ -60,7 +81,15 @@ public struct MediaCard: Identifiable, Hashable {
               metaLine: String? = nil,
               overview: String? = nil,
               landscapeImageURL: String? = nil,
-              overlayLabel: String? = nil) {
+              overlayLabel: String? = nil,
+              itemID: Int? = nil,
+              video: Int? = nil,
+              season: Int? = nil,
+              mediaID: Int? = nil,
+              isWatched: Bool = false,
+              isSeries: Bool = false,
+              isInHistory: Bool = false,
+              isInWatchlist: Bool = false) {
     self.id = id
     self.posterURL = posterURL
     self.title = title
@@ -74,6 +103,14 @@ public struct MediaCard: Identifiable, Hashable {
     self.overview = overview
     self.landscapeImageURL = landscapeImageURL
     self.overlayLabel = overlayLabel
+    self.itemID = itemID ?? id
+    self.video = video
+    self.season = season
+    self.mediaID = mediaID
+    self.isWatched = isWatched
+    self.isSeries = isSeries
+    self.isInHistory = isInHistory
+    self.isInWatchlist = isInWatchlist
   }
 }
 
@@ -88,7 +125,8 @@ public extension MediaCard {
               kinopoiskRating: item.kinopoiskRating,
               backdropURL: item.posters.wideURL ?? item.posters.big,
               metaLine: item.metadataLine,
-              overview: item.plot)
+              overview: item.plot,
+              isSeries: item.isSeries)
   }
 }
 

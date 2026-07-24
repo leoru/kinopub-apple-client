@@ -36,6 +36,8 @@ public struct MediaRowsView: View {
   private let rows: [MediaRow]
   private let navigationLinkProvider: (MediaCard) -> any Hashable
   private let onRowAppear: ((MediaRow) -> Void)?
+  /// Long-press menu for a card. Return an empty array to leave the card without one.
+  private let contextMenuProvider: ((MediaCard) -> [MediaCardContextAction])?
 
   /// tvOS only: the focused-card hero — the reserved space above the rows plus the
   /// full-screen blurred artwork behind everything. Off on Home for now: the progressive
@@ -64,11 +66,13 @@ public struct MediaRowsView: View {
   public init(rows: [MediaRow],
               navigationLinkProvider: @escaping (MediaCard) -> any Hashable,
               showsFeaturedPreview: Bool = true,
-              onRowAppear: ((MediaRow) -> Void)? = nil) {
+              onRowAppear: ((MediaRow) -> Void)? = nil,
+              contextMenuProvider: ((MediaCard) -> [MediaCardContextAction])? = nil) {
     self.rows = rows
     self.navigationLinkProvider = navigationLinkProvider
     self.showsFeaturedPreview = showsFeaturedPreview
     self.onRowAppear = onRowAppear
+    self.contextMenuProvider = contextMenuProvider
   }
 
   public var body: some View {
@@ -285,6 +289,7 @@ public struct MediaRowsView: View {
             .buttonStyle(MediaCardButtonStyle())
 #endif
             .focused($focusedCard, equals: CardKey(row: row.id, card: card.id))
+            .modifier(MediaCardContextMenuModifier(actions: contextMenuProvider?(card) ?? []))
           }
         }
         .padding(.horizontal, Self.horizontalInset)
@@ -438,10 +443,37 @@ struct PreviewButtonStyle: ButtonStyle {
 /// The off-tvOS card style: a press scale, no focus (there is none on iOS/macOS). On tvOS
 /// the cards use the native `.borderless` style instead, which brings the real system
 /// parallax — so nothing here is tvOS-specific any more.
-struct MediaCardButtonStyle: ButtonStyle {
-  func makeBody(configuration: Configuration) -> some View {
+public struct MediaCardButtonStyle: ButtonStyle {
+  public init() {}
+
+  public func makeBody(configuration: Configuration) -> some View {
     configuration.label
       .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
       .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+  }
+}
+
+/// Applies a long-press context menu when there is something to offer; a no-op otherwise
+/// so catalog posters without actions stay clean.
+public struct MediaCardContextMenuModifier: ViewModifier {
+  let actions: [MediaCardContextAction]
+
+  public init(actions: [MediaCardContextAction]) {
+    self.actions = actions
+  }
+
+  @ViewBuilder
+  public func body(content: Content) -> some View {
+    if actions.isEmpty {
+      content
+    } else {
+      content.contextMenu {
+        ForEach(actions) { action in
+          Button(role: action.role, action: action.handler) {
+            Label(action.title, systemImage: action.systemImage)
+          }
+        }
+      }
+    }
   }
 }

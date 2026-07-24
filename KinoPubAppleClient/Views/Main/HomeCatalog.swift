@@ -43,12 +43,17 @@ class HomeCatalog: ObservableObject {
   private var authState: AuthState
   private var errorHandler: ErrorHandler
   private var itemsService: VideoContentService
+  private var actionsService: UserActionsService
   private var bag = Set<AnyCancellable>()
 
-  init(itemsService: VideoContentService, authState: AuthState, errorHandler: ErrorHandler) {
+  init(itemsService: VideoContentService,
+       authState: AuthState,
+       errorHandler: ErrorHandler,
+       actionsService: UserActionsService = AppContext.shared.actionsService) {
     self.itemsService = itemsService
     self.authState = authState
     self.errorHandler = errorHandler
+    self.actionsService = actionsService
   }
 
   func fetch() async {
@@ -76,6 +81,47 @@ class HomeCatalog: ObservableObject {
     await fetch()
   }
 
+  // MARK: - Continue watching actions
+
+  /// Clears history for the title and drops it from the row immediately.
+  func hide(_ card: MediaCard) {
+    removeFromContinueWatching(cardID: card.id)
+    Task {
+      do {
+        try await actionsService.clearHistoryForItem(id: card.itemID)
+      } catch {
+        errorHandler.setError(error)
+        await fetch()
+      }
+    }
+  }
+
+  /// Marks the resume point's episode (or the film) watched, then removes the card —
+  /// Continue Watching has nothing left to offer for a finished title.
+  func toggleWatched(_ card: MediaCard) {
+    guard let video = card.video else { return }
+    removeFromContinueWatching(cardID: card.id)
+    Task {
+      do {
+        try await actionsService.toggleWatching(id: card.itemID, video: video, season: card.season)
+      } catch {
+        errorHandler.setError(error)
+        await fetch()
+      }
+    }
+  }
+
+  private func removeFromContinueWatching(cardID: Int) {
+    guard let index = rows.firstIndex(where: { $0.id == Self.continueWatchingRowID }) else { return }
+    let row = rows[index]
+    let cards = row.cards.filter { $0.id != cardID }
+    if cards.isEmpty {
+      rows.remove(at: index)
+    } else {
+      rows[index] = MediaRow(id: row.id, title: row.title, count: row.count, cards: cards, destination: row.destination)
+    }
+  }
+
   // MARK: - Continue watching
 
   private func fetchContinueWatchingRow() async -> MediaRow? {
@@ -86,16 +132,36 @@ class HomeCatalog: ObservableObject {
 
     let movies = await moviesTask ?? []
     let serials = await allSerialsTask ?? []
-    let watchlistIDs = Set((await watchlistTask ?? []).map(\.id))
+    let watchlist = await watchlistTask ?? []
     let history = await historyTask ?? []
+
+    let watchlistIDs = Set(watchlist.map(\.id))
     let lastSeen = ContinueWatchingOrder.lastSeenByItemID(history)
     let newestEntry = Self.newestEntryByItemID(history)
+    let historyIDs = Set(history.map(\.item.id))
 
-    let ordered = ContinueWatchingOrder.ordered(items: serials + movies,
+    var pool = ContinueWatchingOrder.mergePool(movies: movies, serials: serials, watchlist: watchlist)
+
+    // Titles only present in recent history still belong in "recently started".
+    let now = Date()
+    for entry in history {
+      guard let date = entry.lastSeenDate,
+            now.timeIntervalSince(date) <= ContinueWatchingOrder.recentWindow,
+            !pool.contains(where: { $0.id == entry.item.id }),
+            let item = WatchingItem(historyEntry: entry) else { continue }
+      pool.append(item)
+    }
+
+    let ordered = ContinueWatchingOrder.ordered(items: pool,
                                                 watchlistIDs: watchlistIDs,
                                                 lastSeen: lastSeen)
 
-    let cards = ordered.map { Self.card(for: $0, history: newestEntry[$0.id]) }
+    let cards = ordered.map {
+      Self.card(for: $0,
+                history: newestEntry[$0.id],
+                isInHistory: historyIDs.contains($0.id),
+                isInWatchlist: watchlistIDs.contains($0.id))
+    }
     guard !cards.isEmpty else { return nil }
 
     return MediaRow(id: Self.continueWatchingRowID,
@@ -111,23 +177,47 @@ class HomeCatalog: ObservableObject {
     }
   }
 
-  /// Continue-watching cards are landscape, showing where playback stopped. History
-  /// supplies the episode still and the wide poster; `/v1/watching/*` has neither.
-  private static func card(for item: WatchingItem, history: HistoryEntry?) -> MediaCard {
-    MediaCard(id: item.id,
-              posterURL: item.posters.medium,
-              title: item.localizedTitle,
-              subtitle: item.originalTitle,
-              progress: history?.progress ?? item.progress,
-              badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil,
-              backdropURL: landscapeImageURL(for: item, history: history),
-              metaLine: overlayLabel(for: history),
-              landscapeImageURL: landscapeImageURL(for: item, history: history),
-              overlayLabel: overlayLabel(for: history))
+  /// Continue-watching cards are landscape wide covers — episode stills are too
+  /// anonymous to recognise a title from across the room. History still supplies the
+  /// S/E label and resume bar.
+  private static func card(for item: WatchingItem,
+                           history: HistoryEntry?,
+                           isInHistory: Bool,
+                           isInWatchlist: Bool) -> MediaCard {
+    let isSeries = item.type.contains("serial")
+    let video: Int?
+    let season: Int?
+    if let history, history.isEpisode {
+      video = history.media?.number
+      season = history.media?.snumber
+    } else if !isSeries {
+      video = history?.media?.number ?? 1
+      season = nil
+    } else {
+      video = history?.media?.number
+      season = history?.media?.snumber
+    }
+
+    return MediaCard(id: item.id,
+                     posterURL: item.posters.medium,
+                     title: item.localizedTitle,
+                     subtitle: item.originalTitle,
+                     progress: history?.progress ?? item.progress,
+                     badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil,
+                     backdropURL: landscapeImageURL(for: item, history: history),
+                     metaLine: overlayLabel(for: history),
+                     landscapeImageURL: landscapeImageURL(for: item, history: history),
+                     overlayLabel: overlayLabel(for: history),
+                     itemID: item.id,
+                     video: video,
+                     season: season,
+                     mediaID: history?.media?.id,
+                     isWatched: false,
+                     isSeries: isSeries,
+                     isInHistory: isInHistory,
+                     isInWatchlist: isInWatchlist)
   }
 
-  /// Wide cover art, the way microiptv stretches it as a backdrop. History carries
-  /// the real wide URL; otherwise it is derived from the watching item's poster.
   private static func landscapeImageURL(for item: WatchingItem, history: HistoryEntry?) -> String {
     history?.item.posters?.wideURL ?? item.posters.wideURL ?? item.posters.big
   }
@@ -174,15 +264,7 @@ class HomeCatalog: ObservableObject {
   }
 
   private static func card(for item: MediaItem) -> MediaCard {
-    MediaCard(id: item.id,
-              posterURL: item.posters.medium,
-              title: item.localizedTitle,
-              subtitle: item.originalTitle,
-              imdbRating: item.imdbRating,
-              kinopoiskRating: item.kinopoiskRating,
-              backdropURL: item.posters.wideURL ?? item.posters.big,
-              metaLine: item.metadataLine,
-              overview: item.plot)
+    MediaCard(item)
   }
 
   private func subscribeForAuth() {

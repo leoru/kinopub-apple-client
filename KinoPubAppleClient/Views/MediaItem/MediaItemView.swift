@@ -80,7 +80,13 @@ struct MediaItemView: View {
           if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
             SeasonsRailView(seasons: seasons,
                             linkProvider: itemModel.linkProvider,
-                            seriesTitle: itemModel.mediaItem.localizedTitle)
+                            seriesTitle: itemModel.mediaItem.localizedTitle,
+                            onHide: { episode, season in
+                              itemModel.hide(episode: episode, season: season)
+                            },
+                            onToggleWatched: { episode, season in
+                              itemModel.toggleWatched(episode: episode, season: season)
+                            })
           }
 
           MediaItemRatingsSection(mediaItem: itemModel.mediaItem)

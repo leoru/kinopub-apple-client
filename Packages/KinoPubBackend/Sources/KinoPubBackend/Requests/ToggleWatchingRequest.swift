@@ -10,12 +10,15 @@ import Foundation
 public struct ToggleWatchingRequest: Endpoint {
 
   public var id: Int
-  public var video: Int
+  public var video: Int = -1
   public var season: Int = -1
-  
-  init(id: Int, video: Int, season: Int? = nil) {
+
+  /// - Parameters:
+  ///   - video: Episode/video number. Omit to toggle every episode in `season`.
+  ///   - season: Series only. Omit for films.
+  public init(id: Int, video: Int? = nil, season: Int? = nil) {
     self.id = id
-    self.video = video
+    self.video = video ?? -1
     self.season = season ?? -1
   }
 

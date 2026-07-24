@@ -176,12 +176,12 @@ What "done" looks like, so nobody has to guess:
 - **Home** is rows, not a grid. First row is **Continue watching**, then category/collection rows.
   **No hero banner** — there are no personalized recommendations to justify one; it would just be a
   big advert.
-- **Continue watching is a landscape row** — episode stills for series, wide artwork for films, with
-  a play glyph, resume bar and "S2, E5 · 42 min" over the image. It reads as a different kind of row
-  from the poster shelves below it, the way the Apple TV app treats it.
-- **Continue watching is ordered by intent, not by update date**: things watched in the last week that
-  were never added to the watchlist come first (easiest to forget), then the watchlist itself, then
-  everything else unfinished. Most recently played first within each group.
+- **Continue watching is a landscape row** — wide cover art (recognisable from the couch) with a play
+  glyph, resume bar and "S2, E5 · 42 min" over the image. It reads as a different kind of row from the
+  poster shelves below it, the way the Apple TV app treats it.
+- **Continue watching merges unfinished + watchlist + recent history**, ordered by intent: recently
+  started (played this week), then watchlist titles with new episodes, then the rest of the watchlist,
+  then other unfinished. Most recently played first within each group.
 - **Poster cards carry one combined score** in the top-left (detail pages show the two sources
   separately instead, where there is room): the average of IMDb and Kinopoisk when
   both rated it, otherwise whichever did, hidden when neither. Colour by tier — gold with laurel wings
@@ -214,6 +214,8 @@ that line is polish, and everything above it is unfinished business.
 - White accent throughout; the site's green is gone
 - Native tvOS parallax focus effect on poster cards via `.buttonStyle(.borderless)` —
   the system's lift, specular shine and remote-tracking parallax, not a hand-rolled tilt
+- Long-press menus on Continue Watching and episode cards; Continue Watching merges watchlist +
+  recent history (recently started → new episodes → watchlist → rest)
 
 ### Phase A — Plan-minimum: parity with what I already use
 
@@ -226,6 +228,10 @@ Nothing exotic. A working, good-looking client that does what microiptv does.
   - pickers fed by `/v1/genres` and `/v1/countries`
 - [x] **Wire the Watched and Bookmark buttons** — Watched hits `/v1/watching/toggle`; Bookmark opens
   the account's folders and toggles membership via `/v1/bookmarks/toggle-item`
+- [x] **Long-press context menus on Continue Watching and episode cards** — Go to Show/Movie,
+  Hide from Here (`/v1/history/clear-for-item` / `clear-for-media`), Mark as Watched (one episode
+  for series), Browse History / Browse Watchlist when the title belongs there. Episode rails reuse
+  the same landscape `MediaCardView` as Continue Watching
 - [ ] Paginate home rows; cache them so returning to the tab doesn't refetch everything
 - [x] **tvOS player chrome is native** — `AVPlayerViewController` driven directly, Subtitles/Audio in
       the transport bar's own menu, no hand-rolled buttons left to fight it (unverified on a real
@@ -342,7 +348,7 @@ Two tiers, and the cheap one is worth shipping first:
 
 ### Later
 - [ ] TV channels tab (`GET /v1/tv/index`)
-- [ ] Viewing history screen
+- [x] **Viewing history screen** — reachable from Continue Watching's context menu (not a tab yet)
 - [ ] Top Shelf extension
 
 
@@ -374,8 +380,9 @@ upstream change fails loudly instead of silently emptying a row.
 **Already wired** (`Packages/KinoPubBackend/Sources/KinoPubBackend/Requests/`):
 `/v1/items/{hot,fresh,popular}`, `/v1/items/search`, `/v1/items/{id}`, `/v1/user`, `/v1/bookmarks`,
 `/v1/bookmarks/{id}`, `/v1/watching`, `/v1/watching/movies`, `/v1/watching/serials`,
-`/v1/watching/marktime`, `/v1/watching/toggle`, `/v1/history`, `/v1/genres`, `/v1/countries`,
-`/v1/items` (library filters plus `actor`/`director`), device-code auth.
+`/v1/watching/marktime`, `/v1/watching/toggle`, `/v1/history`, `/v1/history/clear-for-item`,
+`/v1/history/clear-for-media`, `/v1/genres`, `/v1/countries`, `/v1/items` (library filters plus
+`actor`/`director`), device-code auth.
 
 **Available, not yet wired:**
 

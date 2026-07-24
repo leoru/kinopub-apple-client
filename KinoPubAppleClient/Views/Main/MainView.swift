@@ -37,6 +37,8 @@ struct MainView: View {
             detailsView(for: item.id, knownItem: item)
           case .detailsById(let id):
             detailsView(for: id)
+          case .history:
+            HistoryView()
           case .player(let item):
             PlayerView(manager: PlayerManager(playItem: item,
                                               watchMode: .media,
@@ -92,7 +94,21 @@ struct MainView: View {
     },
     // The focused-card blur hero is off on Home for now — too heavy on device, and it hid
     // the tab bar. Plain rows until it returns as a lighter top slider.
-    showsFeaturedPreview: false)
+    showsFeaturedPreview: false,
+    contextMenuProvider: { card in
+      // Continue Watching is the only home row whose long-press can hide or mark a
+      // specific resume point. Catalog posters stay tap-to-open.
+      guard card.isLandscape else { return [] }
+      return MediaCardContextMenus.actions(
+        for: card,
+        includeGoToTitle: true,
+        onHide: { catalog.hide(card) },
+        onToggleWatched: { catalog.toggleWatched(card) },
+        onGoToTitle: { navigationState.mainRoutes.append(.detailsById(card.itemID)) },
+        onBrowseHistory: { navigationState.mainRoutes.append(.history) },
+        onBrowseWatchlist: { navigationState.selectedTab = .saved }
+      )
+    })
 #if !os(tvOS)
     .refreshable {
       await catalog.refresh()

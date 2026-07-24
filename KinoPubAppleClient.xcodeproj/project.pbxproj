@@ -71,6 +71,8 @@
 		CCA100012C6F000100000701 /* LibraryCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000702 /* LibraryCatalog.swift */; };
 		CCA100012C6F000100000703 /* LibraryFiltersBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000704 /* LibraryFiltersBar.swift */; };
 		CCA100012C6F000100000901 /* PersonItemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000902 /* PersonItemsView.swift */; };
+		CCA100012C6F000100000A01 /* MediaCardContextMenus.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000A02 /* MediaCardContextMenus.swift */; };
+		CCA100012C6F000100000B01 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000B02 /* HistoryView.swift */; };
 		CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */; };
 		CCC70B8A2A7FC15F00274E5F /* BookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B892A7FC15F00274E5F /* BookmarkView.swift */; };
 		CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */; };
@@ -167,6 +169,8 @@
 		CCA100012C6F000100000702 /* LibraryCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryCatalog.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000704 /* LibraryFiltersBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFiltersBar.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000902 /* PersonItemsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonItemsView.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000A02 /* MediaCardContextMenus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCardContextMenus.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000B02 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidthThresholdReader.swift; sourceTree = "<group>"; };
 		CCC70B892A7FC15F00274E5F /* BookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkView.swift; sourceTree = "<group>"; };
 		CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkModel.swift; sourceTree = "<group>"; };
@@ -312,6 +316,7 @@
 				CCF388312A71C13900242581 /* MediaCatalog.swift */,
 				CC71E6FB2A6C0678004AFB3F /* MainView.swift */,
 				CCA100012C6F000100000202 /* HomeCatalog.swift */,
+				CCA100012C6F000100000B02 /* HistoryView.swift */,
 			);
 			path = Main;
 			sourceTree = "<group>";
@@ -373,6 +378,7 @@
 				CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */,
 				CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */,
 				CC2115202A7AA6F8001996BD /* String+Localization.swift */,
+				CCA100012C6F000100000A02 /* MediaCardContextMenus.swift */,
 				CCF2ABB32AED39E0000448A8 /* WindowSettings.swift */,
 				CC87E6362B020F730096BDC3 /* PlayerTimeObserver.swift */,
 			);
@@ -817,6 +823,8 @@
 				CCA100012C6F000100000601 /* MediaItemDetailSections.swift in Sources */,
 				CCA100012C6F000100000701 /* LibraryCatalog.swift in Sources */,
 				CCA100012C6F000100000901 /* PersonItemsView.swift in Sources */,
+				CCA100012C6F000100000A01 /* MediaCardContextMenus.swift in Sources */,
+				CCA100012C6F000100000B01 /* HistoryView.swift in Sources */,
 				CCA100012C6F000100000703 /* LibraryFiltersBar.swift in Sources */,
 				CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */,
 				CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */,

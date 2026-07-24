@@ -9,6 +9,8 @@ import KinoPubBackend
 
 /// Season tabs over a horizontally scrolling rail of episode stills, the way the
 /// Apple TV app presents a series. Opens on the season the user is part-way through.
+///
+/// Episode cards are the same landscape `MediaCardView` Continue Watching uses.
 struct SeasonsRailView: View {
 
   let seasons: [Season]
@@ -16,6 +18,8 @@ struct SeasonsRailView: View {
   /// Filled into every episode handed to the player, so its transport bar can show the
   /// series name rather than just the episode's own title.
   let seriesTitle: String
+  var onHide: ((Episode, Season) -> Void)?
+  var onToggleWatched: ((Episode, Season) -> Void)?
 
   @State private var selectedSeasonID: Int?
 
@@ -69,10 +73,16 @@ struct SeasonsRailView: View {
     ScrollView(.horizontal, showsIndicators: false) {
       LazyHStack(alignment: .top, spacing: Self.cardSpacing) {
         ForEach(season.episodes) { episode in
+          let card = Self.card(for: episode, in: season)
           NavigationLink(value: linkProvider.player(for: filled(episode, in: season))) {
-            EpisodeCardView(episode: episode)
+            MediaCardView(card: card, caption: Self.cardCaption)
           }
-          .buttonStyle(EpisodeCardButtonStyle())
+#if os(tvOS)
+          .buttonStyle(.borderless)
+#else
+          .buttonStyle(MediaCardButtonStyle())
+#endif
+          .modifier(MediaCardContextMenuModifier(actions: contextActions(for: card, episode: episode, season: season)))
         }
       }
       .padding(.horizontal, Self.horizontalInset)
@@ -80,6 +90,16 @@ struct SeasonsRailView: View {
     }
     // Rebuild the rail when the season changes so it scrolls back to the start.
     .id(season.id)
+  }
+
+  private func contextActions(for card: MediaCard, episode: Episode, season: Season) -> [MediaCardContextAction] {
+    MediaCardContextMenus.actions(
+      for: card,
+      includeGoToTitle: false,
+      onHide: { onHide?(episode, season) },
+      onToggleWatched: { onToggleWatched?(episode, season) },
+      onGoToTitle: {}
+    )
   }
 
   /// Episodes arrive without their season/media context, which playback needs.
@@ -90,13 +110,43 @@ struct SeasonsRailView: View {
     return episode
   }
 
+  /// Same landscape card Continue Watching builds — still, overlay, resume bar.
+  private static func card(for episode: Episode, in season: Season) -> MediaCard {
+    let progress: Double? = {
+      guard episode.watched == 0, episode.duration > 0, episode.watching.time > 0 else { return nil }
+      return min(Double(episode.watching.time) / Double(episode.duration), 1.0)
+    }()
+
+    var labelParts: [String] = ["\("Episode".localized) \(episode.number)"]
+    let minutes = episode.duration / 60
+    if minutes > 0 {
+      labelParts.append("\(minutes) min")
+    }
+
+    return MediaCard(id: episode.id,
+                     posterURL: episode.thumbnail,
+                     title: episode.fixedTitle,
+                     progress: progress,
+                     landscapeImageURL: episode.thumbnail,
+                     overlayLabel: labelParts.joined(separator: " · "),
+                     itemID: season.mediaId ?? episode.mediaId,
+                     video: episode.number,
+                     season: season.number,
+                     mediaID: episode.id,
+                     isWatched: episode.watched > 0,
+                     isSeries: true)
+  }
+
 #if os(tvOS)
+  /// Match home rows: name under the still only while focused, so the rail doesn't reflow.
+  static let cardCaption: MediaCardCaption = .onFocus
   static let horizontalInset: CGFloat = 80
-  static let cardSpacing: CGFloat = 32
+  static let cardSpacing: CGFloat = 36
   static let tabSpacing: CGFloat = 16
-  static let focusPadding: CGFloat = 24
+  static let focusPadding: CGFloat = 32
   static let tabFont: Font = .system(size: 28, weight: .semibold)
 #else
+  static let cardCaption: MediaCardCaption = .always
   static let horizontalInset: CGFloat = 20
   static let cardSpacing: CGFloat = 16
   static let tabSpacing: CGFloat = 8
@@ -133,99 +183,4 @@ private struct SeasonTabButtonStyle: ButtonStyle {
         .animation(.easeOut(duration: 0.15), value: isFocused)
     }
   }
-}
-
-private struct EpisodeCardButtonStyle: ButtonStyle {
-  func makeBody(configuration: ButtonStyleConfiguration) -> some View {
-    Card(configuration: configuration)
-  }
-
-  private struct Card: View {
-    let configuration: ButtonStyleConfiguration
-    @Environment(\.isFocused) private var isFocused
-
-    var body: some View {
-      configuration.label
-        .scaleEffect(isFocused ? 1.06 : (configuration.isPressed ? 0.98 : 1.0))
-        .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 16, y: 8)
-        .animation(.easeOut(duration: 0.18), value: isFocused)
-    }
-  }
-}
-
-/// Still, episode number, title and runtime — plus a progress bar for part-watched.
-private struct EpisodeCardView: View {
-  let episode: Episode
-
-  private var progress: Double? {
-    // Watched episodes carry the checkmark; a full bar underneath it says nothing.
-    guard episode.watched == 0, episode.duration > 0, episode.watching.time > 0 else { return nil }
-    return min(Double(episode.watching.time) / Double(episode.duration), 1.0)
-  }
-
-  private var runtime: String {
-    let minutes = episode.duration / 60
-    return minutes > 0 ? "\(minutes) min" : ""
-  }
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      ZStack(alignment: .bottom) {
-        AsyncImage(url: URL(string: episode.thumbnail)) { image in
-          image.resizable().aspectRatio(contentMode: .fill)
-        } placeholder: {
-          Color.KinoPub.placeholder
-        }
-        .frame(width: Self.width, height: Self.imageHeight)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-        if let progress {
-          GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-              Capsule().fill(Color.black.opacity(0.55))
-              Capsule().fill(Color.KinoPub.accent).frame(width: geometry.size.width * progress)
-            }
-          }
-          .frame(height: 5)
-          .padding(.horizontal, 8)
-          .padding(.bottom, 8)
-        }
-      }
-      .overlay(alignment: .topTrailing) {
-        if episode.watched > 0 {
-          Image(systemName: "checkmark.circle.fill")
-            .foregroundStyle(Color.KinoPub.accent)
-            .padding(8)
-        }
-      }
-
-      VStack(alignment: .leading, spacing: 2) {
-        Text("\("Episode".localized) \(episode.number)")
-          .font(Self.captionFont)
-          .foregroundStyle(Color.KinoPub.subtitle)
-        Text(episode.fixedTitle)
-          .font(Self.titleFont)
-          .foregroundStyle(Color.KinoPub.text)
-          .lineLimit(1)
-        if !runtime.isEmpty {
-          Text(runtime)
-            .font(Self.captionFont)
-            .foregroundStyle(Color.KinoPub.subtitle)
-        }
-      }
-      .frame(width: Self.width, alignment: .leading)
-    }
-  }
-
-#if os(tvOS)
-  static let width: CGFloat = 420
-  static let imageHeight: CGFloat = 236
-  static let titleFont: Font = .system(size: 26, weight: .medium)
-  static let captionFont: Font = .system(size: 22, weight: .regular)
-#else
-  static let width: CGFloat = 220
-  static let imageHeight: CGFloat = 124
-  static let titleFont: Font = .system(size: 15, weight: .medium)
-  static let captionFont: Font = .system(size: 13, weight: .regular)
-#endif
 }

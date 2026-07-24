@@ -8,35 +8,38 @@ import Foundation
 /// Ordering rules for the home screen's "continue watching" row.
 public enum ContinueWatchingOrder {
 
-  /// How recently something must have been played to count as "picked up lately".
+  /// How recently something must have been played to count as "recently started".
   public static let recentWindow: TimeInterval = 7 * 24 * 60 * 60
 
   public enum Bucket: Int {
-    /// Not on the watchlist but played within the last week — picked up on a whim
-    /// and the easiest to forget about, so it leads.
-    case recentAside = 0
-    /// The watchlist proper.
-    case watchlist = 1
+    /// Played within the last week — recently started or resumed.
+    case recentlyStarted = 0
+    /// On the watchlist with new episodes waiting, and not played this week.
+    case recentlyReleased = 1
+    /// The rest of the watchlist.
+    case watchlist = 2
     /// Everything else still unfinished.
-    case rest = 2
+    case rest = 3
   }
 
   public static func bucket(for item: WatchingItem,
                             watchlistIDs: Set<Int>,
                             lastSeen: [Int: Date],
                             now: Date) -> Bucket {
-    let onWatchlist = watchlistIDs.contains(item.id)
-    if !onWatchlist,
-       let seen = lastSeen[item.id],
+    if let seen = lastSeen[item.id],
        now.timeIntervalSince(seen) <= recentWindow,
        now >= seen {
-      return .recentAside
+      return .recentlyStarted
+    }
+    let onWatchlist = watchlistIDs.contains(item.id)
+    if onWatchlist, item.hasNewEpisodes {
+      return .recentlyReleased
     }
     return onWatchlist ? .watchlist : .rest
   }
 
   /// Sorts by bucket, then most recently played first. Titles with no history sink to
-  /// the bottom of their bucket, keeping the API's own order as the final tiebreak.
+  /// the bottom of their bucket, keeping the caller's order as the final tiebreak.
   public static func ordered(items: [WatchingItem],
                              watchlistIDs: Set<Int>,
                              lastSeen: [Int: Date],
@@ -62,5 +65,38 @@ public enum ContinueWatchingOrder {
       if let existing = result[entry.item.id], existing >= date { return }
       result[entry.item.id] = date
     }
+  }
+
+  /// Unions movies, unfinished serials and the watchlist without losing either source's
+  /// extras (`new` badges live on the watchlist payload). Caller order is preserved for
+  /// the tiebreak inside each bucket.
+  public static func mergePool(movies: [WatchingItem],
+                               serials: [WatchingItem],
+                               watchlist: [WatchingItem]) -> [WatchingItem] {
+    var order: [Int] = []
+    var pool: [Int: WatchingItem] = [:]
+
+    func insert(_ items: [WatchingItem]) {
+      for item in items {
+        if pool[item.id] == nil {
+          order.append(item.id)
+          pool[item.id] = item
+        } else if let existing = pool[item.id] {
+          pool[item.id] = preferred(existing, item)
+        }
+      }
+    }
+
+    insert(serials)
+    insert(movies)
+    insert(watchlist)
+    return order.compactMap { pool[$0] }
+  }
+
+  /// Prefer the copy that carries episode counters / a higher `new` badge.
+  public static func preferred(_ a: WatchingItem, _ b: WatchingItem) -> WatchingItem {
+    let aScore = (a.new ?? 0) * 1000 + (a.total ?? 0)
+    let bScore = (b.new ?? 0) * 1000 + (b.total ?? 0)
+    return bScore >= aScore ? b : a
   }
 }

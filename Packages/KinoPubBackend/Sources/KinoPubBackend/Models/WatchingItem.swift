@@ -71,4 +71,14 @@ public extension WatchingItem {
                  watched: 5,
                  new: new)
   }
+
+  /// A recently-played title that only showed up in `/v1/history`, so Continue
+  /// Watching can still put it in the "recently started" bucket.
+  init?(historyEntry entry: HistoryEntry) {
+    guard let posters = entry.item.posters else { return nil }
+    self.init(id: entry.item.id,
+              type: entry.item.type ?? "movie",
+              title: entry.item.title ?? "",
+              posters: posters)
+  }
 }

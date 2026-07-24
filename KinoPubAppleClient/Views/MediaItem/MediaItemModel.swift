@@ -107,9 +107,44 @@ class MediaItemModel: ObservableObject {
     isWatched.toggle()
     Task {
       do {
-        try await actionsService.toggleWatching(id: mediaItemId, video: nil, season: nil)
+        // Films toggle on video 1; the hero control is hidden for series.
+        try await actionsService.toggleWatching(id: mediaItemId, video: 1, season: nil)
       } catch {
         isWatched = previous
+        errorHandler.setError(error)
+      }
+    }
+  }
+
+  /// Marks one episode watched/unwatched from the season rail's context menu.
+  func toggleWatched(episode: Episode, season: Season) {
+    let previous = episode.watched
+    episode.watched = previous > 0 ? 0 : 1
+    // Force the published item to refresh so the rail redraws checkmarks/progress.
+    mediaItem = mediaItem
+    Task {
+      do {
+        let watched = try await actionsService.toggleWatching(id: mediaItemId,
+                                                              video: episode.number,
+                                                              season: season.number)
+        if let watched {
+          episode.watched = watched
+          mediaItem = mediaItem
+        }
+      } catch {
+        episode.watched = previous
+        mediaItem = mediaItem
+        errorHandler.setError(error)
+      }
+    }
+  }
+
+  /// Drops one episode from history so it stops cluttering Continue Watching.
+  func hide(episode: Episode, season: Season) {
+    Task {
+      do {
+        try await actionsService.clearHistoryForMedia(id: episode.id)
+      } catch {
         errorHandler.setError(error)
       }
     }

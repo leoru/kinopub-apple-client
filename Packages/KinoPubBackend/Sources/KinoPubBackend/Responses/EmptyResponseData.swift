@@ -8,5 +8,6 @@
 import Foundation
 
 public struct EmptyResponseData: Codable {
-  public var status: Int
+  /// Present on most action endpoints; some (history clear) may return an empty body.
+  public var status: Int?
 }

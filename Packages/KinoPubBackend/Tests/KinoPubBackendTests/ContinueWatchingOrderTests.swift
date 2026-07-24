@@ -1,7 +1,6 @@
 //
 //  ContinueWatchingOrderTests.swift
 //
-//
 
 import XCTest
 @testable import KinoPubBackend
@@ -10,11 +9,14 @@ final class ContinueWatchingOrderTests: XCTestCase {
 
   private let now = Date(timeIntervalSince1970: 1_000_000_000)
 
-  private func item(_ id: Int) -> WatchingItem {
+  private func item(_ id: Int, new: Int? = nil) -> WatchingItem {
     WatchingItem(id: id,
                  type: "serial",
                  title: "Item \(id)",
-                 posters: Posters(small: "", medium: "", big: "", wide: nil))
+                 posters: Posters(small: "", medium: "", big: "", wide: nil),
+                 total: 10,
+                 watched: 5,
+                 new: new)
   }
 
   private func daysAgo(_ days: Double) -> Date {
@@ -30,15 +32,23 @@ final class ContinueWatchingOrderTests: XCTestCase {
                                   now: now).map(\.id)
   }
 
-  func testRecentNonWatchlistComesBeforeWatchlist() {
-    let result = order([item(1), item(2)],
+  func testRecentlyStartedBeatsWatchlistWithNewEpisodes() {
+    let result = order([item(1, new: 3), item(2)],
                        watchlist: [1],
-                       lastSeen: [1: daysAgo(1), 2: daysAgo(2)])
+                       lastSeen: [2: daysAgo(1)])
 
-    XCTAssertEqual(result, [2, 1], "an aside watched 2 days ago should outrank the watchlist")
+    XCTAssertEqual(result, [2, 1], "a title started yesterday outranks a watchlist drop")
   }
 
-  func testWatchlistComesBeforeEverythingElse() {
+  func testRecentlyReleasedBeatsPlainWatchlist() {
+    let result = order([item(1), item(2, new: 4)],
+                       watchlist: [1, 2],
+                       lastSeen: [:])
+
+    XCTAssertEqual(result, [2, 1])
+  }
+
+  func testWatchlistBeatsOtherUnfinished() {
     let result = order([item(1), item(2)],
                        watchlist: [2],
                        lastSeen: [1: daysAgo(30), 2: daysAgo(60)])
@@ -46,29 +56,37 @@ final class ContinueWatchingOrderTests: XCTestCase {
     XCTAssertEqual(result, [2, 1])
   }
 
-  func testFullThreeBucketOrdering() {
-    // 1: stale aside · 2: watchlist · 3: recent aside
-    let result = order([item(1), item(2), item(3)],
-                       watchlist: [2],
-                       lastSeen: [1: daysAgo(20), 2: daysAgo(20), 3: daysAgo(3)])
+  func testFullFourBucketOrdering() {
+    // 1: rest · 2: watchlist · 3: recently released · 4: recently started
+    let result = order([item(1), item(2), item(3, new: 2), item(4)],
+                       watchlist: [2, 3],
+                       lastSeen: [1: daysAgo(20), 2: daysAgo(20), 4: daysAgo(2)])
 
-    XCTAssertEqual(result, [3, 2, 1])
+    XCTAssertEqual(result, [4, 3, 2, 1])
   }
 
-  func testAsideOlderThanAWeekDropsToTheLastBucket() {
-    let result = order([item(1), item(2)],
+  func testAsideOlderThanAWeekIsNotRecentlyStarted() {
+    let result = order([item(1), item(2, new: 1)],
                        watchlist: [2],
-                       lastSeen: [1: daysAgo(8), 2: daysAgo(100)])
+                       lastSeen: [1: daysAgo(8)])
 
-    XCTAssertEqual(result, [2, 1], "8 days is outside the window, so it loses to the watchlist")
+    XCTAssertEqual(result, [2, 1], "8 days is outside the window")
   }
 
-  func testSevenDaysExactlyStillCountsAsRecent() {
-    let result = order([item(1), item(2)],
+  func testSevenDaysExactlyStillCountsAsRecentlyStarted() {
+    let result = order([item(1), item(2, new: 1)],
                        watchlist: [2],
-                       lastSeen: [1: daysAgo(7), 2: daysAgo(1)])
+                       lastSeen: [1: daysAgo(7)])
 
     XCTAssertEqual(result, [1, 2])
+  }
+
+  func testRecentlyStartedWatchlistItemStaysInStartedBucket() {
+    let result = order([item(1, new: 5), item(2)],
+                       watchlist: [1],
+                       lastSeen: [1: daysAgo(1), 2: daysAgo(2)])
+
+    XCTAssertEqual(result, [1, 2], "recent play wins over the new-episode badge")
   }
 
   func testWithinABucketNewestFirst() {
@@ -93,6 +111,19 @@ final class ContinueWatchingOrderTests: XCTestCase {
 
   func testEmptyInputProducesEmptyOutput() {
     XCTAssertEqual(order([]), [])
+  }
+
+  // MARK: - Pool merge
+
+  func testMergePoolUnionsWatchlistWithoutLosingOrder() {
+    let movies = [item(10)]
+    let serials = [item(1), item(2)]
+    let watchlist = [item(2, new: 3), item(9, new: 1)]
+
+    let merged = ContinueWatchingOrder.mergePool(movies: movies, serials: serials, watchlist: watchlist)
+
+    XCTAssertEqual(merged.map(\.id), [1, 2, 10, 9])
+    XCTAssertEqual(merged.first { $0.id == 2 }?.new, 3, "watchlist copy keeps the +N badge")
   }
 
   // MARK: - History collapsing

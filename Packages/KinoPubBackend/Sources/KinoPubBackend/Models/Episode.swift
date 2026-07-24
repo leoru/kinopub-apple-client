@@ -17,7 +17,9 @@ public class Episode: Codable, Hashable, Identifiable {
   public let number: Int
   public let ac3: Int
   public let audios: [EpisodeAudio]
-  public let watched: Int
+  /// Mutated after `/v1/watching/toggle` so the episode rail can flip its state
+  /// without refetching the whole title.
+  public var watched: Int
   public let watching: EpisodeWatching
   public let subtitles: [Subtitle]
   public let files: [FileInfo]

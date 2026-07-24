@@ -13,6 +13,8 @@ enum MainRoutes: Hashable {
   /// The watching endpoints return only an id and artwork, so rows built from them
   /// route by id — `MediaItemView` fetches the full item anyway.
   case detailsById(Int)
+  /// Full viewing history, opened from a Continue Watching context menu.
+  case history
   case seasons([Season])
   case season(Season)
   /// A person's credits, listed from `/v1/items` by name.
@@ -27,6 +29,8 @@ enum MainRoutes: Hashable {
     case .detailsById(let id):
       hasher.combine("detailsById")
       hasher.combine(id)
+    case .history:
+      hasher.combine("history")
     case .season(let season):
       hasher.combine(season)
     case .person(let person):
