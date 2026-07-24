@@ -85,7 +85,7 @@ public struct RatingBadgeView: View {
         wing(mirrored: true)
       }
     }
-    .padding(.horizontal, rating.tier.showsWings ? Self.horizontalPadding /2 2 : Self.horizontalPadding)
+    .padding(.horizontal, rating.tier.showsWings ? Self.horizontalPadding/2 : Self.horizontalPadding)
     .padding(.vertical, Self.verticalPadding)
     .background(rating.tier.color, in: Capsule())
   }

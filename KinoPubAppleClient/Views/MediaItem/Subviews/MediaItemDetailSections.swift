@@ -293,7 +293,12 @@ struct MediaItemSimilarSection: View {
               NavigationLink(value: linkProvider.link(for: item)) {
                 MediaCardView(card: MediaCard(item), caption: .always)
               }
+#if os(tvOS)
+              // Same native parallax focus effect as the catalog rows.
+              .buttonStyle(.borderless)
+#else
               .buttonStyle(SimilarCardButtonStyle())
+#endif
             }
           }
           .padding(.horizontal, MediaItemLayout.horizontalInset)

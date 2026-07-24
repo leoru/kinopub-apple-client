@@ -115,10 +115,13 @@ public struct MediaCardView: View {
     self.caption = caption
   }
 
-  @Environment(\.cardFocused) private var cardFocused
+  /// Read straight from the focus system rather than a value a button style hands down,
+  /// so the card responds the same under the native `.borderless` style (which gives the
+  /// real system parallax) as it did under the old hand-rolled one.
+  @Environment(\.isFocused) private var cardFocused
 
   public var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
+    VStack(alignment: .center, spacing: Self.captionSpacing) {
       poster
 
       if caption != .none {
@@ -135,9 +138,10 @@ public struct MediaCardView: View {
       .lineLimit(1)
       .font(Self.titleFont)
       .foregroundStyle(Color.KinoPub.text)
+      .multilineTextAlignment(.center)
+      .frame(width: width, alignment: .center)
       .opacity(caption == .always || cardFocused ? 1 : 0)
       .animation(.easeOut(duration: 0.12), value: cardFocused)
-      .frame(width: width, alignment: .leading)
   }
 
   private var width: CGFloat {
@@ -152,6 +156,35 @@ public struct MediaCardView: View {
     card.landscapeImageURL ?? card.posterURL
   }
 
+#if os(tvOS)
+  /// Apple's borderless recipe, verbatim: a plain sized image and nothing else. The
+  /// `.borderless` button style gives it the rounded corners, the drop shadow, and on
+  /// focus lifts and scales the *whole* image — the frame grows past its neighbours —
+  /// then shows the specular highlight and tilts to the remote's touch surface. We add no
+  /// clip, shape or shadow of our own: a `clipShape`/`clipped` pins the frame, so the
+  /// picture zooms inside a fixed rect and crops instead of the card growing. Overlays are
+  /// gone for the same reason — each extra image layer gets its own highlight and the
+  /// effect fragments. Score/progress can return as text in the caption if wanted.
+  private var poster: some View {
+    AsyncImage(url: URL(string: imageURL),
+               transaction: Transaction(animation: .easeIn(duration: 0.25))) { phase in
+      if let image = phase.image {
+        image
+          .resizable()
+          .transition(.opacity)
+      } else {
+        // Round the placeholder ourselves: `.borderless` rounds the loaded image, but a
+        // bare fill tile would sit square until the poster arrives. Clip only this branch —
+        // clipping the image too is what pinned the frame and broke the focus zoom.
+        Color.KinoPub.placeholder
+          .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
+      }
+    }
+    .frame(width: width, height: imageHeight)
+  }
+#else
+  /// The card off tvOS: artwork with the score, progress and — for a continue-watching
+  /// still — the playback footer over it. There is no focus here, so overlays are free.
   private var poster: some View {
     ZStack(alignment: .bottom) {
       artwork
@@ -166,21 +199,25 @@ public struct MediaCardView: View {
       // Continue-watching cards lead with playback state; a score there is clutter.
       if !card.isLandscape, let rating = card.rating {
         RatingBadgeView(rating: rating)
-          .padding(6)
+          .padding(3)
       }
     }
     .overlay(alignment: .topTrailing) {
       if let badge = card.badge {
         Text(badge)
           .font(.caption.weight(.bold))
-          .padding(.horizontal, 8)
-          .padding(.vertical, 4)
+          .padding(.horizontal, 6)
+          .padding(.vertical, 3)
           .background(Color.KinoPub.accent, in: Capsule())
           .foregroundStyle(.black)
-          .padding(6)
+          .shadow(radius: 4)
+          .padding(3)
       }
     }
+    .frame(width: width, height: imageHeight)
+    .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
   }
+#endif
 
   @ViewBuilder
   private var artwork: some View {
@@ -201,6 +238,7 @@ public struct MediaCardView: View {
     }
 
     Group {
+#if !os(tvOS)
       if card.isLandscape {
         // Blur only the bottom strip, where the playback footer sits, so the still
         // stays crisp above it. Beats a black fade — the artwork shows through.
@@ -208,9 +246,15 @@ public struct MediaCardView: View {
       } else {
         image
       }
+#else
+      // No footer on tvOS, so no strip to blur — the bare still.
+      image
+#endif
     }
+    // The `.fill` overflow and the rounding both belong to the card as a whole now, so the
+    // clip lives on `poster`, not here — see the note there.
     .frame(width: width, height: imageHeight)
-    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+//    .clipped()
   }
 
   /// Play glyph, resume bar and episode label over the bottom of the still. The text
@@ -246,20 +290,24 @@ public struct MediaCardView: View {
   private func progressBar(_ progress: Double) -> some View {
     GeometryReader { geometry in
       ZStack(alignment: .leading) {
-        Capsule().fill(Color.black.opacity(0.55))
+        Capsule().fill(Color.black.opacity(0.65))
         Capsule()
           .fill(Color.KinoPub.accent)
           .frame(width: geometry.size.width * progress)
       }
     }
-    .frame(height: 5)
-    .padding(.horizontal, 8)
-    .padding(.bottom, 8)
+    .frame(height: 8)
+    .padding(.horizontal, 10)
+    .padding(.bottom, 10)
   }
 
   // MARK: - Metrics
 
 #if os(tvOS)
+  static let cornerRadius: CGFloat = 14
+  /// Room under the poster so the focused card, which `.borderless` scales up, clears its
+  /// caption instead of sitting right on top of it.
+  static let captionSpacing: CGFloat = 20
   static let cardWidth: CGFloat = 200
   static let posterHeight: CGFloat = 300
   static let landscapeWidth: CGFloat = 360
@@ -270,6 +318,8 @@ public struct MediaCardView: View {
   static let titleFont: Font = .system(size: 24, weight: .medium)
   static let subtitleFont: Font = .system(size: 20, weight: .regular)
 #elseif os(macOS)
+  static let cornerRadius: CGFloat = 14
+  static let captionSpacing: CGFloat = 6
   static let cardWidth: CGFloat = 165
   static let posterHeight: CGFloat = 250
   static let landscapeWidth: CGFloat = 300
@@ -280,6 +330,8 @@ public struct MediaCardView: View {
   static let titleFont: Font = .system(size: 16, weight: .medium)
   static let subtitleFont: Font = .system(size: 14, weight: .regular)
 #else
+  static let cornerRadius: CGFloat = 14
+  static let captionSpacing: CGFloat = 6
   static let cardWidth: CGFloat = 140
   static let posterHeight: CGFloat = 210
   static let landscapeWidth: CGFloat = 260
@@ -294,7 +346,7 @@ public struct MediaCardView: View {
 
 #Preview {
   MediaCardView(card: MediaCard(id: 1,
-                                posterURL: "",
+                                posterURL: "https://m.staticpop.net/poster/item/big/581.jpg",
                                 title: "Стражи Галактики",
                                 subtitle: "Guardians of the Galaxy",
                                 imdbRating: 8.1,

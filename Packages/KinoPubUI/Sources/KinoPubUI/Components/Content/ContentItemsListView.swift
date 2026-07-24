@@ -87,7 +87,11 @@ public struct ContentItemsListView: View {
                 onLoadMoreContent(item)
               }
           }
+#if os(tvOS)
+          .buttonStyle(.borderless)
+#else
           .buttonStyle(MediaCardButtonStyle())
+#endif
         }
       })
       .padding(.horizontal, 16)
