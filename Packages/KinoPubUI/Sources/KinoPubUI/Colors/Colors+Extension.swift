@@ -29,7 +29,8 @@ extension Color {
       // tvOS has no `systemBackground` — it is unavailable, not merely different. The
       // platform's own background is black in dark appearance and white in light, so
       // resolve it the same way rather than picking a grey.
-      Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? .black : .white })
+//      Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? .black : .white })
+        Color(uiColor: .clear)
 #else
       Color(uiColor: .systemBackground)
 #endif

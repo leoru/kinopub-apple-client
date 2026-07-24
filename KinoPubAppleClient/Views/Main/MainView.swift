@@ -24,7 +24,13 @@ struct MainView: View {
     NavigationStack(path: $navigationState.mainRoutes) {
       rowsView
         .platformNavigationTitle("Main")
+
+#if os(tvOS)
+        .background(.ultraThickMaterial)
+#else
         .background(Color.KinoPub.background)
+#endif
+
         .navigationDestination(for: MainRoutes.self) { route in
           switch route {
           case .details(let item):
@@ -83,7 +89,10 @@ struct MainView: View {
   private var rows: some View {
     MediaRowsView(rows: catalog.rows, navigationLinkProvider: { card in
       MainRoutes.detailsById(card.id)
-    })
+    },
+    // The focused-card blur hero is off on Home for now — too heavy on device, and it hid
+    // the tab bar. Plain rows until it returns as a lighter top slider.
+    showsFeaturedPreview: false)
 #if !os(tvOS)
     .refreshable {
       await catalog.refresh()
