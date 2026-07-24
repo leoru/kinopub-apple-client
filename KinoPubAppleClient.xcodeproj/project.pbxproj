@@ -44,6 +44,9 @@
 		CC7FCE872A72ACB700DFC0A9 /* AuthModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */; };
 		CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */; };
 		CC7FCE942A730DA400DFC0A9 /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = CC7FCE932A730DA400DFC0A9 /* PopupView */; };
+		CCA100012D0001 /* HLSManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0002 /* HLSManifest.swift */; };
+		CCA100012D0003 /* StreamSurvey.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0004 /* StreamSurvey.swift */; };
+		CCA100012D0005 /* StreamSurveyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0006 /* StreamSurveyView.swift */; };
 		CC8202FD2A8656E70041079A /* BestVideoQualityFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8202FC2A8656E70041079A /* BestVideoQualityFinder.swift */; };
 		CC8203002A8657BA0041079A /* Reachability in Frameworks */ = {isa = PBXBuildFile; productRef = CC8202FF2A8657BA0041079A /* Reachability */; };
 		CC8203022A86BB0F0041079A /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8203012A86BB0F0041079A /* SidebarView.swift */; };
@@ -134,6 +137,9 @@
 		CC78FC492A82D5D100C5BDFD /* DownloadedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadedItemView.swift; sourceTree = "<group>"; };
 		CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModel.swift; sourceTree = "<group>"; };
 		CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClientError+Description.swift"; sourceTree = "<group>"; };
+		CCA100012D0002 /* HLSManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSManifest.swift; sourceTree = "<group>"; };
+		CCA100012D0004 /* StreamSurvey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurvey.swift; sourceTree = "<group>"; };
+		CCA100012D0006 /* StreamSurveyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurveyView.swift; sourceTree = "<group>"; };
 		CC8202FC2A8656E70041079A /* BestVideoQualityFinder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BestVideoQualityFinder.swift; sourceTree = "<group>"; };
 		CC8203012A86BB0F0041079A /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		CC87E6362B020F730096BDC3 /* PlayerTimeObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerTimeObserver.swift; sourceTree = "<group>"; };
@@ -332,6 +338,7 @@
 			isa = PBXGroup;
 			children = (
 				CCE221B22A83CE9E007AF382 /* ProfileModel.swift */,
+				CCA100012D0006 /* StreamSurveyView.swift */,
 				CC71E6F72A6C0626004AFB3F /* ProfileView.swift */,
 			);
 			path = Profile;
@@ -358,6 +365,8 @@
 		CC7FCE8D2A72D3BD00DFC0A9 /* Custom */ = {
 			isa = PBXGroup;
 			children = (
+				CCA100012D0002 /* HLSManifest.swift */,
+				CCA100012D0004 /* StreamSurvey.swift */,
 				CC8202FC2A8656E70041079A /* BestVideoQualityFinder.swift */,
 				CCA100012C6F000100000204 /* View+PlatformNavigationTitle.swift */,
 				CCF1F24D2A8526CF002DA9AA /* Bundle+Data.swift */,
@@ -761,6 +770,7 @@
 				CCF388432A71CB3F00242581 /* AccessTokenPlugin.swift in Sources */,
 				CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */,
 				CC21151D2A7A8FA7001996BD /* MediaItemModel.swift in Sources */,
+				CCA100012D0005 /* StreamSurveyView.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* ProfileView.swift in Sources */,
 				CC88E1E72A6586E600E9387F /* RootView.swift in Sources */,
 				CCF3882F2A718EAA00242581 /* BundleConfiguration.swift in Sources */,
@@ -769,6 +779,8 @@
 				CCE9C6DF2A73EA46007923C0 /* ShortcutView.swift in Sources */,
 				CC21CEB22AF6B62A00EFCA8E /* SeasonModel.swift in Sources */,
 				CC71E6FA2A6C0655004AFB3F /* BookmarksView.swift in Sources */,
+				CCA100012D0001 /* HLSManifest.swift in Sources */,
+				CCA100012D0003 /* StreamSurvey.swift in Sources */,
 				CC8202FD2A8656E70041079A /* BestVideoQualityFinder.swift in Sources */,
 				CC21CEAD2AF6B61500EFCA8E /* SeasonsModel.swift in Sources */,
 				CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */,

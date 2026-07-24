@@ -41,7 +41,15 @@ struct ProfileView: View {
               
             languageSection
             playbackSection
-              
+
+#if DEBUG
+            Section(header: Text("Diagnostics")) {
+              NavigationLink("Stream survey") {
+                StreamSurveyView()
+              }
+            }
+#endif
+
             Section {
               Button(action: {
                 showLogoutAlert = true
