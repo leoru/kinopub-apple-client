@@ -70,6 +70,9 @@ class PlayerManager: ObservableObject {
   /// Set once we've auto-picked a default, so a later readiness callback can't stomp a
   /// manual choice the user made in the meantime.
   private var didChooseDefaultAudio = false
+  /// The last dub name written to `AudioTrackMemory`, so the polling persist only writes
+  /// on an actual change.
+  private var lastPersistedAudioName: String?
 #endif
 
   /// Optional on purpose: both of these used to force-unwrap, and `URL(string: "")`
@@ -103,6 +106,9 @@ class PlayerManager: ObservableObject {
 
     playerTimeObserver = PlayerTimeObserver(player: player, period: 10.0, timeUpdateHandler: { [weak self] time in
       self?.saveWatchMark(time: time)
+#if os(tvOS)
+      self?.persistAudioSelectionIfNeeded()
+#endif
     })
 
     addCueTimeObserver()
@@ -400,13 +406,27 @@ class PlayerManager: ObservableObject {
 extension PlayerManager {
 
   /// Hand the system player screen everything it needs: the title/subtitle for the info
-  /// panel, and the Subtitles + Audio menus for the transport bar. Called from the
+  /// panel, and the Subtitles menu for the transport bar. Called from the
   /// `UIViewControllerRepresentable` once AVKit has made the controller.
   func attach(to controller: AVPlayerViewController) {
     playerViewController = controller
     configureExternalMetadata()
+    hideSystemSubtitlePicker(on: controller)
     configureDefaultAudioWhenReady()
     rebuildTransportBarMenus()
+  }
+
+  /// The HLS legible group makes AVKit draw its own Subtitles control, so without this the
+  /// transport bar shows two — ours (dual tracks + sidecar SRT) and the system's. Emptying
+  /// the allowed-languages list removes the system one.
+  ///
+  /// Safe to drop here because kino.pub ships every subtitle as a sidecar SRT and the HLS
+  /// subtitle renditions are just its own WebVTT copies of those same files (Stream survey:
+  /// srt × 189, embed × 0, CC × 0) — so nothing the system picker could reach is missing
+  /// from ours. This only hides the picker UI; the fallback that programmatically selects
+  /// an embedded English legible track (`selectEmbeddedEnglishTrackIfNeeded`) is unaffected.
+  private func hideSystemSubtitlePicker(on controller: AVPlayerViewController) {
+    controller.allowedSubtitleOptionLanguages = []
   }
 
   private func configureExternalMetadata() {
@@ -462,27 +482,47 @@ extension PlayerManager {
       } ?? AudioTrackRanker.best(in: group.options)
       if let chosen {
         item.select(chosen, in: group)
+        // Seed the persist baseline with what we opened on, so the polling write only
+        // fires once the user actually switches away from this — the auto-pick itself is
+        // not a "choice" worth remembering as one.
+        lastPersistedAudioName = chosen.displayName
       }
     }
     rebuildTransportBarMenus()
   }
 
-  private func selectAudio(_ option: AVMediaSelectionOption) {
-    guard let item = player.currentItem, let group = audibleGroup else { return }
-    item.select(option, in: group)
-    AudioTrackMemory.remember(option.displayName, for: playItem.metadata.id)
-    rebuildTransportBarMenus()
+  /// The audio track showing right now, whether we auto-picked it or the user chose it in
+  /// the system picker. Read off the item's live selection rather than tracked by us.
+  private var currentAudioOption: AVMediaSelectionOption? {
+    guard let item = player.currentItem, let group = audibleGroup else { return nil }
+    return item.currentMediaSelection.selectedMediaOption(in: group)
+  }
+
+  /// The system Audio picker leaves no delegate callback to hang "remember this dub" off,
+  /// so we poll: the watch-mark tick (every 10s) is a fine cadence for persisting a track
+  /// choice, and a change since last time gets written down for the next episode.
+  func persistAudioSelectionIfNeeded() {
+    guard watchMode == .media, let option = currentAudioOption else { return }
+    let name = option.displayName
+    guard name != lastPersistedAudioName else { return }
+    lastPersistedAudioName = name
+    AudioTrackMemory.remember(name, for: playItem.metadata.id)
   }
 
   // MARK: Menus
 
-  /// Rebuild both custom menus from scratch. `UIMenu` is immutable, so tracking the
-  /// current pick means handing AVKit a freshly-built array every time anything changes.
+  /// Rebuild the custom menu from scratch. `UIMenu` is immutable, so tracking the current
+  /// pick means handing AVKit a freshly-built array every time anything changes.
+  ///
+  /// Only Subtitles lives here. Audio is left to the system picker the HLS stream already
+  /// gives the transport bar — a second, hand-rolled Audio menu next to it was the "two
+  /// buttons" duplication. We still choose a sensible default and remember the user's pick
+  /// (see `configureDefaultAudioWhenReady` / `persistAudioSelectionIfNeeded`); we just no
+  /// longer draw our own control for it.
   func rebuildTransportBarMenus() {
     guard let controller = playerViewController else { return }
     var items: [UIMenuElement] = []
     if let subtitles = subtitlesMenu() { items.append(subtitles) }
-    if let audio = audioMenu() { items.append(audio) }
     controller.transportBarCustomMenuItems = items
   }
 
@@ -514,20 +554,6 @@ extension PlayerManager {
     return [off] + tracks
   }
 
-  private func audioMenu() -> UIMenu? {
-    guard let group = audibleGroup, group.options.count > 1 else { return nil }
-    let selected = player.currentItem?.currentMediaSelection.selectedMediaOption(in: group)
-    let actions = group.options.map { option in
-      UIAction(title: option.displayName,
-               state: option == selected ? .on : .off) { [weak self] _ in
-        self?.selectAudio(option)
-      }
-    }
-    return UIMenu(title: "Audio".localized,
-                  image: UIImage(systemName: "waveform"),
-                  options: .singleSelection,
-                  children: actions)
-  }
 }
 
 /// The user's manually chosen audio track, kept per title the same way subtitles are, so

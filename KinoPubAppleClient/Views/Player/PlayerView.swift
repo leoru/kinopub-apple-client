@@ -74,6 +74,9 @@ struct PlayerView: View {
     })
 #endif
 #if os(tvOS)
+    // The player is a full-screen surface, not a browse tab — the tab strip has no place
+    // over it. Back/Menu leaves, the same as on the detail page.
+    .toolbar(.hidden, for: .tabBar)
     .onAppear {
       Task {
         await playerManager.fetchWatchMark()
