@@ -35,7 +35,7 @@ public struct Rating {
     switch rounded {
     case 8...: return .awarded
     case 7..<8: return .good
-    case 6..<7: return .average
+    case 5..<7: return .average
     default: return .poor
     }
   }
@@ -48,10 +48,10 @@ public struct Rating {
 public extension Rating.Tier {
   var color: Color {
     switch self {
-    case .awarded: return Color(red: 0.83, green: 0.68, blue: 0.22)
-    case .good: return Color(red: 0.30, green: 0.72, blue: 0.40)
-    case .average: return Color(white: 0.55)
-    case .poor: return Color(red: 0.80, green: 0.25, blue: 0.25)
+    case .awarded: return Color.yellow
+    case .good: return Color.green
+    case .average: return Color.gray
+    case .poor: return Color.red
     }
   }
 
@@ -71,21 +71,21 @@ public struct RatingBadgeView: View {
   }
 
   public var body: some View {
-    HStack(spacing: 2) {
+    HStack(spacing: 3) {
       if rating.tier.showsWings {
         wing(mirrored: false)
       }
 
       Text(rating.formatted)
-        .font(.system(size: Self.fontSize, weight: .semibold))
-        .monospacedDigit()
-        .foregroundStyle(.white)
+        .font(.system(size: Self.fontSize, weight: .bold))
+//        .monospacedDigit()
+        .foregroundStyle( rating.tier.showsWings ? .black :.white)
 
       if rating.tier.showsWings {
         wing(mirrored: true)
       }
     }
-    .padding(.horizontal, Self.horizontalPadding)
+    .padding(.horizontal, rating.tier.showsWings ? Self.horizontalPadding /2 2 : Self.horizontalPadding)
     .padding(.vertical, Self.verticalPadding)
     .background(rating.tier.color, in: Capsule())
   }
@@ -96,19 +96,19 @@ public struct RatingBadgeView: View {
       .resizable()
       .aspectRatio(contentMode: .fit)
       .frame(height: Self.wingHeight)
-      .foregroundStyle(.white)
+      .foregroundStyle(.black)
       .scaleEffect(x: mirrored ? -1 : 1)
   }
 
 #if os(tvOS)
   static let fontSize: CGFloat = 22
-  static let horizontalPadding: CGFloat = 10
-  static let verticalPadding: CGFloat = 5
+  static let horizontalPadding: CGFloat = 6
+  static let verticalPadding: CGFloat = 2
   static let wingHeight: CGFloat = 22
 #else
   static let fontSize: CGFloat = 13
-  static let horizontalPadding: CGFloat = 7
-  static let verticalPadding: CGFloat = 3
+  static let horizontalPadding: CGFloat = 6
+  static let verticalPadding: CGFloat = 2
   static let wingHeight: CGFloat = 14
 #endif
 }
