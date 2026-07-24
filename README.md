@@ -63,12 +63,16 @@ open KinoPubAppleClient.xcodeproj
 - **Dual subtitles**: any two of the item's tracks at once, stacked at the bottom of the frame, picked
   from a captions button in the player and remembered for the next episode
 - On-pause word panel translating EN→RU on device (iOS 18 / macOS 15; not available on tvOS)
-- **Home and Saved lead with a focus preview on tvOS.** The top ~560 points of the page belong to
-  whatever the remote is on: its wide artwork fills the screen (cross-fading as focus moves, blurring
-  into the background toward the rows), with the title, original title, rating, metadata and plot over
-  it. The preview is a link — clicking it opens the item — and the trailer will play in the same frame.
-  Cards under it carry no captions at all; grids, which have no preview, show the title of the focused
-  card only. The remote lands on the first card of the first row — Continue Watching when there is one.
+- **The focus-preview hero is a `MediaRowsView(showsFeaturedPreview:)` option, currently off everywhere.**
+  When on, the top ~560 points of the page belong to whatever the remote is on: its wide artwork fills the
+  screen (cross-fading as focus moves, blurring into the background toward the rows), with the title,
+  original title, rating, metadata and plot over it — a link that opens the item, and where the trailer
+  will play. Claiming focus onto the first card exists only to feed that hero. **Home and Saved both pass
+  `showsFeaturedPreview: false`** for now: the progressive blur re-rendered on every focus move was too
+  heavy on device and drew over the tab bar. With it off the screens are plain rows and the remote rests
+  on the tab bar by default (no first-card claim) — it should return as a lighter, non-focus-driven top
+  slider. Cards carry no captions under the hero; grids, which have no preview, show the title of the
+  focused card only.
 - **Backgrounds and type are the system's** (`Color.KinoPub.background` / `.text` / `.subtitle`): black
   and true white on a TV in dark appearance, instead of the old hand-picked #1C202B grey and #B0B1B5
   "white".
@@ -85,19 +89,31 @@ These are real, verified, and up for grabs:
 - **The detail page's default focus is unverified on a real remote.** `MediaItemView` names Play with
   `.defaultFocus($focus, .play)`; a headless simulator draws no focus at all, so this has only been
   read, not seen.
-- **Card tilt-parallax is unverified on a real remote.** `SiriRemoteTilt` reads the Siri Remote's touch
-  surface as an absolute-position joystick via `GCController`; `simctl` and the on-screen remote only
-  drive discrete arrow-key presses, not a continuous thumb drag, so the tilt has been read, not felt.
+- **Poster cards use the native focus effect.** On tvOS the catalog rows, the grid and the related
+  rail apply `.buttonStyle(.borderless)`, so the system provides the real lift, specular shine and
+  remote-tracking parallax. This replaced a hand-rolled `SiriRemoteTilt` (`rotation3DEffect` driven by
+  the touch surface as a `GCController` joystick), which faked the tilt, reconfigured the micro-gamepad
+  globally, and could never be felt in the simulator anyway — that file is gone. `MediaCardView` reads
+  focus from `\.isFocused` so its caption/rating/footer still respond under the system style.
 - **The detail page has no on-screen back button**, matching the stock Apple TV app — Back/Menu on the
   remote pops the stack. If that turns out not to fire, it is a real bug, not a design choice.
 - **Subtitles don't follow the episode.** `MediaItem.subtitles` returns `videos?.first?.subtitles`, so a
   series always uses the first video's tracks. See `Packages/KinoPubBackend/.../Models/MediaItem.swift`.
 - **tvOS player is unverified on a real remote.** `PlayerView` now drives `AVPlayerViewController`
-  directly on tvOS (`TVVideoPlayer` in `Views/Player/PlayerView.swift`) — no hand-rolled chrome, subtitle
-  and audio pickers live in `transportBarCustomMenuItems`, and Menu-to-exit is wired through
+  directly on tvOS (`TVVideoPlayer` in `Views/Player/PlayerView.swift`) — no hand-rolled chrome, the
+  Subtitles picker lives in `transportBarCustomMenuItems` (dual tracks + sidecar), audio is left to the
+  system picker the HLS stream already provides, and Menu-to-exit is wired through
   `AVPlayerViewControllerDelegate.playerViewControllerShouldDismiss` rather than assumed. Builds and
-  reads correctly, but the whole thing — Menu exit, the Subtitles/Audio menus, the Up-swipe that takes
+  reads correctly, but the whole thing — Menu exit, the Subtitles menu, the Up-swipe that takes
   the item page's inline trailer full-screen — has only been read, not driven with a real Siri Remote.
+- **Subtitle/Audio buttons are de-duplicated.** The HLS groups made `AVPlayerViewController` draw its
+  own Subtitles and Audio controls next to ours. Audio: we dropped our custom menu and kept the system
+  picker (our ranker still picks the default, `persistAudioSelectionIfNeeded` remembers a manual switch).
+  Subtitles: we kept ours (dual tracks + sidecar) and hid the system one with
+  `allowedSubtitleOptionLanguages = []` in `hideSystemSubtitlePicker`. Safe per the Stream survey — every
+  kino.pub subtitle is a sidecar SRT (srt × 189, embed × 0, CC × 0), so the system picker could reach
+  nothing ours can't. **Needs a real-remote check** that `[]` hides the button rather than showing an
+  Off-only one, and that every expected track still appears in our menu.
 - **The player's title only shows the series name when reached from the item page.** `Episode` carries
   a `seriesTitle` filled in by `MediaItemHeroView`/`SeasonsRailView` right before playback; the
   standalone season-browsing route (`Routes.season`, opened from Catalog/Search/Bookmarks/Main without
@@ -108,7 +124,23 @@ These are real, verified, and up for grabs:
   `AVMediaSelectionOption` exposes no channel count before the asset loads, so `AudioTrackRanker` in
   `PlayerManager.swift` parses "5.1" / "стерео" etc. out of the label kino.pub already puts there. Works
   for the labels seen so far; an HLS stream whose dub descriptions don't follow that convention falls
-  back to kind + Russian-first ranking alone.
+  back to kind + Russian-first ranking alone. The API *does* carry real `channels`/`codec` per track
+  (`Video.audios` / `Episode.audios`), but matching those to an `AVMediaSelectionOption` is only reliable
+  by position, which the HLS spec doesn't guarantee — so the label parse stays until the Stream survey
+  says whether a positional match holds.
+- **Stream survey (DEBUG).** Settings → Diagnostics → Stream survey walks ~40 catalogue items and reports
+  what kino.pub actually delivers vs. what the API claims: delivered `hls4` `CODECS`/`CHANNELS`/`VIDEO-RANGE`
+  against source `FileInfo.codec` / `VideoAudio`, each codec flagged for AVFoundation playability. Built to
+  answer whether an FFmpeg-backed engine (KSPlayer/MPVKit) would buy anything over AVFoundation.
+  `Custom/StreamSurvey.swift` + `Custom/HLSManifest.swift`.
+
+  **First run (20 items, 2026-07):** every delivered stream is `avc1` (H.264 8-bit) + `mp4a` (AAC), SDR,
+  ≤1080p, 23.976/24 fps — not one codec AVFoundation can't hardware-decode. Downloads are plain MP4;
+  subtitles all sidecar SRT. **Verdict: an FFmpeg engine buys kino.pub nothing** — it would software-decode
+  what VideoToolbox already does in hardware, and cost the native transport bar, AirPlay, PiP and battery.
+  The manifest carries no `CHANNELS` attribute (273/273 absent), which is why the audio-default ranker
+  still has to read channel counts off the dub label. An FFmpeg engine only becomes worthwhile if/when a
+  generic-IPTV / m3u8 wrapper lands, where source codecs are arbitrary (that is UHF's world, not ours yet).
 - **Home and Saved rows show only the first page** of each shortcut or folder, and refetch every
   time the tab appears. `/v1/bookmarks/{id}` is not paginated in `BookmarkItemsRequest`, so a folder
   row stops at what one request returns — the folder's own screen has the same limit.
@@ -180,10 +212,8 @@ that line is polish, and everything above it is unfinished business.
 - Tabs: Search · Home · Movies · Series · Saved · Settings, icon-only where it should be
 - Combined score badges on posters, separate IMDb/Kinopoisk marks on detail pages
 - White accent throughout; the site's green is gone
-- Poster/card tilt-parallax on focus, following the thumb on the Siri Remote's touch
-  surface (`Packages/KinoPubUI/Sources/KinoPubUI/Extensions/SiriRemoteTilt.swift`) —
-  read via `GCController`'s `microGamepad` in absolute-position mode, since SwiftUI
-  exposes no native equivalent of TVUIKit's parallax focus effect
+- Native tvOS parallax focus effect on poster cards via `.buttonStyle(.borderless)` —
+  the system's lift, specular shine and remote-tracking parallax, not a hand-rolled tilt
 
 ### Phase A — Plan-minimum: parity with what I already use
 
