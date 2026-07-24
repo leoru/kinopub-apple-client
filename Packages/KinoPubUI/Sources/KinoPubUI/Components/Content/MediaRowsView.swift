@@ -37,6 +37,12 @@ public struct MediaRowsView: View {
   private let navigationLinkProvider: (MediaCard) -> any Hashable
   private let onRowAppear: ((MediaRow) -> Void)?
 
+  /// tvOS only: the focused-card hero — the reserved space above the rows plus the
+  /// full-screen blurred artwork behind everything. Off on Home for now: the progressive
+  /// blur re-rendered on every focus move is too heavy on device, and it drew over the tab
+  /// bar. The rows-only layout is the fallback until it comes back as a lighter top slider.
+  private let showsFeaturedPreview: Bool
+
   /// Identifies one card in one row. The same item can sit in two rows — Continue
   /// Watching and Hot Series both — so the card's own id is not unique enough to
   /// track focus by.
@@ -57,33 +63,42 @@ public struct MediaRowsView: View {
 
   public init(rows: [MediaRow],
               navigationLinkProvider: @escaping (MediaCard) -> any Hashable,
+              showsFeaturedPreview: Bool = true,
               onRowAppear: ((MediaRow) -> Void)? = nil) {
     self.rows = rows
     self.navigationLinkProvider = navigationLinkProvider
+    self.showsFeaturedPreview = showsFeaturedPreview
     self.onRowAppear = onRowAppear
   }
 
   public var body: some View {
 #if os(tvOS)
-    scroll
-      .background(backdrop)
-      .defaultFocus($focusedCard, firstCardKey, priority: .userInitiated)
-      .onChange(of: focusedCard) { _, newValue in
-        // Nil means focus went to the tab bar or a pushed screen; keep the artwork.
-        if let newValue { backdropCard = newValue }
-      }
-      // The remote should land on the first card of the first row — Continue Watching
-      // when there is one — rather than on the tab bar above. `.defaultFocus` alone
-      // does not do it: the rows arrive after the screen does, and by then the tab
-      // bar already holds focus. So claim it once the first card actually exists.
-      .task {
-        guard !hasClaimedFocus, let firstCardKey else { return }
-        // The stack is lazy — the card is not there to focus on the same runloop pass.
-        try? await Task.sleep(for: .milliseconds(120))
-        guard !Task.isCancelled, focusedCard == nil else { return }
-        focusedCard = firstCardKey
-        hasClaimedFocus = true
-      }
+    if showsFeaturedPreview {
+      // The remote should land on the first card of the first row so the hero above has
+      // something to show. `.defaultFocus` alone does not do it: the rows arrive after the
+      // screen does, and by then the tab bar already holds focus — so claim it once the
+      // first card actually exists.
+      scroll
+        .background(featuredBackground)
+        .defaultFocus($focusedCard, firstCardKey, priority: .userInitiated)
+        .onChange(of: focusedCard) { _, newValue in
+          // Nil means focus went to the tab bar or a pushed screen; keep the artwork.
+          if let newValue { backdropCard = newValue }
+        }
+        .task {
+          guard !hasClaimedFocus, let firstCardKey else { return }
+          // The stack is lazy — the card is not there to focus on the same runloop pass.
+          try? await Task.sleep(for: .milliseconds(120))
+          guard !Task.isCancelled, focusedCard == nil else { return }
+          focusedCard = firstCardKey
+          hasClaimedFocus = true
+        }
+    } else {
+      // No hero to feed, so no reason to steal focus from the tab bar: let the remote rest
+      // there by default, the way a plain rows screen should.
+      scroll
+        .background(featuredBackground)
+    }
 #else
     scroll
 #endif
@@ -96,7 +111,9 @@ public struct MediaRowsView: View {
         // Part of the scroll, not a fixed layer: the preview belongs to the top of the
         // page and slides away as focus moves down the rows. Pinned instead, the rows
         // scroll straight over the title and plot.
-        previewZone
+        if showsFeaturedPreview {
+          previewZone
+        }
 #endif
 
         ForEach(rows) { row in
@@ -118,6 +135,17 @@ public struct MediaRowsView: View {
   private func card(for key: CardKey?) -> MediaCard? {
     guard let key else { return nil }
     return rows.first { $0.id == key.row }?.cards.first { $0.id == key.card }
+  }
+
+  /// The page background. With the hero on, it's the focused item's blurred artwork; with
+  /// it off, a plain fill that leaves the tab bar above uncovered.
+  @ViewBuilder
+  private var featuredBackground: some View {
+    if showsFeaturedPreview {
+      backdrop
+    } else {
+      Color.KinoPub.background
+    }
   }
 
   /// The focused item's wide artwork behind the whole screen, with its title and plot
@@ -246,7 +274,16 @@ public struct MediaRowsView: View {
             NavigationLink(value: navigationLinkProvider(card)) {
               MediaCardView(card: card, caption: Self.cardCaption)
             }
+#if os(tvOS)
+            // The native tvOS poster effect: rounded corners, drop shadow, and on focus a
+            // lift, the caption sliding down, a specular highlight and a touch-surface tilt
+            // — all from `.borderless`, no custom code. It applies to the *image*, so the
+            // card's label is just that (overlays would each get their own highlight and
+            // fragment the effect); see MediaCardView.
+            .buttonStyle(.borderless)
+#else
             .buttonStyle(MediaCardButtonStyle())
+#endif
             .focused($focusedCard, equals: CardKey(row: row.id, card: card.id))
           }
         }
@@ -278,8 +315,9 @@ public struct MediaRowsView: View {
   /// Free space above the rows, for the focused item's artwork, name and plot — and,
   /// later, its trailer. A little over half the 1080-point screen, so the first row
   /// sits low and the second only peeks, the way Netflix laid its home screen out.
-  /// The preview says what the focused card is, so the cards themselves stay bare.
-  static let cardCaption: MediaCardCaption = .none
+  /// The focused card names itself in one line underneath — the hero preview that used to
+  /// do it is off. Only on focus, over space kept reserved so the row doesn't reflow.
+  static let cardCaption: MediaCardCaption = .onFocus
 
   static let previewHeight: CGFloat = 560
   static let previewBottomInset: CGFloat = 28
@@ -397,43 +435,13 @@ struct PreviewButtonStyle: ButtonStyle {
   }
 }
 
-/// Lifts and highlights the focused card. tvOS's default styles would either wrap the
-/// artwork in their own chrome or give no focus feedback at all.
+/// The off-tvOS card style: a press scale, no focus (there is none on iOS/macOS). On tvOS
+/// the cards use the native `.borderless` style instead, which brings the real system
+/// parallax — so nothing here is tvOS-specific any more.
 struct MediaCardButtonStyle: ButtonStyle {
   func makeBody(configuration: Configuration) -> some View {
-    Card(configuration: configuration)
-  }
-
-  private struct Card: View {
-    let configuration: ButtonStyleConfiguration
-    @Environment(\.isFocused) private var isFocused
-#if os(tvOS)
-    /// -1...1, centred; only meaningful while this card is focused.
-    @State private var tilt: CGSize = .zero
-    private static let maxTiltDegrees: Double = 9
-#endif
-
-    var body: some View {
-      configuration.label
-        .environment(\.cardFocused, isFocused)
-        .scaleEffect(isFocused ? 1.08 : (configuration.isPressed ? 0.97 : 1.0))
-#if os(tvOS)
-        .rotation3DEffect(.degrees(isFocused ? -tilt.height * Self.maxTiltDegrees : 0),
-                           axis: (x: 1, y: 0, z: 0), anchor: .center, perspective: 0.3)
-        .rotation3DEffect(.degrees(isFocused ? tilt.width * Self.maxTiltDegrees : 0),
-                           axis: (x: 0, y: 1, z: 0), anchor: .center, perspective: 0.3)
-        .onReceive(SiriRemoteTilt.shared.$position) { newValue in
-          guard isFocused else { return }
-          tilt = newValue
-        }
-        .onChange(of: isFocused) { focused in
-          if !focused { tilt = .zero }
-        }
-        .animation(.easeOut(duration: 0.1), value: tilt)
-#endif
-        .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 18, y: 10)
-        .animation(.easeOut(duration: 0.18), value: isFocused)
-        .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
+    configuration.label
+      .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+      .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
   }
 }

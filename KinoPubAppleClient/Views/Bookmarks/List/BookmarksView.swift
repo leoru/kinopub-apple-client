@@ -87,7 +87,9 @@ struct BookmarksView: View {
   private var rows: some View {
     MediaRowsView(rows: catalog.rows, navigationLinkProvider: { card in
       BookmarksRoutes.detailsById(card.id)
-    })
+    },
+    // Hero off here too — plain rows, tab bar keeps focus (see MediaRowsView).
+    showsFeaturedPreview: false)
 #if !os(tvOS)
     .refreshable {
       await catalog.refresh()
