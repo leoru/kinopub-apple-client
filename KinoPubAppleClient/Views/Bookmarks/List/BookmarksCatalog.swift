@@ -12,26 +12,21 @@ import OSLog
 import KinoPubLogging
 import Combine
 
-/// Builds the Saved screen: the watchlist first, then one row per bookmark folder, so
-/// the artwork is on screen straight away instead of behind a list of folder names.
+/// Builds the Bookmarks overview: one row per folder with artwork. Watchlist lives
+/// on its own sidebar tab now.
 @MainActor
 class BookmarksCatalog: ObservableObject {
-
-  static let watchlistRowID = "watchlist"
 
   private var authState: AuthState
   private var contentService: VideoContentService
   private var errorHandler: ErrorHandler
   private var bag = Set<AnyCancellable>()
 
-  /// Empty until the watchlist or the first folder lands; the screen shows a spinner
-  /// until then rather than stand-in artwork.
+  /// Empty until the first folder lands; the screen shows a spinner until then
+  /// rather than stand-in artwork.
   @Published public private(set) var rows: [MediaRow] = []
   @Published public private(set) var isLoaded: Bool = false
 
-  /// The two halves of the screen are filled by separate requests that land at their own
-  /// pace; keeping them apart means neither has to know the other's row indices.
-  private var watchlistRow: MediaRow?
   private var folderRows: [MediaRow] = []
 
   init(itemsService: VideoContentService, authState: AuthState, errorHandler: ErrorHandler) {
@@ -46,25 +41,15 @@ class BookmarksCatalog: ObservableObject {
       return
     }
 
-    async let watchlistTask = fetchWatchlistRow()
-    async let foldersTask = fetchFolders()
-
-    // The row that matters most goes up as soon as it lands.
-    watchlistRow = await watchlistTask
-    publish()
-
-    let folders = await foldersTask
+    let folders = await fetchFolders()
     await fillRows(for: folders)
-    // A folder the service still counts but returns nothing for would draw as a bare
-    // title over empty space.
     folderRows = folderRows.filter { !$0.cards.isEmpty }
-    publish()
+    rows = folderRows
     isLoaded = true
   }
 
   private func fetchFolders() async -> [Bookmark] {
     do {
-      // Whichever folder was added to most recently leads, not whichever was created last.
       return try await contentService.fetchBookmarks().items
         .filter { $0.count != "0" }
         .recentlyUpdatedFirst()
@@ -72,27 +57,6 @@ class BookmarksCatalog: ObservableObject {
       Logger.app.debug("fetch bookmarks error: \(error)")
       errorHandler.setError(error)
       return []
-    }
-  }
-
-  /// The watchlist leads the screen: these are the serials the user is following for new
-  /// episodes, which is worth more than a folder of films they gave up on. A failure here
-  /// only costs the row — the folders below are still worth showing.
-  ///
-  /// The API's own order is kept: it is already newest episode first (see README), and
-  /// nothing in the payload would let us rebuild that order ourselves.
-  private func fetchWatchlistRow() async -> MediaRow? {
-    do {
-      let items = try await contentService.fetchWatchingSerials(subscribedOnly: true).items
-      guard !items.isEmpty else { return nil }
-
-      return MediaRow(id: Self.watchlistRowID,
-                      title: "Watchlist".localized,
-                      count: "\(items.count)",
-                      cards: items.map(Self.card(for:)))
-    } catch {
-      Logger.app.error("Failed to load watchlist: \(error)")
-      return nil
     }
   }
 
@@ -119,18 +83,13 @@ class BookmarksCatalog: ObservableObject {
         guard !items.isEmpty else { continue }
         built[index] = Self.row(for: folders[index], items: items)
         folderRows = built.compactMap { $0 }
-        publish()
+        rows = folderRows
       }
     }
   }
 
-  private func publish() {
-    rows = [watchlistRow].compactMap { $0 } + folderRows
-  }
-
   @Sendable @MainActor
   func refresh() async {
-    watchlistRow = nil
     folderRows = []
     rows = []
     isLoaded = false
@@ -141,19 +100,6 @@ class BookmarksCatalog: ObservableObject {
   // MARK: - Rows
 
   private static func rowID(for bookmark: Bookmark) -> String { "bookmark-\(bookmark.id)" }
-
-  /// Watchlist cards stay portrait like the folders below them, with a "+2" badge when
-  /// episodes are waiting. No progress bar: Saved is a shelf of what was put aside, not
-  /// a report on how far through each one the user got — that belongs on Home's
-  /// continue-watching row.
-  private static func card(for item: WatchingItem) -> MediaCard {
-    MediaCard(id: item.id,
-              posterURL: item.posters.medium,
-              title: item.localizedTitle,
-              subtitle: item.originalTitle,
-              badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil,
-              backdropURL: item.posters.wideURL ?? item.posters.big)
-  }
 
   private static func row(for bookmark: Bookmark, items: [MediaItem]) -> MediaRow {
     MediaRow(id: rowID(for: bookmark),

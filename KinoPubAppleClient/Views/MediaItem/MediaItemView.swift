@@ -280,7 +280,7 @@ struct MediaItemView: View {
                             onWatchedToggle: { itemModel.toggleWatched() },
                             onFolderToggle: { itemModel.toggleFolder($0) },
                             onClearFromContinueWatching: { itemModel.clearFromContinueWatching() },
-                            onBrowseWatchlist: { navigationState.selectedTab = .saved })
+                            onBrowseWatchlist: { navigationState.selectedTab = .watchlist })
 
           if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
             SeasonsRailView(seasons: seasons,

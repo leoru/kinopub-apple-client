@@ -12,7 +12,11 @@ enum NavigationTabs: Hashable {
   case home
   case movies
   case series
+  case watchlist
+  case recentlyWatched
   case downloads
-  case saved
+  case bookmarks
+  /// A bookmark folder pinned as its own sidebar tab.
+  case bookmark(Int)
   case settings
 }

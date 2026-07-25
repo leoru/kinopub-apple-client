@@ -1,43 +1,35 @@
 //
-//  BookmarksView.swift
+//  BookmarkFolderTabView.swift
 //  KinoPubAppleClient
-//
-//  Created by Kirill Kunst on 22.07.2023.
 //
 
 import SwiftUI
 import KinoPubUI
 import KinoPubBackend
 
-struct BookmarksView: View {
+/// One bookmark folder as a sidebar tab — own stack so folder switches stay isolated.
+struct BookmarkFolderTabView: View {
   @EnvironmentObject var navigationState: NavigationState
-  @EnvironmentObject var authState: AuthState
   @EnvironmentObject var errorHandler: ErrorHandler
+  @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
-  @StateObject private var catalog: BookmarksCatalog
-  
-  init(catalog: @autoclosure @escaping () -> BookmarksCatalog) {
-    _catalog = StateObject(wrappedValue: catalog())
-  }
-  
+
+  let bookmark: Bookmark
+  @State private var path: [BookmarksRoutes] = []
+
   var body: some View {
-    NavigationStack(path: $navigationState.bookmarksRoutes) {
-      bookmarksRows
-        .platformNavigationTitle("Bookmarks")
-        .background(Color.KinoPub.background)
-        .task {
-          await catalog.fetchItems()
-        }
+    NavigationStack(path: $path) {
+      BookmarkView(model: BookmarkModel(bookmark: bookmark,
+                                        itemsService: appContext.contentService,
+                                        errorHandler: errorHandler))
         .navigationDestination(for: BookmarksRoutes.self) { route in
           switch route {
           case .details(let item):
             detailsView(for: item.id, knownItem: item)
           case .detailsById(let id):
             detailsView(for: id)
-          case .bookmark(let bookmark):
-            BookmarkView(model: BookmarkModel(bookmark: bookmark,
-                                              itemsService: appContext.contentService,
-                                              errorHandler: errorHandler))
+          case .bookmark:
+            EmptyView()
           case .player(let item):
             PlayerView(manager: PlayerManager(playItem: item,
                                               watchMode: .media,
@@ -60,11 +52,11 @@ struct BookmarksView: View {
                                  errorHandler: errorHandler)
           }
         }
-        .handleError(state: $errorHandler.state)
     }
-    .navigationStackActive(for: .bookmarks, selected: navigationState.selectedTab)
+    .navigationStackActive(for: .bookmark(bookmark.id), selected: navigationState.selectedTab)
+    .id(bookmark.id)
   }
-  
+
   private func detailsView(for id: Int, knownItem: MediaItem? = nil) -> some View {
     MediaItemView(model: MediaItemModel(mediaItemId: id,
                                         knownItem: knownItem,
@@ -72,37 +64,5 @@ struct BookmarksView: View {
                                         downloadManager: appContext.downloadManager,
                                         linkProvider: BookmarksRoutesLinkProvider(),
                                         errorHandler: errorHandler))
-  }
-
-  /// One row per folder, titles leading to the folder's own screen — the same shape as
-  /// Home, so Saved does not make you open a folder before seeing anything.
-  @ViewBuilder
-  var bookmarksRows: some View {
-    if catalog.rows.isEmpty && !catalog.isLoaded {
-      LoadingIndicatorView()
-    } else {
-      rows
-    }
-  }
-
-  private var rows: some View {
-    MediaRowsView(rows: catalog.rows, navigationLinkProvider: { card in
-      BookmarksRoutes.detailsById(card.id)
-    },
-    // Hero off here too — plain rows, tab bar keeps focus (see MediaRowsView).
-    showsFeaturedPreview: false)
-#if !os(tvOS)
-    .refreshable {
-      await catalog.refresh()
-    }
-#endif
-  }
-}
-
-struct BookmarksView_Previews: PreviewProvider {
-  static var previews: some View {
-    BookmarksView(catalog: BookmarksCatalog(itemsService: VideoContentServiceMock(),
-                                            authState: AuthState(authService: AuthorizationServiceMock(), accessTokenService: AccessTokenServiceMock()),
-                                            errorHandler: ErrorHandler()))
   }
 }

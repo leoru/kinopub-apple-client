@@ -15,6 +15,8 @@ class NavigationState: ObservableObject {
   @Published var searchRoutes: [SearchRoutes] = []
   @Published var moviesRoutes: [CatalogRoutes] = []
   @Published var seriesRoutes: [CatalogRoutes] = []
+  @Published var watchlistRoutes: [BookmarksRoutes] = []
+  @Published var recentlyWatchedRoutes: [MainRoutes] = []
   @Published var bookmarksRoutes: [BookmarksRoutes] = []
   @Published var downloadsRoutes: [DownloadsRoutes] = []
 }

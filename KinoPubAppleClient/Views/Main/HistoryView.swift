@@ -7,8 +7,8 @@ import SwiftUI
 import KinoPubBackend
 import KinoPubUI
 
-/// Viewing history as a single landscape row — enough for "Browse History" from a
-/// Continue Watching long-press without a dedicated tab yet.
+/// Viewing history as a single landscape row. Used as the Recently Watched tab
+/// content and still pushed from Continue Watching's "Browse History" menu.
 struct HistoryView: View {
   @EnvironmentObject var errorHandler: ErrorHandler
   @Environment(\.appContext) var appContext
@@ -26,13 +26,13 @@ struct HistoryView: View {
           .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else {
         MediaRowsView(
-          rows: [MediaRow(id: "history", title: "History".localized, cards: cards)],
+          rows: [MediaRow(id: "history", title: "Recently Watched".localized, cards: cards)],
           navigationLinkProvider: { card in MainRoutes.detailsById(card.itemID) },
           showsFeaturedPreview: false
         )
       }
     }
-    .platformNavigationTitle("History")
+    .platformNavigationTitle("Recently Watched")
     .background(Color.KinoPub.background)
     .task { await load() }
     .handleError(state: $errorHandler.state)
