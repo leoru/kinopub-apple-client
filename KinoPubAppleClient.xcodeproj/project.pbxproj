@@ -47,6 +47,7 @@
 		CCA100012D0001 /* HLSManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0002 /* HLSManifest.swift */; };
 		CCA100012D0003 /* StreamSurvey.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0004 /* StreamSurvey.swift */; };
 		CCA100012D0005 /* StreamSurveyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0006 /* StreamSurveyView.swift */; };
+		CCA100012D0010 /* TVProfileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0011 /* TVProfileSettingsView.swift */; };
 		CC8202FD2A8656E70041079A /* BestVideoQualityFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8202FC2A8656E70041079A /* BestVideoQualityFinder.swift */; };
 		CC8203002A8657BA0041079A /* Reachability in Frameworks */ = {isa = PBXBuildFile; productRef = CC8202FF2A8657BA0041079A /* Reachability */; };
 		CC8203022A86BB0F0041079A /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8203012A86BB0F0041079A /* SidebarView.swift */; };
@@ -142,6 +143,7 @@
 		CCA100012D0002 /* HLSManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSManifest.swift; sourceTree = "<group>"; };
 		CCA100012D0004 /* StreamSurvey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurvey.swift; sourceTree = "<group>"; };
 		CCA100012D0006 /* StreamSurveyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurveyView.swift; sourceTree = "<group>"; };
+		CCA100012D0011 /* TVProfileSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVProfileSettingsView.swift; sourceTree = "<group>"; };
 		CC8202FC2A8656E70041079A /* BestVideoQualityFinder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BestVideoQualityFinder.swift; sourceTree = "<group>"; };
 		CC8203012A86BB0F0041079A /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		CC87E6362B020F730096BDC3 /* PlayerTimeObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerTimeObserver.swift; sourceTree = "<group>"; };
@@ -345,6 +347,7 @@
 				CCE221B22A83CE9E007AF382 /* ProfileModel.swift */,
 				CCA100012D0006 /* StreamSurveyView.swift */,
 				CC71E6F72A6C0626004AFB3F /* ProfileView.swift */,
+				CCA100012D0011 /* TVProfileSettingsView.swift */,
 			);
 			path = Profile;
 			sourceTree = "<group>";
@@ -777,6 +780,7 @@
 				CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */,
 				CC21151D2A7A8FA7001996BD /* MediaItemModel.swift in Sources */,
 				CCA100012D0005 /* StreamSurveyView.swift in Sources */,
+				CCA100012D0010 /* TVProfileSettingsView.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* ProfileView.swift in Sources */,
 				CC88E1E72A6586E600E9387F /* RootView.swift in Sources */,
 				CCF3882F2A718EAA00242581 /* BundleConfiguration.swift in Sources */,

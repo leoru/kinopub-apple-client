@@ -9,7 +9,7 @@ import KinoPubBackend
 import KinoPubKit
 
 struct ProfileView: View {
-  
+
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var errorHandler: ErrorHandler
   @Environment(\.appContext) var appContext
@@ -21,12 +21,40 @@ struct ProfileView: View {
   @AppStorage(SubtitlePreferences.secondSubtitleLanguageKey) private var secondSubtitleLanguage: String = "ru"
 
   @State private var showLogoutAlert: Bool = false
-    
+
   init(model: @autoclosure @escaping () -> ProfileModel) {
     _model = StateObject(wrappedValue: model())
   }
-  
+
   var body: some View {
+#if os(tvOS)
+    TVProfileSettingsView(
+      model: model,
+      selectedLanguage: $selectedLanguage,
+      preferEnglishSubtitles: $preferEnglishSubtitles,
+      preferNonCCSubtitles: $preferNonCCSubtitles,
+      dualSubtitlesEnabled: $dualSubtitlesEnabled,
+      secondSubtitleLanguage: $secondSubtitleLanguage,
+      onLogout: { showLogoutAlert = true },
+      onLanguageChange: { model.changeLanguage(to: $0) }
+    )
+    .background(Color.KinoPub.background.ignoresSafeArea())
+    .onAppear { model.fetch() }
+    .alert("Are you sure?", isPresented: $showLogoutAlert) {
+      Button("Logout", role: .destructive) { model.logout() }
+      Button("Cancel", role: .cancel) { }
+    }
+    .alert(isPresented: $model.shouldShowExitAlert) {
+      Alert(
+        title: Text("Restarting the app"),
+        message: Text("The app will restart to apply the language change."),
+        primaryButton: .default(Text("OK")) {
+          exit(0)
+        },
+        secondaryButton: .cancel()
+      )
+    }
+#else
     NavigationStack {
       ZStack {
         Color.KinoPub.background.edgesIgnoringSafeArea(.all)
@@ -38,7 +66,7 @@ struct ProfileView: View {
               LabeledContent("Registration Date", value: "\(model.userData.registrationDateFormatted)")
               LabeledContent("App version", value: Bundle.main.appVersionLong)
             }
-              
+
             languageSection
             playbackSection
 
@@ -61,9 +89,7 @@ struct ProfileView: View {
 #endif
             }
           }
-#if !os(tvOS)
           .scrollContentBackground(.hidden)
-#endif
           .background(Color.KinoPub.background)
         }
       }
@@ -86,45 +112,41 @@ struct ProfileView: View {
         )
       }
     }
+#endif
   }
-    private var languageSection: some View {
-        Section(header: Text("Language")) {
-            Picker("Select Language", selection: $selectedLanguage) {
-                ForEach(model.availableLanguages.keys.sorted(), id: \.self) { key in
-                    Text(model.availableLanguages[key] ?? key).tag(key)
-                }
-            }
-#if os(tvOS)
-            .pickerStyle(.automatic)
-#else
-            .pickerStyle(MenuPickerStyle())
-#endif
-            .onChange(of: selectedLanguage) { newLanguage in
-                model.changeLanguage(to: newLanguage)
-            }
-        }
-    }
 
-    private var playbackSection: some View {
-      Section(header: Text("Playback"),
-              footer: Text("A track picked in the player wins over these, and is remembered for the next episode.")) {
-        Toggle("Default English subtitles", isOn: $preferEnglishSubtitles)
-        Toggle("Prefer non-CC / non-SDH", isOn: $preferNonCCSubtitles)
-          .disabled(!preferEnglishSubtitles)
-        Toggle("Dual subtitles", isOn: $dualSubtitlesEnabled)
-        Picker("Second subtitle language", selection: $secondSubtitleLanguage) {
-          ForEach(SubtitlePreferences.secondLanguageOptions, id: \.self) { code in
-            Text(LanguageNames.name(for: code)).tag(code)
-          }
+#if !os(tvOS)
+  private var languageSection: some View {
+    Section(header: Text("Language")) {
+      Picker("Select Language", selection: $selectedLanguage) {
+        ForEach(model.availableLanguages.keys.sorted(), id: \.self) { key in
+          Text(model.availableLanguages[key] ?? key).tag(key)
         }
-#if os(tvOS)
-        .pickerStyle(.automatic)
-#else
-        .pickerStyle(MenuPickerStyle())
-#endif
-        .disabled(!dualSubtitlesEnabled)
+      }
+      .pickerStyle(MenuPickerStyle())
+      .onChange(of: selectedLanguage) { newLanguage in
+        model.changeLanguage(to: newLanguage)
       }
     }
+  }
+
+  private var playbackSection: some View {
+    Section(header: Text("Playback"),
+            footer: Text("A track picked in the player wins over these, and is remembered for the next episode.")) {
+      Toggle("Default English subtitles", isOn: $preferEnglishSubtitles)
+      Toggle("Prefer non-CC / non-SDH", isOn: $preferNonCCSubtitles)
+        .disabled(!preferEnglishSubtitles)
+      Toggle("Dual subtitles", isOn: $dualSubtitlesEnabled)
+      Picker("Second subtitle language", selection: $secondSubtitleLanguage) {
+        ForEach(SubtitlePreferences.secondLanguageOptions, id: \.self) { code in
+          Text(LanguageNames.name(for: code)).tag(code)
+        }
+      }
+      .pickerStyle(MenuPickerStyle())
+      .disabled(!dualSubtitlesEnabled)
+    }
+  }
+#endif
 }
 
 struct ProfileView_Previews: PreviewProvider {

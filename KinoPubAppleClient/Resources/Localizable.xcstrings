@@ -98,6 +98,23 @@
         }
       }
     },
+    "Account" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аккаунт"
+          }
+        }
+      }
+    },
     "Added" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -612,6 +629,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Английские субтитры по умолчанию"
+          }
+        }
+      }
+    },
+    "Diagnostics" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostics"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Диагностика"
           }
         }
       }
@@ -1754,6 +1788,23 @@
         }
       }
     },
+    "On" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вкл."
+          }
+        }
+      }
+    },
     "OK" : {
       "localizations" : {
         "en" : {
@@ -2259,6 +2310,142 @@
         }
       }
     },
+    "Settings_Tip_Default" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account details and preferences for this Apple TV."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Данные аккаунта и настройки для этого Apple TV."
+          }
+        }
+      }
+    },
+    "Settings_Tip_Diagnostics" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inspect what streams kino.pub actually delivers."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверить, какие потоки kino.pub реально отдаёт."
+          }
+        }
+      }
+    },
+    "Settings_Tip_DualSubtitles" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show a second subtitle track under the first. A track picked in the player wins over these defaults and is remembered for the next episode."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показывать вторую дорожку субтитров под первой. Выбор в плеере важнее этих настроек и запоминается для следующей серии."
+          }
+        }
+      }
+    },
+    "Settings_Tip_EnglishSubtitles" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on English subtitles automatically when you start watching. A track picked in the player wins over this default."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Включать английские субтитры автоматически при старте. Выбор в плеере важнее этой настройки."
+          }
+        }
+      }
+    },
+    "Settings_Tip_Language" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the language used throughout the app. Changing it restarts the app."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Язык интерфейса приложения. После смены приложение перезапустится."
+          }
+        }
+      }
+    },
+    "Settings_Tip_Logout" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign out of this Apple TV. You'll need to activate the device again."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выйти из аккаунта на этом Apple TV. Устройство нужно будет активировать снова."
+          }
+        }
+      }
+    },
+    "Settings_Tip_PreferNonCC" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip closed-caption and SDH tracks when a regular English track is available."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропускать дорожки CC и SDH, если есть обычная английская."
+          }
+        }
+      }
+    },
+    "Settings_Tip_SecondLanguage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language of the second subtitle line when dual subtitles are on."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Язык второй строки субтитров, когда включены двойные субтитры."
+          }
+        }
+      }
+    },
     "Shown on a second line under the first." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2433,6 +2620,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "По году"
+          }
+        }
+      }
+    },
+    "Stream survey" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stream survey"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обзор потоков"
           }
         }
       }
