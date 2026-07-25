@@ -268,4 +268,8 @@ extension MediaItem: PlayableItem {
   public var subtitles: [Subtitle] {
     videos?.first?.subtitles ?? []
   }
+
+  public var audioTracks: [AudioTrackInfo] {
+    AudioTracks.catalog(videos?.first?.audios ?? [])
+  }
 }

@@ -102,12 +102,16 @@ struct PlayerView: View {
     // and it's fully Siri-Remote navigable. `PlayerManager` hangs the title, subtitle and
     // the Subtitles/Audio menus off the controller.
     TVVideoPlayer(manager: playerManager, onMenuPress: { dismiss() })
-      .onAppear { playerManager.player.play() }
+      .task {
+        await playerManager.preparePlayback()
+        playerManager.player.play()
+      }
 #else
     VideoPlayer(player: playerManager.player)
-      .onAppear(perform: {
+      .task {
+        await playerManager.preparePlayback()
         playerManager.player.play()
-      })
+      }
 #endif
   }
 

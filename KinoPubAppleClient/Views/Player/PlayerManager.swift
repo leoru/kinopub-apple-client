@@ -38,13 +38,7 @@ class PlayerManager: ObservableObject {
   @Published private(set) var primaryTrack: SubtitleTrack?
   @Published private(set) var secondaryTrack: SubtitleTrack?
 
-  lazy var player: AVPlayer = {
-    guard let fileURL else {
-      Logger.app.error("No playable URL for item \(self.playItem.id) in \(String(describing: self.watchMode)) mode")
-      return AVPlayer()
-    }
-    return AVPlayer(url: fileURL)
-  }()
+  let player = AVPlayer()
   private var playerTimeObserver: PlayerTimeObserver?
   private var cueObserverToken: Any?
   private var playItem: any PlayableItem
@@ -56,6 +50,7 @@ class PlayerManager: ObservableObject {
   private var cues: [SubtitleCue] = []
   private var secondaryCues: [SubtitleCue] = []
   private var cueLoadTasks: [Task<Void, Never>] = []
+  private var didPreparePlayback = false
 
 #if os(tvOS)
   /// The system player screen we drive on tvOS. Held weakly: AVKit owns it, we only
@@ -113,6 +108,50 @@ class PlayerManager: ObservableObject {
 
     addCueTimeObserver()
     configureSubtitles()
+  }
+
+  /// Loads the playable URL into `player`, rewriting the HLS master so AUDIO `NAME`s
+  /// carry dub kind + studio. Safe to call more than once; only the first run does work.
+  @MainActor
+  func preparePlayback() async {
+    guard !didPreparePlayback else { return }
+    didPreparePlayback = true
+
+    guard let source = fileURL else {
+      Logger.app.error("No playable URL for item \(self.playItem.id) in \(String(describing: self.watchMode)) mode")
+      return
+    }
+
+    let url = await Self.resolvedPlaybackURL(source: source,
+                                             watchMode: watchMode,
+                                             tracks: playItem.audioTracks)
+    let item = AVPlayerItem(url: url)
+    player.replaceCurrentItem(with: item)
+#if os(tvOS)
+    audibleGroup = nil
+    didChooseDefaultAudio = false
+    configureExternalMetadata()
+    configureDefaultAudioWhenReady()
+    rebuildTransportBarMenus()
+#endif
+  }
+
+  /// Prefer a locally rewritten master with real dub names; fall back to the CDN URL.
+  private static func resolvedPlaybackURL(source: URL,
+                                          watchMode: WatchMode,
+                                          tracks: [AudioTrackInfo]) async -> URL {
+    guard watchMode == .media,
+          !tracks.isEmpty,
+          let scheme = source.scheme?.lowercased(),
+          scheme == "http" || scheme == "https" else {
+      return source
+    }
+    do {
+      return try await HLSAudioLabeler.labeledMasterURL(from: source, tracks: tracks)
+    } catch {
+      Logger.app.error("HLS audio relabel failed, playing CDN master: \(error.localizedDescription)")
+      return source
+    }
   }
 
   deinit {
@@ -412,7 +451,9 @@ extension PlayerManager {
     playerViewController = controller
     configureExternalMetadata()
     hideSystemSubtitlePicker(on: controller)
-    configureDefaultAudioWhenReady()
+    if player.currentItem != nil {
+      configureDefaultAudioWhenReady()
+    }
     rebuildTransportBarMenus()
   }
 

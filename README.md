@@ -125,11 +125,12 @@ These are real, verified, and up for grabs:
   shared-navigation change than a punch-list fix.
 - **Default audio-track ranking shares its ladder with the detail-page Audio column**
   (`AudioTracks` in KinoPubBackend): preferred languages, then A–Z, AD last, kind
-  (DUB → MVO → DVO → VO → AVO → Orig), studio A–Z, more channels first. The player still has to
-  parse kind / studio / channels out of `AVMediaSelectionOption.displayName` because the option
-  exposes no channel count before the asset loads and matching API `Video.audios` by HLS position
-  is not guaranteed. An HLS stream whose dub labels skip that convention falls back to language +
-  kind alone.
+  (DUB → MVO → DVO → VO → AVO → Orig), studio A–Z, more channels first. Before play,
+  `HLSAudioLabeler` rewrites the HLS master's AUDIO `NAME=` attributes from the API
+  (`Video.audios` / `Episode.audios`) so the system Audio picker shows
+  "Russian — Dub (Studio)" instead of three identical "Russian" rows. Matching is by
+  language order in the playlist; if the CDN drops a codec duplicate the leftover API
+  rows are unused. Relabel failure falls back to the CDN master unchanged.
 - **Stream survey (DEBUG).** Settings → Diagnostics → Stream survey walks ~40 catalogue items and reports
   what kino.pub actually delivers vs. what the API claims: delivered `hls4` `CODECS`/`CHANNELS`/`VIDEO-RANGE`
   against source `FileInfo.codec` / `VideoAudio`, each codec flagged for AVFoundation playability. Built to

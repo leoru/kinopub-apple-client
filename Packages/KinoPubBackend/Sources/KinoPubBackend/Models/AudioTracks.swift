@@ -164,6 +164,43 @@ public enum AudioTracks {
     }
   }
 
+  /// One label per HLS AUDIO rendition, in playlist order. Consumes API tracks by
+  /// language so the CDN's "Russian, Russian, Japanese" line up with the API rows.
+  /// Duplicate labels get " · 2" etc. — HLS forbids identical NAME within a group.
+  public static func labelsForHLSRenditions(languages: [String?],
+                                            tracks: [AudioTrackInfo]) -> [String] {
+    var queues: [String: [AudioTrackInfo]] = [:]
+    for track in tracks {
+      queues[SubtitleTracks.languageKey(track.lang), default: []].append(track)
+    }
+
+    let labels: [String] = languages.map { lang in
+      let key = SubtitleTracks.languageKey(lang ?? "")
+      if var queue = queues[key], !queue.isEmpty {
+        let track = queue.removeFirst()
+        queues[key] = queue
+        return baseLabel(track)
+      }
+      if let lang, !lang.isEmpty {
+        return LanguageNames.name(for: lang)
+      }
+      return "Audio"
+    }
+    return uniquedHLSLabels(labels)
+  }
+
+  public static func uniquedHLSLabels(_ labels: [String]) -> [String] {
+    var totals: [String: Int] = [:]
+    for label in labels { totals[label, default: 0] += 1 }
+    var seen: [String: Int] = [:]
+    return labels.map { label in
+      guard totals[label, default: 0] > 1 else { return label }
+      let n = seen[label, default: 0] + 1
+      seen[label] = n
+      return n == 1 ? label : "\(label) · \(n)"
+    }
+  }
+
   public static func baseLabel(_ track: AudioTrackInfo) -> String {
     var parts = [LanguageNames.name(for: track.lang)]
     if let type = track.typeTitle, !type.isEmpty {

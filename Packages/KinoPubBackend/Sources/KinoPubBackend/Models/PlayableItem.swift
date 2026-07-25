@@ -13,6 +13,9 @@ public protocol PlayableItem: Identifiable, Hashable, Equatable {
   var trailer: Trailer? { get }
   var metadata: WatchingMetadata { get }
   var subtitles: [Subtitle] { get }
+  /// API audio metadata for this playable — used to label HLS renditions in the
+  /// system Audio picker. Empty when we don't have it (offline downloads).
+  var audioTracks: [AudioTrackInfo] { get }
 }
 
 public extension PlayableItem {
@@ -24,4 +27,6 @@ public extension PlayableItem {
     }
     return URL(string: url)
   }
+
+  var audioTracks: [AudioTrackInfo] { [] }
 }
