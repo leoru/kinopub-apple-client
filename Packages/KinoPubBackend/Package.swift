@@ -22,6 +22,9 @@ let package = Package(
       ]),
     .testTarget(
       name: "KinoPubBackendTests",
-      dependencies: ["KinoPubBackend"])
+      dependencies: ["KinoPubBackend"],
+      resources: [
+        .copy("Fixtures")
+      ])
   ]
 )

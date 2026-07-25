@@ -265,7 +265,8 @@ microiptv leaves a lot on the table. We shouldn't.
 - [ ] Cast photos and character names — kino.pub sends neither, so portraits are initials.
       See Phase C½: Kinopoisk Unofficial has both
 - [ ] Sweep the rest of the payload (quality, AC3, age rating)
-- [ ] Similar items (`GET /v1/items/similar`)
+- [x] **Similar items** — horizontal "More like this" rail on the detail page
+      (`GET /v1/items/similar?id=`), before Information so tvOS focus can reach it
 
 ### Phase C — Remember playback choices
 
@@ -394,7 +395,6 @@ upstream change fails loudly instead of silently emptying a row.
 | Endpoint | Use |
 | --- | --- |
 | `GET /v1/items` | Still unused there: `finished`, `letter`, `quality`, `conditions` |
-| `GET /v1/items/similar?id=` | Similar titles on the detail page |
 | `GET /v1/tv/index` | TV channels tab |
 | `GET /v1/collections`, `/v1/collections/view?id=` | Curated rows |
 | `GET /v1/types` | Content-type reference for filters |

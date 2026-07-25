@@ -44,7 +44,12 @@ struct VideoContentServiceMock: VideoContentService {
   }
 
   func fetchSimilar(for id: String) async throws -> ArrayData<MediaItem> {
-    return ArrayData.mock(data: [])
+    // A short rail so MediaItem previews exercise the section instead of hiding it.
+    return ArrayData.mock(data: [
+      MediaItem.mock(id: 101),
+      MediaItem.mock(id: 102),
+      MediaItem.mock(id: 103),
+    ])
   }
 
   func fetchBookmarks() async throws -> ArrayData<Bookmark> {

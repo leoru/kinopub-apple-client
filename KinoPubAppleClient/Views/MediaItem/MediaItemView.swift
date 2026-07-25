@@ -130,8 +130,10 @@ struct MediaItemView: View {
           MediaItemRatingsSection(mediaItem: itemModel.mediaItem,
                                   showsHeader: !isHeroOnScreen)
           MediaItemCastSection(mediaItem: itemModel.mediaItem, linkProvider: itemModel.linkProvider)
-          MediaItemInfoColumns(mediaItem: itemModel.mediaItem)
+          // Before Information: on tvOS focus walks section by section, and a nested
+          // horizontal row past the info columns was effectively unreachable.
           MediaItemSimilarSection(items: itemModel.similarItems, linkProvider: itemModel.linkProvider)
+          MediaItemInfoColumns(mediaItem: itemModel.mediaItem)
         }
       }
       .padding(.bottom, MediaItemLayout.sectionSpacing)

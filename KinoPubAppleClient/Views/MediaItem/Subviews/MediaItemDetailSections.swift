@@ -279,11 +279,10 @@ private struct PortraitButtonStyle: ButtonStyle {
 // MARK: - Similar
 
 /// "More like this": the related items kino.pub returns for this one, drawn with the
-/// same poster cards as every catalog row so the page ends the way a browse screen
-/// does. Each card leads to that item's own page, which is also what makes the rail
-/// reachable on tvOS — a scroll view moves by focus, so plain artwork past the right
-/// edge would strand the user. The whole section is absent until there is something
-/// to show.
+/// same poster cards and horizontal rail as the home rows. Each card leads to that
+/// item's own page, which is also what makes the rail reachable on tvOS — a scroll
+/// view moves by focus, so plain artwork past the right edge would strand the user.
+/// The whole section is absent until there is something to show.
 struct MediaItemSimilarSection: View {
 
   let items: [MediaItem]
@@ -298,13 +297,13 @@ struct MediaItemSimilarSection: View {
           LazyHStack(alignment: .top, spacing: Self.spacing) {
             ForEach(items, id: \.id) { item in
               NavigationLink(value: linkProvider.link(for: item)) {
-                MediaCardView(card: MediaCard(item), caption: .always)
+                MediaCardView(card: MediaCard(item), caption: Self.cardCaption)
               }
 #if os(tvOS)
               // Same native parallax focus effect as the catalog rows.
               .buttonStyle(.borderless)
 #else
-              .buttonStyle(SimilarCardButtonStyle())
+              .buttonStyle(MediaCardButtonStyle())
 #endif
             }
           }
@@ -316,34 +315,15 @@ struct MediaItemSimilarSection: View {
   }
 
 #if os(tvOS)
+  /// Match home: caption only while focused, so the rail stays a strip of posters.
+  static let cardCaption: MediaCardCaption = .onFocus
   static let spacing: CGFloat = 36
   static let focusPadding: CGFloat = 32
 #else
+  static let cardCaption: MediaCardCaption = .always
   static let spacing: CGFloat = 16
   static let focusPadding: CGFloat = 6
 #endif
-}
-
-/// The poster lift the catalog rows use, kept here so the related rail reads the same
-/// as every other row on the page. Mirrors `MediaCardButtonStyle` in KinoPubUI, which
-/// is internal to that package.
-private struct SimilarCardButtonStyle: ButtonStyle {
-  func makeBody(configuration: ButtonStyleConfiguration) -> some View {
-    Card(configuration: configuration)
-  }
-
-  private struct Card: View {
-    let configuration: ButtonStyleConfiguration
-    @Environment(\.isFocused) private var isFocused
-
-    var body: some View {
-      configuration.label
-        .environment(\.cardFocused, isFocused)
-        .scaleEffect(isFocused ? 1.08 : (configuration.isPressed ? 0.97 : 1.0))
-        .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 18, y: 10)
-        .animation(.easeOut(duration: 0.18), value: isFocused)
-    }
-  }
 }
 
 // MARK: - Information columns

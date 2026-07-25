@@ -55,4 +55,11 @@ class RequestBuilderTests: XCTestCase {
         XCTAssertEqual(request?.url, expectedURL)
     }
 
+    func testSimilarItemsRequest_EncodesIdAsQueryParam() {
+        let request = requestBuilder.build(with: SimilarItemsRequest(id: "42"))
+        XCTAssertEqual(request?.url,
+                       URL(string: "https://api.example.com/v1/items/similar?id=42"))
+        XCTAssertEqual(request?.httpMethod, "GET")
+    }
+
 }
