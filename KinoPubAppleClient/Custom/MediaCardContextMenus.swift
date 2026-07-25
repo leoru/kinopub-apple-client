@@ -29,15 +29,19 @@ enum MediaCardContextMenus {
 
     items.append(MediaCardContextAction(
       id: "hide",
-      title: "Hide from Here".localized,
-      systemImage: "eye.slash",
+//      title: "Hide".localized,
+      title: "Remove from Recently Watched",
+         systemImage: "trash",
+
+//      systemImage: "minus.circle",
+//      systemImage: "eye.slash",
       handler: onHide
     ))
 
     if card.canToggleWatched {
       items.append(MediaCardContextAction(
         id: "toggle-watched",
-        title: (card.isWatched ? "Mark as Unwatched" : "Mark as Watched").localized,
+        title: (card.isWatched ? "Mark as New" : "Mark as Watched").localized,
         systemImage: card.isWatched ? "eye" : "checkmark",
         handler: onToggleWatched
       ))
@@ -46,8 +50,10 @@ enum MediaCardContextMenus {
     if card.isInHistory, let onBrowseHistory {
       items.append(MediaCardContextAction(
         id: "browse-history",
-        title: "Browse History".localized,
-        systemImage: "clock",
+        title: "Browse Recently Watched".localized,
+        
+//        systemImage: "clock",
+        systemImage: "rectangle.grid.3x2",
         handler: onBrowseHistory
       ))
     }
@@ -55,8 +61,8 @@ enum MediaCardContextMenus {
     if card.isInWatchlist, let onBrowseWatchlist {
       items.append(MediaCardContextAction(
         id: "browse-watchlist",
-        title: "Browse Watchlist".localized,
-        systemImage: "bookmark",
+        title: "Browse My Watchlist".localized,
+        systemImage: "rectangle.grid.3x2",
         handler: onBrowseWatchlist
       ))
     }
