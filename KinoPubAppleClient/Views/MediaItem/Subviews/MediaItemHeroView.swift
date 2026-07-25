@@ -60,9 +60,10 @@ final class TrailerPreviewModel: ObservableObject {
     }
   }
 
-  /// Pauses rather than tears down when the hero scrolls away: the trailer keeps its
-  /// place, and it is stopping the decode that gives the GPU back — an `AVPlayerLayer`
-  /// still decoding behind the seasons rail is what made focus there stutter.
+  /// Pauses rather than tears down when the hero scrolls away: the player stays
+  /// warm so scrolling back up resumes mid-trailer, while the backdrop hides the
+  /// layer and shows a blurred still. Stopping the decode is what keeps the seasons
+  /// rail from stuttering under a live `AVPlayerLayer`.
   func setActive(_ active: Bool) {
     guard isActive != active else { return }
     isActive = active
@@ -207,6 +208,128 @@ final class TrailerLayerHostView: UIView {
 }
 #endif
 
+#if os(tvOS)
+/// Full-screen stack pinned behind the detail `ScrollView` — the Apple TV shape.
+///
+/// A blurred `/poster/item/small` wash is always there (cheap, rasterised once).
+/// The sharp wide art + trailer sit on top and simply fade to zero when focus
+/// leaves the hero — no re-blurring the hero media on the way out.
+struct MediaItemHeroBackdrop: View {
+
+  var mediaItem: MediaItem
+  @ObservedObject var trailer: TrailerPreviewModel
+  var isHeroOnScreen: Bool
+
+  private var wideURL: String {
+    mediaItem.posters.wideURL ?? mediaItem.posters.big
+  }
+
+  var body: some View {
+    ZStack {
+      Color.KinoPub.background
+
+      // Always-on page wash. Small poster, tiny buffer, `drawingGroup` — the same
+      // trick as `MediaItemView.ambientBackground`, kept live so scroll never has
+      // to manufacture a blur from the wide frame.
+      blurredPoster
+
+      // Wide + trailer as one layer — fade what the user was looking at, don't
+      // peel the trailer off and leave the still underneath mid-scroll.
+      heroMedia
+        .opacity(isHeroOnScreen ? 1 : 0)
+
+      topGradient
+        .opacity(isHeroOnScreen ? 1 : 0)
+      bottomScrim
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .clipped()
+    .ignoresSafeArea()
+    .animation(.easeOut(duration: 0.35), value: isHeroOnScreen)
+    .animation(.easeInOut(duration: 0.6), value: trailer.isReady)
+  }
+
+  /// Scale is derived from the real container so a portrait buffer still covers
+  /// a 16:9 screen — a fixed `scaleEffect` of 10 left ~1200pt of width and the
+  /// sides fell back to the page colour.
+  private var blurredPoster: some View {
+    GeometryReader { geo in
+      let scale = max(geo.size.width / Self.blurBuffer.width,
+                      geo.size.height / Self.blurBuffer.height) * 1.05
+
+      AsyncImage(url: URL(string: mediaItem.posters.small)) { image in
+        image
+          .resizable()
+          .aspectRatio(contentMode: .fill)
+          .frame(width: Self.blurBuffer.width, height: Self.blurBuffer.height)
+          .clipped()
+          .blur(radius: Self.blurRadius, opaque: true)
+          .saturation(1.4)
+          .drawingGroup()
+          .scaleEffect(scale)
+          .frame(width: geo.size.width, height: geo.size.height)
+          .clipped()
+      } placeholder: {
+        Color.clear
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var heroMedia: some View {
+    ZStack {
+      AsyncImage(url: URL(string: wideURL),
+                 transaction: Transaction(animation: .easeIn(duration: 0.3))) { phase in
+        if let image = phase.image {
+          image
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+            .transition(.opacity)
+        } else {
+          Color.clear
+        }
+      }
+
+      // Stays in the tree while scrolled away (paused). Gating it on
+      // `isHeroOnScreen` used to remove it first, so the fade briefly revealed
+      // the wide still under the trailer before the group opacity hit zero.
+      if let player = trailer.player, trailer.isReady {
+        TrailerVideoLayer(player: player)
+          .allowsHitTesting(false)
+          .transition(.opacity)
+      }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+
+  /// Very light black wash from the top edge down to about mid-frame — enough to
+  /// settle the status area without dulling the trailer. Fades out with the hero.
+  private var topGradient: some View {
+    LinearGradient(stops: [
+      .init(color: .black.opacity(0.32), location: 0),
+      .init(color: .black.opacity(0.12), location: 0.28),
+      .init(color: .clear, location: 0.55)
+    ], startPoint: .top, endPoint: .bottom)
+  }
+
+  /// Soft shade under the title and buttons. A touch stronger once the hero is
+  /// gone so section text sits cleanly on the blurred wash.
+  private var bottomScrim: some View {
+    LinearGradient(stops: [
+      .init(color: .clear, location: 0),
+      .init(color: .clear, location: 0.5),
+      .init(color: .black.opacity(0.2), location: 0.78),
+      .init(color: .black.opacity(isHeroOnScreen ? 0.35 : 0.55), location: 1)
+    ], startPoint: .top, endPoint: .bottom)
+  }
+
+  /// Portrait small, rasterised once. Scale is computed at layout time to cover
+  /// the screen on both axes.
+  private static let blurBuffer = CGSize(width: 120, height: 180)
+  private static let blurRadius: CGFloat = 12
+}
+#endif
+
 /// Full-bleed artwork that gives way to the trailer, with the title, metadata and
 /// actions laid over it — the shape the Apple TV app uses.
 struct MediaItemHeroView: View {
@@ -215,6 +338,12 @@ struct MediaItemHeroView: View {
   /// The page's focus target — the primary action claims it, so a page whose content
   /// lands late still opens at the top rather than wherever the focus engine drifted.
   @FocusState.Binding var focus: MediaItemFocusTarget?
+  /// Owned by the page so the same player can sit in the pinned tvOS backdrop and in
+  /// the hero's Up-to-fullscreen gesture.
+  @ObservedObject var trailer: TrailerPreviewModel
+  /// Drives trailer pause / the blurred still on the pinned backdrop. The hero never
+  /// leaves the hierarchy on scroll, so this is measured rather than `onDisappear`.
+  @Binding var isHeroOnScreen: Bool
   var linkProvider: NavigationLinkProvider
   var isWatched: Bool
   var isBookmarked: Bool
@@ -223,15 +352,9 @@ struct MediaItemHeroView: View {
   var onWatchedToggle: () -> Void
   var onFolderToggle: (Bookmark) -> Void
 
-  @StateObject private var trailer = TrailerPreviewModel()
-  @State private var isOnScreen = true
   /// tvOS only: the Up gesture lifts the muted inline preview into a real full-screen
   /// player. Kept here so the same view that owns the preview owns its promotion.
   @State private var isTrailerFullScreen = false
-
-  private var backdropURL: String {
-    mediaItem.posters.wideURL ?? mediaItem.posters.big
-  }
 
   private var isSeries: Bool {
     !(mediaItem.seasons?.isEmpty ?? true)
@@ -242,31 +365,22 @@ struct MediaItemHeroView: View {
     // one centres anything taller than itself, and `clipped()` then eats the buttons.
     content
       .frame(maxWidth: .infinity, minHeight: Self.heroHeight, alignment: .bottomLeading)
+#if !os(tvOS)
+      // On tvOS the artwork is pinned behind the whole `ScrollView` at screen height;
+      // elsewhere it still scrolls with the hero.
       .background {
         ZStack {
-          backdrop
-          scrim
+          scrollingBackdrop
+          scrollingScrim
         }
       }
       .clipped()
+#endif
+#if !os(tvOS)
+      // tvOS drives the fade from hero focus (see `MediaItemView`); elsewhere the
+      // hero scrolls away inside the page and geometry is what we have.
       .background(visibilityProbe)
-      .onChange(of: isOnScreen) { onScreen in
-        trailer.setActive(onScreen)
-      }
-    // Keyed on the URL, not on appearance: the details arrive after the first render,
-    // so at `onAppear` there is no trailer to start yet and a plain `.task` never
-    // looked again.
-    .task(id: mediaItem.trailerURL) {
-      guard let url = mediaItem.trailerURL else { return }
-      // The artwork holds the frame for a beat before the trailer takes over, the way
-      // the Apple TV app does it — and a quick scroll past doesn't spin up a video.
-      try? await Task.sleep(for: .seconds(Self.trailerLeadIn))
-      guard !Task.isCancelled else { return }
-      trailer.start(url: url)
-    }
-    .onDisappear {
-      trailer.stop()
-    }
+#endif
 #if os(tvOS)
     // The same muted preview, promoted to sound and full screen without restarting.
     // Menu on the remote dismisses it — no chrome of our own over the picture.
@@ -294,6 +408,7 @@ struct MediaItemHeroView: View {
 
   // MARK: - Background
 
+#if !os(tvOS)
   /// The hero sits in a plain `VStack` inside the page's `ScrollView`, so it is never
   /// removed from the hierarchy and `onDisappear` only fires when the whole page goes
   /// away — not when the hero scrolls off the top. Its frame in the scroll view's own
@@ -302,14 +417,18 @@ struct MediaItemHeroView: View {
     GeometryReader { proxy in
       let frame = proxy.frame(in: .named(MediaItemLayout.scrollSpace))
       Color.clear
-        .onChange(of: frame.maxY > proxy.size.height * Self.onScreenFraction) { onScreen in
-          isOnScreen = onScreen
+        .onChange(of: frame.minY >= -Self.onScreenSlop) { onScreen in
+          isHeroOnScreen = onScreen
         }
     }
   }
 
+  private var backdropURL: String {
+    mediaItem.posters.wideURL ?? mediaItem.posters.big
+  }
+
   @ViewBuilder
-  private var backdrop: some View {
+  private var scrollingBackdrop: some View {
     ZStack {
       AsyncImage(url: URL(string: backdropURL),
                  transaction: Transaction(animation: .easeIn(duration: 0.3))) { phase in
@@ -338,7 +457,7 @@ struct MediaItemHeroView: View {
   /// at the last few percent — without that the hero would meet the page on a visible
   /// seam. What carries the text is `heroTextShadow` on the type itself, not a slab
   /// over the picture.
-  private var scrim: some View {
+  private var scrollingScrim: some View {
     LinearGradient(stops: [
       .init(color: .clear, location: 0),
       .init(color: .clear, location: 0.62),
@@ -347,6 +466,7 @@ struct MediaItemHeroView: View {
       .init(color: Color.KinoPub.background, location: 1)
     ], startPoint: .top, endPoint: .bottom)
   }
+#endif
 
   // MARK: - Foreground
 
@@ -383,7 +503,7 @@ struct MediaItemHeroView: View {
 
         metadata
 
-        MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot)
+        MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot, focus: $focus)
       }
       .heroTextShadow()
 
@@ -478,6 +598,7 @@ struct MediaItemHeroView: View {
           Label("Trailer", systemImage: "film")
         }
         .heroButtonStyle()
+        .focused($focus, equals: .heroOther)
       }
 
       // A watched flag is a movie's; a series is marked episode by episode on the rail.
@@ -488,6 +609,7 @@ struct MediaItemHeroView: View {
           Image(systemName: "checkmark")
         }
         .heroButtonStyle()
+        .focused($focus, equals: .heroOther)
       }
 
       bookmarkMenu
@@ -517,6 +639,7 @@ struct MediaItemHeroView: View {
         Image(systemName: "bookmark")
       }
       .heroButtonStyle()
+      .focused($focus, equals: .heroOther)
       .disabled(true)
     } else {
       Menu {
@@ -532,6 +655,7 @@ struct MediaItemHeroView: View {
         Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
       }
       .heroButtonStyle()
+      .focused($focus, equals: .heroOther)
       // The folder ids arrive after the first render, and a `Menu` renders its label
       // once and holds onto it — the ternary above was already right, but the flip from
       // `bookmark` to `bookmark.fill` never reached the screen because the label was
@@ -579,10 +703,9 @@ struct MediaItemHeroView: View {
 
   /// Seconds of artwork before the trailer takes over.
   static let trailerLeadIn: Double = 2
-  /// How much of the hero has to remain on screen for the trailer to keep playing. On
-  /// tvOS scrolling *is* focus movement, so this pauses as focus reaches the seasons
-  /// rail — which is where the stutter was.
-  static let onScreenFraction: CGFloat = 0.5
+  /// Non-tvOS only: fade as soon as the hero has scrolled up at all. The old
+  /// half-height threshold left the trailer running under the first section below.
+  static let onScreenSlop: CGFloat = 8
 
   /// Leads and directors named in the corner, before the list turns into a paragraph.
   static let creditNameLimit = 3
@@ -600,13 +723,11 @@ struct MediaItemHeroView: View {
   static let metaStyle = Color.KinoPub.text.opacity(0.85)
 
 #if os(tvOS)
-  // tvOS lays out in a fixed 1920×1080, so this is 83% of the screen — the artwork
-  // owns the page the way it does on Apple TV, and stops short of a full 16:9 so the
-  // sections underneath still peek in and say there is more to scroll to.
-  /// Nothing here is pinned to 16:9 — the artwork is `.fill`, so it crops to whatever
-  /// this says. Set against the 1080pt screen: 980 here plus the 44pt section gap
-  /// leaves a ~56pt strip of the seasons rail showing, enough to say the page scrolls
-  /// without turning the hero into a wide letterbox. Raise it to shrink that strip.
+  // The artwork itself is pinned full-bleed behind the ScrollView (see
+  // `MediaItemHeroBackdrop`). This height is only the hero *content* — title,
+  // metadata, buttons — so a strip of the next section still peeks under the
+  // actions and says the page scrolls. 980 + the 44pt section gap leaves ~56pt
+  // of seasons/ratings on a 1080 screen.
   static let heroHeight: CGFloat = 980
   static let horizontalInset: CGFloat = 80
   static let bottomInset: CGFloat = 60

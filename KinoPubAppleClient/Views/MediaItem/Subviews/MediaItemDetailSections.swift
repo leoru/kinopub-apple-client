@@ -547,8 +547,8 @@ struct MediaItemSectionHeader: View {
 }
 
 enum MediaItemLayout {
-  /// The page's scroll view names its own frame so the hero can tell where it sits
-  /// relative to what is on screen — see `MediaItemHeroView.visibilityProbe`.
+  /// The page's scroll view names its own frame so non-tvOS heroes can tell where
+  /// they sit relative to what is on screen — see `MediaItemHeroView.visibilityProbe`.
   static let scrollSpace = "MediaItemScroll"
 
 #if os(tvOS)
@@ -592,6 +592,9 @@ struct MediaItemPlotView: View {
 
   let title: String
   let plot: String
+  /// Shared with the other hero controls so focusing "More" does not count as
+  /// leaving the hero (and killing the trailer).
+  @FocusState.Binding var focus: MediaItemFocusTarget?
 
   /// The two heights the truncation decision is made from, kept as state so it is
   /// remade every time the layout changes — the old `ViewThatFits` probe latched
@@ -634,6 +637,7 @@ struct MediaItemPlotView: View {
         paragraph(showsMore: true)
       }
       .buttonStyle(ExpandableButtonStyle())
+      .focused($focus, equals: .heroOther)
       .sheet(isPresented: $showsFullText) {
         MediaItemDetailSheet(title: Text(title)) {
           Text(plot)

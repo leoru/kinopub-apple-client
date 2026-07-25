@@ -11,18 +11,27 @@ import KinoPubUI
 import KinoPubBackend
 import KinoPubKit
 
-/// What the item page can put focus on by itself.
+/// Focus targets owned by the hero. Play is separate so `defaultFocus` still lands
+/// on it; everything else shares `heroOther`. Anything below the hero is untagged —
+/// Down onto seasons/ratings/cast clears this and fades the trailer.
 enum MediaItemFocusTarget: Hashable {
   case play
+  case heroOther
 }
 
 struct MediaItemView: View {
 
   @EnvironmentObject var errorHandler: ErrorHandler
   @StateObject private var itemModel: MediaItemModel
+  /// Shared with the hero (Up → fullscreen) and, on tvOS, the pinned full-bleed
+  /// backdrop behind the scroll view.
+  @StateObject private var trailer = TrailerPreviewModel()
+  /// False once focus has left the hero — pauses the trailer and, on tvOS, fades
+  /// the pinned wide/trailer layer down to the blurred poster wash.
+  @State private var isHeroOnScreen = true
 
   /// The content arrives after the first render, so the focus engine has nothing to
-  /// focus when the page appears — this names the Play button as where focus belongs
+  /// focus when the page appears — this names a hero control as where focus belongs
   /// once there is something to focus.
   ///
   /// The ScrollView has to stay the root for it to work: with the page wrapped in a
@@ -36,7 +45,7 @@ struct MediaItemView: View {
 
   var body: some View {
     details
-      .background(ambientBackground)
+      .background(pageBackground)
       .overlay {
         // Nothing but the artwork wash while the details are in flight, and a spinner
         // only once the wait becomes noticeable — how the Apple TV app opens a page.
@@ -60,6 +69,32 @@ struct MediaItemView: View {
     .task {
       itemModel.fetchData()
     }
+    // Keyed on load + URL: the listing's `knownItem` can already carry a trailer
+    // link, but the hero only appears once details land — without `itemLoaded` in
+    // the id the first run would no-op and never retry for the same URL.
+    .task(id: itemModel.itemLoaded ? itemModel.mediaItem.trailerURL : nil) {
+      guard itemModel.itemLoaded, let url = itemModel.mediaItem.trailerURL else { return }
+      // The artwork holds the frame for a beat before the trailer takes over, the way
+      // the Apple TV app does it — and a quick scroll past doesn't spin up a video.
+      try? await Task.sleep(for: .seconds(MediaItemHeroView.trailerLeadIn))
+      guard !Task.isCancelled else { return }
+      trailer.start(url: url)
+    }
+#if os(tvOS)
+    // Focus, not geometry: a half-hero visibility threshold left the trailer
+    // running under a focused episode rail. Any control below the hero is
+    // untagged, so Down clears this and fades — seasons, ratings, or whatever
+    // comes first.
+    .onChange(of: focus) { newFocus in
+      isHeroOnScreen = newFocus != nil
+    }
+#endif
+    .onChange(of: isHeroOnScreen) { onScreen in
+      trailer.setActive(onScreen)
+    }
+    .onDisappear {
+      trailer.stop()
+    }
     .handleError(state: $errorHandler.state)
   }
 
@@ -69,6 +104,8 @@ struct MediaItemView: View {
         if itemModel.itemLoaded {
           MediaItemHeroView(mediaItem: itemModel.mediaItem,
                             focus: $focus,
+                            trailer: trailer,
+                            isHeroOnScreen: $isHeroOnScreen,
                             linkProvider: itemModel.linkProvider,
                             isWatched: itemModel.isWatched,
                             isBookmarked: itemModel.isBookmarked,
@@ -102,6 +139,24 @@ struct MediaItemView: View {
     .coordinateSpace(name: MediaItemLayout.scrollSpace)
 #if os(tvOS)
     .defaultFocus($focus, .play)
+#endif
+  }
+
+  /// On tvOS the loaded page pins a small-poster wash plus the wide/trailer hero
+  /// layer behind the scroll view; elsewhere — and while details are still in
+  /// flight — the soft ambient wash stays.
+  @ViewBuilder
+  private var pageBackground: some View {
+#if os(tvOS)
+    if itemModel.itemLoaded {
+      MediaItemHeroBackdrop(mediaItem: itemModel.mediaItem,
+                            trailer: trailer,
+                            isHeroOnScreen: isHeroOnScreen)
+    } else {
+      ambientBackground
+    }
+#else
+    ambientBackground
 #endif
   }
 
