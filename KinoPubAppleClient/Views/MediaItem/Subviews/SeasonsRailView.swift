@@ -54,7 +54,7 @@ struct SeasonsRailView: View {
 
   var body: some View {
     ScrollViewReader { proxy in
-      VStack(alignment: .leading, spacing: showsChrome ? 16 : 0) {
+      VStack(alignment: .leading, spacing: showsChrome ? 2 : 0) {
         if showsChrome {
           seasonTabs(proxy: proxy)
             .transition(.opacity)
@@ -89,7 +89,7 @@ struct SeasonsRailView: View {
         ForEach(seasons) { season in
           Button {
             selectedSeasonID = season.id
-            withAnimation(.easeOut(duration: 0.25)) {
+            withAnimation(.easeOut(duration: 0.2)) {
               proxy.scrollTo(Self.seasonAnchor(season.id), anchor: .leading)
             }
           } label: {
@@ -100,7 +100,7 @@ struct SeasonsRailView: View {
         }
       }
       .padding(.horizontal, Self.horizontalInset)
-      .padding(.vertical, Self.focusPadding)
+//      .padding(.vertical, Self.focusPadding)
     }
   }
 
@@ -203,9 +203,9 @@ struct SeasonsRailView: View {
 #if os(tvOS)
   static let horizontalInset: CGFloat = 80
   static let cardSpacing: CGFloat = 36
-  static let tabSpacing: CGFloat = 16
+  static let tabSpacing: CGFloat = 2
   static let focusPadding: CGFloat = 32
-  static let tabFont: Font = .system(size: 28, weight: .semibold)
+  static let tabFont: Font = .system(size: 36, weight: .semibold)
 #else
   static let horizontalInset: CGFloat = 20
   static let cardSpacing: CGFloat = 16
@@ -354,16 +354,17 @@ private struct SeasonTabButtonStyle: ButtonStyle {
 
     var body: some View {
       configuration.label
-        .foregroundStyle(isSelected ? Color.black : Color.KinoPub.text)
-        .padding(.horizontal, 20)
+            .foregroundStyle(
+                isSelected || isFocused ? Color.primary : Color.secondary
+            )
+        .padding(.horizontal, 24)
         .padding(.vertical, 10)
         .background(
-          Capsule().fill(isSelected ? Color.KinoPub.accent : Color.KinoPub.selectionBackground)
-        )
-        .overlay(
-          Capsule().stroke(Color.KinoPub.accent, lineWidth: isFocused && !isSelected ? 3 : 0)
-        )
-        .scaleEffect(isFocused ? 1.06 : 1.0)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(isFocused ? Color.secondary.opacity(0.4) : Color.clear)
+          )
+    
+//        .scaleEffect(isFocused ? 1.06 : 1.0)
         .animation(.easeOut(duration: 0.15), value: isFocused)
     }
   }
