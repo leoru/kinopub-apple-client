@@ -22,6 +22,7 @@ enum MediaItemFocusTarget: Hashable {
 struct MediaItemView: View {
 
   @EnvironmentObject var errorHandler: ErrorHandler
+  @EnvironmentObject var navigationState: NavigationState
   @StateObject private var itemModel: MediaItemModel
   /// Shared with the hero (Up → fullscreen) and, on tvOS, the pinned full-bleed
   /// backdrop behind the scroll view.
@@ -112,7 +113,9 @@ struct MediaItemView: View {
                             folders: itemModel.folders,
                             folderIDsContainingItem: itemModel.folderIDsContainingItem,
                             onWatchedToggle: { itemModel.toggleWatched() },
-                            onFolderToggle: { itemModel.toggleFolder($0) })
+                            onFolderToggle: { itemModel.toggleFolder($0) },
+                            onClearFromContinueWatching: { itemModel.clearFromContinueWatching() },
+                            onBrowseWatchlist: { navigationState.selectedTab = .saved })
 
           if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
             SeasonsRailView(seasons: seasons,

@@ -351,6 +351,9 @@ struct MediaItemHeroView: View {
   var folderIDsContainingItem: Set<Int>
   var onWatchedToggle: () -> Void
   var onFolderToggle: (Bookmark) -> Void
+  var onClearFromContinueWatching: () -> Void = {}
+  /// Opens the Saved / watchlist tab — same destination as the CW long-press action.
+  var onBrowseWatchlist: (() -> Void)? = nil
 
   /// tvOS only: the Up gesture lifts the muted inline preview into a real full-screen
   /// player. Kept here so the same view that owns the preview owns its promotion.
@@ -358,6 +361,12 @@ struct MediaItemHeroView: View {
 
   private var isSeries: Bool {
     !(mediaItem.seasons?.isEmpty ?? true)
+  }
+
+  /// Checkmark marks the in-progress title/episode watched. Finished titles use More.
+  private var showsWatchedButton: Bool {
+    if case .resume = mediaItem.playbackButtonContent { return true }
+    return false
   }
 
   var body: some View {
@@ -590,31 +599,17 @@ struct MediaItemHeroView: View {
   }
 
   private var actions: some View {
-    HStack(spacing: 16) {
+    HStack(spacing: MediaActionMetrics.rowSpacing) {
       primaryAction
-
-      if mediaItem.trailerURL != nil {
-        NavigationLink(value: linkProvider.trailerPlayer(for: mediaItem)) {
-          Label("Trailer", systemImage: "film")
-        }
-        .heroButtonStyle()
-        .focused($focus, equals: .heroOther)
+      bookmarkButton
+      if isSeries {
+        watchlistPill
       }
-
-      // A watched flag is a movie's; a series is marked episode by episode on the rail.
-      // Once a movie is watched the control simply goes away rather than inverting into
-      // a filled circle — there is nothing left to do to it from here.
-      if !isSeries && !isWatched {
-        Button(action: onWatchedToggle) {
-          Image(systemName: "checkmark")
-        }
-        .heroButtonStyle()
-        .focused($focus, equals: .heroOther)
+      if showsWatchedButton {
+        watchedButton
       }
-
-      bookmarkMenu
+      moreButton
     }
-    .font(Self.buttonFont)
 #if os(tvOS)
     // The focus engine only forwards a move it can't act on, so this fires exactly when
     // a hero button is focused and there is nowhere above to go — the hero is the top of
@@ -628,84 +623,150 @@ struct MediaItemHeroView: View {
 #endif
   }
 
-  /// kino.pub bookmarks are folders, so this offers the list rather than a single
-  /// on/off — the icon fills once the item is in at least one of them.
+  /// Bookmark folders — icon only. Fills once the title is in at least one folder.
   @ViewBuilder
-  private var bookmarkMenu: some View {
-    if folders.isEmpty {
-      Button {
-        // Nothing to add to until the account has a folder.
-      } label: {
-        Image(systemName: "bookmark")
+  private var bookmarkButton: some View {
+    folderMenuLabel {
+      Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
+    }
+    .mediaActionCircleStyle()
+    .focused($focus, equals: .heroOther)
+    .accessibilityLabel("Bookmarks")
+  }
+
+  /// Labeled add control — same folder menu as the bookmark circle, but with a title
+  /// so it reads as the primary "save this" affordance at ten feet.
+  @ViewBuilder
+  private var watchlistPill: some View {
+    folderMenuLabel {
+      HStack(spacing: MediaActionMetrics.contentSpacing) {
+        Image(systemName: "plus")
+          .font(.system(size: MediaActionMetrics.iconPointSize, weight: .semibold))
+        Text("Watchlist")
+          .font(MediaActionMetrics.labelFont)
+          .lineLimit(1)
       }
-      .heroButtonStyle()
-      .focused($focus, equals: .heroOther)
-      .disabled(true)
+    }
+    .mediaActionPillStyle()
+    .focused($focus, equals: .heroOther)
+    .accessibilityLabel("Watchlist")
+  }
+
+  private var watchedButton: some View {
+    Button(action: onWatchedToggle) {
+      Image(systemName: "checkmark")
+        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
+    }
+    .mediaActionCircleStyle()
+    .focused($focus, equals: .heroOther)
+    .accessibilityLabel("Mark as Watched")
+  }
+
+  /// Quiet overflow — no resting chrome; fill only on focus. Holds Trailer, remove
+  /// from Continue Watching, Mark as New, browse watchlist — the same extras the
+  /// Continue Watching long-press offers.
+  @ViewBuilder
+  private var moreButton: some View {
+    Menu {
+      if mediaItem.trailerURL != nil {
+        NavigationLink(value: linkProvider.trailerPlayer(for: mediaItem)) {
+          Label("Trailer", systemImage: "film")
+        }
+      }
+
+      Button(role: .destructive, action: onClearFromContinueWatching) {
+        Label("Remove from Recently Watched", systemImage: "trash")
+      }
+
+      if isWatched {
+        Button(action: onWatchedToggle) {
+          Label("Mark as New", systemImage: "eye")
+        }
+      } else if !showsWatchedButton {
+        Button(action: onWatchedToggle) {
+          Label("Mark as Watched", systemImage: "checkmark")
+        }
+      }
+
+      if isSeries, isBookmarked, let onBrowseWatchlist {
+        Button(action: onBrowseWatchlist) {
+          Label("Browse My Watchlist", systemImage: "rectangle.grid.3x2")
+        }
+      }
+    } label: {
+      Image(systemName: "ellipsis")
+        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .bold))
+    }
+    .mediaActionGhostStyle()
+    .focused($focus, equals: .heroOther)
+    .accessibilityLabel("More")
+  }
+
+  /// kino.pub bookmarks are folders, so both the bookmark circle and the Watchlist
+  /// pill offer the list rather than a single on/off.
+  @ViewBuilder
+  private func folderMenuLabel<Content: View>(@ViewBuilder label: () -> Content) -> some View {
+    if folders.isEmpty {
+      Button(action: {}) { label() }
+        .disabled(true)
     } else {
       Menu {
         ForEach(folders, id: \.id) { folder in
           Button {
             onFolderToggle(folder)
           } label: {
-            Label(folder.title,
-                  systemImage: folderIDsContainingItem.contains(folder.id) ? "checkmark" : "")
+            SwiftUI.Label(folder.title,
+                          systemImage: folderIDsContainingItem.contains(folder.id) ? "checkmark" : "")
           }
         }
       } label: {
-        Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+        label()
       }
-      .heroButtonStyle()
-      .focused($focus, equals: .heroOther)
-      // The folder ids arrive after the first render, and a `Menu` renders its label
-      // once and holds onto it — the ternary above was already right, but the flip from
-      // `bookmark` to `bookmark.fill` never reached the screen because the label was
-      // never asked to redraw. Keying the menu on the state it depends on rebuilds it
-      // the moment the item turns out to be filed somewhere.
+      // Folder membership arrives after first paint; rebuild the menu when it flips
+      // so `bookmark` → `bookmark.fill` actually reaches the screen.
       .id(isBookmarked)
     }
   }
 
   @ViewBuilder
   private var primaryAction: some View {
-    // Black at rest like the rest of the row, but it keeps its title label while the
-    // others are glyph-only, and it holds default focus — so it still reads as the one
-    // thing to press without a coloured fill setting it apart.
     let content = mediaItem.playbackButtonContent
-    let link = NavigationLink(value: linkProvider.player(for: playTarget)) {
+    NavigationLink(value: linkProvider.player(for: playTarget)) {
       primaryActionLabel(for: content)
     }
-      .heroButtonStyle()
-
-    link.focused($focus, equals: .play)
+    .mediaActionPlayPillStyle()
+    .focused($focus, equals: .play)
   }
 
-  /// Play glyph, optional mini resume bar (same capsule as Continue Watching cards),
-  /// then the title. Prefer the bar + "S1, E2 · 39 min"; fall back to "Resume …".
+  /// Play glyph, optional mini resume bar (only when playback has started), then the title.
   @ViewBuilder
   private func primaryActionLabel(for content: PlaybackButtonContent) -> some View {
-    HStack(spacing: 10) {
+    HStack(spacing: MediaActionMetrics.contentSpacing) {
       Image(systemName: "play.fill")
+        .font(.system(size: MediaActionMetrics.iconPointSize, weight: .semibold))
 
       switch content {
       case .resume(let progress, let episodeLabel, let durationSeconds):
-        Capsule()
-          .fill(.secondary)
-          .frame(width: Self.playProgressBarWidth, height: 4)
-          .overlay(alignment: .leading) {
-            Capsule()
-              .fill(.primary)
-              .frame(width: max(0, Self.playProgressBarWidth * progress), height: 4)
-          }
+        MediaActionProgressTrack(progress: progress, forceFocusedColors: true)
         Text(Self.resumeMeta(episodeLabel: episodeLabel, durationSeconds: durationSeconds)
           ?? Self.resumeFallback(episodeLabel: episodeLabel))
+          .font(MediaActionMetrics.labelFont)
+          .lineLimit(1)
       case .play(let episodeLabel):
         if let episodeLabel {
           Text("\("Play".localized) \(episodeLabel)")
+            .font(MediaActionMetrics.labelFont)
+            .lineLimit(1)
         } else {
           Text("Play")
+            .font(MediaActionMetrics.labelFont)
+            .lineLimit(1)
         }
       case .playAgain:
         Text("Play Again")
+          .font(MediaActionMetrics.labelFont)
+          .lineLimit(1)
       }
     }
   }
@@ -773,9 +834,6 @@ struct MediaItemHeroView: View {
   static let contentSpacing: CGFloat = 12
   static let textMaxWidth: CGFloat = 900
   static let titleFont: Font = .system(size: 62, weight: .bold)
-  static let buttonFont: Font = .system(size: 26, weight: .semibold)
-  /// Matches `MediaCardView.footerBarWidth` on the Continue Watching cards.
-  static let playProgressBarWidth: CGFloat = 56
   static let metaSpacing: CGFloat = 20
   static let actionsGap: CGFloat = 20
   static let creditsMaxWidth: CGFloat = 520
@@ -787,8 +845,6 @@ struct MediaItemHeroView: View {
   static let contentSpacing: CGFloat = 8
   static let textMaxWidth: CGFloat = 620
   static let titleFont: Font = .system(size: 36, weight: .bold)
-  static let buttonFont: Font = .system(size: 15, weight: .semibold)
-  static let playProgressBarWidth: CGFloat = 40
   static let metaSpacing: CGFloat = 12
   static let actionsGap: CGFloat = 12
   static let creditsMaxWidth: CGFloat = 300
@@ -800,8 +856,6 @@ struct MediaItemHeroView: View {
   static let contentSpacing: CGFloat = 8
   static let textMaxWidth: CGFloat = 560
   static let titleFont: Font = .system(size: 28, weight: .bold)
-  static let buttonFont: Font = .system(size: 14, weight: .semibold)
-  static let playProgressBarWidth: CGFloat = 36
   static let metaSpacing: CGFloat = 10
   static let actionsGap: CGFloat = 10
   static let creditsMaxWidth: CGFloat = 240
@@ -815,17 +869,5 @@ private extension View {
   /// instead of over the whole frame, so the trailer stays readable behind the text.
   func heroTextShadow() -> some View {
     shadow(color: .black.opacity(0.8), radius: 22, y: 6)
-  }
-
-  /// The one look every hero action wears: a solid black capsule at rest, the way the
-  /// user asked — no accent-green primary among them. Black is the *prominent* fill
-  /// rather than a `.bordered` tint so the button is a solid shape and not a faint
-  /// wash, and because it is the system prominent style tvOS still does its own thing
-  /// on focus — lifting the control and turning it bright — so a focused button is
-  /// unmistakable at ten feet even though its resting colour is black.
-  func heroButtonStyle() -> some View {
-    buttonStyle(.borderedProminent)
-      .buttonBorderShape(.capsule)
-      .tint(.black)
   }
 }

@@ -103,11 +103,14 @@ class MediaItemModel: ObservableObject {
   }
 
   func toggleWatched() {
+    if let (season, episode) = mediaItem.primaryEpisode {
+      toggleWatched(episode: episode, season: season)
+      return
+    }
     let previous = isWatched
     isWatched.toggle()
     Task {
       do {
-        // Films toggle on video 1; the hero control is hidden for series.
         try await actionsService.toggleWatching(id: mediaItemId, video: 1, season: nil)
       } catch {
         isWatched = previous
@@ -122,6 +125,7 @@ class MediaItemModel: ObservableObject {
     episode.watched = previous > 0 ? 0 : 1
     // Force the published item to refresh so the rail redraws checkmarks/progress.
     mediaItem = mediaItem
+    isWatched = mediaItem.playbackAction == .playAgain
     Task {
       do {
         let watched = try await actionsService.toggleWatching(id: mediaItemId,
@@ -130,10 +134,23 @@ class MediaItemModel: ObservableObject {
         if let watched {
           episode.watched = watched
           mediaItem = mediaItem
+          isWatched = mediaItem.playbackAction == .playAgain
         }
       } catch {
         episode.watched = previous
         mediaItem = mediaItem
+        isWatched = mediaItem.playbackAction == .playAgain
+        errorHandler.setError(error)
+      }
+    }
+  }
+
+  /// Drops the title from history so it stops cluttering Continue Watching.
+  func clearFromContinueWatching() {
+    Task {
+      do {
+        try await actionsService.clearHistoryForItem(id: mediaItemId)
+      } catch {
         errorHandler.setError(error)
       }
     }
