@@ -54,4 +54,18 @@ final class PostersAndDurationTests: XCTestCase {
   func testZeroDurationIsEmpty() {
     XCTAssertEqual(Duration.hoursMinutes(seconds: 0), "")
   }
+
+  // MARK: - Duration.compactHoursMinutes
+
+  func testCompactDurationUnderAnHour() {
+    XCTAssertEqual(Duration.compactHoursMinutes(seconds: 39 * 60), "39m")
+  }
+
+  func testCompactDurationOverAnHour() {
+    XCTAssertEqual(Duration.compactHoursMinutes(seconds: 155 * 60), "2h 35m")
+  }
+
+  func testCompactDurationOnAWholeHour() {
+    XCTAssertEqual(Duration.compactHoursMinutes(seconds: 120 * 60), "2h")
+  }
 }

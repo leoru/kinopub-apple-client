@@ -32,6 +32,18 @@ public extension Duration {
     return "\(minutes) min"
   }
 
+  /// Compact runtime for tight chrome — "2h 35m", "2h", "39m".
+  static func compactHoursMinutes(seconds: Int) -> String {
+    let totalMinutes = Int((Double(seconds) / 60).rounded())
+    guard totalMinutes > 0 else { return "" }
+    let hours = totalMinutes / 60
+    let minutes = totalMinutes % 60
+    if hours > 0 {
+      return minutes > 0 ? "\(hours)h \(minutes)m" : "\(hours)h"
+    }
+    return "\(minutes)m"
+  }
+
   var totalFormatted: String {
     let formatter = DateComponentsFormatter()
     #if os(iOS)

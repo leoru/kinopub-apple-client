@@ -670,33 +670,72 @@ struct MediaItemHeroView: View {
     // Black at rest like the rest of the row, but it keeps its title label while the
     // others are glyph-only, and it holds default focus — so it still reads as the one
     // thing to press without a coloured fill setting it apart.
+    let content = mediaItem.playbackButtonContent
     let link = NavigationLink(value: linkProvider.player(for: playTarget)) {
-      Label(mediaItem.playbackAction.titleKey.localized, systemImage: "play.fill")
+      primaryActionLabel(for: content)
     }
       .heroButtonStyle()
 
     link.focused($focus, equals: .play)
   }
 
+  /// Play glyph, optional mini resume bar (same capsule as Continue Watching cards),
+  /// then the title. Prefer the bar + "S1, E2 · 39 min"; fall back to "Resume …".
+  @ViewBuilder
+  private func primaryActionLabel(for content: PlaybackButtonContent) -> some View {
+    HStack(spacing: 10) {
+      Image(systemName: "play.fill")
+
+      switch content {
+      case .resume(let progress, let episodeLabel, let durationSeconds):
+        Capsule()
+          .fill(.secondary)
+          .frame(width: Self.playProgressBarWidth, height: 4)
+          .overlay(alignment: .leading) {
+            Capsule()
+              .fill(.primary)
+              .frame(width: max(0, Self.playProgressBarWidth * progress), height: 4)
+          }
+        Text(Self.resumeMeta(episodeLabel: episodeLabel, durationSeconds: durationSeconds)
+          ?? Self.resumeFallback(episodeLabel: episodeLabel))
+      case .play(let episodeLabel):
+        if let episodeLabel {
+          Text("\("Play".localized) \(episodeLabel)")
+        } else {
+          Text("Play")
+        }
+      case .playAgain:
+        Text("Play Again")
+      }
+    }
+  }
+
   /// For a series, play the first episode that still has something left; the rail
   /// below is there for picking any other one.
   private var playTarget: any PlayableItem {
-    guard isSeries, let seasons = mediaItem.seasons else { return mediaItem }
-    for season in seasons {
-      if let episode = season.episodes.first(where: { $0.watched == 0 }) {
-        episode.seasonNumber = season.number
-        episode.mediaId = season.mediaId
-        episode.seriesTitle = mediaItem.localizedTitle
-        return episode
-      }
+    guard let (season, episode) = mediaItem.primaryEpisode else { return mediaItem }
+    episode.seasonNumber = season.number
+    episode.mediaId = season.mediaId
+    episode.seriesTitle = mediaItem.localizedTitle
+    return episode
+  }
+
+  /// Meta beside the bar — "S1, E2 · 39 min" or "39 min". Nil means use the Resume word.
+  private static func resumeMeta(episodeLabel: String?, durationSeconds: Int) -> String? {
+    var parts: [String] = []
+    if let episodeLabel { parts.append(episodeLabel) }
+    if durationSeconds >= 60 {
+      let duration = Duration.compactHoursMinutes(seconds: durationSeconds)
+      if !duration.isEmpty { parts.append(duration) }
     }
-    if let season = seasons.first, let episode = season.episodes.first {
-      episode.seasonNumber = season.number
-      episode.mediaId = season.mediaId
-      episode.seriesTitle = mediaItem.localizedTitle
-      return episode
+    return parts.isEmpty ? nil : parts.joined(separator: " · ")
+  }
+
+  private static func resumeFallback(episodeLabel: String?) -> String {
+    if let episodeLabel {
+      return "\("Resume".localized) \(episodeLabel)"
     }
-    return mediaItem
+    return "Resume".localized
   }
 
   // MARK: - Metrics
@@ -735,6 +774,8 @@ struct MediaItemHeroView: View {
   static let textMaxWidth: CGFloat = 900
   static let titleFont: Font = .system(size: 62, weight: .bold)
   static let buttonFont: Font = .system(size: 26, weight: .semibold)
+  /// Matches `MediaCardView.footerBarWidth` on the Continue Watching cards.
+  static let playProgressBarWidth: CGFloat = 56
   static let metaSpacing: CGFloat = 20
   static let actionsGap: CGFloat = 20
   static let creditsMaxWidth: CGFloat = 520
@@ -747,6 +788,7 @@ struct MediaItemHeroView: View {
   static let textMaxWidth: CGFloat = 620
   static let titleFont: Font = .system(size: 36, weight: .bold)
   static let buttonFont: Font = .system(size: 15, weight: .semibold)
+  static let playProgressBarWidth: CGFloat = 40
   static let metaSpacing: CGFloat = 12
   static let actionsGap: CGFloat = 12
   static let creditsMaxWidth: CGFloat = 300
@@ -759,6 +801,7 @@ struct MediaItemHeroView: View {
   static let textMaxWidth: CGFloat = 560
   static let titleFont: Font = .system(size: 28, weight: .bold)
   static let buttonFont: Font = .system(size: 14, weight: .semibold)
+  static let playProgressBarWidth: CGFloat = 36
   static let metaSpacing: CGFloat = 10
   static let actionsGap: CGFloat = 10
   static let creditsMaxWidth: CGFloat = 240
