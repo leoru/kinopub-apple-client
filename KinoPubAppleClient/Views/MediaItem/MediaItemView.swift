@@ -118,6 +118,7 @@ struct MediaItemView: View {
             SeasonsRailView(seasons: seasons,
                             linkProvider: itemModel.linkProvider,
                             seriesTitle: itemModel.mediaItem.localizedTitle,
+                            showsChrome: !isHeroOnScreen,
                             onHide: { episode, season in
                               itemModel.hide(episode: episode, season: season)
                             },
@@ -126,7 +127,8 @@ struct MediaItemView: View {
                             })
           }
 
-          MediaItemRatingsSection(mediaItem: itemModel.mediaItem)
+          MediaItemRatingsSection(mediaItem: itemModel.mediaItem,
+                                  showsHeader: !isHeroOnScreen)
           MediaItemCastSection(mediaItem: itemModel.mediaItem, linkProvider: itemModel.linkProvider)
           MediaItemInfoColumns(mediaItem: itemModel.mediaItem)
           MediaItemSimilarSection(items: itemModel.similarItems, linkProvider: itemModel.linkProvider)

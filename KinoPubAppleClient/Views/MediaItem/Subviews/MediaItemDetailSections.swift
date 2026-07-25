@@ -14,6 +14,9 @@ import KinoPubBackend
 struct MediaItemRatingsSection: View {
 
   let mediaItem: MediaItem
+  /// Hidden while the hero/trailer owns the page — same chrome gate as season tabs,
+  /// so "Ratings" doesn't caption the wide art peeking under the hero.
+  var showsHeader: Bool = true
 
   private struct Score: Identifiable {
     let id: String
@@ -36,7 +39,10 @@ struct MediaItemRatingsSection: View {
   var body: some View {
     if !scores.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
-        MediaItemSectionHeader("Ratings")
+        if showsHeader {
+          MediaItemSectionHeader("Ratings")
+            .transition(.opacity)
+        }
 
         HStack(alignment: .top, spacing: Self.spacing) {
           ForEach(scores) { score in
@@ -50,6 +56,7 @@ struct MediaItemRatingsSection: View {
         }
         .padding(.horizontal, MediaItemLayout.horizontalInset)
       }
+      .animation(.easeOut(duration: 0.35), value: showsHeader)
     }
   }
 

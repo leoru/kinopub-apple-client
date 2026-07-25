@@ -191,8 +191,10 @@ What "done" looks like, so nobody has to guess:
   at 8.0+, green from 7.0, grey from 6.0, red below. The tier follows the *displayed* value, so a card
   reading "8.0" always gets the gold treatment.
 - **Detail page** leads with artwork that gives way to the **trailer**, blurred progressively toward
-  the overlaid title, metadata and plot; then season tabs over a rail of episode stills.
-  Native tvOS buttons — no tiny iOS-sized controls.
+  the overlaid title, metadata and plot; then one continuous rail of every episode across
+  seasons (tabs scroll to a season rather than swapping the list), opening on the first
+  unfinished episode. Season tabs and the Ratings label stay hidden while the hero/trailer
+  owns focus. Native tvOS buttons — no tiny iOS-sized controls.
 - **White is the accent colour**, as on Apple TV. The site's green is gone; the only coloured chrome
   left is semantic (rating tiers, destructive actions).
 - **Tabs** across the top: 🔍 · Home · Movies · Series · Saved · ⚙️. On tvOS the labelled tabs are
