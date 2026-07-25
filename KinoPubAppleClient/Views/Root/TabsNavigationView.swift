@@ -10,11 +10,11 @@ import SwiftUI
 import KinoPubUI
 import KinoPubBackend
 
-/// Primary chrome on iOS, tvOS and macOS.
+/// Primary chrome on iOS, tvOS and macOS — stock system `TabView` with
+/// `.sidebarAdaptable` (sidebar on Mac/TV, tab bar on iPhone, adaptable on iPad).
 ///
-/// `.tabViewStyle(.sidebarAdaptable)` is the system sidebar on macOS (and tvOS 18+) —
-/// Liquid Glass / floating over content on current SDKs. Grow it further with
-/// `TabSection`, search role, bottom-pinned profile, etc.:
+/// Modelled on Rivulet's `TVSidebarView`: modern `Tab` / `TabSection` API, no
+/// custom tint. Grow further without leaving TabView:
 /// - Search: inline search field in the sidebar; focus jumps into the page
 /// - Saved: watchlist + all my lists, with a + button
 /// - Settings: profile affordance pinned at the bottom, not a middle row
@@ -41,57 +41,43 @@ struct TabsNavigationView: View {
   @available(iOS 18.0, tvOS 18.0, macOS 15.0, *)
   private var modernTabs: some View {
     TabView(selection: $navigationState.selectedTab) {
-      Tab(value: NavigationTabs.search, role: .search) {
-        page(searchContent)
+      Tab("Search", systemImage: "magnifyingglass", value: NavigationTabs.search) {
+        searchContent
       }
 
-      Tab("Home", systemImage: "square.grid.2x2", value: NavigationTabs.home) {
-        page(homeContent)
+      Tab("Home", systemImage: "house.fill", value: NavigationTabs.home) {
+        homeContent
       }
 
-      Tab("Movies", systemImage: "film", value: NavigationTabs.movies) {
-        page(moviesContent)
-      }
+      TabSection("Library") {
+        Tab("Movies", systemImage: "film", value: NavigationTabs.movies) {
+          moviesContent
+        }
 
-      Tab("Series", systemImage: "tv", value: NavigationTabs.series) {
-        page(seriesContent)
+        Tab("Series", systemImage: "tv", value: NavigationTabs.series) {
+          seriesContent
+        }
       }
 
       Tab("My Library", systemImage: "bookmark", value: NavigationTabs.saved) {
-        page(savedContent)
+        savedContent
       }
 
 #if !os(tvOS)
       Tab("Downloads", systemImage: "arrow.down", value: NavigationTabs.downloads) {
-        page(downloadsContent)
+        downloadsContent
       }
 #endif
 
-      Tab(value: NavigationTabs.settings) {
-        page(settingsContent)
-      } label: {
-#if os(tvOS)
-        Image(systemName: "gear")
-#else
-        Label("Settings", systemImage: "gear")
-#endif
+      // Trailing section — Settings (and later a bottom-pinned profile) sits apart
+      // from the browse tabs, matching Rivulet / Apple TV.
+      TabSection("") {
+        Tab("Settings", systemImage: "gearshape.fill", value: NavigationTabs.settings) {
+          settingsContent
+        }
       }
     }
     .tabViewStyle(.sidebarAdaptable)
-#if os(macOS)
-    // Apple TV–style: soft grey selection pill, not the system accent-blue fill.
-    .tint(Color(nsColor: .tertiaryLabelColor))
-#endif
-  }
-
-  /// Sidebar tint stays on the chrome; page controls keep the system accent.
-  @ViewBuilder
-  private func page<Content: View>(_ content: Content) -> some View {
-#if os(macOS)
-    content.tint(Color(nsColor: .controlAccentColor))
-#else
-    content
-#endif
   }
 
   private var legacyTabs: some View {
@@ -102,7 +88,7 @@ struct TabsNavigationView: View {
 
       homeContent
         .tag(NavigationTabs.home)
-        .tabItem { legacyLabel("Home", systemImage: "square.grid.2x2") }
+        .tabItem { legacyLabel("Home", systemImage: "house.fill") }
 
       moviesContent
         .tag(NavigationTabs.movies)
@@ -124,7 +110,7 @@ struct TabsNavigationView: View {
 
       settingsContent
         .tag(NavigationTabs.settings)
-        .tabItem { legacyLabel("Settings", systemImage: "gear", iconOnly: true) }
+        .tabItem { legacyLabel("Settings", systemImage: "gearshape.fill", iconOnly: true) }
     }
   }
 

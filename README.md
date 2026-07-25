@@ -19,9 +19,9 @@ Plus one thing neither of them does: **language learning while watching** — En
 
 | Platform | Priority | State |
 | --- | --- | --- |
-| tvOS 17+ | **Primary** | Builds and runs. Home is rebuilt; detail page and player still to go. |
-| iOS / iPadOS 16+ | Secondary | Works (inherited from upstream). Kept building, not designed for. |
-| macOS 15+ | Secondary | Works (`.sidebarAdaptable` TabView). Kept building, not designed for. |
+| tvOS 17+ | **Primary** | Builds and runs. Shared `.sidebarAdaptable` TabView chrome (Rivulet-style). Home is rebuilt; detail page and player still to go. |
+| iOS / iPadOS 16+ | Secondary | Works (inherited from upstream). Same TabView; bottom tab bar on iPhone. Kept building, not designed for. |
+| macOS 15+ | Secondary | Works (shared `.sidebarAdaptable` TabView sidebar). Kept building, not designed for. |
 
 Non-goals for now: analytics/crash reporting (Firebase has been removed), Downloads on tvOS, and any
 custom theming that fights the platform HIG.
@@ -82,6 +82,9 @@ open KinoPubAppleClient.xcodeproj
   **Search is the exception**: the query field, filter chips and a grid of empty poster tiles are on
   screen from the first frame (filters scroll with the grid, not pinned above it), so the remote
   always has somewhere to land; real cards replace the tiles when the page arrives.
+- **Navigation chrome is a shared system `TabView` + `.sidebarAdaptable`** (`TabsNavigationView`):
+  sidebar on Mac/TV, bottom tabs on iPhone. `Tab` / `TabSection` layout (Library for Movies/Series,
+  Settings in a trailing section) — stock HIG appearance, no custom sidebar tint.
 
 ## Known issues / half-finished
 
