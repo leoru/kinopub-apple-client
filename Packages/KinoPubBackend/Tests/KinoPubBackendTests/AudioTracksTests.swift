@@ -100,15 +100,14 @@ final class AudioTracksTests: XCTestCase {
     let labels = AudioTracks.descriptions(for: spiderNoir, preferredLanguages: preferredENThenRU)
     let newStudio = labels.filter { $0.contains("NewStudio") }
     XCTAssertEqual(newStudio.count, 1)
-    XCTAssertEqual(newStudio.first,
-                   "\(LanguageNames.name(for: "rus")) — Многоголосый (NewStudio)")
+    XCTAssertEqual(newStudio.first, expectedLabel(lang: "rus", typeId: 2, studio: "NewStudio"))
     XCTAssertFalse(labels.contains { $0.contains("aac") || $0.contains("ac3") || $0.contains("5.1") })
   }
 
   func testUniqueRowsKeepThePlainLabel() {
     let labels = AudioTracks.descriptions(for: spiderNoir, preferredLanguages: preferredENThenRU)
     let lostFilm = labels.first { $0.contains("LostFilm") }
-    XCTAssertEqual(lostFilm, "\(LanguageNames.name(for: "rus")) — Многоголосый (LostFilm)")
+    XCTAssertEqual(lostFilm, expectedLabel(lang: "rus", typeId: 2, studio: "LostFilm"))
   }
 
   // MARK: - Kind parsing
@@ -131,6 +130,12 @@ final class AudioTracksTests: XCTestCase {
     XCTAssertNil(AudioTracks.authorFromDisplayName("English · Original"))
   }
 
+  func testAuthorIsReadFromBulletSeparatedLabel() {
+    XCTAssertEqual(AudioTracks.authorFromDisplayName("Russian ∙ multi-voice ∙ LostFilm"), "LostFilm")
+    XCTAssertEqual(AudioTracks.authorFromDisplayName("Russian ∙ multi-voice ∙ NewStudio ∙ 2"), "NewStudio")
+    XCTAssertNil(AudioTracks.authorFromDisplayName("English ∙ original"))
+  }
+
   // MARK: - HLS NAME labels
 
   func testHLSLabelsFollowLanguageOrderFromTheAPI() {
@@ -142,10 +147,10 @@ final class AudioTracksTests: XCTestCase {
     ]
     let labels = AudioTracks.labelsForHLSRenditions(languages: ["ru", "ru", "ja", "ru"],
                                                     tracks: tracks)
-    XCTAssertEqual(labels[0], "\(LanguageNames.name(for: "rus")) — Дубляж (Red Head Sound)")
-    XCTAssertEqual(labels[1], "\(LanguageNames.name(for: "rus")) — Многоголосый (LostFilm)")
-    XCTAssertEqual(labels[2], "\(LanguageNames.name(for: "jpn")) — Оригинал")
-    XCTAssertEqual(labels[3], "\(LanguageNames.name(for: "rus")) — Многоголосый (TVShows)")
+    XCTAssertEqual(labels[0], expectedLabel(lang: "rus", typeId: 1, studio: "Red Head Sound"))
+    XCTAssertEqual(labels[1], expectedLabel(lang: "rus", typeId: 2, studio: "LostFilm"))
+    XCTAssertEqual(labels[2], expectedLabel(lang: "jpn", typeId: 6, studio: nil))
+    XCTAssertEqual(labels[3], expectedLabel(lang: "rus", typeId: 2, studio: "TVShows"))
   }
 
   func testHLSLabelsAreUniquedWhenStudiosCollide() {
@@ -156,7 +161,12 @@ final class AudioTracksTests: XCTestCase {
             channels: 6, codec: "ac3", index: 2)
     ]
     let labels = AudioTracks.labelsForHLSRenditions(languages: ["ru", "ru"], tracks: tracks)
-    XCTAssertEqual(labels[0], "\(LanguageNames.name(for: "rus")) — Многоголосый (NewStudio)")
-    XCTAssertEqual(labels[1], "\(LanguageNames.name(for: "rus")) — Многоголосый (NewStudio) · 2")
+    let base = expectedLabel(lang: "rus", typeId: 2, studio: "NewStudio")
+    XCTAssertEqual(labels[0], base)
+    XCTAssertEqual(labels[1], "\(base) ∙ 2")
+  }
+
+  private func expectedLabel(lang: String, typeId: Int, studio: String?) -> String {
+    AudioTracks.baseLabel(track(lang: lang, typeId: typeId, typeTitle: "", author: studio, index: 0))
   }
 }

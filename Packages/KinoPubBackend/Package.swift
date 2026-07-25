@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
   name: "KinoPubBackend",
+  defaultLocalization: "en",
   platforms: [.macOS(.v13), .iOS(.v16), .tvOS(.v17)],
   products: [
     .library(
@@ -19,6 +20,9 @@ let package = Package(
       name: "KinoPubBackend",
       dependencies: [
         .product(name: "KinoPubLogging", package: "KinoPubLogging")
+      ],
+      resources: [
+        .process("Resources")
       ]),
     .testTarget(
       name: "KinoPubBackendTests",

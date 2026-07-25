@@ -66,8 +66,8 @@ public extension MediaItem {
     return Self.uniqueLanguageNames(langs)
   }
 
-  /// Audio tracks as "Русский — Дубляж (Flarrow Films)", ordered like the system
-  /// audio picker: preferred languages, then A–Z, kind, studio.
+  /// Audio tracks as "Russian ∙ multi-voice ∙ Flarrow Films", ordered like the
+  /// system audio picker: preferred languages, then A–Z, kind, studio.
   var audioTrackDescriptions: [String] {
     if let audios = videos?.first?.audios, !audios.isEmpty {
       return AudioTracks.descriptions(for: AudioTracks.catalog(audios))
@@ -94,24 +94,52 @@ public extension MediaItem {
 
 /// Maps the API's language codes to display names in the reader's language.
 ///
-/// Foundation knows the ISO 639-2 codes the API uses (`rus`, `cze`, `baq`…), so it
-/// does the work and localizes into the current language; the small table below only
-/// covers codes it declines, and the raw code is the last resort.
+/// Foundation localizes ISO codes (`rus`, `ukr`, `jpn`…) via `Locale`. A small
+/// 639-2 → 639-1 alias table covers codes some OS builds only resolve as ISO-1.
 public enum LanguageNames {
-  private static let fallbacks: [String: String] = [
-    "rus": "Русский", "ru": "Русский",
-    "ukr": "Українська", "uk": "Українська",
-    "eng": "English", "en": "English"
+  /// Common bibliographic / kino.pub codes → ISO 639-1 when Locale needs the short form.
+  private static let aliases: [String: String] = [
+    "rus": "ru", "ukr": "uk", "eng": "en", "jpn": "ja", "deu": "de", "ger": "de",
+    "fra": "fr", "fre": "fr", "spa": "es", "ita": "it", "zho": "zh", "chi": "zh",
+    "pol": "pl", "tur": "tr", "kaz": "kk", "bel": "be", "por": "pt", "hin": "hi",
+    "kor": "ko", "ara": "ar", "heb": "he", "tha": "th", "vie": "vi", "ell": "el",
+    "gre": "el", "hun": "hu", "ces": "cs", "cze": "cs", "swe": "sv", "nld": "nl",
+    "dut": "nl", "fin": "fi", "ron": "ro", "rum": "ro", "bul": "bg", "hrv": "hr",
+    "srp": "sr", "slk": "sk", "slo": "sk", "lit": "lt", "lav": "lv", "est": "et",
+    "kat": "ka", "geo": "ka", "hye": "hy", "arm": "hy", "aze": "az", "uzb": "uz",
+    "fas": "fa", "per": "fa", "ind": "id", "msa": "ms", "may": "ms", "fil": "fil",
+    "tgl": "tl", "nor": "no", "dan": "da", "isl": "is", "ice": "is", "gle": "ga",
+    "cym": "cy", "wel": "cy", "cat": "ca", "eus": "eu", "baq": "eu", "glg": "gl",
+    "sqi": "sq", "alb": "sq", "mkd": "mk", "mac": "mk", "slv": "sl", "bos": "bs",
+    "mlt": "mt", "epo": "eo", "lat": "la", "mon": "mn", "nep": "ne", "urd": "ur",
+    "ben": "bn", "tam": "ta", "tel": "te", "kan": "kn", "mal": "ml", "pan": "pa",
+    "guj": "gu", "mar": "mr", "sin": "si", "mya": "my", "bur": "my", "khm": "km",
+    "lao": "lo", "amh": "am", "swa": "sw", "afr": "af", "glv": "gv", "fao": "fo",
+    "ltz": "lb", "roh": "rm", "yid": "yi", "jav": "jv", "sun": "su", "ceb": "ceb",
+    "haw": "haw", "smo": "sm", "ton": "to", "mlg": "mg", "xho": "xh", "zul": "zu",
+    "sna": "sn", "sot": "st", "tsn": "tn", "tso": "ts", "ven": "ve", "nbl": "nr",
+    "ssw": "ss", "kin": "rw", "run": "rn", "orm": "om", "som": "so", "tir": "ti",
+    "hau": "ha", "yor": "yo", "ibo": "ig", "ful": "ff"
   ]
 
   public static func name(for code: String) -> String {
     let key = code.lowercased().trimmingCharacters(in: .whitespaces)
     guard !key.isEmpty else { return "" }
 
-    if let localized = Locale.current.localizedString(forLanguageCode: key),
+    let lookup = aliases[key] ?? key
+    if let localized = Locale.current.localizedString(forLanguageCode: lookup)
+        ?? Locale.current.localizedString(forLanguageCode: key),
+       localized.lowercased() != lookup,
        localized.lowercased() != key {
-      return localized.prefix(1).uppercased() + localized.dropFirst()
+      return sentenceCased(localized)
     }
-    return fallbacks[key] ?? code
+    return code
+  }
+
+  /// Locale often returns lowercase adjectives ("русский", "rusų"); title-case the
+  /// first character so the language leads the audio line.
+  private static func sentenceCased(_ name: String) -> String {
+    guard let first = name.first else { return name }
+    return String(first).uppercased() + name.dropFirst()
   }
 }

@@ -166,7 +166,7 @@ public enum AudioTracks {
 
   /// One label per HLS AUDIO rendition, in playlist order. Consumes API tracks by
   /// language so the CDN's "Russian, Russian, Japanese" line up with the API rows.
-  /// Duplicate labels get " · 2" etc. — HLS forbids identical NAME within a group.
+  /// Duplicate labels get " ∙ 2" etc. — HLS forbids identical NAME within a group.
   public static func labelsForHLSRenditions(languages: [String?],
                                             tracks: [AudioTrackInfo]) -> [String] {
     var queues: [String: [AudioTrackInfo]] = [:]
@@ -197,20 +197,49 @@ public enum AudioTracks {
       guard totals[label, default: 0] > 1 else { return label }
       let n = seen[label, default: 0] + 1
       seen[label] = n
-      return n == 1 ? label : "\(label) · \(n)"
+      return n == 1 ? label : "\(label) ∙ \(n)"
     }
   }
 
+  /// "Russian ∙ multi-voice ∙ LostFilm" — language sentence-cased, kind lowercased
+  /// and localized, studio as the API wrote it.
   public static func baseLabel(_ track: AudioTrackInfo) -> String {
     var parts = [LanguageNames.name(for: track.lang)]
-    if let type = track.typeTitle, !type.isEmpty {
-      parts.append(type)
+    if let kind = localizedKindLabel(typeId: track.typeId,
+                                     typeTitle: track.typeTitle,
+                                     typeShortTitle: track.typeShortTitle) {
+      parts.append(kind.lowercased(with: .current))
     }
-    var line = parts.joined(separator: " — ")
     if let author = normalizedAuthor(track.authorTitle) {
-      line += " (\(author))"
+      parts.append(author)
     }
-    return line
+    return parts.joined(separator: " ∙ ")
+  }
+
+  /// Localized dub-kind word for the middle of an audio label. Falls back to the
+  /// API title when the kind is unknown.
+  public static func localizedKindLabel(typeId: Int?,
+                                        typeTitle: String?,
+                                        typeShortTitle: String?) -> String? {
+    let rank = kindRank(typeId: typeId, typeTitle: typeTitle, typeShortTitle: typeShortTitle)
+    if let key = kindLocalizationKey(rank) {
+      return String(localized: key, bundle: .module)
+    }
+    if let typeTitle, !typeTitle.isEmpty { return typeTitle }
+    if let typeShortTitle, !typeShortTitle.isEmpty { return typeShortTitle }
+    return nil
+  }
+
+  private static func kindLocalizationKey(_ rank: Int) -> String.LocalizationValue? {
+    switch rank {
+    case 0: return "Dubbed"
+    case 1: return "Multi-voice"
+    case 2: return "Two-voice"
+    case 3: return "Single-voice"
+    case 4: return "Author's"
+    case 5: return "Original"
+    default: return nil
+    }
   }
 
   // MARK: - Kind / language helpers
@@ -261,14 +290,29 @@ public enum AudioTracks {
       || containsToken(name, "ad")
   }
 
-  /// Studio text inside trailing parentheses of an HLS option label, if any.
+  /// Studio text from a display label — trailing `∙ Studio`, or legacy `(Studio)`.
   public static func authorFromDisplayName(_ name: String) -> String? {
-    guard let open = name.lastIndex(of: "("),
-          let close = name[open...].firstIndex(of: ")"),
-          open < close else { return nil }
-    let inner = String(name[name.index(after: open)..<close])
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-    return inner.isEmpty ? nil : inner
+    if let open = name.lastIndex(of: "("),
+       let close = name[open...].firstIndex(of: ")"),
+       open < close {
+      let inner = String(name[name.index(after: open)..<close])
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+      if !inner.isEmpty { return inner }
+    }
+
+    for separator in [" ∙ ", " · ", " — "] {
+      let parts = name.components(separatedBy: separator)
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+      guard parts.count >= 3 else { continue }
+      // "Lang ∙ kind ∙ Studio ∙ 2" — drop the HLS uniquing suffix.
+      if parts.count >= 4, Int(parts.last!) != nil {
+        return parts[parts.count - 2]
+      }
+      if Int(parts.last!) != nil { return nil }
+      return parts.last
+    }
+    return nil
   }
 
   public static func channelCount(fromLabel label: String) -> Int {
