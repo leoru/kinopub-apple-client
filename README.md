@@ -79,6 +79,9 @@ open KinoPubAppleClient.xcodeproj
 - **Loading is Apple-TV-shaped, not skeleton-shaped**: a screen stays empty and shows a plain spinner
   once the wait is noticeable (300 ms on listings, 700 ms on an item page), then fades the content in.
   Artwork fades up out of a dark tile. `LoadingIndicatorView` in `KinoPubUI` is the one spinner.
+  **Search is the exception**: the query field, filter chips and a grid of empty poster tiles are on
+  screen from the first frame (filters scroll with the grid, not pinned above it), so the remote
+  always has somewhere to land; real cards replace the tiles when the page arrives.
 
 ## Known issues / half-finished
 

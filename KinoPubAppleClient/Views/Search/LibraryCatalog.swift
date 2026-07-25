@@ -15,9 +15,9 @@ import OSLog
 class LibraryCatalog: ObservableObject {
 
   @Published public var items: [MediaItem] = []
-  /// Drives the spinner: only true while the first page is on its way, so paging
-  /// further down never blanks the grid.
-  @Published public private(set) var isLoading: Bool = false
+  /// True while the first page is on its way. Starts `true` so Search can paint
+  /// its placeholder grid on the first frame; paging further down never sets it.
+  @Published public private(set) var isLoading: Bool = true
   @Published public var query: String = ""
   @Published public var filter: LibraryFilter = LibraryFilter()
 
@@ -48,6 +48,7 @@ class LibraryCatalog: ObservableObject {
 
   func load() async {
     guard authState.userState == .authorized else {
+      isLoading = false
       subscribeForAuth()
       return
     }
@@ -103,6 +104,7 @@ class LibraryCatalog: ObservableObject {
   }
 
   func refresh() async {
+    isLoading = true
     items = []
     pagination = nil
     errorHandler.reset()

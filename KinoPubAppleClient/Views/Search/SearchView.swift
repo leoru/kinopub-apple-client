@@ -21,20 +21,32 @@ struct SearchView: View {
     _catalog = StateObject(wrappedValue: catalog())
   }
 
+  /// Enough empty posters to sketch a couple of rows before the page arrives.
+  private static let placeholderCount = 12
+
   var body: some View {
     NavigationStack(path: $navigationState.searchRoutes) {
-      VStack(spacing: 0) {
-        // Sorting and filtering apply to the catalog listing, not to a search.
-        if !catalog.isSearching {
-          LibraryFiltersBar(catalog: catalog)
-        }
-
-        if catalog.items.isEmpty && catalog.isLoading {
-          LoadingIndicatorView()
-        } else if catalog.items.isEmpty && catalog.isSearching {
-          emptyView
-        } else {
-          catalogView
+      GeometryReader { geometryProxy in
+        ContentItemsListView(
+          width: geometryProxy.size.width,
+          items: $catalog.items,
+          onLoadMoreContent: { item in
+            catalog.loadMoreContent(after: item)
+          },
+          onRefresh: {
+            await catalog.refresh()
+          },
+          navigationLinkProvider: { item in
+            SearchRoutesLinkProvider().link(for: item)
+          },
+          placeholderCount: showsPlaceholders ? Self.placeholderCount : 0,
+          emptyMessage: showsEmptyMessage ? "No resuts" : nil
+        ) {
+          // Filters scroll away with the grid — pinning them above a remnant
+          // GeometryReader was eating half the screen and delaying `.searchable`.
+          if !catalog.isSearching {
+            LibraryFiltersBar(catalog: catalog)
+          }
         }
       }
       .searchable(text: $catalog.query, placement: .automatic)
@@ -78,22 +90,12 @@ struct SearchView: View {
     }
   }
 
-  var catalogView: some View {
-    GeometryReader { geometryProxy in
-      ContentItemsListView(width: geometryProxy.size.width, items: $catalog.items, onLoadMoreContent: { item in
-        catalog.loadMoreContent(after: item)
-      }, onRefresh: {
-        await catalog.refresh()
-      }, navigationLinkProvider: { item in
-        SearchRoutesLinkProvider().link(for: item)
-      })
-    }
+  private var showsPlaceholders: Bool {
+    catalog.items.isEmpty && catalog.isLoading
   }
 
-  var emptyView: some View {
-    Text("No resuts")
-      .foregroundStyle(Color.KinoPub.text)
-      .font(Font.KinoPub.subheader)
+  private var showsEmptyMessage: Bool {
+    catalog.items.isEmpty && catalog.isSearching && !catalog.isLoading
   }
 }
 
