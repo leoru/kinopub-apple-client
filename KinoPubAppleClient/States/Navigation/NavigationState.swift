@@ -18,3 +18,21 @@ class NavigationState: ObservableObject {
   @Published var bookmarksRoutes: [BookmarksRoutes] = []
   @Published var downloadsRoutes: [DownloadsRoutes] = []
 }
+
+extension View {
+  /// On macOS, `.sidebarAdaptable` keeps every tab's view tree in the same
+  /// split-view column. Sibling `NavigationStack`s then steal `NavigationLink`s
+  /// (`MainRoutes` hits a `CatalogRoutes` stack and never activates). Only the
+  /// selected tab may expose a stack; classic tab bars already isolate content.
+  /// The tab root stays mounted so `@StateObject` catalogs survive switches.
+  @ViewBuilder
+  func navigationStackActive(for tab: NavigationTabs, selected: NavigationTabs) -> some View {
+#if os(macOS)
+    if selected == tab {
+      self
+    }
+#else
+    self
+#endif
+  }
+}

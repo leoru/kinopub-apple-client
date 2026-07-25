@@ -16,15 +16,18 @@ struct CatalogView: View {
   @Environment(\.appContext) var appContext
 
   private let title: LocalizedStringKey
+  private let tab: NavigationTabs
   private let path: ReferenceWritableKeyPath<NavigationState, [CatalogRoutes]>
 
   @StateObject private var catalog: MediaCatalog
   @State private var showShortCutPicker: Bool = false
 
   init(title: LocalizedStringKey,
+       tab: NavigationTabs,
        path: ReferenceWritableKeyPath<NavigationState, [CatalogRoutes]>,
        catalog: @autoclosure @escaping () -> MediaCatalog) {
     self.title = title
+    self.tab = tab
     self.path = path
     _catalog = StateObject(wrappedValue: catalog())
   }
@@ -91,6 +94,7 @@ struct CatalogView: View {
           await catalog.fetchItems()
         }
     }
+    .navigationStackActive(for: tab, selected: navigationState.selectedTab)
   }
 
   @ViewBuilder

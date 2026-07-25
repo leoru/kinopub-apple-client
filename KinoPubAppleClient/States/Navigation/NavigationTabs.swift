@@ -7,12 +7,12 @@
 
 import Foundation
 
-enum NavigationTabs {
+enum NavigationTabs: Hashable {
   case search
   case home
   case movies
   case series
-  case saved
   case downloads
+  case saved
   case settings
 }

@@ -317,8 +317,8 @@ struct MediaItemHeroBackdrop: View {
   private var bottomScrim: some View {
     LinearGradient(stops: [
       .init(color: .clear, location: 0),
-      .init(color: .clear, location: 0.5),
-      .init(color: .black.opacity(0.2), location: 0.78),
+      .init(color: .clear, location: 0.2),
+      .init(color: .black.opacity(0.3), location: 0.38),
       .init(color: .black.opacity(isHeroOnScreen ? 0.35 : 0.55), location: 1)
     ], startPoint: .top, endPoint: .bottom)
   }
@@ -373,10 +373,11 @@ struct MediaItemHeroView: View {
     // The content drives the height (with a floor) rather than a fixed frame: a fixed
     // one centres anything taller than itself, and `clipped()` then eats the buttons.
     content
+#if os(tvOS)
+      // Fills the hero slideshow slide; bottom-aligned over the pinned backdrop.
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+#else
       .frame(maxWidth: .infinity, minHeight: Self.heroHeight, alignment: .bottomLeading)
-#if !os(tvOS)
-      // On tvOS the artwork is pinned behind the whole `ScrollView` at screen height;
-      // elsewhere it still scrolls with the hero.
       .background {
         ZStack {
           scrollingBackdrop
@@ -384,10 +385,6 @@ struct MediaItemHeroView: View {
         }
       }
       .clipped()
-#endif
-#if !os(tvOS)
-      // tvOS drives the fade from hero focus (see `MediaItemView`); elsewhere the
-      // hero scrolls away inside the page and geometry is what we have.
       .background(visibilityProbe)
 #endif
 #if os(tvOS)
@@ -511,13 +508,17 @@ struct MediaItemHeroView: View {
           .lineLimit(2)
 
         metadata
-
-        MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot, focus: $focus)
       }
       .heroTextShadow()
 
+      // Actions above the plot so Up from Play is a dead end → fullscreen trailer,
+      // and Down lands on the description. Plot above the row stole Up and made
+      // "focus description" feel like the trailer gesture.
       actions
         .padding(.top, Self.actionsGap)
+
+      MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot, focus: $focus)
+        .heroTextShadow()
     }
     .frame(maxWidth: Self.textMaxWidth, alignment: .leading)
   }
@@ -823,12 +824,9 @@ struct MediaItemHeroView: View {
   static let metaStyle = Color.KinoPub.text.opacity(0.85)
 
 #if os(tvOS)
-  // The artwork itself is pinned full-bleed behind the ScrollView (see
-  // `MediaItemHeroBackdrop`). This height is only the hero *content* — title,
-  // metadata, buttons — so a strip of the next section still peeks under the
-  // actions and says the page scrolls. 980 + the 44pt section gap leaves ~56pt
-  // of seasons/ratings on a 1080 screen.
-  static let heroHeight: CGFloat = 980
+  // Unused for layout — the slideshow slide sizes the hero. Kept so shared metrics
+  // below stay in one `#if` block.
+  static let heroHeight: CGFloat = 1080
   static let horizontalInset: CGFloat = 80
   static let bottomInset: CGFloat = 60
   static let contentSpacing: CGFloat = 12

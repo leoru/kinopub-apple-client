@@ -62,6 +62,7 @@ struct BookmarksView: View {
         }
         .handleError(state: $errorHandler.state)
     }
+    .navigationStackActive(for: .saved, selected: navigationState.selectedTab)
   }
   
   private func detailsView(for id: Int, knownItem: MediaItem? = nil) -> some View {

@@ -21,7 +21,7 @@ Plus one thing neither of them does: **language learning while watching** — En
 | --- | --- | --- |
 | tvOS 17+ | **Primary** | Builds and runs. Home is rebuilt; detail page and player still to go. |
 | iOS / iPadOS 16+ | Secondary | Works (inherited from upstream). Kept building, not designed for. |
-| macOS 15+ | Secondary | Works (sidebar layout). Kept building, not designed for. |
+| macOS 15+ | Secondary | Works (`.sidebarAdaptable` TabView). Kept building, not designed for. |
 
 Non-goals for now: analytics/crash reporting (Firebase has been removed), Downloads on tvOS, and any
 custom theming that fights the platform HIG.
@@ -412,7 +412,7 @@ Swift Package Manager, one app target plus four local packages:
 Inside the app target:
 
 - `App` — application lifecycle
-- `Views` — SwiftUI views grouped by feature (`Main`, `MediaItem`, `Player`, `Bookmarks`, `Downloads`, `Profile`, `Root`, `macOS`)
+- `Views` — SwiftUI views grouped by feature (`Main`, `MediaItem`, `Player`, `Bookmarks`, `Downloads`, `Profile`, `Root`, `macOS` settings)
 - `Services` — API-backed services (content, user, auth, downloads, keychain)
 - `States` — navigation, auth and error state objects
 - `Context` — `AppContext` dependency container

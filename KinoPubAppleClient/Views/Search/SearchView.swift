@@ -40,7 +40,7 @@ struct SearchView: View {
             SearchRoutesLinkProvider().link(for: item)
           },
           placeholderCount: showsPlaceholders ? Self.placeholderCount : 0,
-          emptyMessage: showsEmptyMessage ? "No resuts" : nil
+          emptyMessage: showsEmptyMessage ? "No Results" : nil
         ) {
           // Filters scroll away with the grid — pinning them above a remnant
           // GeometryReader was eating half the screen and delaying `.searchable`.
@@ -88,6 +88,7 @@ struct SearchView: View {
         await catalog.load()
       }
     }
+    .navigationStackActive(for: .search, selected: navigationState.selectedTab)
   }
 
   private var showsPlaceholders: Bool {

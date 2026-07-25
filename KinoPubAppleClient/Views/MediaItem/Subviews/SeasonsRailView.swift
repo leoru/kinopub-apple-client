@@ -33,6 +33,9 @@ struct SeasonsRailView: View {
   let seriesTitle: String
   /// False while the hero/trailer is up — season tabs stay out of the way.
   var showsChrome: Bool = true
+  /// Fired when any control in this rail takes focus, so the page can snap to the
+  /// seasons "page" and stop the outer scroll from drifting between episodes/tabs.
+  var onSectionFocused: (() -> Void)? = nil
   var onHide: ((Episode, Season) -> Void)?
   var onToggleWatched: ((Episode, Season) -> Void)?
 
@@ -104,6 +107,7 @@ struct SeasonsRailView: View {
       }
 #if os(tvOS)
       .onChange(of: focusedSeasonID) { _, seasonID in
+        if seasonID != nil { onSectionFocused?() }
         // Left/Right onto a *different* tab selects + scrolls. Re-focusing the already
         // selected tab (Up via the bridge) leaves the rail frozen.
         guard let seasonID, seasonID != selectedSeasonID else { return }
@@ -112,6 +116,7 @@ struct SeasonsRailView: View {
       .onChange(of: focusedEpisodeID) { _, episodeID in
         if episodeID != nil {
           episodeHadFocus = true
+          onSectionFocused?()
         }
         guard !isScrollingFromTab,
               let episodeID,
@@ -120,6 +125,7 @@ struct SeasonsRailView: View {
       }
       .onChange(of: bridgeFocused) { _, focused in
         guard focused else { return }
+        onSectionFocused?()
         if episodeHadFocus {
           // Up from the rail → selected season tab, do not scroll.
           episodeHadFocus = false

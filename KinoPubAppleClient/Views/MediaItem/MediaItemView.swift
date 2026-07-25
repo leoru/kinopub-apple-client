@@ -19,6 +19,26 @@ enum MediaItemFocusTarget: Hashable {
   case heroOther
 }
 
+#if os(tvOS)
+/// Outer vertical slideshow: exactly two full-screen slides. The focus engine never
+/// owns this axis — we offset between them — so walking Play ↔ plot ↔ buttons cannot
+/// nudge the page by a few pixels.
+private enum MediaItemSlide {
+  case hero
+  case content
+}
+
+/// Anchors inside the content slide's own `ScrollView`. `.top` is the first band
+/// (seasons, or ratings on a movie) and stays pinned while focus walks inside it.
+enum MediaItemContentAnchor: String, Hashable {
+  case top
+  case ratings
+  case cast
+  case similar
+  case info
+}
+#endif
+
 struct MediaItemView: View {
 
   @EnvironmentObject var errorHandler: ErrorHandler
@@ -30,6 +50,11 @@ struct MediaItemView: View {
   /// False once focus has left the hero — pauses the trailer and, on tvOS, fades
   /// the pinned wide/trailer layer down to the blurred poster wash.
   @State private var isHeroOnScreen = true
+#if os(tvOS)
+  @State private var slide: MediaItemSlide = .hero
+  @State private var contentAnchor: MediaItemContentAnchor = .top
+  @State private var contentSnapToken: Int = 0
+#endif
 
   /// The content arrives after the first render, so the focus engine has nothing to
   /// focus when the page appears — this names a hero control as where focus belongs
@@ -82,12 +107,10 @@ struct MediaItemView: View {
       trailer.start(url: url)
     }
 #if os(tvOS)
-    // Focus, not geometry: a half-hero visibility threshold left the trailer
-    // running under a focused episode rail. Any control below the hero is
-    // untagged, so Down clears this and fades — seasons, ratings, or whatever
-    // comes first.
     .onChange(of: focus) { newFocus in
-      isHeroOnScreen = newFocus != nil
+      if newFocus != nil {
+        showHeroSlide()
+      }
     }
 #endif
     .onChange(of: isHeroOnScreen) { onScreen in
@@ -99,7 +122,149 @@ struct MediaItemView: View {
     .handleError(state: $errorHandler.state)
   }
 
+  @ViewBuilder
   private var details: some View {
+#if os(tvOS)
+    if itemModel.itemLoaded {
+      slideshow
+    } else {
+      Color.clear
+    }
+#else
+    legacyScrollDetails
+#endif
+  }
+
+#if os(tvOS)
+  /// Two full-viewport slides stacked vertically; we offset between them. The content
+  /// slide owns a nested `ScrollView` that always opens at its top — seasons/episodes
+  /// never fight the hero for a few pixels of focus scrolling.
+  private var slideshow: some View {
+    GeometryReader { geo in
+      let size = geo.size
+
+      VStack(spacing: 0) {
+        heroSlide
+          .frame(width: size.width, height: size.height)
+          .focusSection()
+
+        contentSlide
+          .frame(width: size.width, height: size.height)
+          .focusSection()
+      }
+      .offset(y: slide == .hero ? 0 : -size.height)
+      .frame(width: size.width, height: size.height, alignment: .top)
+      .clipped()
+      .animation(.easeOut(duration: 0.3), value: slide)
+    }
+    .defaultFocus($focus, .play)
+  }
+
+  private var heroSlide: some View {
+    MediaItemHeroView(mediaItem: itemModel.mediaItem,
+                      focus: $focus,
+                      trailer: trailer,
+                      isHeroOnScreen: $isHeroOnScreen,
+                      linkProvider: itemModel.linkProvider,
+                      isWatched: itemModel.isWatched,
+                      isBookmarked: itemModel.isBookmarked,
+                      folders: itemModel.folders,
+                      folderIDsContainingItem: itemModel.folderIDsContainingItem,
+                      onWatchedToggle: { itemModel.toggleWatched() },
+                      onFolderToggle: { itemModel.toggleFolder($0) })
+  }
+
+  private var contentSlide: some View {
+    ScrollViewReader { proxy in
+      ScrollView(.vertical) {
+        VStack(alignment: .leading, spacing: MediaItemLayout.sectionSpacing) {
+          // Zero-height pin so the first band (seasons *or* ratings) shares one
+          // stable top anchor — focusing tabs vs episodes can't pick different pads.
+          Color.clear
+            .frame(height: 0)
+            .id(MediaItemContentAnchor.top)
+
+          if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
+            SeasonsRailView(seasons: seasons,
+                            linkProvider: itemModel.linkProvider,
+                            seriesTitle: itemModel.mediaItem.localizedTitle,
+                            showsChrome: true,
+                            onSectionFocused: { activateContent(.top) },
+                            onHide: { episode, season in
+                              itemModel.hide(episode: episode, season: season)
+                            },
+                            onToggleWatched: { episode, season in
+                              itemModel.toggleWatched(episode: episode, season: season)
+                            })
+          }
+
+          MediaItemRatingsSection(mediaItem: itemModel.mediaItem,
+                                  showsHeader: true,
+                                  onSectionFocused: {
+                                    activateContent(hasSeasons ? .ratings : .top)
+                                  })
+            .id(MediaItemContentAnchor.ratings)
+
+          MediaItemCastSection(mediaItem: itemModel.mediaItem,
+                               linkProvider: itemModel.linkProvider,
+                               onSectionFocused: { activateContent(.cast) })
+            .id(MediaItemContentAnchor.cast)
+
+          MediaItemSimilarSection(items: itemModel.similarItems,
+                                  linkProvider: itemModel.linkProvider,
+                                  onSectionFocused: { activateContent(.similar) })
+            .id(MediaItemContentAnchor.similar)
+
+          MediaItemInfoColumns(mediaItem: itemModel.mediaItem,
+                               onSectionFocused: { activateContent(.info) })
+            .id(MediaItemContentAnchor.info)
+        }
+        .padding(.top, MediaItemLayout.sectionSpacing)
+        .padding(.bottom, MediaItemLayout.sectionSpacing)
+      }
+      .onChange(of: contentSnapToken) { _ in
+        snapContent(proxy: proxy)
+      }
+    }
+  }
+
+  private var hasSeasons: Bool {
+    !(itemModel.mediaItem.seasons?.isEmpty ?? true)
+  }
+
+  private func showHeroSlide() {
+    slide = .hero
+    isHeroOnScreen = true
+  }
+
+  /// Flip to the content slide (if needed) and pin its inner scroll to `anchor`.
+  private func activateContent(_ anchor: MediaItemContentAnchor) {
+    let slideChanged = slide != .content
+    let anchorChanged = contentAnchor != anchor
+    slide = .content
+    isHeroOnScreen = false
+    contentAnchor = anchor
+    // Re-snap while parked on `.top` so episode/tab focus can't drift; later
+    // sections only snap when entered.
+    if slideChanged || anchorChanged || anchor == .top {
+      contentSnapToken &+= 1
+    }
+  }
+
+  private func snapContent(proxy: ScrollViewProxy) {
+    let anchor: UnitPoint = contentAnchor == .info ? .bottom : .top
+    let target: MediaItemContentAnchor = contentAnchor
+    Task { @MainActor in
+      try? await Task.sleep(for: .milliseconds(16))
+      withAnimation(.easeOut(duration: 0.25)) {
+        proxy.scrollTo(target, anchor: anchor)
+      }
+    }
+  }
+#endif
+
+#if !os(tvOS)
+  private var legacyScrollDetails: some View {
     ScrollView(.vertical) {
       VStack(alignment: .leading, spacing: MediaItemLayout.sectionSpacing) {
         if itemModel.itemLoaded {
@@ -121,7 +286,7 @@ struct MediaItemView: View {
             SeasonsRailView(seasons: seasons,
                             linkProvider: itemModel.linkProvider,
                             seriesTitle: itemModel.mediaItem.localizedTitle,
-                            showsChrome: !isHeroOnScreen,
+                            showsChrome: true,
                             onHide: { episode, season in
                               itemModel.hide(episode: episode, season: season)
                             },
@@ -130,24 +295,17 @@ struct MediaItemView: View {
                             })
           }
 
-          MediaItemRatingsSection(mediaItem: itemModel.mediaItem,
-                                  showsHeader: !isHeroOnScreen)
+          MediaItemRatingsSection(mediaItem: itemModel.mediaItem, showsHeader: true)
           MediaItemCastSection(mediaItem: itemModel.mediaItem, linkProvider: itemModel.linkProvider)
-          // Before Information: on tvOS focus walks section by section, and a nested
-          // horizontal row past the info columns was effectively unreachable.
           MediaItemSimilarSection(items: itemModel.similarItems, linkProvider: itemModel.linkProvider)
           MediaItemInfoColumns(mediaItem: itemModel.mediaItem)
         }
       }
       .padding(.bottom, MediaItemLayout.sectionSpacing)
     }
-    // Named so the hero can measure itself against the visible frame rather than
-    // against the whole scrollable content.
     .coordinateSpace(name: MediaItemLayout.scrollSpace)
-#if os(tvOS)
-    .defaultFocus($focus, .play)
-#endif
   }
+#endif
 
   /// On tvOS the loaded page pins a small-poster wash plus the wide/trailer hero
   /// layer behind the scroll view; elsewhere — and while details are still in
@@ -210,6 +368,32 @@ struct MediaItemView: View {
   /// Covers a 1080p screen with margin to spare; there is no detail here to misalign.
   private static let ambientScale: CGFloat = 14
 }
+
+#if os(tvOS)
+/// Reports when a control inside a detail section takes focus, so the page can snap
+/// to that section without each call site wiring `@Environment(\.isFocused)`.
+struct MediaItemSectionFocusReporter: ViewModifier {
+  let onSectionFocused: () -> Void
+  @Environment(\.isFocused) private var isFocused
+
+  func body(content: Content) -> some View {
+    content.onChange(of: isFocused) { focused in
+      if focused { onSectionFocused() }
+    }
+  }
+}
+
+extension View {
+  @ViewBuilder
+  func reportMediaItemSectionFocus(_ handler: (() -> Void)?) -> some View {
+    if let handler {
+      modifier(MediaItemSectionFocusReporter(onSectionFocused: handler))
+    } else {
+      self
+    }
+  }
+}
+#endif
 
 struct MediaItemView_Previews: PreviewProvider {
   struct Preview: View {

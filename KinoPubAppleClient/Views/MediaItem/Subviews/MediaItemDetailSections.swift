@@ -17,6 +17,7 @@ struct MediaItemRatingsSection: View {
   /// Hidden while the hero/trailer owns the page — same chrome gate as season tabs,
   /// so "Ratings" doesn't caption the wide art peeking under the hero.
   var showsHeader: Bool = true
+  var onSectionFocused: (() -> Void)? = nil
 
   private struct Score: Identifiable {
     let id: String
@@ -93,6 +94,9 @@ struct MediaItemRatingsSection: View {
       tileContent(score)
     }
     .buttonStyle(RatingTileButtonStyle())
+#if os(tvOS)
+    .reportMediaItemSectionFocus(onSectionFocused)
+#endif
   }
 
   /// The number carries the tile, so it is left to stand on its own: no "/ 10"
@@ -184,6 +188,7 @@ struct MediaItemCastSection: View {
 
   let mediaItem: MediaItem
   let linkProvider: NavigationLinkProvider
+  var onSectionFocused: (() -> Void)? = nil
 
   private var people: [MediaPerson] {
     mediaItem.directorNames.map { MediaPerson(name: $0, role: .director) }
@@ -202,6 +207,9 @@ struct MediaItemCastSection: View {
                 portrait(person)
               }
               .buttonStyle(PortraitButtonStyle())
+#if os(tvOS)
+              .reportMediaItemSectionFocus(onSectionFocused)
+#endif
             }
           }
           .padding(.horizontal, MediaItemLayout.horizontalInset)
@@ -287,6 +295,7 @@ struct MediaItemSimilarSection: View {
 
   let items: [MediaItem]
   let linkProvider: NavigationLinkProvider
+  var onSectionFocused: (() -> Void)? = nil
 
   var body: some View {
     if !items.isEmpty {
@@ -302,6 +311,7 @@ struct MediaItemSimilarSection: View {
 #if os(tvOS)
               // Same native parallax focus effect as the catalog rows.
               .buttonStyle(.borderless)
+              .reportMediaItemSectionFocus(onSectionFocused)
 #else
               .buttonStyle(MediaCardButtonStyle())
 #endif
@@ -339,6 +349,7 @@ struct MediaItemSimilarSection: View {
 struct MediaItemInfoColumns: View {
 
   let mediaItem: MediaItem
+  var onSectionFocused: (() -> Void)? = nil
 
   private static let maxSubtitleLanguages = 6
 
@@ -439,12 +450,13 @@ struct MediaItemInfoColumns: View {
   }
 
   private var columnViews: some View {
-    ForEach(columns) { ColumnView(column: $0) }
+    ForEach(columns) { ColumnView(column: $0, onSectionFocused: onSectionFocused) }
   }
 
   private struct ColumnView: View {
 
     let column: Column
+    var onSectionFocused: (() -> Void)? = nil
 
     @State private var showsFullText = false
 
@@ -465,6 +477,9 @@ struct MediaItemInfoColumns: View {
         .frame(width: MediaItemInfoColumns.columnWidth, alignment: .leading)
       }
       .buttonStyle(ExpandableButtonStyle())
+#if os(tvOS)
+      .reportMediaItemSectionFocus(onSectionFocused)
+#endif
       .sheet(isPresented: $showsFullText) {
         MediaItemDetailSheet(title: Text(LocalizedStringKey(column.id))) {
           VStack(alignment: .leading, spacing: 12) {
@@ -573,13 +588,17 @@ private struct PlotFullHeightKey: PreferenceKey {
 }
 
 /// The synopsis, clamped to a few lines and focusable as a single control. Selecting
-/// it opens the full text, rather than expanding in place and pushing the artwork
-/// around.
+/// it opens the full text when truncated, rather than expanding in place and pushing
+/// the artwork around.
+///
+/// On tvOS it always takes focus (below the action row): Down from Play lands here,
+/// Up from here returns to Play, and Up from Play — with nothing above — opens the
+/// fullscreen trailer. Off tvOS it is only a button when there is more to read.
 struct MediaItemPlotView: View {
 
   let title: String
   let plot: String
-  /// Shared with the other hero controls so focusing "More" does not count as
+  /// Shared with the other hero controls so focusing the plot does not count as
   /// leaving the hero (and killing the trailer).
   @FocusState.Binding var focus: MediaItemFocusTarget?
 
@@ -611,12 +630,20 @@ struct MediaItemPlotView: View {
       .onPreferenceChange(PlotFullHeightKey.self) { fullHeight = $0 }
   }
 
-  /// A focusable, openable control only when there is more to read. When the whole plot
-  /// fits it is plain text: no "More", and — the part that matters on tvOS — not a
-  /// button, so it does not sit in the page as a focus stop that opens a sheet showing
-  /// exactly what is already on screen.
   @ViewBuilder
   private var content: some View {
+#if os(tvOS)
+    Button {
+      if isTruncated { showsFullText = true }
+    } label: {
+      paragraph(showsMore: isTruncated)
+    }
+    .buttonStyle(ExpandableButtonStyle())
+    .focused($focus, equals: .heroOther)
+    .sheet(isPresented: $showsFullText) {
+      plotSheet
+    }
+#else
     if isTruncated {
       Button {
         showsFullText = true
@@ -626,15 +653,20 @@ struct MediaItemPlotView: View {
       .buttonStyle(ExpandableButtonStyle())
       .focused($focus, equals: .heroOther)
       .sheet(isPresented: $showsFullText) {
-        MediaItemDetailSheet(title: Text(title)) {
-          Text(plot)
-            .font(MediaItemSheetLayout.bodyFont)
-            .foregroundStyle(Color.KinoPub.text)
-            .multilineTextAlignment(.leading)
-        }
+        plotSheet
       }
     } else {
       paragraph(showsMore: false)
+    }
+#endif
+  }
+
+  private var plotSheet: some View {
+    MediaItemDetailSheet(title: Text(title)) {
+      Text(plot)
+        .font(MediaItemSheetLayout.bodyFont)
+        .foregroundStyle(Color.KinoPub.text)
+        .multilineTextAlignment(.leading)
     }
   }
 

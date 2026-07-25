@@ -21,7 +21,7 @@ public struct ToastContentView: View {
       .padding(.horizontal, 16)
       .padding(.vertical, 16)
       .foregroundColor(Color.white)
-      .background(Color.KinoPub.accentRed)
+      .background(Color.KinoPub.background)
       .cornerRadius(16)
       .frame(minHeight: 60)
   }

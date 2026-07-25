@@ -112,6 +112,7 @@ struct ProfileView: View {
         )
       }
     }
+    .navigationStackActive(for: .settings, selected: navigationState.selectedTab)
 #endif
   }
 

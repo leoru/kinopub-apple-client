@@ -23,22 +23,13 @@ struct RootView: View {
         AuthView(model: AuthModel(authService: appContext.authService, authState: authState))
           .transition(.opacity)
       } else {
-        content
+        TabsNavigationView()
       }
     }
     .animation(.default, value: authState.shouldShowAuthentication)
     .task {
       await authState.check()
     }
-  }
-
-  @ViewBuilder
-  private var content: some View {
-#if os(iOS) || os(tvOS)
-    TabsNavigationView()
-#elseif os(macOS)
-    SidebarView()
-#endif
   }
 }
 

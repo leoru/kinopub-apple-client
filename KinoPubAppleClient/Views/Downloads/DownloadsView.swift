@@ -49,7 +49,7 @@ struct DownloadsView: View {
         catalog.refresh()
       })
     }
-    
+    .navigationStackActive(for: .downloads, selected: navigationState.selectedTab)
   }
   
   var downloadsList: some View {

@@ -23,7 +23,7 @@ struct MainView: View {
   var body: some View {
     NavigationStack(path: $navigationState.mainRoutes) {
       rowsView
-        .platformNavigationTitle("Main")
+        .platformNavigationTitle("Home")
 
 #if os(tvOS)
         .background(.ultraThickMaterial)
@@ -66,6 +66,7 @@ struct MainView: View {
           await catalog.fetch()
         }
     }
+    .navigationStackActive(for: .home, selected: navigationState.selectedTab)
   }
 
   private func detailsView(for id: Int, knownItem: MediaItem? = nil) -> some View {
