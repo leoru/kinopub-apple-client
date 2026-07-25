@@ -49,7 +49,7 @@ struct HistoryView: View {
     }
   }
 
-  private static func cards(from history: [HistoryEntry]) -> [MediaCard] {
+  static func cards(from history: [HistoryEntry]) -> [MediaCard] {
     // One card per title, newest play first — matches Continue Watching's collapse.
     var seen = Set<Int>()
     var result: [MediaCard] = []

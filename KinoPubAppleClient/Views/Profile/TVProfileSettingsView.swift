@@ -43,7 +43,7 @@ struct TVProfileSettingsView: View {
   private var rootPage: some View {
     SettingsSplitLayout(
       title: nil,
-      pageSymbol: "gearshape.fill",
+      pageSymbol: "gear",
       tipKey: tip.messageKey
     ) {
       accountSection

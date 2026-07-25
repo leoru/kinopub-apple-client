@@ -107,7 +107,13 @@ struct MainView: View {
         onToggleWatched: { catalog.toggleWatched(card) },
         onGoToTitle: { navigationState.mainRoutes.append(.detailsById(card.itemID)) },
         onBrowseHistory: { navigationState.mainRoutes.append(.history) },
-        onBrowseWatchlist: { navigationState.selectedTab = .watchlist }
+        onBrowseWatchlist: {
+#if os(macOS)
+          navigationState.selectedTab = .watchlist
+#else
+          navigationState.selectedTab = .library
+#endif
+        }
       )
     })
 #if !os(tvOS)

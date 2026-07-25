@@ -15,10 +15,38 @@ class NavigationState: ObservableObject {
   @Published var searchRoutes: [SearchRoutes] = []
   @Published var moviesRoutes: [CatalogRoutes] = []
   @Published var seriesRoutes: [CatalogRoutes] = []
+  @Published var libraryRoutes: [BookmarksRoutes] = []
   @Published var watchlistRoutes: [BookmarksRoutes] = []
   @Published var recentlyWatchedRoutes: [MainRoutes] = []
   @Published var bookmarksRoutes: [BookmarksRoutes] = []
   @Published var downloadsRoutes: [DownloadsRoutes] = []
+
+  /// Clears the selected tab's stack so a second click on the same sidebar/tab
+  /// item returns to that tab's root (Apple Music / Apple TV behaviour).
+  func popToRoot(for tab: NavigationTabs) {
+    switch tab {
+    case .search:
+      searchRoutes = []
+    case .home:
+      mainRoutes = []
+    case .movies:
+      moviesRoutes = []
+    case .series:
+      seriesRoutes = []
+    case .library:
+      libraryRoutes = []
+    case .watchlist:
+      watchlistRoutes = []
+    case .recentlyWatched:
+      recentlyWatchedRoutes = []
+    case .bookmarks, .bookmark:
+      bookmarksRoutes = []
+    case .downloads:
+      downloadsRoutes = []
+    case .settings:
+      break
+    }
+  }
 }
 
 extension View {

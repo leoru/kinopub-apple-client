@@ -12,11 +12,13 @@ enum NavigationTabs: Hashable {
   case home
   case movies
   case series
+  /// Combined Watchlist + History + Bookmarks (tvOS / iOS / iPad).
+  case library
   case watchlist
   case recentlyWatched
   case downloads
   case bookmarks
-  /// A bookmark folder pinned as its own sidebar tab.
+  /// A bookmark folder pinned as its own sidebar tab (macOS).
   case bookmark(Int)
   case settings
 }

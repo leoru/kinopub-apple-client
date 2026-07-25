@@ -77,32 +77,23 @@ public struct MediaRowsView: View {
 
   public var body: some View {
 #if os(tvOS)
-    if showsFeaturedPreview {
-      // The remote should land on the first card of the first row so the hero above has
-      // something to show. `.defaultFocus` alone does not do it: the rows arrive after the
-      // screen does, and by then the tab bar already holds focus — so claim it once the
-      // first card actually exists.
-      scroll
-        .background(featuredBackground)
-        .defaultFocus($focusedCard, firstCardKey, priority: .userInitiated)
-        .onChange(of: focusedCard) { _, newValue in
-          // Nil means focus went to the tab bar or a pushed screen; keep the artwork.
-          if let newValue { backdropCard = newValue }
-        }
-        .task {
-          guard !hasClaimedFocus, let firstCardKey else { return }
-          // The stack is lazy — the card is not there to focus on the same runloop pass.
-          try? await Task.sleep(for: .milliseconds(120))
-          guard !Task.isCancelled, focusedCard == nil else { return }
-          focusedCard = firstCardKey
-          hasClaimedFocus = true
-        }
-    } else {
-      // No hero to feed, so no reason to steal focus from the tab bar: let the remote rest
-      // there by default, the way a plain rows screen should.
-      scroll
-        .background(featuredBackground)
-    }
+    // Always hand the remote the first card once rows exist — otherwise the sidebar
+    // keeps focus on launch. Featured preview also needs that focus to drive artwork.
+    scroll
+      .background(featuredBackground)
+      .defaultFocus($focusedCard, firstCardKey, priority: .userInitiated)
+      .onChange(of: focusedCard) { _, newValue in
+        // Nil means focus went to the tab bar or a pushed screen; keep the artwork.
+        if let newValue { backdropCard = newValue }
+      }
+      .task {
+        guard !hasClaimedFocus, let firstCardKey else { return }
+        // The stack is lazy — the card is not there to focus on the same runloop pass.
+        try? await Task.sleep(for: .milliseconds(120))
+        guard !Task.isCancelled, focusedCard == nil else { return }
+        focusedCard = firstCardKey
+        hasClaimedFocus = true
+      }
 #else
     scroll
 #endif

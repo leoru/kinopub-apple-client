@@ -83,9 +83,13 @@ open KinoPubAppleClient.xcodeproj
   screen from the first frame (filters scroll with the grid, not pinned above it), so the remote
   always has somewhere to land; real cards replace the tiles when the page arrives.
 - **Navigation chrome is a shared system `TabView` + `.sidebarAdaptable`** (`TabsNavigationView`):
-  sidebar on Mac/TV, bottom tabs on iPhone. Music-style IA — browse (Search, For You, Movies,
-  Series), personal (Watchlist, Recently Watched, Downloads), Bookmarks (overview + folder tabs),
-  and a sidebar footer (avatar + name) that opens Settings.
+  sidebar on Mac/TV, bottom tabs on iPhone.
+  - **tvOS:** flat tabs (no sections) — profile at the top, then Search, For You, Movies, Series,
+    Library (watchlist + history + bookmarks). Circular icon underlays; focus lands on content,
+    not the sidebar. Re-selecting a tab pops that tab's stack to root.
+  - **iOS / iPad:** same Library merge; Downloads stays its own tab.
+  - **macOS:** sidebar sections (Browse / Library / Folders) with `TabViewCustomization`, profile
+    in the sidebar footer.
 
 ## Known issues / half-finished
 
