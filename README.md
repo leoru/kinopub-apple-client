@@ -120,14 +120,13 @@ These are real, verified, and up for grabs:
   going through the item page) never had the series name to begin with, so the player falls back to the
   episode's own title there. Plumbing it through means widening `Season`/`Routes.season` — a bigger,
   shared-navigation change than a punch-list fix.
-- **Default audio-track ranking reads the option's display name, not real channel data.**
-  `AVMediaSelectionOption` exposes no channel count before the asset loads, so `AudioTrackRanker` in
-  `PlayerManager.swift` parses "5.1" / "стерео" etc. out of the label kino.pub already puts there. Works
-  for the labels seen so far; an HLS stream whose dub descriptions don't follow that convention falls
-  back to kind + Russian-first ranking alone. The API *does* carry real `channels`/`codec` per track
-  (`Video.audios` / `Episode.audios`), but matching those to an `AVMediaSelectionOption` is only reliable
-  by position, which the HLS spec doesn't guarantee — so the label parse stays until the Stream survey
-  says whether a positional match holds.
+- **Default audio-track ranking shares its ladder with the detail-page Audio column**
+  (`AudioTracks` in KinoPubBackend): preferred languages, then A–Z, AD last, kind
+  (DUB → MVO → DVO → VO → AVO → Orig), studio A–Z, more channels first. The player still has to
+  parse kind / studio / channels out of `AVMediaSelectionOption.displayName` because the option
+  exposes no channel count before the asset loads and matching API `Video.audios` by HLS position
+  is not guaranteed. An HLS stream whose dub labels skip that convention falls back to language +
+  kind alone.
 - **Stream survey (DEBUG).** Settings → Diagnostics → Stream survey walks ~40 catalogue items and reports
   what kino.pub actually delivers vs. what the API claims: delivered `hls4` `CODECS`/`CHANNELS`/`VIDEO-RANGE`
   against source `FileInfo.codec` / `VideoAudio`, each codec flagged for AVFoundation playability. Built to

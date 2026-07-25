@@ -66,25 +66,14 @@ public extension MediaItem {
     return Self.uniqueLanguageNames(langs)
   }
 
-  /// Audio tracks as "Русский — Дубляж (Flarrow Films)".
+  /// Audio tracks as "Русский — Дубляж (Flarrow Films)", ordered like the system
+  /// audio picker: preferred languages, then A–Z, kind, studio.
   var audioTrackDescriptions: [String] {
     if let audios = videos?.first?.audios, !audios.isEmpty {
-      return audios.map { Self.describe(lang: $0.lang, type: $0.type?.title, author: $0.author?.title) }
+      return AudioTracks.descriptions(for: AudioTracks.catalog(audios))
     }
     let episodeAudios = seasons?.first?.episodes.first?.audios ?? []
-    return episodeAudios.map { Self.describe(lang: $0.lang, type: $0.type?.title, author: $0.author?.title) }
-  }
-
-  private static func describe(lang: String, type: String?, author: String?) -> String {
-    var parts = [LanguageNames.name(for: lang)]
-    if let type, !type.isEmpty {
-      parts.append(type)
-    }
-    var line = parts.joined(separator: " — ")
-    if let author, !author.isEmpty {
-      line += " (\(author))"
-    }
-    return line
+    return AudioTracks.descriptions(for: AudioTracks.catalog(episodeAudios))
   }
 
   private static func splitNames(_ raw: String) -> [String] {

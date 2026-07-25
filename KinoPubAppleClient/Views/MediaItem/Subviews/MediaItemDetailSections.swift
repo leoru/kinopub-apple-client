@@ -357,7 +357,7 @@ struct MediaItemInfoColumns: View {
 
   private struct Row: Identifiable {
     let id: Int
-    /// Nil for the audio tracks, which are a numbered list rather than a table.
+    /// Nil for the audio tracks, which are a plain list rather than a table.
     let key: String?
     let value: String
   }
@@ -414,7 +414,7 @@ struct MediaItemInfoColumns: View {
 
   private var audioRows: [Row] {
     mediaItem.audioTrackDescriptions.enumerated().map { index, track in
-      Row(id: index, key: nil, value: "\(index + 1). \(track)")
+      Row(id: index, key: nil, value: track)
     }
   }
 

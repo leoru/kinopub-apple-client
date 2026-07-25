@@ -584,71 +584,42 @@ enum AudioTrackMemory {
 
 /// Picks a sensible default audio rendition when nothing was remembered.
 ///
-/// kino.pub labels every dub in the option's display name — its kind (дубляж / многоголосый
-/// / двухголосый / одноголосый / оригинал) and often the studio. We read that label and
-/// rank Russian first, then by kind, then by channel count, then a named studio over an
-/// anonymous one. Latin spellings are recognised alongside the Cyrillic ones.
+/// Same ladder as the detail-page Audio column (`AudioTracks`): preferred languages,
+/// then A–Z, AD last within a language, kind (DUB → MVO → DVO → VO → AVO → Orig),
+/// studio A–Z, more channels first. The option's display name carries kind and studio;
+/// language comes from the option's locale / tag.
 enum AudioTrackRanker {
 
-  static func best(in options: [AVMediaSelectionOption]) -> AVMediaSelectionOption? {
-    options.max { lhs, rhs in rank(lhs) < rank(rhs) }
-  }
-
-  private struct Rank: Comparable {
-    let isRussian: Bool
-    let kind: Int
-    let channels: Int
-    let hasStudio: Bool
-
-    static func < (l: Rank, r: Rank) -> Bool {
-      if l.isRussian != r.isRussian { return !l.isRussian && r.isRussian }
-      if l.kind != r.kind { return l.kind < r.kind }
-      if l.channels != r.channels { return l.channels < r.channels }
-      if l.hasStudio != r.hasStudio { return !l.hasStudio && r.hasStudio }
-      return false
+  static func best(in options: [AVMediaSelectionOption],
+                   preferredLanguages: [String] = Locale.preferredLanguages) -> AVMediaSelectionOption? {
+    options.min { lhs, rhs in
+      sortKey(lhs, preferredLanguages: preferredLanguages)
+        < sortKey(rhs, preferredLanguages: preferredLanguages)
     }
   }
 
-  private static func rank(_ option: AVMediaSelectionOption) -> Rank {
-    let name = option.displayName.lowercased()
-    let langTag = (option.extendedLanguageTag ?? "").lowercased()
-    let langCode = option.locale?.language.languageCode?.identifier.lowercased() ?? ""
-    return Rank(isRussian: isRussian(name: name, langTag: langTag, langCode: langCode),
-                kind: kindScore(name),
-                channels: channelScore(name),
-                hasStudio: hasStudio(name))
+  private static func sortKey(_ option: AVMediaSelectionOption,
+                              preferredLanguages: [String]) -> AudioTracks.SortKey {
+    let name = option.displayName
+    let lang = languageCode(for: option)
+    return AudioTracks.sortKey(
+      lang: lang,
+      typeTitle: name,
+      author: AudioTracks.authorFromDisplayName(name),
+      channels: AudioTracks.channelCount(fromLabel: name),
+      isAudioDescription: option.hasMediaCharacteristic(.describesVideoForAccessibility),
+      index: 0,
+      preferredLanguages: preferredLanguages
+    )
   }
 
-  private static func isRussian(name: String, langTag: String, langCode: String) -> Bool {
-    if langCode == "ru" || langTag.hasPrefix("ru") { return true }
-    return name.contains("рус") || name.contains("rus") || name.contains("russian")
-  }
-
-  /// Higher wins. Dubbing over a full cast over two voices over one; original is last so
-  /// a lone Russian voice-over still beats the untranslated track.
-  private static func kindScore(_ name: String) -> Int {
-    if name.contains("дубляж") || name.contains("дублир")
-        || name.contains("dubbed") || name.contains("dub") { return 5 }
-    if name.contains("многоголос") || name.contains("multi") || name.contains("mvo") { return 4 }
-    if name.contains("двухголос") || name.contains("two") || name.contains("dvo") { return 3 }
-    if name.contains("одноголос") || name.contains("single") || name.contains("ovo") { return 2 }
-    if name.contains("оригинал") || name.contains("original") { return 1 }
-    return 0
-  }
-
-  /// Best-effort channel count read off the label ("5.1", "стерео", "mono").
-  private static func channelScore(_ name: String) -> Int {
-    if name.contains("7.1") { return 8 }
-    if name.contains("5.1") { return 6 }
-    if name.contains("2.0") || name.contains("стерео") || name.contains("stereo") { return 2 }
-    if name.contains("mono") || name.contains("моно") { return 1 }
-    return 2
-  }
-
-  /// A named studio usually appears in parentheses ("(LostFilm)"); an anonymous track
-  /// has none. Not perfect, but it breaks ties toward the labelled release.
-  private static func hasStudio(_ name: String) -> Bool {
-    name.contains("(") && name.contains(")")
+  private static func languageCode(for option: AVMediaSelectionOption) -> String {
+    if let code = option.locale?.language.languageCode?.identifier, !code.isEmpty {
+      return code
+    }
+    let tag = option.extendedLanguageTag ?? ""
+    if !tag.isEmpty { return tag }
+    return option.displayName
   }
 }
 
