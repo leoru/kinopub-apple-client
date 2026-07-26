@@ -18,14 +18,15 @@ class LibraryCatalog: ObservableObject {
   /// True while the first page is on its way. Starts `true` so Search can paint
   /// its placeholder grid on the first frame; paging further down never sets it.
   @Published public private(set) var isLoading: Bool = true
+  /// True after the first page fails — person (and similar) screens show retry UI.
+  @Published public private(set) var loadFailed: Bool = false
   @Published public var query: String = ""
   @Published public var filter: LibraryFilter = LibraryFilter()
 
   /// Picker contents, loaded once the user is authorized.
   @Published public private(set) var genres: [MediaGenre] = []
   @Published public private(set) var countries: [Country] = []
-
-  private var pagination: Pagination?
+  @Published public private(set) var pagination: Pagination?
   private var authState: AuthState
   private var errorHandler: ErrorHandler
   private var itemsService: VideoContentService
@@ -72,9 +73,14 @@ class LibraryCatalog: ObservableObject {
         data = try await itemsService.fetchItems(filter: filter, page: page)
       }
       handle(data, isFirstPage: isFirstPage)
+      loadFailed = false
     } catch {
       Logger.app.error("Library fetch failed: \(error)")
       errorHandler.setError(error)
+      if isFirstPage {
+        items = []
+        loadFailed = true
+      }
     }
   }
 
@@ -105,6 +111,7 @@ class LibraryCatalog: ObservableObject {
 
   func refresh() async {
     isLoading = true
+    loadFailed = false
     items = []
     pagination = nil
     errorHandler.reset()

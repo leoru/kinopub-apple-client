@@ -12,6 +12,8 @@ public struct LoadFailedView: View {
   private let message: LocalizedStringKey
   private let retryTitle: LocalizedStringKey
   private let onRetry: () -> Void
+  private let secondaryTitle: LocalizedStringKey?
+  private let onSecondary: (() -> Void)?
 
   @FocusState private var retryFocused: Bool
 
@@ -19,12 +21,16 @@ public struct LoadFailedView: View {
     title: LocalizedStringKey = "Couldn't Load",
     message: LocalizedStringKey = "Check your connection and try again.",
     retryTitle: LocalizedStringKey = "Try Again",
-    onRetry: @escaping () -> Void
+    onRetry: @escaping () -> Void,
+    secondaryTitle: LocalizedStringKey? = nil,
+    onSecondary: (() -> Void)? = nil
   ) {
     self.title = title
     self.message = message
     self.retryTitle = retryTitle
     self.onRetry = onRetry
+    self.secondaryTitle = secondaryTitle
+    self.onSecondary = onSecondary
   }
 
   public var body: some View {
@@ -40,8 +46,14 @@ public struct LoadFailedView: View {
         .multilineTextAlignment(.center)
         .frame(maxWidth: 480)
 
-      Button(retryTitle, action: onRetry)
-        .focused($retryFocused)
+      HStack(spacing: 16) {
+        Button(retryTitle, action: onRetry)
+          .focused($retryFocused)
+
+        if let secondaryTitle, let onSecondary {
+          Button(secondaryTitle, action: onSecondary)
+        }
+      }
     }
     .padding(40)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
