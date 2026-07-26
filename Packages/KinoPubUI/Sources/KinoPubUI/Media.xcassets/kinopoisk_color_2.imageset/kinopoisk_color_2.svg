@@ -1,0 +1,20 @@
+<svg width="50" height="64" viewBox="0 0 50 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="mask0_3_70" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="7" width="50" height="50">
+<path d="M25 57C38.8071 57 50 45.8071 50 32C50 18.1929 38.8071 7 25 7C11.1929 7 0 18.1929 0 32C0 45.8071 11.1929 57 25 57Z" fill="white"/>
+</mask>
+<g mask="url(#mask0_3_70)">
+<path d="M25 57C38.8071 57 50 45.8071 50 32C50 18.1929 38.8071 7 25 7C11.1929 7 0 18.1929 0 32C0 45.8071 11.1929 57 25 57Z" fill="black"/>
+<path d="M52.0312 15.5L25.7039 29.3045L39.4239 15.5H31.8187L22.4781 28.2005V15.5H16.302V50.5H22.4781V37.82L31.8187 50.5H39.4239L26.0602 37.1295L52.0312 50.5V44L28.3438 34.691L52.0312 36.25V29.75L28.4938 31.249L52.0312 22V15.5Z" fill="url(#paint0_radial_3_70)"/>
+<path opacity="0.5" d="M25 7.18359C38.7057 7.18359 49.8164 18.2943 49.8164 32C49.8164 45.7057 38.7057 56.8164 25 56.8164C11.2943 56.8164 0.183594 45.7057 0.183594 32C0.183594 18.2943 11.2943 7.18359 25 7.18359Z" stroke="url(#paint1_linear_3_70)" stroke-width="0.367347"/>
+</g>
+<defs>
+<radialGradient id="paint0_radial_3_70" cx="0" cy="0" r="1" gradientTransform="matrix(35.7292 35 -35.7292 35 16.302 15.5)" gradientUnits="userSpaceOnUse">
+<stop offset="0.5" stop-color="#FF5500"/>
+<stop offset="1" stop-color="#BBFF00"/>
+</radialGradient>
+<linearGradient id="paint1_linear_3_70" x1="25" y1="7" x2="25" y2="57" gradientUnits="userSpaceOnUse">
+<stop stop-color="#999999"/>
+<stop offset="1" stop-color="white"/>
+</linearGradient>
+</defs>
+</svg>
