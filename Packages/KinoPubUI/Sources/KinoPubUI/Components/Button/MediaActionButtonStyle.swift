@@ -7,6 +7,10 @@
 //  to black, gentle scale. Ported from Rivulet's HeroPillButton / HeroCircleButton
 //  / FocusableActionButton so detail pages share one look across clients.
 //
+//  Non-tvOS pointer: secondary controls lighten slightly on hover (no white invert —
+//  that stays focus/primary-only), press scales immediately on touch-down, and the
+//  ghost ellipsis picks up the same resting secondary plate so it is hittable.
+//
 
 import SwiftUI
 
@@ -81,10 +85,10 @@ public struct MediaActionCircleStyle: ButtonStyle {
   }
 }
 
-// MARK: - Ghost style (ellipsis — no fill until focused)
+// MARK: - Ghost style (ellipsis — no fill until focused / hovered)
 
-/// Icon-only control with no resting chrome. Background + invert appear only on focus,
-/// so it reads as a quiet overflow affordance next to the solid action pills/circles.
+/// Icon-only control with no resting chrome. Background appears on focus (tvOS) or
+/// hover (pointer platforms), matching the secondary circle so the hit target is obvious.
 public struct MediaActionGhostStyle: ButtonStyle {
   public init() {}
 
@@ -103,6 +107,7 @@ private struct MediaActionPillChrome<Content: View>: View {
   let isPressed: Bool
   @ViewBuilder let content: Content
   @Environment(\.isFocused) private var isFocused
+  @State private var isHovered = false
 
   /// On tvOS, focus lights the pill. Elsewhere the primary (Play) pill stays in the
   /// focused look permanently — that chrome is the platform's "primary" subtype.
@@ -111,6 +116,14 @@ private struct MediaActionPillChrome<Content: View>: View {
     isFocused
 #else
     isPrimary || isFocused
+#endif
+  }
+
+  private var showsHoverChrome: Bool {
+#if os(tvOS)
+    false
+#else
+    !isPrimary && isHovered && !showsFocusedChrome
 #endif
   }
 
@@ -126,18 +139,30 @@ private struct MediaActionPillChrome<Content: View>: View {
             .fill(.ultraThinMaterial)
             .opacity(showsFocusedChrome ? 0 : 1)
           Capsule(style: .continuous)
-            .fill(showsFocusedChrome ? Color.white : Color.white.opacity(0.2))
+            .fill(fillColor)
         }
       }
       .overlay {
         Capsule(style: .continuous)
-          .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
+          .strokeBorder(Color.white.opacity(showsHoverChrome ? 0.35 : 0.2), lineWidth: 0.5)
           .opacity(showsFocusedChrome ? 0 : 1)
       }
       .clipShape(Capsule(style: .continuous))
+      .shadow(color: .black.opacity(showsHoverChrome ? 0.25 : 0), radius: 8, y: 2)
       .scaleEffect(scale)
       .animation(.spring(response: 0.25, dampingFraction: 0.8), value: showsFocusedChrome)
+      .animation(.easeOut(duration: 0.15), value: isHovered)
       .animation(.spring(response: 0.15, dampingFraction: 0.9), value: isPressed)
+#if !os(tvOS)
+      .onHover { isHovered = $0 }
+      .pointingHandCursorOnHover()
+#endif
+  }
+
+  private var fillColor: Color {
+    if showsFocusedChrome { return Color.white }
+    if showsHoverChrome { return Color.white.opacity(0.32) }
+    return Color.white.opacity(0.2)
   }
 
   private var scale: CGFloat {
@@ -156,6 +181,15 @@ private struct MediaActionCircleChrome<Content: View>: View {
   let isPressed: Bool
   @ViewBuilder let content: Content
   @Environment(\.isFocused) private var isFocused
+  @State private var isHovered = false
+
+  private var showsHoverChrome: Bool {
+#if os(tvOS)
+    false
+#else
+    isHovered && !isFocused
+#endif
+  }
 
   var body: some View {
     content
@@ -167,18 +201,30 @@ private struct MediaActionCircleChrome<Content: View>: View {
             .fill(.ultraThinMaterial)
             .opacity(isFocused ? 0 : 1)
           Circle()
-            .fill(isFocused ? Color.white : Color.white.opacity(0.12))
+            .fill(fillColor)
         }
       }
       .overlay {
         Circle()
-          .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
+          .strokeBorder(Color.white.opacity(showsHoverChrome ? 0.35 : 0.2), lineWidth: 0.5)
           .opacity(isFocused ? 0 : 1)
       }
       .clipShape(Circle())
+      .shadow(color: .black.opacity(showsHoverChrome ? 0.25 : 0), radius: 8, y: 2)
       .scaleEffect(scale)
       .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isFocused)
+      .animation(.easeOut(duration: 0.15), value: isHovered)
       .animation(.spring(response: 0.15, dampingFraction: 0.9), value: isPressed)
+#if !os(tvOS)
+      .onHover { isHovered = $0 }
+      .pointingHandCursorOnHover()
+#endif
+  }
+
+  private var fillColor: Color {
+    if isFocused { return Color.white }
+    if showsHoverChrome { return Color.white.opacity(0.24) }
+    return Color.white.opacity(0.12)
   }
 
   private var scale: CGFloat {
@@ -193,20 +239,51 @@ private struct MediaActionGhostChrome<Content: View>: View {
   let isPressed: Bool
   @ViewBuilder let content: Content
   @Environment(\.isFocused) private var isFocused
+  @State private var isHovered = false
+
+  /// Hover uses the secondary circle plate — not the solid white focus invert.
+  private var showsSecondaryPlate: Bool {
+#if os(tvOS)
+    false
+#else
+    isHovered && !isFocused
+#endif
+  }
 
   var body: some View {
     content
       .foregroundStyle(isFocused ? Color.black : Color.white)
       .frame(width: MediaActionMetrics.buttonHeight, height: MediaActionMetrics.buttonHeight)
+      .contentShape(Circle())
       .background {
-        Circle()
-          .fill(Color.white)
-          .opacity(isFocused ? 1 : 0)
+        ZStack {
+          if showsSecondaryPlate {
+            Circle()
+              .fill(.ultraThinMaterial)
+            Circle()
+              .fill(Color.white.opacity(0.18))
+          }
+          Circle()
+            .fill(Color.white)
+            .opacity(isFocused ? 1 : 0)
+        }
+      }
+      .overlay {
+        if showsSecondaryPlate {
+          Circle()
+            .strokeBorder(Color.white.opacity(0.3), lineWidth: 0.5)
+        }
       }
       .clipShape(Circle())
+      .shadow(color: .black.opacity(showsSecondaryPlate ? 0.25 : 0), radius: 8, y: 2)
       .scaleEffect(scale)
       .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isFocused)
+      .animation(.easeOut(duration: 0.15), value: isHovered)
       .animation(.spring(response: 0.15, dampingFraction: 0.9), value: isPressed)
+#if !os(tvOS)
+      .onHover { isHovered = $0 }
+      .pointingHandCursorOnHover()
+#endif
   }
 
   private var scale: CGFloat {

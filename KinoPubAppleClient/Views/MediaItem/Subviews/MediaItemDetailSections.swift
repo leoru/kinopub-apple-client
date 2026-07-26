@@ -15,6 +15,10 @@ import AppKit
 
 /// Score tiles with their vote counts, the way microiptv lays them out: one per
 /// source, hidden when that source has nothing.
+///
+/// On pointer platforms a tile opens that score's page (IMDb / Kinopoisk); hover
+/// brightens the plate and shows an external-link arrow beside the service name.
+/// On tvOS the tile is only a focus stop — no outbound links on the 10-foot UI.
 struct MediaItemRatingsSection: View {
 
   let mediaItem: MediaItem
@@ -22,8 +26,9 @@ struct MediaItemRatingsSection: View {
   /// so "Ratings" doesn't caption the wide art peeking under the hero.
   var showsHeader: Bool = true
   var onSectionFocused: (() -> Void)? = nil
+  @Environment(\.openURL) private var openURL
 
-  private struct Score: Identifiable {
+  fileprivate struct Score: Identifiable {
     let id: String
     let logo: MediaScoreLogo.Source
     let value: Double
@@ -36,7 +41,7 @@ struct MediaItemRatingsSection: View {
       result.append(Score(id: "IMDb", logo: .imdb, value: imdb, votes: mediaItem.imdbVotes))
     }
     if let kp = mediaItem.kinopoiskRating, kp > 0 {
-      result.append(Score(id: "Kinopoisk", logo: .kinopoisk, value: kp, votes: mediaItem.kinopoiskVotes))
+      result.append(Score(id: "Кинопоиск", logo: .kinopoisk, value: kp, votes: mediaItem.kinopoiskVotes))
     }
     return result
   }
@@ -51,13 +56,11 @@ struct MediaItemRatingsSection: View {
 
         HStack(alignment: .top, spacing: Self.spacing) {
           ForEach(scores) { score in
-            tile(score)
+            RatingTile(score: score,
+                       url: scoreURL(score),
+                       openURL: openURL,
+                       onSectionFocused: onSectionFocused)
           }
-          // kino.pub's own thumbs up/down tally, parked until we know what it
-          // actually counts — it comes back empty on everything we have looked at.
-          //          if let votes = mediaItem.communityVotes {
-          //            communityTile(likes: votes.likes, dislikes: votes.dislikes)
-          //          }
         }
         .padding(.horizontal, MediaItemLayout.horizontalInset)
       }
@@ -65,79 +68,20 @@ struct MediaItemRatingsSection: View {
     }
   }
 
-  //  /// Shown as the tally it actually is, rather than dressed up as a score.
-  //  private func communityTile(likes: Int, dislikes: Int) -> some View {
-  //    VStack(alignment: .leading, spacing: 8) {
-  //      HStack(spacing: 16) {
-  //        Label("\(likes)", systemImage: "hand.thumbsup.fill")
-  //        Label("\(dislikes)", systemImage: "hand.thumbsdown.fill")
-  //      }
-  //      .font(Self.votesFont)
-  //      .foregroundStyle(Color.KinoPub.text)
-  //
-  //      Text("Kinopub")
-  //        .font(Self.captionFont)
-  //        .foregroundStyle(Color.KinoPub.subtitle)
-  //    }
-  //    .frame(width: Self.tileWidth, alignment: .leading)
-  //    .padding(Self.tilePadding)
-  //    .background(Color.KinoPub.selectionBackground.opacity(0.5),
-  //                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-  //  }
-
-  /// A rating is not an action, but on tvOS a row of inert tiles is a row the remote
-  /// skips over entirely — the focus engine only scrolls to what it can focus. So each
-  /// tile is a control: it lifts under focus like the cast portraits do, selecting it
-  /// does nothing, and the D-pad always moves back out of it. The button carries no
-  /// visible chrome of its own; the tile already looks like the panel it is.
-  private func tile(_ score: Score) -> some View {
-    Button {
-      // Nothing to open — a score is a fact, not a destination. The tile earns its
-      // focus stop by making the row reachable, not by doing something when pressed.
-    } label: {
-      tileContent(score)
-    }
-    .buttonStyle(RatingTileButtonStyle())
+  private func scoreURL(_ score: Score) -> URL? {
 #if os(tvOS)
-    .reportMediaItemSectionFocus(onSectionFocused)
+    return nil
+#else
+    switch score.logo {
+    case .imdb:
+      guard let id = mediaItem.imdb, id > 0 else { return nil }
+      return URL(string: "https://www.imdb.com/title/tt\(String(format: "%07d", id))/")
+    case .kinopoisk:
+      guard let id = mediaItem.kinopoisk, id > 0 else { return nil }
+      let kind = mediaItem.isSeries ? "series" : "film"
+      return URL(string: "https://www.kinopoisk.ru/\(kind)/\(id)/")
+    }
 #endif
-  }
-
-  /// The number carries the tile, so it is left to stand on its own: no "/ 10"
-  /// spelling out a scale everyone knows, and no star row restating it in pictures.
-  private func tileContent(_ score: Score) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text(String(format: "%.1f", score.value))
-        .font(Self.valueFont)
-        .foregroundStyle(Color.KinoPub.text)
-
-      HStack(spacing: 8) {
-        MediaScoreLogo(score.logo, height: Self.logoHeight(score.logo))
-        Text(score.id)
-          .font(Self.captionFont)
-      }
-      .foregroundStyle(Color.KinoPub.subtitle)
-
-      if let votes = score.votes, votes > 0 {
-        Text("\(votes.formatted(.number.grouping(.automatic))) \("votes".localized)")
-          .font(Self.captionFont)
-          .foregroundStyle(Color.KinoPub.subtitle)
-          .fixedSize(horizontal: false, vertical: true)
-      }
-    }
-    .frame(width: Self.tileWidth, alignment: .leading)
-    .padding(Self.tilePadding)
-    .background(Color.KinoPub.selectionBackground.opacity(0.5),
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-  }
-
-  /// The two marks are drawn to different proportions: matched by height they read
-  /// as one bigger than the other, so Kinopoisk's gets a little more room.
-  private static func logoHeight(_ source: MediaScoreLogo.Source) -> CGFloat {
-    switch source {
-    case .imdb: return imdbLogoHeight
-    case .kinopoisk: return kinopoiskLogoHeight
-    }
   }
 
 #if os(tvOS)
@@ -159,23 +103,95 @@ struct MediaItemRatingsSection: View {
 #endif
 }
 
-/// The lift a score tile takes under focus, matched to the cast portraits: a small
-/// scale and a shadow, no filled highlight — the tile is already a solid panel, so a
-/// backed focus state would double up on it. Same shape as `PortraitButtonStyle`.
+private struct RatingTile: View {
+  let score: MediaItemRatingsSection.Score
+  let url: URL?
+  let openURL: OpenURLAction
+  var onSectionFocused: (() -> Void)? = nil
+  @State private var isHovered = false
+
+  var body: some View {
+    Button {
+      if let url { openURL(url) }
+    } label: {
+      tileContent
+    }
+    .buttonStyle(RatingTileButtonStyle(isHovered: isHovered))
+#if !os(tvOS)
+    .onHover { isHovered = $0 }
+    .pointingHandCursorOnHover()
+#endif
+#if os(tvOS)
+    .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+  }
+
+  private var tileContent: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text(String(format: "%.1f", score.value))
+        .font(MediaItemRatingsSection.valueFont)
+        .foregroundStyle(Color.KinoPub.text)
+
+      HStack(spacing: 8) {
+        MediaScoreLogo(score.logo, height: Self.logoHeight(score.logo))
+        Text(score.id)
+          .font(MediaItemRatingsSection.captionFont)
+#if !os(tvOS)
+        if isHovered, url != nil {
+          Image(systemName: "arrow.up.right")
+            .font(MediaItemRatingsSection.captionFont)
+            .transition(.opacity)
+        }
+#endif
+      }
+      .foregroundStyle(Color.KinoPub.subtitle)
+
+      if let votes = score.votes, votes > 0 {
+        Text("\(votes.formatted(.number.grouping(.automatic))) \("votes".localized)")
+          .font(MediaItemRatingsSection.captionFont)
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+    }
+    .frame(width: MediaItemRatingsSection.tileWidth, alignment: .leading)
+    .padding(MediaItemRatingsSection.tilePadding)
+    .background(
+      Color.KinoPub.selectionBackground.opacity(isHovered ? 0.72 : 0.5),
+      in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+    )
+    .animation(.easeOut(duration: 0.15), value: isHovered)
+  }
+
+  private static func logoHeight(_ source: MediaScoreLogo.Source) -> CGFloat {
+    switch source {
+    case .imdb: return MediaItemRatingsSection.imdbLogoHeight
+    case .kinopoisk: return MediaItemRatingsSection.kinopoiskLogoHeight
+    }
+  }
+}
+
+/// Lift under focus; on pointer platforms also scale on press and brighten via hover
+/// state passed from the tile. No filled focus plate — the tile is already a panel.
 private struct RatingTileButtonStyle: ButtonStyle {
+  var isHovered: Bool = false
+
   func makeBody(configuration: ButtonStyleConfiguration) -> some View {
-    Tile(configuration: configuration)
+    Tile(configuration: configuration, isHovered: isHovered)
   }
 
   private struct Tile: View {
     let configuration: ButtonStyleConfiguration
+    let isHovered: Bool
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
       configuration.label
-        .scaleEffect(isFocused ? 1.05 : (configuration.isPressed ? 0.98 : 1.0))
-        .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 14, y: 6)
+        .scaleEffect(isFocused ? 1.05 : (configuration.isPressed ? 0.96 : 1.0))
+        .shadow(color: .black.opacity(isFocused ? 0.45 : (isHovered ? 0.2 : 0)),
+                radius: isFocused ? 14 : 8,
+                y: isFocused ? 6 : 2)
         .animation(.easeOut(duration: 0.18), value: isFocused)
+        .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
     }
   }
 }
@@ -234,7 +250,7 @@ struct MediaItemCastSection: View {
   }
 
   private func portrait(_ person: MediaPerson, member: CastMember) -> some View {
-    VStack(spacing: 8) {
+    VStack(spacing: 6) {
       ZStack {
         Circle()
           .fill(Color.KinoPub.selectionBackground)
@@ -262,22 +278,20 @@ struct MediaItemCastSection: View {
       Text(person.name)
         .font(Self.nameFont)
         .foregroundStyle(Color.KinoPub.text)
-        .lineLimit(1)
+//        .lineLimit(2)
+        .multilineTextAlignment(.center)
+
 
       if let character = member.character, !character.isEmpty, person.role == .actor {
         Text(character)
           .font(Self.roleFont)
           .foregroundStyle(Color.KinoPub.subtitle)
-          .lineLimit(2)
+//          .lineLimit(2)
           .multilineTextAlignment(.center)
       } else {
-        Text(LocalizedStringKey(person.role.titleKey))
-          .font(Self.roleFont)
-          .foregroundStyle(Color.KinoPub.subtitle)
-          .lineLimit(1)
       }
     }
-    .frame(width: Self.avatarSize + 24)
+    .frame(width: Self.avatarSize + 0)
   }
 
   private func initials(of name: String) -> String {
@@ -296,13 +310,14 @@ struct MediaItemCastSection: View {
   static let avatarSize: CGFloat = 72
   static let focusPadding: CGFloat = 4
   static let initialsFont: Font = .system(size: 24, weight: .medium)
-  static let nameFont: Font = .system(size: 14, weight: .medium)
+  static let nameFont: Font = .system(size: 12, weight: .regular)
   static let roleFont: Font = .system(size: 12, weight: .regular)
 #endif
 }
 
 /// The lift the episode cards use, kept a touch smaller: these are round and sit in a
-/// denser rail, where the same jump reads as a wobble.
+/// denser rail, where the same jump reads as a wobble. Pointer platforms also lighten
+/// the plate on hover and scale on press.
 private struct PortraitButtonStyle: ButtonStyle {
   func makeBody(configuration: ButtonStyleConfiguration) -> some View {
     Portrait(configuration: configuration)
@@ -311,12 +326,22 @@ private struct PortraitButtonStyle: ButtonStyle {
   private struct Portrait: View {
     let configuration: ButtonStyleConfiguration
     @Environment(\.isFocused) private var isFocused
+    @State private var isHovered = false
 
     var body: some View {
       configuration.label
-        .scaleEffect(isFocused ? 1.05 : (configuration.isPressed ? 0.98 : 1.0))
-        .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 14, y: 6)
+//        .brightness(isHovered ? 0.08 : 0)
+        .scaleEffect(isFocused ? 1.05 : (configuration.isPressed ? 0.96 : 1.0))
+        .shadow(color: .black.opacity(isFocused ? 0.45 : (isHovered ? 0.2 : 0)),
+                radius: isFocused ? 14 : 8,
+                y: isFocused ? 6 : 2)
         .animation(.easeOut(duration: 0.18), value: isFocused)
+        .animation(.easeOut(duration: 0.15), value: isHovered)
+        .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
+#if !os(tvOS)
+        .onHover { isHovered = $0 }
+        .pointingHandCursorOnHover()
+#endif
     }
   }
 }
@@ -337,7 +362,7 @@ struct MediaItemSimilarSection: View {
   var body: some View {
     if !items.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
-        MediaItemSectionHeader("More like this")
+        MediaItemSectionHeader("Similar")
 
         ScrollView(.horizontal, showsIndicators: false) {
           LazyHStack(alignment: .top, spacing: Self.spacing) {
@@ -375,12 +400,15 @@ struct MediaItemSimilarSection: View {
 
 // MARK: - Information columns
 
-/// Information · Languages, side by side where there is room and stacked where there
-/// isn't — the shape Apple uses for Information · Languages · Accessibility.
+/// Information · Languages · Technical, side by side where there is room and stacked
+/// where there isn't — the shape Apple uses for Information · Languages · Accessibility.
 ///
 /// Rows are stacked App Store–style (secondary caption, then semibold value), not
 /// key-left / value-right. Languages merges audio and subtitles: voiceover first,
 /// then subs, preferred (+ English) languages open, the rest behind "and N more".
+///
+/// Uploaded / Last Update and data-source links sit under the columns as a quiet
+/// footer (credit-line style), outside the three columns.
 ///
 /// Each column is a control rather than a block of text. tvOS scrolls by moving
 /// focus, so a page whose bottom half holds nothing focusable cannot be scrolled to
@@ -388,6 +416,7 @@ struct MediaItemSimilarSection: View {
 struct MediaItemInfoColumns: View {
 
   let mediaItem: MediaItem
+  var externalMetadata: TitleMetadata = TitleMetadata()
   var onSectionFocused: (() -> Void)? = nil
 
   /// System preferred languages plus the app's second-subtitle choice — the set the
@@ -403,6 +432,25 @@ struct MediaItemInfoColumns: View {
 
   private var informationSections: [InfoSection] {
     var sections: [InfoSection] = []
+
+    var typeValues: [InfoValue] = [
+      InfoValue(id: "type",
+                title: mediaItem.contentTypeTitleKey.localized,
+                filter: mediaItem.contentTypeFilter.map { LibraryFilter(contentType: $0) })
+    ]
+    if let subtypeKey = mediaItem.contentSubtypeTitleKey {
+      typeValues.append(InfoValue(id: "subtype", title: subtypeKey.localized))
+    } else if let raw = mediaItem.contentSubtypeRaw {
+      typeValues.append(InfoValue(id: "subtype", title: raw))
+    }
+    sections.append(InfoSection(id: "type", caption: "MediaItem_Type", values: typeValues))
+
+    if let aka = mediaItem.alsoKnownAsTitle {
+      sections.append(InfoSection(id: "aka",
+                                  caption: "MediaItem_AlsoKnownAs",
+                                  values: [InfoValue(id: "aka", title: aka)]))
+    }
+
     let genres = mediaItem.genres.compactMap { genre -> InfoValue? in
       guard let title = genre.title, !title.isEmpty else { return nil }
       return InfoValue(id: "genre-\(genre.id)",
@@ -410,7 +458,8 @@ struct MediaItemInfoColumns: View {
                        filter: LibraryFilter(genreID: genre.id))
     }
     if !genres.isEmpty {
-      sections.append(InfoSection(id: "genre", caption: "MediaItem_Genre", values: genres))
+      let caption = genres.count == 1 ? "MediaItem_Genre" : "MediaItem_Genres"
+      sections.append(InfoSection(id: "genre", caption: caption, values: genres))
     }
 
     let countries = mediaItem.countries
@@ -421,37 +470,114 @@ struct MediaItemInfoColumns: View {
                   filter: LibraryFilter(countryID: $0.id))
       }
     if !countries.isEmpty {
-      sections.append(InfoSection(id: "country", caption: "MediaItem_Country", values: countries))
+      let caption = countries.count == 1
+        ? "MediaItem_CountryOfOrigin"
+        : "MediaItem_CountriesOfOrigin"
+      sections.append(InfoSection(id: "country", caption: caption, values: countries))
     }
 
     if mediaItem.year > 0 {
       let year = mediaItem.year
       sections.append(InfoSection(
         id: "year",
-        caption: "MediaItem_Year",
+        caption: "MediaItem_ReleaseYear",
         values: [InfoValue(id: "year-\(year)",
                            title: "\(year)",
                            filter: LibraryFilter(years: YearRange(from: year, to: year)))]
       ))
     }
 
+    if let volume = mediaItem.volumeCounts {
+      sections.append(InfoSection(id: "volume",
+                                  caption: "MediaItem_Volume",
+                                  values: [InfoValue(id: "volume",
+                                                     title: Self.volumeLabel(volume))]))
+    }
+
     let duration = mediaItem.displayDuration
     if !duration.isEmpty {
+      let caption = mediaItem.isSeries
+        ? "MediaItem_EpisodeRuntime"
+        : "MediaItem_Runtime"
       sections.append(InfoSection(id: "duration",
-                                  caption: "MediaItem_Duration",
+                                  caption: caption,
                                   values: [InfoValue(id: "duration", title: duration)]))
     }
+
     if let total = mediaItem.totalDurationDisplay {
+      var totalValues = [InfoValue(id: "total", title: total)]
+      if let note = mediaItem.continuousWatchNoteParts {
+        let text = String(format: "MediaItem_ContinuousWatchHint".localized,
+                          note.compact,
+                          note.totalMinutes)
+        totalValues.append(InfoValue(id: "total-note", title: text, style: .note))
+      }
       sections.append(InfoSection(id: "total",
-                                  caption: "Total duration",
-                                  values: [InfoValue(id: "total", title: total)]))
+                                  caption: "MediaItem_TotalDuration",
+                                  values: totalValues))
     }
-    sections.append(InfoSection(id: "added",
-                                caption: "Added",
-                                values: [InfoValue(id: "added", title: Self.date(mediaItem.createdAt))]))
-    sections.append(InfoSection(id: "updated",
-                                caption: "Updated",
-                                values: [InfoValue(id: "updated", title: Self.date(mediaItem.updatedAt))]))
+
+    if let statusKey = mediaItem.seriesStatusKey {
+      sections.append(InfoSection(id: "status",
+                                  caption: "MediaItem_Status",
+                                  values: [InfoValue(id: "status", title: statusKey.localized)]))
+    }
+
+    if mediaItem.views > 0 {
+      sections.append(InfoSection(
+        id: "views",
+        caption: "MediaItem_Views",
+        values: [InfoValue(id: "views",
+                           title: mediaItem.views.formatted(.number.grouping(.automatic)))]
+      ))
+    }
+
+    var flagValues: [InfoValue] = []
+    if mediaItem.advert {
+      flagValues.append(InfoValue(id: "advert", title: "MediaItem_ContainsAds".localized))
+    }
+    if mediaItem.poorQuality {
+      flagValues.append(InfoValue(id: "poor", title: "MediaItem_PoorQuality".localized))
+    }
+    if !flagValues.isEmpty {
+      sections.append(InfoSection(id: "flags",
+                                  caption: "MediaItem_Flags",
+                                  values: flagValues))
+    }
+
+    return sections
+  }
+
+  private var technicalSections: [InfoSection] {
+    var sections: [InfoSection] = []
+
+    if let rating = externalMetadata.ageRating, !rating.isEmpty {
+      sections.append(InfoSection(id: "age",
+                                  caption: "MediaItem_AgeRating",
+                                  values: [InfoValue(id: "age", title: rating)]))
+    }
+
+    var qualityValues: [InfoValue] = []
+    let tech = mediaItem.videoTechLines
+    if !tech.isEmpty {
+      qualityValues = tech.enumerated().map {
+        InfoValue(id: "track-\($0.offset)", title: $0.element)
+      }
+    } else if let quality = mediaItem.qualityDisplay {
+      qualityValues = [InfoValue(id: "quality", title: quality)]
+    }
+    if !qualityValues.isEmpty {
+      sections.append(InfoSection(id: "quality",
+                                  caption: "MediaItem_VideoQuality",
+                                  values: qualityValues))
+    }
+
+    if let ac3 = mediaItem.ac3, ac3 > 0 {
+      sections.append(InfoSection(id: "ac3",
+                                  caption: "MediaItem_AudioCodec",
+                                  values: [InfoValue(id: "ac3", title: "AC3")]))
+    }
+
     return sections
   }
 
@@ -467,27 +593,51 @@ struct MediaItemInfoColumns: View {
     !audioGroups.isEmpty || !subtitleGroups.isEmpty
   }
 
+  private var showsTechnicalColumn: Bool {
+    !technicalSections.isEmpty
+  }
+
   var body: some View {
-    ViewThatFits(in: .horizontal) {
-      HStack(alignment: .top, spacing: Self.columnSpacing) {
-        columnViews
+    VStack(alignment: .leading, spacing: Self.footerSpacing) {
+      ViewThatFits(in: .horizontal) { // НЕТ КАК РАЗ ТУТ НАДО НАОБОРОТ ОНО ДОЛЖНО ЗАЛИВАТЬ ВСЮ ШИРИНУ И эти колонки должны заполнять нопополам....... а не влево стекаться
+        HStack(alignment: .top, spacing: Self.columnSpacing) {
+          columnViews
+        }
+        VStack(alignment: .leading, spacing: Self.columnSpacing) {
+          columnViews
+        }
       }
-      VStack(alignment: .leading, spacing: Self.columnSpacing) {
-        columnViews
-      }
+
+      InfoFooter(mediaItem: mediaItem,
+                 attribution: externalMetadata.attribution,
+                 tmdbId: externalMetadata.tmdbId,
+                 isSeries: mediaItem.isSeries,
+                 onSectionFocused: onSectionFocused)
     }
     .padding(.horizontal, MediaItemLayout.horizontalInset)
   }
 
   @ViewBuilder
   private var columnViews: some View {
-    InformationColumn(sections: informationSections, onSectionFocused: onSectionFocused)
+    InformationColumn(title: "Information",
+                      sections: informationSections,
+                      onSectionFocused: onSectionFocused)
     if showsLanguagesColumn {
       LanguagesColumn(audioGroups: audioGroups,
                       subtitleGroups: subtitleGroups,
                       preferredLanguages: preferredLanguages,
                       onSectionFocused: onSectionFocused)
     }
+    if showsTechnicalColumn {
+      InformationColumn(title: "MediaItem_Technical",
+                        sections: technicalSections,
+                        onSectionFocused: onSectionFocused)
+    }
+  }
+
+  private enum ValueStyle {
+    case primary
+    case note
   }
 
   private struct InfoValue: Identifiable {
@@ -495,6 +645,7 @@ struct MediaItemInfoColumns: View {
     let title: String
     /// When set, the value opens Search with this filter.
     var filter: LibraryFilter? = nil
+    var style: ValueStyle = .primary
   }
 
   private struct InfoSection: Identifiable {
@@ -503,9 +654,24 @@ struct MediaItemInfoColumns: View {
     let values: [InfoValue]
   }
 
-  // MARK: Information
+  private static func volumeLabel(_ counts: (seasons: Int, episodes: Int)) -> String {
+    let seasonUnit = (counts.seasons == 1
+      ? "MediaItem_SeasonUnit"
+      : "MediaItem_SeasonsUnit").localized
+    var text = "\(counts.seasons) \(seasonUnit)"
+    if counts.episodes > 0 {
+      let episodeUnit = (counts.episodes == 1
+        ? "MediaItem_EpisodeUnit"
+        : "MediaItem_EpisodesUnit").localized
+      text += ", \(counts.episodes) \(episodeUnit)"
+    }
+    return text
+  }
+
+  // MARK: Information / Technical
 
   private struct InformationColumn: View {
+    let title: LocalizedStringKey
     let sections: [InfoSection]
     var onSectionFocused: (() -> Void)? = nil
     @EnvironmentObject var navigationState: NavigationState
@@ -513,7 +679,7 @@ struct MediaItemInfoColumns: View {
 
     var body: some View {
       VStack(alignment: .leading, spacing: MediaItemInfoColumns.sectionSpacing) {
-        Text("Information")
+        Text(title)
           .font(MediaItemInfoColumns.headerFont)
           .foregroundStyle(Color.KinoPub.text)
 
@@ -564,8 +730,12 @@ struct MediaItemInfoColumns: View {
 #endif
           } else {
             Text(value.title)
-              .font(MediaItemInfoColumns.plainValueFont)
-              .foregroundStyle(Color.KinoPub.text)
+              .font(value.style == .note
+                    ? MediaItemInfoColumns.captionFont
+                    : MediaItemInfoColumns.plainValueFont)
+              .foregroundStyle(value.style == .note
+                               ? Color.KinoPub.subtitle
+                               : Color.KinoPub.text)
               .fixedSize(horizontal: false, vertical: true)
           }
         }
@@ -659,7 +829,7 @@ struct MediaItemInfoColumns: View {
         }
         .frame(width: MediaItemInfoColumns.columnWidth, alignment: .leading)
       }
-      .buttonStyle(ExpandableButtonStyle())
+      .buttonStyle(ExpandableButtonStyle(showsPointerHighlight: false))
 #if os(tvOS)
       .reportMediaItemSectionFocus(onSectionFocused)
 #endif
@@ -728,6 +898,73 @@ struct MediaItemInfoColumns: View {
       .formatted(date: .abbreviated, time: .omitted)
   }
 
+  // MARK: Footer
+
+  /// Uploaded / Last Update plus quiet source buttons on non-TV — same secondary
+  /// weight throughout, not another Information row.
+  private struct InfoFooter: View {
+    let mediaItem: MediaItem
+    let attribution: Set<MetadataSourceID>
+    let tmdbId: Int?
+    let isSeries: Bool
+    var onSectionFocused: (() -> Void)? = nil
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+      HStack(alignment: .center, spacing: 10) {
+        creditText(label: "MediaItem_Uploaded",
+                   value: MediaItemInfoColumns.date(mediaItem.createdAt))
+        if !mediaItem.uploadedSameDayAsUpdated {
+            creditText(label: "∙", value: "")
+          
+          creditText(label: "MediaItem_LastUpdate",
+                     value: MediaItemInfoColumns.date(mediaItem.updatedAt))
+        }
+#if !os(tvOS)
+// creditText(label: "MediaItem_Source", value: "Kino.watch")
+        sourceButton(title: "kino.watch", url: kinopubURL)
+        if attribution.contains(.tmdb) {
+          sourceButton(title: "TMDB", url: tmdbURL)
+        }
+#endif
+      }
+      .font(MediaItemInfoColumns.captionFont)
+      .foregroundStyle(Color.KinoPub.subtitle)
+#if os(tvOS)
+      .focusable(true)
+      .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+    }
+
+    private var kinopubURL: URL {
+      URL(string: "https://kino.watch/item/view/\(mediaItem.id)")!
+    }
+
+    private var tmdbURL: URL {
+      if let tmdbId {
+        let kind = isSeries ? "tv" : "movie"
+        return URL(string: "https://www.themoviedb.org/\(kind)/\(tmdbId)")!
+      }
+      return URL(string: "https://www.themoviedb.org")!
+    }
+
+    private func creditText(label: String, value: String) -> Text {
+      Text("\(label.localized) \(value)")
+    }
+
+    private func sourceButton(title: String, url: URL) -> some View {
+      Button {
+        openURL(url)
+      } label: {
+        HStack(alignment: .center, spacing: 4) {
+          Text(title)
+          Image(systemName: "arrow.up.right")
+        }
+      }
+      .buttonStyle(SourceChipButtonStyle())
+    }
+  }
+
 #if os(tvOS)
   static let columnSpacing: CGFloat = 60
   static let columnWidth: CGFloat = 480
@@ -736,6 +973,7 @@ struct MediaItemInfoColumns: View {
   static let languageNameToKindSpacing: CGFloat = 3
   static let subtitleExtraTop: CGFloat = 8
   static let stackSpacing: CGFloat = 4
+  static let footerSpacing: CGFloat = 28
   static let headerFont: Font = .system(size: 30, weight: .semibold)
   static let captionFont: Font = .system(size: 22, weight: .regular)
   static let valueFont: Font = .system(size: 22, weight: .semibold)
@@ -749,12 +987,45 @@ struct MediaItemInfoColumns: View {
   static let languageNameToKindSpacing: CGFloat = 1
   static let subtitleExtraTop: CGFloat = 8
   static let stackSpacing: CGFloat = 2
-  static let headerFont: Font = .system(size: 18, weight: .semibold)
+  static let footerSpacing: CGFloat = 20
+  static let headerFont: Font = .system(size: 18, weight: .bold)
   static let captionFont: Font = .system(size: 13, weight: .regular)
-  static let valueFont: Font = .system(size: 13, weight: .semibold)
+  static let valueFont: Font = .system(size: 13, weight: .medium)
   static let plainValueFont: Font = .system(size: 13, weight: .regular)
   static let detailFont: Font = .system(size: 13, weight: .regular)
 #endif
+}
+
+/// Rating-tile cousin for footer source chips — light plate, hover brighten, press scale.
+private struct SourceChipButtonStyle: ButtonStyle {
+  func makeBody(configuration: ButtonStyle.Configuration) -> some View {
+    Chip(configuration: configuration)
+  }
+
+  private struct Chip: View {
+    let configuration: ButtonStyle.Configuration
+    @State private var isHovered = false
+
+    var body: some View {
+      configuration.label
+        .font(MediaItemInfoColumns.captionFont)
+        .foregroundStyle(Color.KinoPub.subtitle) // бля даже кнопку верстать приходитса бро???
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(
+          Color.KinoPub.selectionBackground.opacity(isHovered ? 0.5 : 0),
+          in: Capsule()
+        )
+        .scaleEffect(configuration.isPressed ? 0.96 : 1)
+//        .shadow(color: .black.opacity(isHovered ? 0.18 : 0), radius: 6, y: 2)
+        .animation(.easeOut(duration: 0.1), value: isHovered)
+        .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
+#if !os(tvOS)
+        .onHover { isHovered = $0 }
+        .pointingHandCursorOnHover()
+#endif
+    }
+  }
 }
 
 // MARK: - Shared bits
@@ -763,12 +1034,11 @@ struct MediaItemSectionHeader: View {
   private let title: LocalizedStringKey
 
   init(_ title: LocalizedStringKey) {
-    self.title = title
-  }
+    self.title = title  }
 
   var body: some View {
     Text(title)
-      .font(MediaItemLayout.headerFont)
+      .font(MediaItemInfoColumns.headerFont)
       .foregroundStyle(Color.KinoPub.text)
       .padding(.horizontal, MediaItemLayout.horizontalInset)
   }
@@ -962,24 +1232,41 @@ struct MediaItemPlotView: View {
 
 /// Anything on this page that can be opened in full: the synopsis and the info
 /// columns. Secondary at rest so it sits behind the title and buttons, solid and
-/// backed once focused so it reads as the control it is. Text that sets its own
-/// colour — the columns do — keeps it and picks up only the highlight.
+/// backed once focused (or hovered on pointer platforms) so it reads as the control
+/// it is. Text that sets its own colour — the columns do — keeps it and picks up
+/// only the highlight.
+///
+/// Pass `showsPointerHighlight: false` for Information/Languages blocks whose
+/// *inner* rows are already links — a whole-column hover plate would mislead.
 private struct ExpandableButtonStyle: ButtonStyle {
+  var showsPointerHighlight: Bool = true
+
   func makeBody(configuration: ButtonStyleConfiguration) -> some View {
     // Not named `Body`: that collides with `ButtonStyle.Body`.
-    ExpandableLabel(configuration: configuration)
+    ExpandableLabel(configuration: configuration,
+                    showsPointerHighlight: showsPointerHighlight)
   }
 
   private struct ExpandableLabel: View {
     let configuration: ButtonStyleConfiguration
+    let showsPointerHighlight: Bool
     @Environment(\.isFocused) private var isFocused
+    @State private var isHovered = false
+
+    private var isHighlighted: Bool {
+#if os(tvOS)
+      isFocused
+#else
+      isFocused || (showsPointerHighlight && isHovered)
+#endif
+    }
 
     var body: some View {
       configuration.label
         // At rest this is a step down from the title, not the full 40% fade of the
         // subtitle colour: the synopsis sits over artwork now, and at 0.6 it went
         // soft against a bright frame.
-        .foregroundStyle(isFocused ? Color.KinoPub.text : Color.KinoPub.text.opacity(0.8))
+        .foregroundStyle(isHighlighted ? Color.KinoPub.text : Color.KinoPub.text.opacity(0.8))
         // Inset whether or not it is focused and then pulled back out again: making
         // the padding appear on focus kept the frame the same width and re-wrapped
         // the paragraph inside it. The highlight bleeds into the surrounding gaps
@@ -988,11 +1275,17 @@ private struct ExpandableButtonStyle: ButtonStyle {
         .padding(.vertical, Self.verticalInset)
         .background(
           RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(Color.KinoPub.selectionBackground.opacity(isFocused ? 0.85 : 0))
+            .fill(Color.KinoPub.selectionBackground.opacity(isHighlighted ? 0.85 : 0))
         )
         .padding(.horizontal, -Self.horizontalInset)
         .padding(.vertical, -Self.verticalInset)
-        .animation(.easeOut(duration: 0.15), value: isFocused)
+        .scaleEffect(configuration.isPressed && showsPointerHighlight ? 0.98 : 1.0)
+        .animation(.easeOut(duration: 0.15), value: isHighlighted)
+        .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
+#if !os(tvOS)
+        .onHover { if showsPointerHighlight { isHovered = $0 } }
+        .modifier(ConditionalPointerHand(enabled: showsPointerHighlight))
+#endif
     }
 
 #if os(tvOS)
@@ -1004,6 +1297,19 @@ private struct ExpandableButtonStyle: ButtonStyle {
 #endif
   }
 }
+
+#if !os(tvOS)
+private struct ConditionalPointerHand: ViewModifier {
+  let enabled: Bool
+  func body(content: Content) -> some View {
+    if enabled {
+      content.pointingHandCursorOnHover()
+    } else {
+      content
+    }
+  }
+}
+#endif
 
 /// Whatever was clipped on the page, presented over it in full: the synopsis, or a
 /// column with its lists unclamped.

@@ -233,6 +233,7 @@ struct MediaItemView: View {
             .id(MediaItemContentAnchor.similar)
 
           MediaItemInfoColumns(mediaItem: itemModel.mediaItem,
+                               externalMetadata: itemModel.externalMetadata,
                                onSectionFocused: { activateContent(.info) })
             .id(MediaItemContentAnchor.info)
         }
@@ -322,7 +323,8 @@ struct MediaItemView: View {
                                linkProvider: itemModel.linkProvider,
                                externalMetadata: itemModel.externalMetadata)
           MediaItemSimilarSection(items: itemModel.similarItems, linkProvider: itemModel.linkProvider)
-          MediaItemInfoColumns(mediaItem: itemModel.mediaItem)
+          MediaItemInfoColumns(mediaItem: itemModel.mediaItem,
+                               externalMetadata: itemModel.externalMetadata)
         }
       }
       .padding(.bottom, MediaItemLayout.sectionSpacing)

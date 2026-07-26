@@ -43,6 +43,6 @@ extension Color {
     public static let placeholder = Color.primary.opacity(0.08)
 
     public static let text = Color.primary
-    public static let subtitle = Color.secondary
+      public static let subtitle = Color.secondary.opacity(0.87)
   }
 }
