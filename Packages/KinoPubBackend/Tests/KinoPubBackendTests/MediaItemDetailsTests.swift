@@ -87,23 +87,36 @@ final class MediaItemDetailsTests: XCTestCase {
 
   func testFilmUsesItsTotalRuntime() {
     let film = item(duration: Duration(average: 0, total: 108 * 60))
-    XCTAssertEqual(film.displayDuration, "1 h 48 min")
+    XCTAssertEqual(film.displayDuration, "1h 48m (108 min)")
   }
 
   /// A series' `total` is the sum of every episode, which reads as nonsense as *the*
   /// runtime — but is worth showing on its own line.
   func testSeriesUsesThePerEpisodeAverage() {
     let series = seriesItem(duration: Duration(average: 51 * 60, total: 21600))
-    XCTAssertEqual(series.displayDuration, "51 min")
+    XCTAssertEqual(series.displayDuration, "51m")
   }
 
   func testSeriesAlsoReportsItsTotalRuntime() {
     let series = seriesItem(duration: Duration(average: 51 * 60, total: 21600))
-    XCTAssertEqual(series.totalDurationDisplay, "6 h")
+    XCTAssertEqual(series.totalDurationDisplay, "6h (360 min)")
   }
 
   func testFilmHasNoSeparateTotal() {
     XCTAssertNil(item(duration: Duration(average: 0, total: 108 * 60)).totalDurationDisplay)
+  }
+
+  func testLongSeriesGetsAContinuousWatchNote() {
+    let seconds = 36 * 60 * 60
+    let series = seriesItem(duration: Duration(average: 45 * 60, total: TimeInterval(seconds)))
+    let note = series.continuousWatchNoteParts
+    XCTAssertEqual(note?.compact, "1d 12h")
+    XCTAssertEqual(note?.totalMinutes, 2160)
+  }
+
+  func testShortSeriesHasNoContinuousWatchNote() {
+    let series = seriesItem(duration: Duration(average: 51 * 60, total: 21600))
+    XCTAssertNil(series.continuousWatchNoteParts)
   }
 
   private func seriesItem(duration: Duration) -> MediaItem {

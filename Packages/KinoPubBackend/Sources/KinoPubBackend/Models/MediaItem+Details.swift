@@ -40,18 +40,120 @@ public extension MediaItem {
     Self.splitNames(director)
   }
 
-  /// Runtime to display: the per-episode average for a series, whose `total` is the
-  /// sum of every episode and reads as nonsense on its own.
+  /// Runtime to display: per-episode average for a series; film total with minutes
+  /// in parentheses when ≥ 1 hour (`1h 45m (105 min)`).
   var displayDuration: String {
-    let seconds = isSeries ? duration.average : duration.total
-    return Duration.hoursMinutes(seconds: Int(seconds))
+    let seconds = isSeries ? Int(duration.average) : Int(duration.total)
+    return isSeries
+      ? Duration.compact(seconds: seconds)
+      : Duration.compactWithMinutes(seconds: seconds)
   }
 
-  /// Everything end to end — only meaningful for a series, where it is shown as its
-  /// own row alongside the per-episode runtime.
+  /// End-to-end runtime for a series (`1d 12h 4m (5203 min)` when long enough).
   var totalDurationDisplay: String? {
     guard isSeries, duration.total > 0 else { return nil }
-    return Duration.hoursMinutes(seconds: Int(duration.total))
+    return Duration.compactWithMinutes(seconds: Int(duration.total))
+  }
+
+  /// Compact + minutes for the Kinopoisk-style continuous-watch line under a long total.
+  var continuousWatchNoteParts: (compact: String, totalMinutes: Int)? {
+    guard isSeries, duration.total >= 24 * 60 * 60 else { return nil }
+    let seconds = Int(duration.total)
+    let minutes = Int((Double(seconds) / 60).rounded())
+    return (Duration.compact(seconds: seconds), minutes)
+  }
+
+  /// Localization key for the content type (`MediaType_Movie`, …), or the raw API value.
+  var contentTypeTitleKey: String {
+    if let known = MediaType(rawValue: type) {
+      return known.singularTitleKey
+    }
+    return type
+  }
+
+  var contentTypeFilter: MediaType? {
+    MediaType(rawValue: type)
+  }
+
+  /// Subtype localization key when the API sends one (`multi` for multi-part films).
+  var contentSubtypeTitleKey: String? {
+    let trimmed = subtype.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty, trimmed.lowercased() != "null" else { return nil }
+    switch trimmed.lowercased() {
+    case "multi": return "MediaItem_SubtypeMulti"
+    default: return nil
+    }
+  }
+
+  /// Raw subtype when it is not a known key — still surface it rather than drop it.
+  var contentSubtypeRaw: String? {
+    let trimmed = subtype.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty, trimmed.lowercased() != "null" else { return nil }
+    if contentSubtypeTitleKey != nil { return nil }
+    return trimmed
+  }
+
+  /// Original / also-known-as title when it differs from the localized one.
+  var alsoKnownAsTitle: String? {
+    let original = originalTitle
+    let localized = localizedTitle
+    guard !original.isEmpty, original != localized else { return nil }
+    return original
+  }
+
+  /// Season and episode counts for the Volume row.
+  var volumeCounts: (seasons: Int, episodes: Int)? {
+    guard let seasons, !seasons.isEmpty else { return nil }
+    let episodes = seasons.reduce(0) { $0 + $1.episodes.count }
+    return (seasons.count, episodes)
+  }
+
+  /// Series completion from kino.pub `finished`.
+  var seriesStatusKey: String? {
+    guard isSeries else { return nil }
+    return finished ? "MediaItem_StatusEnded" : "MediaItem_StatusOngoing"
+  }
+
+  /// Top advertised quality from the item, else distinct file qualities.
+  var qualityDisplay: String? {
+    if quality > 0 { return "\(quality)p" }
+    var seen = Set<String>()
+    var unique: [String] = []
+    for q in detailFiles.map(\.quality) where !q.isEmpty && seen.insert(q).inserted {
+      unique.append(q)
+    }
+    guard !unique.isEmpty else { return nil }
+    return unique.joined(separator: ", ")
+  }
+
+  /// One line per distinct video file: `1080p · h264 · 1920×1080`.
+  var videoTechLines: [String] {
+    var seen = Set<String>()
+    var lines: [String] = []
+    for file in detailFiles {
+      let key = "\(file.qualityID)-\(file.codec)-\(file.w)x\(file.h)"
+      guard seen.insert(key).inserted else { continue }
+      var parts: [String] = []
+      if !file.quality.isEmpty { parts.append(file.quality) }
+      if !file.codec.isEmpty { parts.append(file.codec) }
+      if file.w > 0, file.h > 0 { parts.append("\(file.w)×\(file.h)") }
+      guard !parts.isEmpty else { continue }
+      lines.append(parts.joined(separator: " · "))
+    }
+    return lines
+  }
+
+  var detailFiles: [FileInfo] {
+    if let files = videos?.first?.files, !files.isEmpty { return files }
+    return seasons?.first?.episodes.first?.files ?? []
+  }
+
+  /// True when Uploaded and Last Update fall on the same calendar day.
+  var uploadedSameDayAsUpdated: Bool {
+    guard createdAt > 0, updatedAt > 0 else { return true }
+    let created = Date(timeIntervalSince1970: TimeInterval(createdAt))
+    let updated = Date(timeIntervalSince1970: TimeInterval(updatedAt))
+    return Calendar.current.isDate(created, inSameDayAs: updated)
   }
 
   /// Subtitle languages offered, de-duplicated and human readable.
