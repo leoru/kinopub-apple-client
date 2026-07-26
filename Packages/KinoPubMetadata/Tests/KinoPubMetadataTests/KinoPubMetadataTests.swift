@@ -65,6 +65,15 @@ final class TMDBDTODecodingTests: XCTestCase {
     XCTAssertTrue(schedule.isUpcoming)
   }
 
+  func testPersonDetails() throws {
+    let data = try fixture("person_details")
+    let details = try client.decode(TMDBPersonDetails.self, from: data)
+    XCTAssertEqual(details.id, 5081)
+    XCTAssertEqual(details.name, "Emily Blunt")
+    XCTAssertEqual(details.placeOfBirth, "London, England, UK")
+    XCTAssertNotNil(TMDBSource.parseDate(details.birthday))
+  }
+
   private func fixture(_ name: String) throws -> Data {
     let url = try XCTUnwrap(
       Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures")

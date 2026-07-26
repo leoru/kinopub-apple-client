@@ -66,4 +66,20 @@ public actor MetadataService {
     }
     return episodes
   }
+
+  /// Person bio for the credits page. Failures are swallowed — the page keeps the
+  /// name and any photo already passed from the cast rail.
+  public func person(id: Int) async -> PersonMetadata {
+    var result = PersonMetadata()
+    for source in sources where source.isConfigured {
+      do {
+        if let part = try await source.personMetadata(id: id) {
+          result.merge(part)
+        }
+      } catch {
+        Logger.metadata.error("Person \(source.id.rawValue) \(id) failed: \(error.localizedDescription)")
+      }
+    }
+    return result
+  }
 }

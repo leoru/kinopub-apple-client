@@ -296,3 +296,22 @@ struct TMDBResolvedID: Codable, Sendable {
   let tmdbId: Int
   let type: String
 }
+
+// MARK: - Person
+
+struct TMDBPersonDetails: Codable, Sendable {
+  let id: Int
+  let name: String?
+  let biography: String?
+  let birthday: String?
+  let placeOfBirth: String?
+  let profilePath: String?
+  let knownForDepartment: String?
+
+  enum CodingKeys: String, CodingKey {
+    case id, name, biography, birthday
+    case placeOfBirth = "place_of_birth"
+    case profilePath = "profile_path"
+    case knownForDepartment = "known_for_department"
+  }
+}

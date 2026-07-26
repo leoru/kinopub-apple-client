@@ -269,7 +269,8 @@ microiptv leaves a lot on the table. We shouldn't.
 - [x] Ratings section: IMDb and Kinopoisk with vote counts. kino.pub's own thumbs up/down tally is
       commented out in `MediaItemRatingsSection` — it reads empty on everything we have looked at
 - [x] Cast and crew as round portraits, each opening that person's credits (`/v1/items?actor=`,
-      `?director=` — the web client's `mode=actor` search)
+      `?director=` — the web client's `mode=actor` search). Person page: null-tolerant listing
+      decode, LoadFailed/empty/retry, cast photo + TMDB person bio in a scrollable hero
 - [x] Information · Translation · Audio columns, stacking when the display is narrow
 - [x] Synopsis as a focusable panel that opens the full text, rather than expanding in place
 - [x] Cast photos and character names — via TMDB (`KinoPubMetadata`), matched by `MediaItem.imdb`.
@@ -306,6 +307,7 @@ Cast photos, character names, title logos and episode air dates come from **TMDB
 names, awards, premiere dates and box office — richer RU data TMDB doesn't carry.
 
 - [x] TMDB package + proxy + cast photos / character names / title logos
+- [x] TMDB person details on the credits page (`/3/person/{id}` — bio, birthday, place of birth)
 - [x] Episode air dates + upcoming unplayable (Phase F via TMDB)
 - [ ] Kinopoisk Unofficial: Russian character names, awards, premiere dates
 - [ ] Confirm Kinopoisk keyless vs keyed endpoints

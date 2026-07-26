@@ -14,6 +14,8 @@ public protocol MetadataSource: Sendable {
   func segments(for identity: MediaIdentity, season: Int, episode: Int) async throws -> SkipSegments?
   /// Full title overlay in one shot when the source can batch (TMDB append_to_response).
   func titleMetadata(for identity: MediaIdentity) async throws -> TitleMetadata?
+  /// Person bio / birthday when the source knows a person id (TMDB `/3/person/{id}`).
+  func personMetadata(id: Int) async throws -> PersonMetadata?
 }
 
 public extension MetadataSource {
@@ -24,4 +26,5 @@ public extension MetadataSource {
   func nextEpisode(for identity: MediaIdentity) async throws -> EpisodeRef? { nil }
   func segments(for identity: MediaIdentity, season: Int, episode: Int) async throws -> SkipSegments? { nil }
   func titleMetadata(for identity: MediaIdentity) async throws -> TitleMetadata? { nil }
+  func personMetadata(id: Int) async throws -> PersonMetadata? { nil }
 }

@@ -56,6 +56,12 @@ public final class TMDBSource: MetadataSource, @unchecked Sendable {
     return try await fetchSeason(tmdbId: resolved.tmdbId, season: season)
   }
 
+  public func personMetadata(id: Int) async throws -> PersonMetadata? {
+    guard isConfigured else { throw MetadataError.notConfigured }
+    let details = try await fetchPerson(id: id)
+    return mapPerson(details)
+  }
+
   // MARK: - Resolve
 
   private struct Resolved: Sendable {
@@ -156,7 +162,38 @@ public final class TMDBSource: MetadataSource, @unchecked Sendable {
     }
   }
 
+  private func fetchPerson(id: Int) async throws -> TMDBPersonDetails {
+    let key = "tmdb/person/\(id)"
+    let entry = await cache.deduped(key: key, ttl: Self.detailsTTL) { [self] in
+      do {
+        let url = try makeURL(path: "/3/person/\(id)", query: [
+          URLQueryItem(name: "language", value: configuration.language),
+        ])
+        let data = try await client.getData(url: url)
+        _ = try await client.decode(TMDBPersonDetails.self, from: data)
+        return MetadataCache.Entry(payload: data)
+      } catch MetadataError.httpStatus(404) {
+        return MetadataCache.Entry(payload: Data(), isNegative: true)
+      } catch {
+        return nil
+      }
+    }
+    guard let entry, !entry.isNegative else { throw MetadataError.notFound }
+    return try await client.decode(TMDBPersonDetails.self, from: entry.payload)
+  }
+
   // MARK: - Mapping
+
+  private func mapPerson(_ details: TMDBPersonDetails) -> PersonMetadata {
+    PersonMetadata(
+      biography: details.biography.flatMap { $0.isEmpty ? nil : $0 },
+      birthday: Self.parseDate(details.birthday),
+      placeOfBirth: details.placeOfBirth.flatMap { $0.isEmpty ? nil : $0 },
+      photo: imageURL(path: details.profilePath, size: .profileW342),
+      knownForDepartment: details.knownForDepartment,
+      attribution: [.tmdb]
+    )
+  }
 
   private func mapDetails(_ details: TMDBTitleDetails, type: TMDBMediaType, tmdbId: Int) -> TitleMetadata {
     var meta = TitleMetadata()
