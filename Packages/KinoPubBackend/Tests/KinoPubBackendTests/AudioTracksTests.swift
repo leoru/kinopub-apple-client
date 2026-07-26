@@ -131,9 +131,10 @@ final class AudioTracksTests: XCTestCase {
   }
 
   func testAuthorIsReadFromBulletSeparatedLabel() {
+    XCTAssertEqual(AudioTracks.authorFromDisplayName("Russian ∙ Multi-voice, LostFilm"), "LostFilm")
+    XCTAssertEqual(AudioTracks.authorFromDisplayName("Russian ∙ Multi-voice, NewStudio ∙ 2"), "NewStudio")
     XCTAssertEqual(AudioTracks.authorFromDisplayName("Russian ∙ multi-voice ∙ LostFilm"), "LostFilm")
-    XCTAssertEqual(AudioTracks.authorFromDisplayName("Russian ∙ multi-voice ∙ NewStudio ∙ 2"), "NewStudio")
-    XCTAssertNil(AudioTracks.authorFromDisplayName("English ∙ original"))
+    XCTAssertNil(AudioTracks.authorFromDisplayName("English ∙ Original"))
   }
 
   // MARK: - HLS NAME labels

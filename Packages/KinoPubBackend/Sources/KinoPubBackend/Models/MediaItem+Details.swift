@@ -83,7 +83,7 @@ public extension MediaItem {
     subtitleLanguageGroups()
   }
 
-  /// Audio tracks as "Russian ∙ multi-voice ∙ Flarrow Films", ordered like the
+  /// Audio tracks as "Russian ∙ Multi-voice, Flarrow Films", ordered like the
   /// system audio picker: preferred languages, then A–Z, kind, studio.
   var audioTrackDescriptions: [String] {
     AudioTracks.descriptions(for: detailAudioTracks)

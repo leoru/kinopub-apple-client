@@ -45,7 +45,6 @@ final class LanguageGroupsTests: XCTestCase {
     let english = groups[1]
     XCTAssertEqual(english.detailLines, [
       AudioTracks.localizedKindLabel(typeId: 6, typeTitle: "Оригинал", typeShortTitle: nil)!
-        .lowercased(with: .current)
     ])
   }
 
@@ -53,7 +52,7 @@ final class LanguageGroupsTests: XCTestCase {
     let tracks = [track(lang: "eng", typeId: 6, typeTitle: "Оригинал", author: nil, index: 1)]
     let lines = AudioTracks.kindSummaryLines(for: tracks)
     XCTAssertEqual(lines.count, 1)
-    XCTAssertFalse(lines[0].contains("∙"))
+    XCTAssertFalse(lines[0].contains(","))
   }
 
   // MARK: - Visibility
@@ -110,7 +109,6 @@ final class LanguageGroupsTests: XCTestCase {
 
   private func expectedKindLine(typeId: Int, authors: [String]) -> String {
     let kind = AudioTracks.localizedKindLabel(typeId: typeId, typeTitle: "", typeShortTitle: nil)!
-      .lowercased(with: .current)
-    return "\(kind) (\(authors.count)) ∙ \(authors.joined(separator: ", "))"
+    return "\(kind) (\(authors.count)), \(authors.joined(separator: ", "))"
   }
 }

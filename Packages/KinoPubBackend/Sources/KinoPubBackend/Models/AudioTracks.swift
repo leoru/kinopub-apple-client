@@ -165,7 +165,7 @@ public enum AudioTracks {
   }
 
   /// Languages in sort order, each with kind lines like
-  /// `дубляж (2) ∙ Кубик в Кубе, Мосфильм`.
+  /// `Дубляж (2), Кубик в Кубе, Мосфильм`.
   public static func languageGroups(for tracks: [AudioTrackInfo],
                                     preferredLanguages: [String] = Locale.preferredLanguages)
   -> [MediaLanguageGroup] {
@@ -221,7 +221,7 @@ public enum AudioTracks {
       ?? ""
     guard !kind.isEmpty else { return nil }
 
-    var head = kind.lowercased(with: .current)
+    var head = kind
     if authors.count > 1 {
       head += " (\(authors.count))"
     }
@@ -229,14 +229,14 @@ public enum AudioTracks {
     let unknown = String(localized: "Unknown", bundle: .module)
     let named = authors.compactMap { $0 }
     let hasAnonymous = authors.contains { $0 == nil }
-    // A lone anonymous original reads cleaner as just the kind — "оригинал", not
-    // "оригинал ∙ неизвестно".
+    // A lone anonymous original reads cleaner as just the kind — "Original", not
+    // "Original, Unknown".
     if named.isEmpty && authors.count == 1 { return head }
 
     var studios = named
     if hasAnonymous { studios.append(unknown) }
     guard !studios.isEmpty else { return head }
-    return "\(head) ∙ \(studios.joined(separator: ", "))"
+    return "\(head), \(studios.joined(separator: ", "))"
   }
 
   /// One label per HLS AUDIO rendition, in playlist order. Consumes API tracks by
@@ -276,19 +276,25 @@ public enum AudioTracks {
     }
   }
 
-  /// "Russian ∙ multi-voice ∙ LostFilm" — language sentence-cased, kind lowercased
-  /// and localized, studio as the API wrote it.
+  /// "Russian ∙ Multi-voice, LostFilm" — language sentence-cased, kind localized,
+  /// studio after a comma.
   public static func baseLabel(_ track: AudioTrackInfo) -> String {
-    var parts = [LanguageNames.name(for: track.lang)]
-    if let kind = localizedKindLabel(typeId: track.typeId,
-                                     typeTitle: track.typeTitle,
-                                     typeShortTitle: track.typeShortTitle) {
-      parts.append(kind.lowercased(with: .current))
+    let language = LanguageNames.name(for: track.lang)
+    let kind = localizedKindLabel(typeId: track.typeId,
+                                  typeTitle: track.typeTitle,
+                                  typeShortTitle: track.typeShortTitle)
+    let author = normalizedAuthor(track.authorTitle)
+
+    switch (kind, author) {
+    case let (kind?, author?):
+      return "\(language) ∙ \(kind), \(author)"
+    case let (kind?, nil):
+      return "\(language) ∙ \(kind)"
+    case let (nil, author?):
+      return "\(language) ∙ \(author)"
+    case (nil, nil):
+      return language
     }
-    if let author = normalizedAuthor(track.authorTitle) {
-      parts.append(author)
-    }
-    return parts.joined(separator: " ∙ ")
   }
 
   /// Localized dub-kind word for the middle of an audio label. Falls back to the
@@ -365,7 +371,8 @@ public enum AudioTracks {
       || containsToken(name, "ad")
   }
 
-  /// Studio text from a display label — trailing `∙ Studio`, or legacy `(Studio)`.
+  /// Studio text from a display label — `∙ Kind, Studio`, trailing `(Studio)`, or
+  /// legacy `∙ Kind ∙ Studio`.
   public static func authorFromDisplayName(_ name: String) -> String? {
     if let open = name.lastIndex(of: "("),
        let close = name[open...].firstIndex(of: ")"),
@@ -379,8 +386,18 @@ public enum AudioTracks {
       let parts = name.components(separatedBy: separator)
         .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         .filter { !$0.isEmpty }
+      guard parts.count >= 2 else { continue }
+
+      // "Lang ∙ Kind, Studio" or "Lang ∙ Kind, Studio ∙ 2"
+      let afterLanguage = parts[1]
+      if let comma = afterLanguage.firstIndex(of: ",") {
+        let studio = afterLanguage[afterLanguage.index(after: comma)...]
+          .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !studio.isEmpty { return studio }
+      }
+
+      // Legacy "Lang ∙ Kind ∙ Studio ∙ 2"
       guard parts.count >= 3 else { continue }
-      // "Lang ∙ kind ∙ Studio ∙ 2" — drop the HLS uniquing suffix.
       if parts.count >= 4, Int(parts.last!) != nil {
         return parts[parts.count - 2]
       }
