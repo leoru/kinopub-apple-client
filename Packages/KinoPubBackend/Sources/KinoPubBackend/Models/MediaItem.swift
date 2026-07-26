@@ -47,6 +47,86 @@ public struct MediaItem: Codable, Hashable {
   public var seasons: [Season]?
   public let videos: [Video]?
 
+  public init(
+    id: Int,
+    type: String,
+    subtype: String,
+    title: String,
+    year: Int,
+    cast: String,
+    director: String,
+    genres: [TypeClass],
+    countries: [Country],
+    voice: String?,
+    duration: Duration,
+    langs: Int,
+    quality: Int,
+    plot: String,
+    imdb: Int?,
+    imdbRating: Double?,
+    imdbVotes: Int?,
+    kinopoisk: Int?,
+    kinopoiskRating: Double?,
+    kinopoiskVotes: Int?,
+    rating: Int,
+    ratingVotes: Int,
+    ratingPercentage: Double,
+    views: Int,
+    comments: Int,
+    posters: Posters,
+    trailer: Trailer?,
+    finished: Bool,
+    advert: Bool,
+    poorQuality: Bool,
+    createdAt: Int,
+    updatedAt: Int,
+    inWatchlist: Bool?,
+    subscribed: Bool?,
+    ac3: Int?,
+    bookmarks: [TypeClass]?,
+    seasons: [Season]?,
+    videos: [Video]?
+  ) {
+    self.id = id
+    self.type = type
+    self.subtype = subtype
+    self.title = title
+    self.year = year
+    self.cast = cast
+    self.director = director
+    self.genres = genres
+    self.countries = countries
+    self.voice = voice
+    self.duration = duration
+    self.langs = langs
+    self.quality = quality
+    self.plot = plot
+    self.imdb = imdb
+    self.imdbRating = imdbRating
+    self.imdbVotes = imdbVotes
+    self.kinopoisk = kinopoisk
+    self.kinopoiskRating = kinopoiskRating
+    self.kinopoiskVotes = kinopoiskVotes
+    self.rating = rating
+    self.ratingVotes = ratingVotes
+    self.ratingPercentage = ratingPercentage
+    self.views = views
+    self.comments = comments
+    self.posters = posters
+    self.trailer = trailer
+    self.finished = finished
+    self.advert = advert
+    self.poorQuality = poorQuality
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+    self.inWatchlist = inWatchlist
+    self.subscribed = subscribed
+    self.ac3 = ac3
+    self.bookmarks = bookmarks
+    self.seasons = seasons
+    self.videos = videos
+  }
+
   private enum CodingKeys: String, CodingKey {
     case id = "id"
     case type = "type"
@@ -86,6 +166,51 @@ public struct MediaItem: Codable, Hashable {
     case ac3 = "ac3"
     case seasons = "seasons"
     case videos = "videos"
+  }
+
+  /// Listing payloads sometimes send `null` for timestamps and other soft ints
+  /// (`updated_at` on older credits). Soft fields default to zero so one bad
+  /// value cannot blank an entire person/library page.
+  public init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    id = try c.decode(Int.self, forKey: .id)
+    type = try c.decode(String.self, forKey: .type)
+    subtype = try c.decodeIfPresent(String.self, forKey: .subtype) ?? ""
+    title = try c.decode(String.self, forKey: .title)
+    year = try c.decodeIfPresent(Int.self, forKey: .year) ?? 0
+    cast = try c.decodeIfPresent(String.self, forKey: .cast) ?? ""
+    director = try c.decodeIfPresent(String.self, forKey: .director) ?? ""
+    genres = try c.decodeIfPresent([TypeClass].self, forKey: .genres) ?? []
+    countries = try c.decodeIfPresent([Country].self, forKey: .countries) ?? []
+    voice = try c.decodeIfPresent(String.self, forKey: .voice)
+    duration = try c.decode(Duration.self, forKey: .duration)
+    langs = try c.decodeIfPresent(Int.self, forKey: .langs) ?? 0
+    quality = try c.decodeIfPresent(Int.self, forKey: .quality) ?? 0
+    plot = try c.decodeIfPresent(String.self, forKey: .plot) ?? ""
+    imdb = try c.decodeIfPresent(Int.self, forKey: .imdb)
+    imdbRating = try c.decodeIfPresent(Double.self, forKey: .imdbRating)
+    imdbVotes = try c.decodeIfPresent(Int.self, forKey: .imdbVotes)
+    kinopoisk = try c.decodeIfPresent(Int.self, forKey: .kinopoisk)
+    kinopoiskRating = try c.decodeIfPresent(Double.self, forKey: .kinopoiskRating)
+    kinopoiskVotes = try c.decodeIfPresent(Int.self, forKey: .kinopoiskVotes)
+    rating = try c.decodeIfPresent(Int.self, forKey: .rating) ?? 0
+    ratingVotes = try c.decodeIfPresent(Int.self, forKey: .ratingVotes) ?? 0
+    ratingPercentage = try c.decodeIfPresent(Double.self, forKey: .ratingPercentage) ?? 0
+    views = try c.decodeIfPresent(Int.self, forKey: .views) ?? 0
+    comments = try c.decodeIfPresent(Int.self, forKey: .comments) ?? 0
+    posters = try c.decode(Posters.self, forKey: .posters)
+    trailer = try c.decodeIfPresent(Trailer.self, forKey: .trailer)
+    finished = try c.decodeIfPresent(Bool.self, forKey: .finished) ?? false
+    advert = try c.decodeIfPresent(Bool.self, forKey: .advert) ?? false
+    poorQuality = try c.decodeIfPresent(Bool.self, forKey: .poorQuality) ?? false
+    createdAt = try c.decodeIfPresent(Int.self, forKey: .createdAt) ?? 0
+    updatedAt = try c.decodeIfPresent(Int.self, forKey: .updatedAt) ?? 0
+    inWatchlist = try c.decodeIfPresent(Bool.self, forKey: .inWatchlist)
+    subscribed = try c.decodeIfPresent(Bool.self, forKey: .subscribed)
+    ac3 = try c.decodeIfPresent(Int.self, forKey: .ac3)
+    bookmarks = try c.decodeIfPresent([TypeClass].self, forKey: .bookmarks)
+    seasons = try c.decodeIfPresent([Season].self, forKey: .seasons)
+    videos = try c.decodeIfPresent([Video].self, forKey: .videos)
   }
 }
 
@@ -223,7 +348,7 @@ public extension MediaItem {
       // series — season count is what the Apple TV app shows.
       parts.append("\(seasons.count) \(seasons.count == 1 ? "season" : "seasons")")
     } else {
-      let duration = duration.hoursMinutesFormatted
+      let duration = Duration.compact(seconds: Int(duration.total))
       if !duration.isEmpty { parts.append(duration) }
     }
     return parts
