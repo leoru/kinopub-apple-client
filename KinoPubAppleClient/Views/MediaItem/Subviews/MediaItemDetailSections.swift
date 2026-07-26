@@ -7,6 +7,9 @@ import SwiftUI
 import KinoPubUI
 import KinoPubBackend
 import KinoPubMetadata
+#if canImport(AppKit)
+import AppKit
+#endif
 
 // MARK: - Ratings
 
@@ -400,38 +403,55 @@ struct MediaItemInfoColumns: View {
 
   private var informationSections: [InfoSection] {
     var sections: [InfoSection] = []
-    if !mediaItem.genreNames.isEmpty {
-      sections.append(InfoSection(id: "genre",
-                                  caption: "MediaItem_Genre",
-                                  values: mediaItem.genreNames))
+    let genres = mediaItem.genres.compactMap { genre -> InfoValue? in
+      guard let title = genre.title, !title.isEmpty else { return nil }
+      return InfoValue(id: "genre-\(genre.id)",
+                       title: title,
+                       filter: LibraryFilter(genreID: genre.id))
     }
-    if !mediaItem.countryNames.isEmpty {
-      sections.append(InfoSection(id: "country",
-                                  caption: "MediaItem_Country",
-                                  values: mediaItem.countryNames))
+    if !genres.isEmpty {
+      sections.append(InfoSection(id: "genre", caption: "MediaItem_Genre", values: genres))
     }
+
+    let countries = mediaItem.countries
+      .filter { !$0.title.isEmpty }
+      .map {
+        InfoValue(id: "country-\($0.id)",
+                  title: $0.title,
+                  filter: LibraryFilter(countryID: $0.id))
+      }
+    if !countries.isEmpty {
+      sections.append(InfoSection(id: "country", caption: "MediaItem_Country", values: countries))
+    }
+
     if mediaItem.year > 0 {
-      sections.append(InfoSection(id: "year",
-                                  caption: "MediaItem_Year",
-                                  values: ["\(mediaItem.year)"]))
+      let year = mediaItem.year
+      sections.append(InfoSection(
+        id: "year",
+        caption: "MediaItem_Year",
+        values: [InfoValue(id: "year-\(year)",
+                           title: "\(year)",
+                           filter: LibraryFilter(years: YearRange(from: year, to: year)))]
+      ))
     }
+
     let duration = mediaItem.displayDuration
     if !duration.isEmpty {
       sections.append(InfoSection(id: "duration",
                                   caption: "MediaItem_Duration",
-                                  values: [duration]))
+                                  values: [InfoValue(id: "duration", title: duration)]))
     }
     if let total = mediaItem.totalDurationDisplay {
       sections.append(InfoSection(id: "total",
                                   caption: "Total duration",
-                                  values: [total]))
+                                  values: [InfoValue(id: "total", title: total)]))
     }
     sections.append(InfoSection(id: "added",
                                 caption: "Added",
-                                values: [Self.date(mediaItem.createdAt)]))
+                                values: [InfoValue(id: "added", title: Self.date(mediaItem.createdAt))]))
     sections.append(InfoSection(id: "updated",
                                 caption: "Updated",
-                                values: [Self.date(mediaItem.updatedAt)]))
+                                values: [InfoValue(id: "updated", title: Self.date(mediaItem.updatedAt))]))
     return sections
   }
 
@@ -470,10 +490,17 @@ struct MediaItemInfoColumns: View {
     }
   }
 
+  private struct InfoValue: Identifiable {
+    let id: String
+    let title: String
+    /// When set, the value opens Search with this filter.
+    var filter: LibraryFilter? = nil
+  }
+
   private struct InfoSection: Identifiable {
     let id: String
     let caption: String
-    let values: [String]
+    let values: [InfoValue]
   }
 
   // MARK: Information
@@ -481,53 +508,99 @@ struct MediaItemInfoColumns: View {
   private struct InformationColumn: View {
     let sections: [InfoSection]
     var onSectionFocused: (() -> Void)? = nil
-    @State private var showsFullText = false
+    @EnvironmentObject var navigationState: NavigationState
+    @State private var hoveredValueID: String?
 
     var body: some View {
-      Button { showsFullText = true } label: {
-        VStack(alignment: .leading, spacing: MediaItemInfoColumns.sectionSpacing) {
-          Text("Information")
-            .font(MediaItemInfoColumns.headerFont)
-            .foregroundStyle(Color.KinoPub.text)
+      VStack(alignment: .leading, spacing: MediaItemInfoColumns.sectionSpacing) {
+        Text("Information")
+          .font(MediaItemInfoColumns.headerFont)
+          .foregroundStyle(Color.KinoPub.text)
 
-          ForEach(sections) { section in
-            VStack(alignment: .leading, spacing: MediaItemInfoColumns.stackSpacing) {
-              Text(LocalizedStringKey(section.caption))
-                .font(MediaItemInfoColumns.captionFont)
-                .foregroundStyle(Color.KinoPub.subtitle)
-              ForEach(Array(section.values.enumerated()), id: \.offset) { _, value in
-                Text(value)
-                  .font(MediaItemInfoColumns.valueFont)
-                  .foregroundStyle(Color.KinoPub.text)
-                  .fixedSize(horizontal: false, vertical: true)
-              }
-            }
-          }
+        ForEach(sections) { section in
+          sectionBlock(section)
         }
-        .frame(width: MediaItemInfoColumns.columnWidth, alignment: .leading)
       }
-      .buttonStyle(ExpandableButtonStyle())
+      .frame(width: MediaItemInfoColumns.columnWidth, alignment: .leading)
 #if os(tvOS)
       .reportMediaItemSectionFocus(onSectionFocused)
 #endif
-      .sheet(isPresented: $showsFullText) {
-        MediaItemDetailSheet(title: Text("Information")) {
-          VStack(alignment: .leading, spacing: MediaItemInfoColumns.sectionSpacing) {
-            ForEach(sections) { section in
-              VStack(alignment: .leading, spacing: MediaItemInfoColumns.stackSpacing) {
-                Text(LocalizedStringKey(section.caption))
-                  .font(MediaItemSheetLayout.captionFont)
-                  .foregroundStyle(Color.KinoPub.subtitle)
-                ForEach(Array(section.values.enumerated()), id: \.offset) { _, value in
-                  Text(value)
-                    .font(MediaItemSheetLayout.bodyFont)
-                    .foregroundStyle(Color.KinoPub.text)
-                }
+    }
+
+    @ViewBuilder
+    private func sectionBlock(_ section: InfoSection) -> some View {
+      VStack(alignment: .leading, spacing: MediaItemInfoColumns.stackSpacing) {
+        Text(LocalizedStringKey(section.caption))
+          .font(MediaItemInfoColumns.captionFont)
+          .foregroundStyle(Color.KinoPub.subtitle)
+
+        ForEach(section.values) { value in
+          if let filter = value.filter {
+            Button {
+              navigationState.openSearch(filter: filter, title: value.title)
+            } label: {
+              Text(value.title)
+                .font(MediaItemInfoColumns.valueFont)
+                .foregroundStyle(Color.KinoPub.text)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            .buttonStyle(InfoLinkButtonStyle(showsChevron: hoveredValueID == value.id))
+#if os(macOS)
+            .onHover { hovering in
+              hoveredValueID = hovering ? value.id : nil
+              if hovering {
+                NSCursor.pointingHand.push()
+              } else {
+                NSCursor.pop()
               }
             }
+#elseif os(iOS)
+            .onHover { hovering in
+              hoveredValueID = hovering ? value.id : nil
+            }
+#endif
+#if os(tvOS)
+            .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+          } else {
+            Text(value.title)
+              .font(MediaItemInfoColumns.plainValueFont)
+              .foregroundStyle(Color.KinoPub.text)
+              .fixedSize(horizontal: false, vertical: true)
           }
         }
       }
+    }
+  }
+
+  /// Hover / focus: opacity 0.8 and a trailing chevron on the value itself.
+  private struct InfoLinkButtonStyle: ButtonStyle {
+    var showsChevron: Bool
+
+    func makeBody(configuration: ButtonStyle.Configuration) -> some View {
+      InfoLinkLabel(configuration: configuration, showsChevron: showsChevron)
+    }
+  }
+
+  private struct InfoLinkLabel: View {
+    let configuration: ButtonStyle.Configuration
+    let showsChevron: Bool
+    @Environment(\.isFocused) private var isFocused
+
+    private var active: Bool { showsChevron || isFocused }
+
+    var body: some View {
+      HStack(spacing: 6) {
+        configuration.label
+          .opacity(active ? 0.8 : 1)
+        if active {
+          Image(systemName: "chevron.right")
+            .font(MediaItemInfoColumns.captionFont)
+            .foregroundStyle(Color.KinoPub.subtitle.opacity(0.85))
+            .transition(.opacity)
+        }
+      }
+      .animation(.easeOut(duration: 0.18), value: active)
     }
   }
 
@@ -575,14 +648,13 @@ struct MediaItemInfoColumns: View {
             .foregroundStyle(Color.KinoPub.text)
 
           if !audioGroups.isEmpty {
-            languageSection(caption: "MediaItem_Voice",
-                            groups: audioPartition.visible,
-                            moreCount: audioPartition.hiddenCount)
+            audioSection(groups: audioPartition.visible,
+                         moreCount: audioPartition.hiddenCount)
           }
           if !subtitleGroups.isEmpty {
-            languageSection(caption: "Subtitles",
-                            groups: subtitlePartition.visible,
+            subtitleSection(groups: subtitlePartition.visible,
                             moreCount: subtitlePartition.hiddenCount)
+              .padding(.top, MediaItemInfoColumns.subtitleExtraTop)
           }
         }
         .frame(width: MediaItemInfoColumns.columnWidth, alignment: .leading)
@@ -594,37 +666,59 @@ struct MediaItemInfoColumns: View {
     }
 
     @ViewBuilder
-    private func languageSection(caption: LocalizedStringKey,
-                                 groups: [MediaLanguageGroup],
-                                 moreCount: Int) -> some View {
-      VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageBlockSpacing) {
-        Text(caption)
+    private func audioSection(groups: [MediaLanguageGroup], moreCount: Int) -> some View {
+      VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageNameToKindSpacing) {
+        Text("MediaItem_Voice")
           .font(MediaItemInfoColumns.captionFont)
           .foregroundStyle(Color.KinoPub.subtitle)
 
-        ForEach(groups) { group in
-          VStack(alignment: .leading, spacing: MediaItemInfoColumns.stackSpacing) {
-            Text(group.name)
-              .font(MediaItemInfoColumns.valueFont)
-              .foregroundStyle(Color.KinoPub.text)
-            ForEach(Array(group.detailLines.enumerated()), id: \.offset) { _, line in
-              Text(line)
-                .font(MediaItemInfoColumns.detailFont)
+        VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageGroupSpacing) {
+          ForEach(groups) { group in
+            VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageNameToKindSpacing) {
+              Text(group.name)
+                .font(MediaItemInfoColumns.valueFont)
                 .foregroundStyle(Color.KinoPub.text)
-                .fixedSize(horizontal: false, vertical: true)
+              ForEach(Array(group.detailLines.enumerated()), id: \.offset) { _, line in
+                Text(line)
+                  .font(MediaItemInfoColumns.detailFont)
+                  .foregroundStyle(Color.KinoPub.text)
+                  .fixedSize(horizontal: false, vertical: true)
+              }
             }
           }
         }
 
         if moreCount >= 2 {
-          HStack(spacing: 6) {
-            Text("and \(moreCount) more")
-            Image(systemName: "chevron.down")
-          }
-          .font(MediaItemInfoColumns.captionFont)
-          .foregroundStyle(Color.KinoPub.subtitle.opacity(0.85))
+          moreLabel(moreCount)
         }
       }
+    }
+
+    @ViewBuilder
+    private func subtitleSection(groups: [MediaLanguageGroup], moreCount: Int) -> some View {
+      VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageNameToKindSpacing) {
+        Text("Subtitles")
+          .font(MediaItemInfoColumns.captionFont)
+          .foregroundStyle(Color.KinoPub.subtitle)
+
+        Text(groups.map(\.name).joined(separator: ", "))
+          .font(MediaItemInfoColumns.plainValueFont)
+          .foregroundStyle(Color.KinoPub.text)
+          .fixedSize(horizontal: false, vertical: true)
+
+        if moreCount >= 2 {
+          moreLabel(moreCount)
+        }
+      }
+    }
+
+    private func moreLabel(_ count: Int) -> some View {
+      HStack(spacing: 6) {
+        Text("and \(count) more")
+        Image(systemName: "chevron.down")
+      }
+      .font(MediaItemInfoColumns.captionFont)
+      .foregroundStyle(Color.KinoPub.subtitle.opacity(0.85))
     }
   }
 
@@ -638,21 +732,27 @@ struct MediaItemInfoColumns: View {
   static let columnSpacing: CGFloat = 60
   static let columnWidth: CGFloat = 480
   static let sectionSpacing: CGFloat = 22
-  static let languageBlockSpacing: CGFloat = 16
+  static let languageGroupSpacing: CGFloat = 12
+  static let languageNameToKindSpacing: CGFloat = 3
+  static let subtitleExtraTop: CGFloat = 8
   static let stackSpacing: CGFloat = 4
   static let headerFont: Font = .system(size: 30, weight: .semibold)
   static let captionFont: Font = .system(size: 22, weight: .regular)
   static let valueFont: Font = .system(size: 22, weight: .semibold)
+  static let plainValueFont: Font = .system(size: 22, weight: .regular)
   static let detailFont: Font = .system(size: 22, weight: .regular)
 #else
   static let columnSpacing: CGFloat = 28
   static let columnWidth: CGFloat = 260
   static let sectionSpacing: CGFloat = 16
-  static let languageBlockSpacing: CGFloat = 12
+  static let languageGroupSpacing: CGFloat = 8
+  static let languageNameToKindSpacing: CGFloat = 1
+  static let subtitleExtraTop: CGFloat = 8
   static let stackSpacing: CGFloat = 2
   static let headerFont: Font = .system(size: 18, weight: .semibold)
   static let captionFont: Font = .system(size: 13, weight: .regular)
   static let valueFont: Font = .system(size: 13, weight: .semibold)
+  static let plainValueFont: Font = .system(size: 13, weight: .regular)
   static let detailFont: Font = .system(size: 13, weight: .regular)
 #endif
 }

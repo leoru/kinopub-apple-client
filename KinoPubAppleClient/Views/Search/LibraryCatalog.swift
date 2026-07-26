@@ -113,6 +113,13 @@ class LibraryCatalog: ObservableObject {
 
   // MARK: - Filter changes
 
+  func applyExternalFilter(_ filter: LibraryFilter) {
+    query = ""
+    self.filter = filter
+    genres = []
+    Task { await refresh() }
+  }
+
   func update(_ transform: (inout LibraryFilter) -> Void) {
     var updated = filter
     transform(&updated)

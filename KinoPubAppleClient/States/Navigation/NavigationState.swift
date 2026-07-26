@@ -7,6 +7,13 @@
 
 import Foundation
 import SwiftUI
+import KinoPubBackend
+
+/// Filter + display title handed to Search when opening from an item-page chip.
+struct PendingSearch: Equatable {
+  var filter: LibraryFilter
+  var title: String
+}
 
 class NavigationState: ObservableObject {
   @Published var columnVisibility = NavigationSplitViewVisibility.automatic
@@ -20,6 +27,31 @@ class NavigationState: ObservableObject {
   @Published var recentlyWatchedRoutes: [MainRoutes] = []
   @Published var bookmarksRoutes: [BookmarksRoutes] = []
   @Published var downloadsRoutes: [DownloadsRoutes] = []
+  /// Applied once when Search becomes active — genre / country / year from the
+  /// item page land here so Search opens already filtered, titled, and labeled.
+  @Published var pendingSearch: PendingSearch?
+  /// Tab to restore when the user backs out of a filter-driven Search jump.
+  @Published private(set) var searchReturnTab: NavigationTabs?
+
+  var canReturnFromSearch: Bool { searchReturnTab != nil }
+
+  /// Switch to Search with a filter already selected (and the stack at root).
+  func openSearch(filter: LibraryFilter, title: String) {
+    if selectedTab != .search {
+      searchReturnTab = selectedTab
+    }
+    pendingSearch = PendingSearch(filter: filter, title: title)
+    searchRoutes = []
+    selectedTab = .search
+  }
+
+  /// Leave Search and restore the tab the filter jump came from.
+  func returnFromSearch() {
+    guard let tab = searchReturnTab else { return }
+    searchReturnTab = nil
+    pendingSearch = nil
+    selectedTab = tab
+  }
 
   /// Clears the selected tab's stack so a second click on the same sidebar/tab
   /// item returns to that tab's root (Apple Music / Apple TV behaviour).
