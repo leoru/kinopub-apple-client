@@ -10,6 +10,7 @@ import SwiftUI
 import KinoPubUI
 import KinoPubBackend
 import KinoPubKit
+import KinoPubMetadata
 
 /// Focus targets owned by the hero. Play is separate so `defaultFocus` still lands
 /// on it; everything else shares `heroOther`. Anything below the hero is untagged —
@@ -73,13 +74,23 @@ struct MediaItemView: View {
     details
       .background(pageBackground)
       .overlay {
-        // Nothing but the artwork wash while the details are in flight, and a spinner
-        // only once the wait becomes noticeable — how the Apple TV app opens a page.
-        if !itemModel.itemLoaded {
+        // Nothing but the artwork wash while the details are in flight, a spinner once
+        // the wait becomes noticeable, or a focusable retry if the request failed
+        // (VPN/TLS/offline) — never an endless spinner.
+        if itemModel.loadFailed {
+          LoadFailedView(
+            title: "Couldn't Load",
+            message: "Check your connection and try again.",
+            retryTitle: "Try Again"
+          ) {
+            itemModel.fetchData()
+          }
+        } else if !itemModel.itemLoaded {
           LoadingIndicatorView(delay: .milliseconds(700))
         }
       }
       .animation(.easeInOut(duration: 0.3), value: itemModel.itemLoaded)
+      .animation(.easeInOut(duration: 0.3), value: itemModel.loadFailed)
     // Horizontal too, or the hero stops short of the screen edges on tvOS, where the
     // safe area is inset for overscan.
     .ignoresSafeArea(edges: [.top, .horizontal])
@@ -171,7 +182,8 @@ struct MediaItemView: View {
                       folders: itemModel.folders,
                       folderIDsContainingItem: itemModel.folderIDsContainingItem,
                       onWatchedToggle: { itemModel.toggleWatched() },
-                      onFolderToggle: { itemModel.toggleFolder($0) })
+                      onFolderToggle: { itemModel.toggleFolder($0) },
+                      titleLogoURL: itemModel.externalMetadata.titleLogoURL)
   }
 
   private var contentSlide: some View {
@@ -195,6 +207,10 @@ struct MediaItemView: View {
                             },
                             onToggleWatched: { episode, season in
                               itemModel.toggleWatched(episode: episode, season: season)
+                            },
+                            seasonSchedules: itemModel.seasonSchedules,
+                            onSeasonVisible: { seasonNumber in
+                              Task { await itemModel.ensureSeasonSchedule(seasonNumber) }
                             })
           }
 
@@ -207,6 +223,7 @@ struct MediaItemView: View {
 
           MediaItemCastSection(mediaItem: itemModel.mediaItem,
                                linkProvider: itemModel.linkProvider,
+                               externalMetadata: itemModel.externalMetadata,
                                onSectionFocused: { activateContent(.cast) })
             .id(MediaItemContentAnchor.cast)
 
@@ -280,7 +297,8 @@ struct MediaItemView: View {
                             onWatchedToggle: { itemModel.toggleWatched() },
                             onFolderToggle: { itemModel.toggleFolder($0) },
                             onClearFromContinueWatching: { itemModel.clearFromContinueWatching() },
-                            onBrowseWatchlist: { navigationState.selectedTab = .watchlist })
+                            onBrowseWatchlist: { navigationState.selectedTab = .watchlist },
+                            titleLogoURL: itemModel.externalMetadata.titleLogoURL)
 
           if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
             SeasonsRailView(seasons: seasons,
@@ -292,11 +310,17 @@ struct MediaItemView: View {
                             },
                             onToggleWatched: { episode, season in
                               itemModel.toggleWatched(episode: episode, season: season)
+                            },
+                            seasonSchedules: itemModel.seasonSchedules,
+                            onSeasonVisible: { seasonNumber in
+                              Task { await itemModel.ensureSeasonSchedule(seasonNumber) }
                             })
           }
 
           MediaItemRatingsSection(mediaItem: itemModel.mediaItem, showsHeader: true)
-          MediaItemCastSection(mediaItem: itemModel.mediaItem, linkProvider: itemModel.linkProvider)
+          MediaItemCastSection(mediaItem: itemModel.mediaItem,
+                               linkProvider: itemModel.linkProvider,
+                               externalMetadata: itemModel.externalMetadata)
           MediaItemSimilarSection(items: itemModel.similarItems, linkProvider: itemModel.linkProvider)
           MediaItemInfoColumns(mediaItem: itemModel.mediaItem)
         }

@@ -49,6 +49,7 @@ struct TVProfileSettingsView: View {
       accountSection
       languageSection
       playbackSection
+      dataSourcesSection
 #if DEBUG
       diagnosticsSection
 #endif
@@ -157,6 +158,16 @@ struct TVProfileSettingsView: View {
       .buttonStyle(SettingsPillButtonStyle())
       .focused($focusedItem, equals: .secondLang)
       .disabled(!dualSubtitlesEnabled)
+    }
+  }
+
+  private var dataSourcesSection: some View {
+    SettingsSection("Data sources") {
+      DataSourcesAttributionView()
+        .padding(.horizontal, Metrics.pillHorizontalPadding)
+        .padding(.vertical, Metrics.infoVerticalPadding)
+        .focusable()
+        .focused($focusedItem, equals: .dataSources)
     }
   }
 
@@ -322,6 +333,7 @@ private enum SettingsFocusItem: Hashable {
   case nonCC
   case dual
   case secondLang
+  case dataSources
   case logout
   case diagnostics
 }
@@ -341,6 +353,8 @@ private struct SettingsTip {
       return SettingsTip(messageKey: "Settings_Tip_DualSubtitles")
     case .secondLang:
       return SettingsTip(messageKey: "Settings_Tip_SecondLanguage")
+    case .dataSources:
+      return SettingsTip(messageKey: "Settings_Tip_DataSources")
     case .logout:
       return SettingsTip(messageKey: "Settings_Tip_Logout")
     case .diagnostics:

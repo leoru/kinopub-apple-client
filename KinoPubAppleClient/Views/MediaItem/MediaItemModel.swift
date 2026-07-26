@@ -10,6 +10,7 @@ import KinoPubBackend
 import OSLog
 import KinoPubLogging
 import KinoPubKit
+import KinoPubMetadata
 
 @MainActor
 class MediaItemModel: ObservableObject {
@@ -17,11 +18,14 @@ class MediaItemModel: ObservableObject {
   private var itemsService: VideoContentService
   private var downloadManager: DownloadManager<DownloadMeta>
   private var errorHandler: ErrorHandler
+  private var metadataService: MetadataService
   public var linkProvider: NavigationLinkProvider
   public var mediaItemId: Int
   
   @Published public var mediaItem: MediaItem = MediaItem.mock()
   @Published public var itemLoaded: Bool = false
+  /// True after `fetchDetails` fails — the page shows `LoadFailedView` instead of a stuck spinner.
+  @Published public var loadFailed: Bool = false
 
   /// "More like this", loaded alongside the page. Empty until it arrives, and left
   /// empty when it fails — the section hides itself rather than erroring over the art.
@@ -32,7 +36,15 @@ class MediaItemModel: ObservableObject {
   @Published public var folderIDsContainingItem: Set<Int> = []
   @Published public var isWatched: Bool = false
 
+  /// TMDB (and later other sources) overlay. Empty when the proxy is unset or the
+  /// title has no IMDb id — the page then draws exactly as before.
+  @Published public var externalMetadata: TitleMetadata = TitleMetadata()
+
+  /// Season number → episode schedules from TMDB. Loaded on demand per season.
+  @Published public var seasonSchedules: [Int: [EpisodeSchedule]] = [:]
+
   private var actionsService: UserActionsService
+  private var identity: MediaIdentity?
 
   public var isBookmarked: Bool { !folderIDsContainingItem.isEmpty }
 
@@ -45,19 +57,22 @@ class MediaItemModel: ObservableObject {
        downloadManager: DownloadManager<DownloadMeta>,
        linkProvider: NavigationLinkProvider,
        errorHandler: ErrorHandler,
-       actionsService: UserActionsService = AppContext.shared.actionsService) {
+       actionsService: UserActionsService = AppContext.shared.actionsService,
+       metadataService: MetadataService = AppContext.shared.metadataService) {
     self.itemsService = itemsService
     self.mediaItemId = mediaItemId
     self.linkProvider = linkProvider
     self.errorHandler = errorHandler
     self.downloadManager = downloadManager
     self.actionsService = actionsService
+    self.metadataService = metadataService
     if let knownItem {
       self.mediaItem = knownItem
     }
   }
 
   func fetchData() {
+    loadFailed = false
     Task {
       do {
         mediaItem = try await itemsService.fetchDetails(for: "\(mediaItemId)").item
@@ -65,8 +80,14 @@ class MediaItemModel: ObservableObject {
         mediaItem.seasons = mediaItem.seasons?.map({ $0.mediaId = mediaId; return $0 })
         isWatched = mediaItem.playbackAction == .playAgain
         itemLoaded = true
+        identity = MediaIdentity(mediaItem: mediaItem)
+        await loadExternalMetadata()
+        if let firstSeason = mediaItem.seasons?.first?.number {
+          await ensureSeasonSchedule(firstSeason)
+        }
       } catch {
-        errorHandler.setError(error)
+        Logger.app.error("Failed to load item \(self.mediaItemId): \(error)")
+        loadFailed = true
       }
     }
     Task {
@@ -75,6 +96,59 @@ class MediaItemModel: ObservableObject {
     Task {
       await loadSimilar()
     }
+  }
+
+  func ensureSeasonSchedule(_ seasonNumber: Int) async {
+    guard seasonSchedules[seasonNumber] == nil,
+          let identity,
+          identity.imdb != nil else {
+      Logger.metadata.debug(
+        "TMDB schedule skip s\(seasonNumber): alreadyLoaded=\(self.seasonSchedules[seasonNumber] != nil) imdb=\(self.identity?.imdb ?? "nil")"
+      )
+      return
+    }
+    let kinoCount = mediaItem.seasons?
+      .first(where: { $0.number == seasonNumber })?
+      .episodes.count ?? 0
+    Logger.metadata.info(
+      "TMDB schedule fetch kinopub=\(self.mediaItemId) imdb=\(identity.imdb ?? "?") season=\(seasonNumber) kinoEpisodes=\(kinoCount)"
+    )
+    let episodes = await metadataService.schedule(for: identity, season: seasonNumber)
+    seasonSchedules[seasonNumber] = episodes
+    let tmdbNums = episodes.map(\.episodeNumber).sorted()
+    let kinoNums = Set(
+      mediaItem.seasons?
+        .first(where: { $0.number == seasonNumber })?
+        .episodes.map(\.number) ?? []
+    )
+    let missingOnKino = tmdbNums.filter { !kinoNums.contains($0) }
+    let upcoming = episodes.filter(\.isUpcoming).map(\.episodeNumber)
+    Logger.metadata.info(
+      "TMDB schedule result season=\(seasonNumber) tmdb=\(episodes.count) [\(tmdbNums.map(String.init).joined(separator: ","))] missingOnKino=\(missingOnKino) upcoming=\(upcoming) sampleStill=\(episodes.first?.still?.absoluteString ?? "nil")"
+    )
+  }
+
+  func schedule(for episode: Episode, in season: Season) -> EpisodeSchedule? {
+    seasonSchedules[season.number]?.first(where: { $0.episodeNumber == episode.number })
+  }
+
+  private func loadExternalMetadata() async {
+    guard let identity else {
+      Logger.metadata.info("TMDB skip kinopub=\(self.mediaItemId): no identity")
+      return
+    }
+    guard let imdb = identity.imdb else {
+      Logger.metadata.info("TMDB skip kinopub=\(self.mediaItemId): no imdb id")
+      return
+    }
+    Logger.metadata.info(
+      "TMDB metadata fetch kinopub=\(self.mediaItemId) imdb=\(imdb) series=\(identity.isSeries) title=\(identity.title)"
+    )
+    let meta = await metadataService.metadata(for: identity)
+    externalMetadata = meta
+    Logger.metadata.info(
+      "TMDB metadata result kinopub=\(self.mediaItemId) tmdbId=\(meta.tmdbId.map(String.init) ?? "nil") cast=\(meta.cast.count) photos=\(meta.cast.filter { $0.photo != nil }.count) logo=\(meta.titleLogoURL?.absoluteString ?? "nil") next=\(meta.nextEpisode.map { "S\($0.seasonNumber)E\($0.episodeNumber)" } ?? "nil") status=\(meta.status ?? "nil")"
+    )
   }
 
   // MARK: - Actions
@@ -188,4 +262,18 @@ class MediaItemModel: ObservableObject {
     _ = downloadManager.startDownload(url: URL(string: file.url.http)!, withMetadata: DownloadMeta.make(from: item))
   }
 
+}
+
+extension MediaIdentity {
+  init(mediaItem: MediaItem) {
+    self.init(
+      kinopubId: mediaItem.id,
+      imdb: mediaItem.imdb.map(TMDBIDFormatter.imdbString(from:)),
+      kinopoisk: mediaItem.kinopoisk,
+      title: mediaItem.localizedTitle,
+      originalTitle: mediaItem.originalTitle,
+      year: mediaItem.year,
+      isSeries: mediaItem.isSeries
+    )
+  }
 }

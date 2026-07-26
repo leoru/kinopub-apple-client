@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import KinoPubBackend
 import KinoPubKit
+import KinoPubMetadata
 
 // MARK: - Env key
 
@@ -35,6 +36,11 @@ typealias AppContextProtocol = AuthorizationServiceProvider
 & FileSaverProvider
 & UserServiceProvider
 & UserActionsServiceProvider
+& MetadataServiceProvider
+
+protocol MetadataServiceProvider {
+  var metadataService: MetadataService { get }
+}
 
 // MARK: - AppContext
 
@@ -50,6 +56,7 @@ struct AppContext: AppContextProtocol {
   var downloadManager: DownloadManager<DownloadMeta>
   var downloadedFilesDatabase: DownloadedFilesDatabase<DownloadMeta>
   var actionsService: UserActionsService
+  var metadataService: MetadataService
   
   static let shared: AppContext = {
     let configuration = BundleConfiguration()
@@ -67,6 +74,14 @@ struct AppContext: AppContextProtocol {
     let authService = AuthorizationServiceImpl(apiClient: apiClient,
                                                configuration: configuration,
                                                accessTokenService: accessTokenService)
+
+    let metadataConfig = MetadataConfiguration(
+      proxyBaseURL: configuration.tmdbProxyBaseURL.flatMap(URL.init(string:))
+    )
+    let metadataService = MetadataService(sources: [
+      TMDBSource(configuration: metadataConfig)
+    ])
+
     return AppContext(configuration: configuration,
                       authService: authService,
                       contentService: VideoContentServiceImpl(apiClient: apiClient),
@@ -76,7 +91,8 @@ struct AppContext: AppContextProtocol {
                       fileSaver: fileSaver,
                       downloadManager: downloadManager,
                       downloadedFilesDatabase: downloadedFilesDatabase,
-                      actionsService: UserActionsServiceImpl(apiClient: apiClient))
+                      actionsService: UserActionsServiceImpl(apiClient: apiClient),
+                      metadataService: metadataService)
   }()
   
   // MARK: - API Client building

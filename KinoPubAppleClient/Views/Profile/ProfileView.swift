@@ -70,6 +70,10 @@ struct ProfileView: View {
             languageSection
             playbackSection
 
+            Section(header: Text("Data sources")) {
+              DataSourcesAttributionView()
+            }
+
 #if DEBUG
             Section(header: Text("Diagnostics")) {
               NavigationLink("Stream survey") {

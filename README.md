@@ -78,6 +78,8 @@ open KinoPubAppleClient.xcodeproj
   "white".
 - **Loading is Apple-TV-shaped, not skeleton-shaped**: a screen stays empty and shows a plain spinner
   once the wait is noticeable (300 ms on listings, 700 ms on an item page), then fades the content in.
+  If an item page's details request fails (TLS / VPN / offline), `LoadFailedView` replaces the spinner
+  with a short message and a focusable Try Again button.
   Artwork fades up out of a dark tile. `LoadingIndicatorView` in `KinoPubUI` is the one spinner.
   **Search is the exception**: the query field, filter chips and a grid of empty poster tiles are on
   screen from the first frame (filters scroll with the grid, not pinned above it), so the remote
@@ -270,8 +272,8 @@ microiptv leaves a lot on the table. We shouldn't.
       `?director=` — the web client's `mode=actor` search)
 - [x] Information · Translation · Audio columns, stacking when the display is narrow
 - [x] Synopsis as a focusable panel that opens the full text, rather than expanding in place
-- [ ] Cast photos and character names — kino.pub sends neither, so portraits are initials.
-      See Phase C½: Kinopoisk Unofficial has both
+- [x] Cast photos and character names — via TMDB (`KinoPubMetadata`), matched by `MediaItem.imdb`.
+      Kinopoisk Unofficial still planned for Russian character names / awards
 - [ ] Sweep the rest of the payload (quality, AC3, age rating)
 - [x] **Similar items** — horizontal "More like this" rail on the detail page
       (`GET /v1/items/similar?id=`), before Information so tvOS focus can reach it
@@ -294,20 +296,19 @@ rather than the system language). What's missing is memory of what the user pick
       bottom — eyes that have to travel across the screen miss both. Each track keeps its own timings.
       Profile → Playback only seeds the default second language for items nothing was picked on yet.
 
-### Phase C½ — Kinopoisk Unofficial API
+### Phase C½ — External metadata (TMDB first, Kinopoisk later)
 
-kino.pub itself pulls from **Kinopoisk API Unofficial** (`kinopoiskapiunofficial.tech`), which is
-where richer Russian-language data lives: staff with photos and character names, awards, premiere
-dates, similar titles, box office. Worth wiring around the same time as Phase C, since it fills gaps
-the kino.pub payload simply doesn't have.
+Cast photos, character names, title logos and episode air dates come from **TMDB** through
+`Packages/KinoPubMetadata` and a Cloudflare Worker proxy (`workers/tmdb-proxy/`). Matching is by
+`MediaItem.imdb`. Set `TMDBProxyBaseURL` in `Info.plist` after deploying the worker.
 
-- Some endpoints answer without a key; the fuller ones need a free key. Confirm which we need before
-  deciding whether to ship a key at all.
-- Matching is by IMDb or Kinopoisk id — `MediaItem.imdb` and `MediaItem.kinopoisk` both exist.
+**Kinopoisk API Unofficial** (`kinopoiskapiunofficial.tech`) remains the plan for Russian character
+names, awards, premiere dates and box office — richer RU data TMDB doesn't carry.
 
-- [ ] Confirm what works keyless versus keyed
-- [ ] Cast photos and character names — the one gap that makes our round portraits initials
-- [ ] Awards, premiere dates, similar titles
+- [x] TMDB package + proxy + cast photos / character names / title logos
+- [x] Episode air dates + upcoming unplayable (Phase F via TMDB)
+- [ ] Kinopoisk Unofficial: Russian character names, awards, premiere dates
+- [ ] Confirm Kinopoisk keyless vs keyed endpoints
 
 ### Phase D — Exploratory: IMDb-sourced top lists
 
@@ -356,9 +357,9 @@ Two tiers, and the cheap one is worth shipping first:
 
 ### Phase F — Episode schedule
 
-- [ ] Show air dates on episode cards, including episodes not out yet ("Ep 6 · 14 Aug")
-- [ ] Mark upcoming episodes as unplayable rather than hiding them
-- [ ] Source: kino.pub's own data if it carries dates, otherwise TVDb/TMDb by IMDb id
+- [x] Show air dates on episode cards, including episodes not out yet ("Ep 6 · 14 Aug") — TMDB seasons
+- [x] Mark upcoming episodes as unplayable rather than hiding them
+- [x] Source: TMDB by IMDb id via `KinoPubMetadata` (kino.pub still has no air dates)
 
 ### Later
 - [ ] TV channels tab (`GET /v1/tv/index`)

@@ -354,6 +354,8 @@ struct MediaItemHeroView: View {
   var onClearFromContinueWatching: () -> Void = {}
   /// Opens the Saved / watchlist tab — same destination as the CW long-press action.
   var onBrowseWatchlist: (() -> Void)? = nil
+  /// TMDB title logo when available; otherwise the text title block is shown.
+  var titleLogoURL: URL? = nil
 
   /// tvOS only: the Up gesture lifts the muted inline preview into a real full-screen
   /// player. Kept here so the same view that owns the preview owns its promotion.
@@ -493,20 +495,7 @@ struct MediaItemHeroView: View {
       // own material, and a drop shadow under one that scales on focus is an extra
       // offscreen pass on every frame of the animation.
       VStack(alignment: .leading, spacing: Self.contentSpacing) {
-        // Above the localized title, as an eyebrow: it is the same title, not a second
-        // piece of information, so it leads into the big one rather than trailing it.
-        if mediaItem.originalTitle != mediaItem.localizedTitle {
-          Text(mediaItem.originalTitle)
-            .font(Self.secondaryFont)
-            .foregroundStyle(Color.KinoPub.subtitle)
-            .lineLimit(1)
-        }
-
-        Text(mediaItem.localizedTitle)
-          .font(Self.titleFont)
-          .foregroundStyle(Color.KinoPub.text)
-          .lineLimit(2)
-
+        titleBlock
         metadata
       }
       .heroTextShadow()
@@ -521,6 +510,43 @@ struct MediaItemHeroView: View {
         .heroTextShadow()
     }
     .frame(maxWidth: Self.textMaxWidth, alignment: .leading)
+  }
+
+  @ViewBuilder
+  private var titleBlock: some View {
+    if let titleLogoURL {
+      AsyncImage(url: titleLogoURL) { phase in
+        switch phase {
+        case .success(let image):
+          image
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: Self.logoMaxWidth, maxHeight: Self.logoMaxHeight, alignment: .leading)
+        default:
+          titleTextBlock
+        }
+      }
+    } else {
+      titleTextBlock
+    }
+  }
+
+  private var titleTextBlock: some View {
+    VStack(alignment: .leading, spacing: Self.contentSpacing) {
+      // Above the localized title, as an eyebrow: it is the same title, not a second
+      // piece of information, so it leads into the big one rather than trailing it.
+      if mediaItem.originalTitle != mediaItem.localizedTitle {
+        Text(mediaItem.originalTitle)
+          .font(Self.secondaryFont)
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .lineLimit(1)
+      }
+
+      Text(mediaItem.localizedTitle)
+        .font(Self.titleFont)
+        .foregroundStyle(Color.KinoPub.text)
+        .lineLimit(2)
+    }
   }
 
   /// Year, runtime, country, then the scores. One font and one colour across the
@@ -831,6 +857,8 @@ struct MediaItemHeroView: View {
   static let bottomInset: CGFloat = 60
   static let contentSpacing: CGFloat = 12
   static let textMaxWidth: CGFloat = 900
+  static let logoMaxWidth: CGFloat = 720
+  static let logoMaxHeight: CGFloat = 180
   static let titleFont: Font = .system(size: 62, weight: .bold)
   static let metaSpacing: CGFloat = 20
   static let actionsGap: CGFloat = 20
@@ -842,6 +870,8 @@ struct MediaItemHeroView: View {
   static let bottomInset: CGFloat = 28
   static let contentSpacing: CGFloat = 8
   static let textMaxWidth: CGFloat = 620
+  static let logoMaxWidth: CGFloat = 480
+  static let logoMaxHeight: CGFloat = 120
   static let titleFont: Font = .system(size: 36, weight: .bold)
   static let metaSpacing: CGFloat = 12
   static let actionsGap: CGFloat = 12
@@ -853,6 +883,8 @@ struct MediaItemHeroView: View {
   static let bottomInset: CGFloat = 20
   static let contentSpacing: CGFloat = 8
   static let textMaxWidth: CGFloat = 560
+  static let logoMaxWidth: CGFloat = 360
+  static let logoMaxHeight: CGFloat = 96
   static let titleFont: Font = .system(size: 28, weight: .bold)
   static let metaSpacing: CGFloat = 10
   static let actionsGap: CGFloat = 10

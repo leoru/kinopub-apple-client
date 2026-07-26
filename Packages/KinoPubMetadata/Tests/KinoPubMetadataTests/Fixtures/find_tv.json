@@ -1,0 +1,13 @@
+{
+  "movie_results": [],
+  "tv_results": [
+    {
+      "id": 1399,
+      "name": "Game of Thrones",
+      "media_type": "tv"
+    }
+  ],
+  "person_results": [],
+  "tv_episode_results": [],
+  "tv_season_results": []
+}

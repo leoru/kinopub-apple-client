@@ -1,0 +1,48 @@
+{
+  "id": 1399,
+  "overview": "Seven noble families fight for control...",
+  "status": "Ended",
+  "in_production": false,
+  "aggregate_credits": {
+    "cast": [
+      {
+        "id": 239019,
+        "name": "Peter Dinklage",
+        "profile_path": "/9Cmu6CFW05a2KLf7BF8Tc3vVqJE.jpg",
+        "order": 0,
+        "roles": [
+          { "character": "Tyrion Lannister", "episode_count": 67 }
+        ],
+        "total_episode_count": 67
+      }
+    ],
+    "crew": []
+  },
+  "images": {
+    "logos": [
+      {
+        "file_path": "/gotLogo.png",
+        "iso_639_1": "en",
+        "vote_average": 5.0
+      }
+    ],
+    "posters": [],
+    "backdrops": []
+  },
+  "videos": { "results": [] },
+  "keywords": { "results": [{ "id": 1, "name": "based on novel" }] },
+  "external_ids": { "imdb_id": "tt0944947" },
+  "content_ratings": {
+    "results": [
+      { "iso_3166_1": "RU", "rating": "18+" },
+      { "iso_3166_1": "US", "rating": "TV-MA" }
+    ]
+  },
+  "next_episode_to_air": null,
+  "last_episode_to_air": {
+    "air_date": "2019-05-19",
+    "episode_number": 6,
+    "season_number": 8,
+    "name": "The Iron Throne"
+  }
+}

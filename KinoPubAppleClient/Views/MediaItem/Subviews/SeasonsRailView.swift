@@ -6,6 +6,7 @@
 import SwiftUI
 import KinoPubUI
 import KinoPubBackend
+import KinoPubMetadata
 
 /// Season tabs over one continuous horizontal rail of every episode in the series —
 /// S1E1 through the finale — the way the Apple TV app presents a show. Tabs scroll the
@@ -38,6 +39,11 @@ struct SeasonsRailView: View {
   var onSectionFocused: (() -> Void)? = nil
   var onHide: ((Episode, Season) -> Void)?
   var onToggleWatched: ((Episode, Season) -> Void)?
+  /// Full TMDB season schedules keyed by season number — used to date kino episodes
+  /// and to inject episodes that exist on TMDB but not yet on kino.pub.
+  var seasonSchedules: [Int: [EpisodeSchedule]] = [:]
+  /// Ask the model to fetch schedule for a season number (kino.pub season.number).
+  var onSeasonVisible: ((Int) -> Void)? = nil
 
   @State private var selectedSeasonID: Int?
   @State private var didScrollToUnseen = false
@@ -53,15 +59,67 @@ struct SeasonsRailView: View {
   @Namespace private var seasonTabsScope
 #endif
 
-  private struct Entry: Identifiable {
-    var id: Int { episode.id }
-    let season: Season
-    let episode: Episode
+  private enum RailEntry: Identifiable {
+    case playable(season: Season, episode: Episode, schedule: EpisodeSchedule?)
+    /// On TMDB but not uploaded to kino.pub yet (or future air date).
+    case unavailable(season: Season, schedule: EpisodeSchedule)
+
+    var id: Int {
+      switch self {
+      case .playable(_, let episode, _):
+        return episode.id
+      case .unavailable(let season, let schedule):
+        // Negative synthetic id — outside kino.pub's positive media ids.
+        return -(season.number * 1_000_000 + schedule.episodeNumber)
+      }
+    }
+
+    var season: Season {
+      switch self {
+      case .playable(let season, _, _), .unavailable(let season, _):
+        return season
+      }
+    }
+
+    var episodeNumber: Int {
+      switch self {
+      case .playable(_, let episode, _): return episode.number
+      case .unavailable(_, let schedule): return schedule.episodeNumber
+      }
+    }
+
+    var schedule: EpisodeSchedule? {
+      switch self {
+      case .playable(_, _, let schedule): return schedule
+      case .unavailable(_, let schedule): return schedule
+      }
+    }
+
+    var isPlayable: Bool {
+      if case .playable = self { return true }
+      return false
+    }
   }
 
-  private var entries: [Entry] {
-    seasons.flatMap { season in
-      season.episodes.map { Entry(season: season, episode: $0) }
+  private var entries: [RailEntry] {
+    seasons.flatMap { season -> [RailEntry] in
+      let tmdb = seasonSchedules[season.number] ?? []
+      let byNumber = Dictionary(uniqueKeysWithValues: tmdb.map { ($0.episodeNumber, $0) })
+      let kinoNumbers = Set(season.episodes.map(\.number))
+
+      var result: [RailEntry] = season.episodes.map { episode in
+        .playable(season: season, episode: episode, schedule: byNumber[episode.number])
+      }
+
+      // Episodes TMDB knows about that kino.pub hasn't uploaded yet.
+      let extras = tmdb
+        .filter { !kinoNumbers.contains($0.episodeNumber) }
+        .sorted { $0.episodeNumber < $1.episodeNumber }
+        .map { RailEntry.unavailable(season: season, schedule: $0) }
+
+      result.append(contentsOf: extras)
+      result.sort { $0.episodeNumber < $1.episodeNumber }
+      return result
     }
   }
 
@@ -69,18 +127,21 @@ struct SeasonsRailView: View {
     seasons.first { $0.id == selectedSeasonID } ?? seasons.first
   }
 
-  /// First unfinished episode walking seasons in order, else the very first.
-  private var firstUnseen: Entry? {
-    entries.first { $0.episode.watched == 0 } ?? entries.first
+  /// First unfinished playable episode walking seasons in order, else the very first rail item.
+  private var firstUnseen: RailEntry? {
+    entries.first {
+      if case .playable(_, let episode, _) = $0 { return episode.watched == 0 }
+      return false
+    } ?? entries.first
   }
 
   /// Episode to land on when Down crosses the bridge from the season tabs.
   private var bridgeDownEpisodeID: Int? {
     if let selectedSeasonID,
-       let first = seasons.first(where: { $0.id == selectedSeasonID })?.episodes.first {
+       let first = entries.first(where: { $0.season.id == selectedSeasonID }) {
       return first.id
     }
-    return entries.first?.episode.id
+    return entries.first?.id
   }
 
   var body: some View {
@@ -120,7 +181,7 @@ struct SeasonsRailView: View {
         }
         guard !isScrollingFromTab,
               let episodeID,
-              let entry = entries.first(where: { $0.episode.id == episodeID }) else { return }
+              let entry = entries.first(where: { $0.id == episodeID }) else { return }
         selectedSeasonID = entry.season.id
       }
       .onChange(of: bridgeFocused) { _, focused in
@@ -187,42 +248,77 @@ struct SeasonsRailView: View {
     ScrollView(.horizontal, showsIndicators: false) {
       LazyHStack(alignment: .top, spacing: Self.cardSpacing) {
         ForEach(entries) { entry in
-          let episode = entry.episode
-          let season = entry.season
-          let isFocusedEpisode = focusedEpisodeID == episode.id
-
-          NavigationLink(value: linkProvider.player(for: filled(episode, in: season))) {
-            EpisodeRailCard(episode: episode)
-          }
-          .buttonStyle(EpisodeCardButtonStyle())
+          let isFocusedEpisode = focusedEpisodeID == entry.id
+          railCard(for: entry)
 #if os(tvOS)
-          .focused($focusedEpisodeID, equals: episode.id)
+            .focused($focusedEpisodeID, equals: entry.id)
 #endif
-          .modifier(MediaCardContextMenuModifier(
-            actions: contextActions(for: episode, season: season)
-          ))
-          // Focused card paints above neighbours so scale + plate aren't shaved off.
-          .zIndex(isFocusedEpisode ? 1 : 0)
-          .id(Self.episodeAnchor(episode.id))
+            .zIndex(isFocusedEpisode ? 1 : 0)
+            .id(Self.episodeAnchor(entry.id))
         }
       }
       .padding(.vertical, Self.focusPadding)
     }
-    // Margins (not content padding): scrollTo(.leading) and focus scrolling keep the
-    // left inset, so episode 1 isn't clipped flush against the screen edge.
     .contentMargins(.horizontal, Self.horizontalInset, for: .scrollContent)
-    // Let focused cards grow (scale + multi-line titles) past the scroll view's bounds
-    // instead of clipping the plate mid-caption.
     .scrollClipDisabled()
+  }
+
+  @ViewBuilder
+  private func railCard(for entry: RailEntry) -> some View {
+    switch entry {
+    case .playable(let season, let episode, let schedule) where schedule?.isUpcoming != true:
+      NavigationLink(value: linkProvider.player(for: filled(episode, in: season))) {
+        EpisodeRailCard(
+          title: Self.displayTitle(episode: episode, schedule: schedule),
+          number: episode.number,
+          stillURL: Self.stillURL(episode: episode, schedule: schedule),
+          schedule: schedule,
+          progress: Self.progress(for: episode)
+        )
+      }
+      .buttonStyle(EpisodeCardButtonStyle())
+      .modifier(MediaCardContextMenuModifier(
+        actions: contextActions(for: episode, season: season)
+      ))
+
+    case .playable(_, let episode, let schedule):
+      Button(action: {}) {
+        EpisodeRailCard(
+          title: Self.displayTitle(episode: episode, schedule: schedule),
+          number: episode.number,
+          stillURL: Self.stillURL(episode: episode, schedule: schedule),
+          schedule: schedule,
+          progress: nil
+        )
+      }
+      .buttonStyle(EpisodeCardButtonStyle())
+      .disabled(true)
+      .opacity(0.55)
+
+    case .unavailable(_, let schedule):
+      Button(action: {}) {
+        EpisodeRailCard(
+          title: schedule.name ?? "",
+          number: schedule.episodeNumber,
+          stillURL: schedule.still,
+          schedule: schedule,
+          progress: nil
+        )
+      }
+      .buttonStyle(EpisodeCardButtonStyle())
+      .disabled(true)
+      .opacity(0.55)
+    }
   }
 
   /// Selects a season and scrolls the episode rail to its first episode. Used by tab
   /// focus, tab activation, and the initial jump to the first unfinished episode.
   private func selectSeason(_ seasonID: Int, proxy: ScrollViewProxy, animated: Bool) {
     guard let season = seasons.first(where: { $0.id == seasonID }),
-          let firstEpisode = season.episodes.first else { return }
+          let first = entries.first(where: { $0.season.id == seasonID }) else { return }
     selectedSeasonID = seasonID
-    let anchor = Self.episodeAnchor(firstEpisode.id)
+    onSeasonVisible?(season.number)
+    let anchor = Self.episodeAnchor(first.id)
     isScrollingFromTab = true
     if animated {
       withAnimation(.easeOut(duration: 0.2)) {
@@ -231,7 +327,6 @@ struct SeasonsRailView: View {
     } else {
       proxy.scrollTo(anchor, anchor: .leading)
     }
-    // Release the guard after the LazyHStack has had time to settle.
     Task { @MainActor in
       try? await Task.sleep(for: .milliseconds(250))
       isScrollingFromTab = false
@@ -241,10 +336,8 @@ struct SeasonsRailView: View {
   private func scrollToFirstUnseen(proxy: ScrollViewProxy) async {
     guard !didScrollToUnseen, let target = firstUnseen else { return }
     didScrollToUnseen = true
-    // LazyHStack needs a beat before the destination exists to scroll to.
     try? await Task.sleep(for: .milliseconds(120))
     guard !Task.isCancelled else { return }
-    // Scroll only — don't claim focus. The page's defaultFocus stays on Play.
     selectSeason(target.season.id, proxy: proxy, animated: false)
   }
 
@@ -267,22 +360,34 @@ struct SeasonsRailView: View {
     return episode
   }
 
+  private static func displayTitle(episode: Episode, schedule: EpisodeSchedule?) -> String {
+    let kino = episode.title.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !kino.isEmpty { return kino }
+    return schedule?.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+  }
+
+  private static func stillURL(episode: Episode, schedule: EpisodeSchedule?) -> URL? {
+    if !episode.thumbnail.isEmpty, let url = URL(string: episode.thumbnail) { return url }
+    return schedule?.still
+  }
+
+  private static func progress(for episode: Episode) -> Double? {
+    guard episode.watched == 0, episode.duration > 0, episode.watching.time > 0 else { return nil }
+    return min(Double(episode.watching.time) / Double(episode.duration), 1.0)
+  }
+
   private static func contextCard(for episode: Episode, in season: Season) -> MediaCard {
-    let progress: Double? = {
-      guard episode.watched == 0, episode.duration > 0, episode.watching.time > 0 else { return nil }
-      return min(Double(episode.watching.time) / Double(episode.duration), 1.0)
-    }()
-    return MediaCard(id: episode.id,
-                     posterURL: episode.thumbnail,
-                     title: episode.fixedTitle,
-                     progress: progress,
-                     landscapeImageURL: episode.thumbnail,
-                     itemID: season.mediaId ?? episode.mediaId,
-                     video: episode.number,
-                     season: season.number,
-                     mediaID: episode.id,
-                     isWatched: episode.watched > 0,
-                     isSeries: true)
+    MediaCard(id: episode.id,
+              posterURL: episode.thumbnail,
+              title: episode.fixedTitle,
+              progress: progress(for: episode),
+              landscapeImageURL: episode.thumbnail,
+              itemID: season.mediaId ?? episode.mediaId,
+              video: episode.number,
+              season: season.number,
+              mediaID: episode.id,
+              isWatched: episode.watched > 0,
+              isSeries: true)
   }
 
   private static func seasonTitle(_ season: Season) -> String {
@@ -322,21 +427,30 @@ struct SeasonsRailView: View {
 /// don't reflow the section — plate and scale only wrap the content that exists.
 private struct EpisodeRailCard: View {
 
-  let episode: Episode
+  let title: String
+  let number: Int
+  let stillURL: URL?
+  var schedule: EpisodeSchedule? = nil
+  var progress: Double? = nil
   @Environment(\.isFocused) private var isFocused
 
   private var episodeNumberLabel: String {
-    "\("Episode".localized) \(episode.number)"
+    if let airDate = schedule?.airDate {
+      return "\("Episode".localized) \(number) · \(Self.airDateFormatter.string(from: airDate))"
+    }
+    return "\("Episode".localized) \(number)"
   }
 
   private var episodeTitle: String {
-    episode.title.trimmingCharacters(in: .whitespacesAndNewlines)
+    title.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 
-  private var progress: Double? {
-    guard episode.watched == 0, episode.duration > 0, episode.watching.time > 0 else { return nil }
-    return min(Double(episode.watching.time) / Double(episode.duration), 1.0)
-  }
+  private static let airDateFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "d MMM"
+    f.locale = .current
+    return f
+  }()
 
   var body: some View {
     ZStack(alignment: .topLeading) {
@@ -413,7 +527,7 @@ private struct EpisodeRailCard: View {
   }
 
   private var still: some View {
-    AsyncImage(url: URL(string: episode.thumbnail),
+    AsyncImage(url: stillURL,
                transaction: Transaction(animation: .easeIn(duration: 0.25))) { phase in
       ZStack(alignment: .bottom) {
         Group {

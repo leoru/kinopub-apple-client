@@ -16,6 +16,7 @@ enum LoggingCategory: String {
   case backend      // Represents logging related to backend interactions and responses
   case app          // Represents general application-level logging
   case kit          // Represents logging related to kit
+  case metadata     // External metadata sources (TMDB, Trakt, …)
 }
 
 public extension Logger {
@@ -37,4 +38,7 @@ public extension Logger {
 
   /// Logger instance specific to general `kit` logging.
   static let kit = Logger(subsystem: subsystem, category: LoggingCategory.kit.rawValue)
+
+  /// Logger for external metadata providers (TMDB, Trakt, Kinopoisk, IntroDB).
+  static let metadata = Logger(subsystem: subsystem, category: LoggingCategory.metadata.rawValue)
 }

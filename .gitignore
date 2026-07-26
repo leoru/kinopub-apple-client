@@ -30,3 +30,7 @@ Packages/*/.swiftpm/xcode/xcuserdata/
 ## Playgrounds
 timeline.xctimeline
 playground.xcworkspace
+
+## Cloudflare Workers
+workers/**/.dev.vars
+workers/**/node_modules/

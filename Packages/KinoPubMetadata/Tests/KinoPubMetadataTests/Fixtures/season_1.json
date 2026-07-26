@@ -1,0 +1,29 @@
+{
+  "season_number": 1,
+  "episodes": [
+    {
+      "episode_number": 1,
+      "name": "Winter Is Coming",
+      "overview": "Ned Stark...",
+      "air_date": "2011-04-17",
+      "runtime": 62,
+      "still_path": "/still1.jpg"
+    },
+    {
+      "episode_number": 2,
+      "name": "The Kingsroad",
+      "overview": "Leaving...",
+      "air_date": "2011-04-24",
+      "runtime": 56,
+      "still_path": "/still2.jpg"
+    },
+    {
+      "episode_number": 99,
+      "name": "Future Episode",
+      "overview": "Not yet.",
+      "air_date": "2099-12-31",
+      "runtime": 60,
+      "still_path": null
+    }
+  ]
+}

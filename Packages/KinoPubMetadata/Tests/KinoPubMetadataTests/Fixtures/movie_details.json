@@ -1,0 +1,96 @@
+{
+  "id": 550,
+  "overview": "A ticking-time-bomb insomniac...",
+  "tagline": "Mischief. Mayhem. Soap.",
+  "status": "Released",
+  "genres": [{ "id": 18, "name": "Drama" }],
+  "credits": {
+    "cast": [
+      {
+        "id": 819,
+        "name": "Edward Norton",
+        "character": "The Narrator",
+        "profile_path": "/5XBzD5WuTyVQZehmOwdqmVR76XZ.jpg",
+        "order": 0
+      },
+      {
+        "id": 287,
+        "name": "Brad Pitt",
+        "character": "Tyler Durden",
+        "profile_path": "/cckcYc2l0el09p8Fy77BW9F0al.jpg",
+        "order": 1
+      }
+    ],
+    "crew": [
+      {
+        "id": 7467,
+        "name": "David Fincher",
+        "job": "Director",
+        "department": "Directing",
+        "profile_path": "/tpEczFclQZeKAiCcFNbR40E3IJw.jpg"
+      }
+    ]
+  },
+  "images": {
+    "logos": [
+      {
+        "file_path": "/enLogo.png",
+        "iso_639_1": "en",
+        "vote_average": 5.0
+      },
+      {
+        "file_path": "/ruLogo.png",
+        "iso_639_1": "ru",
+        "vote_average": 4.0
+      },
+      {
+        "file_path": "/nullLogo.png",
+        "iso_639_1": null,
+        "vote_average": 6.0
+      }
+    ],
+    "posters": [
+      {
+        "file_path": "/poster.jpg",
+        "iso_639_1": "en",
+        "vote_average": 8.0
+      }
+    ],
+    "backdrops": [
+      {
+        "file_path": "/backdrop.jpg",
+        "iso_639_1": null,
+        "vote_average": 7.0
+      }
+    ]
+  },
+  "videos": {
+    "results": [
+      {
+        "key": "qtRKdVHc-cE",
+        "site": "YouTube",
+        "type": "Trailer",
+        "official": true,
+        "iso_639_1": "en"
+      }
+    ]
+  },
+  "keywords": {
+    "keywords": [
+      { "id": 1, "name": "dual identity" }
+    ]
+  },
+  "external_ids": {
+    "imdb_id": "tt0137523"
+  },
+  "release_dates": {
+    "results": [
+      {
+        "iso_3166_1": "US",
+        "release_dates": [
+          { "certification": "R", "type": 3 }
+        ]
+      }
+    ]
+  }
+}

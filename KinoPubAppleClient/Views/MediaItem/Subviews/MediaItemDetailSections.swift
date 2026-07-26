@@ -6,6 +6,7 @@
 import SwiftUI
 import KinoPubUI
 import KinoPubBackend
+import KinoPubMetadata
 
 // MARK: - Ratings
 
@@ -178,8 +179,8 @@ private struct RatingTileButtonStyle: ButtonStyle {
 
 // MARK: - Cast
 
-/// Round portraits, as on Apple TV. kino.pub sends only names — no photos and no
-/// character names — so these are initials rather than faces.
+/// Round portraits, as on Apple TV. Photos and character names come from TMDB when
+/// the metadata proxy is configured; otherwise initials and the role label.
 ///
 /// Each one leads to that person's credits, which is also what makes the rail
 /// reachable: a tvOS scroll view moves by focus, and portraits that were plain text
@@ -188,11 +189,21 @@ struct MediaItemCastSection: View {
 
   let mediaItem: MediaItem
   let linkProvider: NavigationLinkProvider
+  var externalMetadata: TitleMetadata = TitleMetadata()
   var onSectionFocused: (() -> Void)? = nil
 
-  private var people: [MediaPerson] {
-    mediaItem.directorNames.map { MediaPerson(name: $0, role: .director) }
-      + mediaItem.castMembers.map { MediaPerson(name: $0, role: .actor) }
+  private var people: [(person: MediaPerson, member: CastMember)] {
+    let directors = TitleMetadata.enrich(
+      names: mediaItem.directorNames,
+      roleDepartment: "Directing",
+      from: externalMetadata
+    ).map { (MediaPerson(name: $0.name, role: .director), $0) }
+    let actors = TitleMetadata.enrich(
+      names: mediaItem.castMembers,
+      roleDepartment: "Acting",
+      from: externalMetadata
+    ).map { (MediaPerson(name: $0.name, role: .actor), $0) }
+    return directors + actors
   }
 
   var body: some View {
@@ -202,9 +213,9 @@ struct MediaItemCastSection: View {
 
         ScrollView(.horizontal, showsIndicators: false) {
           LazyHStack(alignment: .top, spacing: Self.spacing) {
-            ForEach(people) { person in
-              NavigationLink(value: linkProvider.person(for: person)) {
-                portrait(person)
+            ForEach(people, id: \.person.id) { entry in
+              NavigationLink(value: linkProvider.person(for: entry.person)) {
+                portrait(entry.person, member: entry.member)
               }
               .buttonStyle(PortraitButtonStyle())
 #if os(tvOS)
@@ -219,26 +230,49 @@ struct MediaItemCastSection: View {
     }
   }
 
-  private func portrait(_ person: MediaPerson) -> some View {
+  private func portrait(_ person: MediaPerson, member: CastMember) -> some View {
     VStack(spacing: 8) {
-      Circle()
-        .fill(Color.KinoPub.selectionBackground)
-        .frame(width: Self.avatarSize, height: Self.avatarSize)
-        .overlay {
+      ZStack {
+        Circle()
+          .fill(Color.KinoPub.selectionBackground)
+        if let photo = member.photo {
+          AsyncImage(url: photo) { phase in
+            if let image = phase.image {
+              image
+                .resizable()
+                .scaledToFill()
+            } else {
+              Text(initials(of: person.name))
+                .font(Self.initialsFont)
+                .foregroundStyle(Color.KinoPub.text)
+            }
+          }
+        } else {
           Text(initials(of: person.name))
             .font(Self.initialsFont)
             .foregroundStyle(Color.KinoPub.text)
         }
+      }
+      .frame(width: Self.avatarSize, height: Self.avatarSize)
+      .clipShape(Circle())
 
       Text(person.name)
         .font(Self.nameFont)
         .foregroundStyle(Color.KinoPub.text)
         .lineLimit(1)
 
-      Text(LocalizedStringKey(person.role.titleKey))
-        .font(Self.roleFont)
-        .foregroundStyle(Color.KinoPub.subtitle)
-        .lineLimit(1)
+      if let character = member.character, !character.isEmpty, person.role == .actor {
+        Text(character)
+          .font(Self.roleFont)
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .lineLimit(2)
+          .multilineTextAlignment(.center)
+      } else {
+        Text(LocalizedStringKey(person.role.titleKey))
+          .font(Self.roleFont)
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .lineLimit(1)
+      }
     }
     .frame(width: Self.avatarSize + 24)
   }
@@ -338,103 +372,79 @@ struct MediaItemSimilarSection: View {
 
 // MARK: - Information columns
 
-/// Information · Translation · Audio, side by side where there is room and stacked
-/// where there isn't — the shape Apple uses for Information · Languages · Accessibility.
+/// Information · Languages, side by side where there is room and stacked where there
+/// isn't — the shape Apple uses for Information · Languages · Accessibility.
+///
+/// Rows are stacked App Store–style (secondary caption, then semibold value), not
+/// key-left / value-right. Languages merges audio and subtitles: voiceover first,
+/// then subs, preferred (+ English) languages open, the rest behind "and N more".
 ///
 /// Each column is a control rather than a block of text. tvOS scrolls by moving
 /// focus, so a page whose bottom half holds nothing focusable cannot be scrolled to
-/// at all — these columns were unreachable. Selecting one opens it in full, which is
-/// also where the lists clipped down here (the subtitle languages above all) are
-/// shown whole.
+/// at all — these columns were unreachable.
 struct MediaItemInfoColumns: View {
 
   let mediaItem: MediaItem
   var onSectionFocused: (() -> Void)? = nil
 
-  private static let maxSubtitleLanguages = 6
-
-  private struct Row: Identifiable {
-    let id: Int
-    /// Nil for the audio tracks, which are a plain list rather than a table.
-    let key: String?
-    let value: String
+  /// System preferred languages plus the app's second-subtitle choice — the set the
+  /// Languages column keeps expanded by default.
+  private var preferredLanguages: [String] {
+    var languages = Locale.preferredLanguages
+    let second = SubtitlePreferences.secondSubtitleLanguage
+    if !languages.contains(where: { SubtitleTracks.matches(language: $0, second) }) {
+      languages.append(second)
+    }
+    return languages
   }
 
-  private struct Column: Identifiable {
-    let id: String
-    let rows: [Row]
-    /// What the column shows once opened: the same rows without the clamping.
-    let fullRows: [Row]
-  }
-
-  private var informationRows: [(String, String)] {
-    var rows: [(String, String)] = []
+  private var informationSections: [InfoSection] {
+    var sections: [InfoSection] = []
     if !mediaItem.genreNames.isEmpty {
-      rows.append(("MediaItem_Genre", mediaItem.genreNames.joined(separator: ", ")))
+      sections.append(InfoSection(id: "genre",
+                                  caption: "MediaItem_Genre",
+                                  values: mediaItem.genreNames))
     }
     if !mediaItem.countryNames.isEmpty {
-      rows.append(("MediaItem_Country", mediaItem.countryNames.joined(separator: ", ")))
+      sections.append(InfoSection(id: "country",
+                                  caption: "MediaItem_Country",
+                                  values: mediaItem.countryNames))
     }
     if mediaItem.year > 0 {
-      rows.append(("MediaItem_Year", "\(mediaItem.year)"))
+      sections.append(InfoSection(id: "year",
+                                  caption: "MediaItem_Year",
+                                  values: ["\(mediaItem.year)"]))
     }
     let duration = mediaItem.displayDuration
     if !duration.isEmpty {
-      rows.append(("MediaItem_Duration", duration))
+      sections.append(InfoSection(id: "duration",
+                                  caption: "MediaItem_Duration",
+                                  values: [duration]))
     }
     if let total = mediaItem.totalDurationDisplay {
-      rows.append(("Total duration", total))
+      sections.append(InfoSection(id: "total",
+                                  caption: "Total duration",
+                                  values: [total]))
     }
-    rows.append(("Added", Self.date(mediaItem.createdAt)))
-    rows.append(("Updated", Self.date(mediaItem.updatedAt)))
-    return rows
+    sections.append(InfoSection(id: "added",
+                                caption: "Added",
+                                values: [Self.date(mediaItem.createdAt)]))
+    sections.append(InfoSection(id: "updated",
+                                caption: "Updated",
+                                values: [Self.date(mediaItem.updatedAt)]))
+    return sections
   }
 
-  /// Some items carry 20+ subtitle languages; the full list swamps the column, so it
-  /// is clamped here and left whole for the opened version.
-  private func translationRows(clamped: Bool) -> [(String, String)] {
-    var rows: [(String, String)] = []
-    if let voice = mediaItem.voice, !voice.isEmpty {
-      rows.append(("MediaItem_Voice", voice))
-    }
-    let subtitles = mediaItem.subtitleLanguages
-    if !subtitles.isEmpty {
-      let remainder = subtitles.count - Self.maxSubtitleLanguages
-      if clamped, remainder > 0 {
-        let shown = subtitles.prefix(Self.maxSubtitleLanguages).joined(separator: ", ")
-        rows.append(("Subtitles", "\(shown) +\(remainder)"))
-      } else {
-        rows.append(("Subtitles", subtitles.joined(separator: ", ")))
-      }
-    }
-    return rows
+  private var audioGroups: [MediaLanguageGroup] {
+    mediaItem.audioLanguageGroups(preferredLanguages: preferredLanguages)
   }
 
-  private var audioRows: [Row] {
-    mediaItem.audioTrackDescriptions.enumerated().map { index, track in
-      Row(id: index, key: nil, value: track)
-    }
+  private var subtitleGroups: [MediaLanguageGroup] {
+    mediaItem.subtitleLanguageGroups(preferredLanguages: preferredLanguages)
   }
 
-  private var columns: [Column] {
-    let information = Self.rows(informationRows)
-    var result = [Column(id: "Information", rows: information, fullRows: information)]
-
-    let translation = translationRows(clamped: true)
-    if !translation.isEmpty {
-      result.append(Column(id: "Translation",
-                           rows: Self.rows(translation),
-                           fullRows: Self.rows(translationRows(clamped: false))))
-    }
-
-    if !mediaItem.audioTrackDescriptions.isEmpty {
-      result.append(Column(id: "Audio", rows: audioRows, fullRows: audioRows))
-    }
-    return result
-  }
-
-  private static func rows(_ pairs: [(String, String)]) -> [Row] {
-    pairs.enumerated().map { Row(id: $0.offset, key: $0.element.0, value: $0.element.1) }
+  private var showsLanguagesColumn: Bool {
+    !audioGroups.isEmpty || !subtitleGroups.isEmpty
   }
 
   var body: some View {
@@ -449,30 +459,50 @@ struct MediaItemInfoColumns: View {
     .padding(.horizontal, MediaItemLayout.horizontalInset)
   }
 
+  @ViewBuilder
   private var columnViews: some View {
-    ForEach(columns) { ColumnView(column: $0, onSectionFocused: onSectionFocused) }
+    InformationColumn(sections: informationSections, onSectionFocused: onSectionFocused)
+    if showsLanguagesColumn {
+      LanguagesColumn(audioGroups: audioGroups,
+                      subtitleGroups: subtitleGroups,
+                      preferredLanguages: preferredLanguages,
+                      onSectionFocused: onSectionFocused)
+    }
   }
 
-  private struct ColumnView: View {
+  private struct InfoSection: Identifiable {
+    let id: String
+    let caption: String
+    let values: [String]
+  }
 
-    let column: Column
+  // MARK: Information
+
+  private struct InformationColumn: View {
+    let sections: [InfoSection]
     var onSectionFocused: (() -> Void)? = nil
-
     @State private var showsFullText = false
 
     var body: some View {
-      Button {
-        showsFullText = true
-      } label: {
-        VStack(alignment: .leading, spacing: 12) {
-          Text(LocalizedStringKey(column.id))
+      Button { showsFullText = true } label: {
+        VStack(alignment: .leading, spacing: MediaItemInfoColumns.sectionSpacing) {
+          Text("Information")
             .font(MediaItemInfoColumns.headerFont)
             .foregroundStyle(Color.KinoPub.text)
 
-          ForEach(column.rows) { row in
-            MediaItemInfoColumns.rowView(row, keyWidth: MediaItemInfoColumns.keyWidth)
+          ForEach(sections) { section in
+            VStack(alignment: .leading, spacing: MediaItemInfoColumns.stackSpacing) {
+              Text(LocalizedStringKey(section.caption))
+                .font(MediaItemInfoColumns.captionFont)
+                .foregroundStyle(Color.KinoPub.subtitle)
+              ForEach(Array(section.values.enumerated()), id: \.offset) { _, value in
+                Text(value)
+                  .font(MediaItemInfoColumns.valueFont)
+                  .foregroundStyle(Color.KinoPub.text)
+                  .fixedSize(horizontal: false, vertical: true)
+              }
+            }
           }
-          .font(MediaItemInfoColumns.rowFont)
         }
         .frame(width: MediaItemInfoColumns.columnWidth, alignment: .leading)
       }
@@ -481,30 +511,120 @@ struct MediaItemInfoColumns: View {
       .reportMediaItemSectionFocus(onSectionFocused)
 #endif
       .sheet(isPresented: $showsFullText) {
-        MediaItemDetailSheet(title: Text(LocalizedStringKey(column.id))) {
-          VStack(alignment: .leading, spacing: 12) {
-            ForEach(column.fullRows) { row in
-              MediaItemInfoColumns.rowView(row, keyWidth: MediaItemInfoColumns.sheetKeyWidth)
+        MediaItemDetailSheet(title: Text("Information")) {
+          VStack(alignment: .leading, spacing: MediaItemInfoColumns.sectionSpacing) {
+            ForEach(sections) { section in
+              VStack(alignment: .leading, spacing: MediaItemInfoColumns.stackSpacing) {
+                Text(LocalizedStringKey(section.caption))
+                  .font(MediaItemSheetLayout.captionFont)
+                  .foregroundStyle(Color.KinoPub.subtitle)
+                ForEach(Array(section.values.enumerated()), id: \.offset) { _, value in
+                  Text(value)
+                    .font(MediaItemSheetLayout.bodyFont)
+                    .foregroundStyle(Color.KinoPub.text)
+                }
+              }
             }
           }
-          .font(MediaItemSheetLayout.bodyFont)
         }
       }
     }
   }
 
-  /// Fonts come from whichever context the row is dropped into — the column and the
-  /// opened sheet set the same face at two sizes. Key and value only differ in colour.
-  private static func rowView(_ row: Row, keyWidth: CGFloat) -> some View {
-    HStack(alignment: .top, spacing: 12) {
-      if let key = row.key {
-        Text(LocalizedStringKey(key))
-          .foregroundStyle(Color.KinoPub.subtitle)
-          .frame(width: keyWidth, alignment: .leading)
+  // MARK: Languages
+
+  private struct LanguagesColumn: View {
+    let audioGroups: [MediaLanguageGroup]
+    let subtitleGroups: [MediaLanguageGroup]
+    let preferredLanguages: [String]
+    var onSectionFocused: (() -> Void)? = nil
+
+    @State private var showsAllAudio = false
+    @State private var showsAllSubtitles = false
+
+    private var collapsedAudio: (visible: [MediaLanguageGroup], hiddenCount: Int) {
+      LanguageListVisibility.partition(audioGroups, preferredLanguages: preferredLanguages)
+    }
+
+    private var collapsedSubtitles: (visible: [MediaLanguageGroup], hiddenCount: Int) {
+      LanguageListVisibility.partition(subtitleGroups, preferredLanguages: preferredLanguages)
+    }
+
+    private var audioPartition: (visible: [MediaLanguageGroup], hiddenCount: Int) {
+      showsAllAudio ? (audioGroups, 0) : collapsedAudio
+    }
+
+    private var subtitlePartition: (visible: [MediaLanguageGroup], hiddenCount: Int) {
+      showsAllSubtitles ? (subtitleGroups, 0) : collapsedSubtitles
+    }
+
+    private var canExpand: Bool {
+      (!showsAllAudio && collapsedAudio.hiddenCount >= 2)
+        || (!showsAllSubtitles && collapsedSubtitles.hiddenCount >= 2)
+    }
+
+    var body: some View {
+      Button {
+        guard canExpand else { return }
+        showsAllAudio = true
+        showsAllSubtitles = true
+      } label: {
+        VStack(alignment: .leading, spacing: MediaItemInfoColumns.sectionSpacing) {
+          Text("Languages")
+            .font(MediaItemInfoColumns.headerFont)
+            .foregroundStyle(Color.KinoPub.text)
+
+          if !audioGroups.isEmpty {
+            languageSection(caption: "MediaItem_Voice",
+                            groups: audioPartition.visible,
+                            moreCount: audioPartition.hiddenCount)
+          }
+          if !subtitleGroups.isEmpty {
+            languageSection(caption: "Subtitles",
+                            groups: subtitlePartition.visible,
+                            moreCount: subtitlePartition.hiddenCount)
+          }
+        }
+        .frame(width: MediaItemInfoColumns.columnWidth, alignment: .leading)
       }
-      Text(row.value)
-        .foregroundStyle(Color.KinoPub.text)
-        .fixedSize(horizontal: false, vertical: true)
+      .buttonStyle(ExpandableButtonStyle())
+#if os(tvOS)
+      .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+    }
+
+    @ViewBuilder
+    private func languageSection(caption: LocalizedStringKey,
+                                 groups: [MediaLanguageGroup],
+                                 moreCount: Int) -> some View {
+      VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageBlockSpacing) {
+        Text(caption)
+          .font(MediaItemInfoColumns.captionFont)
+          .foregroundStyle(Color.KinoPub.subtitle)
+
+        ForEach(groups) { group in
+          VStack(alignment: .leading, spacing: MediaItemInfoColumns.stackSpacing) {
+            Text(group.name)
+              .font(MediaItemInfoColumns.valueFont)
+              .foregroundStyle(Color.KinoPub.text)
+            ForEach(Array(group.detailLines.enumerated()), id: \.offset) { _, line in
+              Text(line)
+                .font(MediaItemInfoColumns.detailFont)
+                .foregroundStyle(Color.KinoPub.text)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+          }
+        }
+
+        if moreCount >= 2 {
+          HStack(spacing: 6) {
+            Text("and \(moreCount) more")
+            Image(systemName: "chevron.down")
+          }
+          .font(MediaItemInfoColumns.captionFont)
+          .foregroundStyle(Color.KinoPub.subtitle.opacity(0.85))
+        }
+      }
     }
   }
 
@@ -517,17 +637,23 @@ struct MediaItemInfoColumns: View {
 #if os(tvOS)
   static let columnSpacing: CGFloat = 60
   static let columnWidth: CGFloat = 480
-  static let keyWidth: CGFloat = 150
-  static let sheetKeyWidth: CGFloat = 220
+  static let sectionSpacing: CGFloat = 22
+  static let languageBlockSpacing: CGFloat = 16
+  static let stackSpacing: CGFloat = 4
   static let headerFont: Font = .system(size: 30, weight: .semibold)
-  static let rowFont: Font = .system(size: 22, weight: .regular)
+  static let captionFont: Font = .system(size: 22, weight: .regular)
+  static let valueFont: Font = .system(size: 22, weight: .semibold)
+  static let detailFont: Font = .system(size: 22, weight: .regular)
 #else
   static let columnSpacing: CGFloat = 28
   static let columnWidth: CGFloat = 260
-  static let keyWidth: CGFloat = 90
-  static let sheetKeyWidth: CGFloat = 120
+  static let sectionSpacing: CGFloat = 16
+  static let languageBlockSpacing: CGFloat = 12
+  static let stackSpacing: CGFloat = 2
   static let headerFont: Font = .system(size: 18, weight: .semibold)
-  static let rowFont: Font = .system(size: 13, weight: .regular)
+  static let captionFont: Font = .system(size: 13, weight: .regular)
+  static let valueFont: Font = .system(size: 13, weight: .semibold)
+  static let detailFont: Font = .system(size: 13, weight: .regular)
 #endif
 }
 
@@ -824,11 +950,13 @@ private enum MediaItemSheetLayout {
 #if os(tvOS)
   static let titleFont: Font = .system(size: 48, weight: .bold)
   static let bodyFont: Font = .system(size: 30, weight: .regular)
+  static let captionFont: Font = .system(size: 28, weight: .regular)
   static let maxWidth: CGFloat = 1200
   static let padding: CGFloat = 80
 #else
   static let titleFont: Font = .system(size: 26, weight: .bold)
   static let bodyFont: Font = .system(size: 16, weight: .regular)
+  static let captionFont: Font = .system(size: 14, weight: .regular)
   static let maxWidth: CGFloat = 640
   static let padding: CGFloat = 24
 #endif

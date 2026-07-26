@@ -1,0 +1,10 @@
+name = "kinopub-tmdb-proxy"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+workers_dev = true
+
+# Set with: wrangler secret put TMDB_READ_TOKEN
+# Optional override: vars.TMDB_API_BASE = "https://api.themoviedb.org"
+
+[vars]
+CACHE_TTL_SECONDS = "21600"
