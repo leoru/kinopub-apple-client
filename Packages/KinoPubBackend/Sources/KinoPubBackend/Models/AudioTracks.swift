@@ -164,6 +164,81 @@ public enum AudioTracks {
     }
   }
 
+  /// Languages in sort order, each with kind lines like
+  /// `дубляж (2) ∙ Кубик в Кубе, Мосфильм`.
+  public static func languageGroups(for tracks: [AudioTrackInfo],
+                                    preferredLanguages: [String] = Locale.preferredLanguages)
+  -> [MediaLanguageGroup] {
+    let sorted = sort(tracks, preferredLanguages: preferredLanguages)
+    var order: [String] = []
+    var byLanguage: [String: [AudioTrackInfo]] = [:]
+    for track in sorted {
+      let key = SubtitleTracks.languageKey(track.lang)
+      if byLanguage[key] == nil { order.append(key) }
+      byLanguage[key, default: []].append(track)
+    }
+    return order.compactMap { key in
+      guard let group = byLanguage[key], let first = group.first else { return nil }
+      return MediaLanguageGroup(key: key,
+                                name: LanguageNames.name(for: first.lang),
+                                detailLines: kindSummaryLines(for: group))
+    }
+  }
+
+  /// One line per dub kind within a language: kind, optional count, studios.
+  public static func kindSummaryLines(for tracks: [AudioTrackInfo]) -> [String] {
+    var kindOrder: [Int] = []
+    var byKind: [Int: [AudioTrackInfo]] = [:]
+    for track in tracks {
+      let rank = kindRank(typeId: track.typeId,
+                          typeTitle: track.typeTitle,
+                          typeShortTitle: track.typeShortTitle)
+      if byKind[rank] == nil { kindOrder.append(rank) }
+      byKind[rank, default: []].append(track)
+    }
+    return kindOrder.compactMap { rank in
+      guard let group = byKind[rank] else { return nil }
+      return kindSummaryLine(rank: rank, tracks: group)
+    }
+  }
+
+  private static func kindSummaryLine(rank: Int, tracks: [AudioTrackInfo]) -> String? {
+    var seenAuthors = Set<String>()
+    var authors: [String?] = []
+    for track in tracks {
+      let author = normalizedAuthor(track.authorTitle)
+      let bucket = author?.lowercased() ?? ""
+      guard seenAuthors.insert(bucket).inserted else { continue }
+      authors.append(author)
+    }
+    guard !authors.isEmpty else { return nil }
+
+    let kind = localizedKindLabel(typeId: tracks.first?.typeId,
+                                  typeTitle: tracks.first?.typeTitle,
+                                  typeShortTitle: tracks.first?.typeShortTitle)
+      ?? tracks.first?.typeTitle
+      ?? tracks.first?.typeShortTitle
+      ?? ""
+    guard !kind.isEmpty else { return nil }
+
+    var head = kind.lowercased(with: .current)
+    if authors.count > 1 {
+      head += " (\(authors.count))"
+    }
+
+    let unknown = String(localized: "Unknown", bundle: .module)
+    let named = authors.compactMap { $0 }
+    let hasAnonymous = authors.contains { $0 == nil }
+    // A lone anonymous original reads cleaner as just the kind — "оригинал", not
+    // "оригинал ∙ неизвестно".
+    if named.isEmpty && authors.count == 1 { return head }
+
+    var studios = named
+    if hasAnonymous { studios.append(unknown) }
+    guard !studios.isEmpty else { return head }
+    return "\(head) ∙ \(studios.joined(separator: ", "))"
+  }
+
   /// One label per HLS AUDIO rendition, in playlist order. Consumes API tracks by
   /// language so the CDN's "Russian, Russian, Japanese" line up with the API rows.
   /// Duplicate labels get " ∙ 2" etc. — HLS forbids identical NAME within a group.

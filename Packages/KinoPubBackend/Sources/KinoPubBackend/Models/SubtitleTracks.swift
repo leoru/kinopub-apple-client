@@ -90,6 +90,89 @@ public enum SubtitleTracks {
     }
   }
 
+  // MARK: - Sorting / grouping
+
+  /// Preferred languages first (system order), then the rest A–Z; within a language
+  /// regular before CC before Forced, then ordinal.
+  public static func sort(_ tracks: [SubtitleTrack],
+                          preferredLanguages: [String] = Locale.preferredLanguages) -> [SubtitleTrack] {
+    tracks.sorted {
+      sortKey(for: $0, preferredLanguages: preferredLanguages)
+        < sortKey(for: $1, preferredLanguages: preferredLanguages)
+    }
+  }
+
+  public static func languageGroups(for tracks: [SubtitleTrack],
+                                    preferredLanguages: [String] = Locale.preferredLanguages)
+  -> [MediaLanguageGroup] {
+    let sorted = sort(tracks, preferredLanguages: preferredLanguages)
+    var order: [String] = []
+    var byLanguage: [String: [SubtitleTrack]] = [:]
+    for track in sorted {
+      let key = languageKey(track.lang)
+      if byLanguage[key] == nil { order.append(key) }
+      byLanguage[key, default: []].append(track)
+    }
+    return order.compactMap { key in
+      guard let group = byLanguage[key], let first = group.first else { return nil }
+      return MediaLanguageGroup(key: key,
+                                name: LanguageNames.name(for: first.lang),
+                                detailLines: summaryLines(for: group))
+    }
+  }
+
+  private static func sortKey(for track: SubtitleTrack,
+                              preferredLanguages: [String]) -> SortKey {
+    let key = languageKey(track.lang)
+    let priority: Int
+    if let idx = preferredLanguages.firstIndex(where: { languageKey($0) == key }) {
+      priority = idx
+    } else {
+      priority = preferredLanguages.count
+    }
+    let alpha = LanguageNames.name(for: track.lang).lowercased()
+    return SortKey(languagePriority: priority,
+                   languageName: alpha.isEmpty ? key : alpha,
+                   isForced: track.isForced,
+                   isCC: track.isCC,
+                   ordinal: track.ordinal)
+  }
+
+  private struct SortKey: Comparable {
+    let languagePriority: Int
+    let languageName: String
+    let isForced: Bool
+    let isCC: Bool
+    let ordinal: Int
+
+    static func < (l: SortKey, r: SortKey) -> Bool {
+      if l.languagePriority != r.languagePriority { return l.languagePriority < r.languagePriority }
+      if l.languageName != r.languageName { return l.languageName < r.languageName }
+      if l.isForced != r.isForced { return !l.isForced && r.isForced }
+      if l.isCC != r.isCC { return !l.isCC && r.isCC }
+      return l.ordinal < r.ordinal
+    }
+  }
+
+  /// Badges under the language name — omitted when a language has a single plain track.
+  private static func summaryLines(for tracks: [SubtitleTrack]) -> [String] {
+    guard tracks.count > 1 || tracks.contains(where: { $0.isCC || $0.isForced }) else {
+      return []
+    }
+    var parts: [String] = []
+    if tracks.count > 1 {
+      parts.append("\(tracks.count)")
+    }
+    if tracks.contains(where: \.isCC) {
+      parts.append(String(localized: "CC", bundle: .module))
+    }
+    if tracks.contains(where: \.isForced) {
+      parts.append(String(localized: "Forced", bundle: .module))
+    }
+    guard !parts.isEmpty else { return [] }
+    return [parts.joined(separator: " ∙ ")]
+  }
+
   // MARK: - Resolving
 
   /// The track a remembered choice points at, on an item that may not be the one the

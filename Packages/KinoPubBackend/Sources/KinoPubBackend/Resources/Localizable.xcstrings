@@ -25,6 +25,78 @@
         }
       }
     },
+    "CC" : {
+      "comment" : "Closed captions / SDH badge on a subtitle language summary.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CC"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CC"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CC"
+          }
+        }
+      }
+    },
+    "Forced" : {
+      "comment" : "Forced subtitle track badge on a language summary.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forced"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Priverstiniai"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forced"
+          }
+        }
+      }
+    },
+    "Unknown" : {
+      "comment" : "Placeholder studio when an audio track has no author.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nežinoma"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "неизвестно"
+          }
+        }
+      }
+    },
     "Dubbed" : {
       "comment" : "Audio dub kind: full dub (DUB).",
       "extractionState" : "manual",

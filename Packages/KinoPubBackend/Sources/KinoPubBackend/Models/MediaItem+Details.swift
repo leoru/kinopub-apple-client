@@ -59,36 +59,60 @@ public extension MediaItem {
   /// A film carries its tracks on `videos`; a series carries them per episode, so
   /// fall back to the first episode rather than showing nothing for every series.
   var subtitleLanguages: [String] {
+    subtitleLanguageGroups.map(\.name)
+  }
+
+  /// Subtitle tracks for the detail page — film `videos`, else the first episode.
+  var detailSubtitleTracks: [SubtitleTrack] {
     let fromVideos = videos?.first?.subtitles ?? []
-    let langs = fromVideos.isEmpty
-      ? (seasons?.first?.episodes.first?.subtitles ?? []).map(\.lang)
-      : fromVideos.map(\.lang)
-    return Self.uniqueLanguageNames(langs)
+    let subs = fromVideos.isEmpty
+      ? (seasons?.first?.episodes.first?.subtitles ?? [])
+      : fromVideos
+    return SubtitleTracks.catalog(subs)
+  }
+
+  /// Subtitles grouped by language for the Languages column.
+  func subtitleLanguageGroups(preferredLanguages: [String] = Locale.preferredLanguages)
+  -> [MediaLanguageGroup] {
+    SubtitleTracks.languageGroups(for: detailSubtitleTracks,
+                                  preferredLanguages: preferredLanguages)
+  }
+
+  /// Convenience for callers that want the system preferred order.
+  var subtitleLanguageGroups: [MediaLanguageGroup] {
+    subtitleLanguageGroups()
   }
 
   /// Audio tracks as "Russian ∙ multi-voice ∙ Flarrow Films", ordered like the
   /// system audio picker: preferred languages, then A–Z, kind, studio.
   var audioTrackDescriptions: [String] {
+    AudioTracks.descriptions(for: detailAudioTracks)
+  }
+
+  /// Audio tracks for the detail page — film `videos`, else the first episode.
+  var detailAudioTracks: [AudioTrackInfo] {
     if let audios = videos?.first?.audios, !audios.isEmpty {
-      return AudioTracks.descriptions(for: AudioTracks.catalog(audios))
+      return AudioTracks.catalog(audios)
     }
     let episodeAudios = seasons?.first?.episodes.first?.audios ?? []
-    return AudioTracks.descriptions(for: AudioTracks.catalog(episodeAudios))
+    return AudioTracks.catalog(episodeAudios)
+  }
+
+  /// Audio grouped by language for the Languages column.
+  func audioLanguageGroups(preferredLanguages: [String] = Locale.preferredLanguages)
+  -> [MediaLanguageGroup] {
+    AudioTracks.languageGroups(for: detailAudioTracks,
+                               preferredLanguages: preferredLanguages)
+  }
+
+  var audioLanguageGroups: [MediaLanguageGroup] {
+    audioLanguageGroups()
   }
 
   private static func splitNames(_ raw: String) -> [String] {
     raw.split(separator: ",")
       .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
       .filter { !$0.isEmpty }
-  }
-
-  private static func uniqueLanguageNames(_ codes: [String]) -> [String] {
-    var seen = Set<String>()
-    return codes.compactMap { code in
-      let name = LanguageNames.name(for: code)
-      guard !name.isEmpty, seen.insert(name).inserted else { return nil }
-      return name
-    }
   }
 }
 
