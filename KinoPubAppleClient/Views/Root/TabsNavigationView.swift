@@ -41,6 +41,11 @@ struct TabsNavigationView: View {
   @State private var watchlistBadgeCount = 0
   @State private var downloadsBadgeCount = 0
   @State private var showSettings = false
+  /// Last time the sidebar (folders + watchlist badge) synced with the network.
+  /// Without this, every single tab switch fired 2 requests — `syncSidebarFolders()`
+  /// used to run unconditionally on every `selectedTab` change.
+  @State private var sidebarSyncedAt: Date?
+  private static let sidebarSyncTTL: TimeInterval = 120
 #if os(macOS)
   @AppStorage("sidebarTabCustomization") private var tabCustomization = TabViewCustomization()
 #endif
@@ -560,10 +565,12 @@ struct TabsNavigationView: View {
 #if !os(tvOS)
     downloadsBadgeCount = downloads
 #endif
+    sidebarSyncedAt = Date()
     await loadAvatarImage(from: userData?.profile.avatar)
   }
 
   private func syncSidebarFolders() async {
+    if let sidebarSyncedAt, Date().timeIntervalSince(sidebarSyncedAt) < Self.sidebarSyncTTL { return }
     async let foldersTask = fetchFolders()
     async let watchlistTask = fetchWatchlistCount()
     sidebarFolders = await foldersTask
@@ -571,6 +578,7 @@ struct TabsNavigationView: View {
 #if !os(tvOS)
     downloadsBadgeCount = (appContext.downloadedFilesDatabase.readData() ?? []).count
 #endif
+    sidebarSyncedAt = Date()
   }
 
   private func fetchFolders() async -> [Bookmark] {

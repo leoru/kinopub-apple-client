@@ -38,9 +38,14 @@ typealias AppContextProtocol = AuthorizationServiceProvider
 & UserActionsServiceProvider
 & MetadataServiceProvider
 & KinopoiskKeyProviderProvider
+& ContentStoreProvider
 
 protocol MetadataServiceProvider {
   var metadataService: MetadataService { get }
+}
+
+protocol ContentStoreProvider {
+  var contentStore: ContentStore { get }
 }
 
 protocol KinopoiskKeyProviderProvider {
@@ -63,6 +68,7 @@ struct AppContext: AppContextProtocol {
   var actionsService: UserActionsService
   var metadataService: MetadataService
   var kinopoiskKeyProvider: KinopoiskKeyProvider
+  var contentStore: ContentStore
 
   static let shared: AppContext = {
     let configuration = BundleConfiguration()
@@ -90,6 +96,11 @@ struct AppContext: AppContextProtocol {
       KinopoiskSource(keyProvider: kinopoiskKeyProvider)
     ])
 
+    // `AppContext.shared` is only ever first-accessed from the main thread (app
+    // launch / view inits) — this only exists because `static let` initializers
+    // aren't otherwise allowed to touch a `@MainActor` type.
+    let contentStore = MainActor.assumeIsolated { ContentStore() }
+
     return AppContext(configuration: configuration,
                       authService: authService,
                       contentService: VideoContentServiceImpl(apiClient: apiClient),
@@ -101,7 +112,8 @@ struct AppContext: AppContextProtocol {
                       downloadedFilesDatabase: downloadedFilesDatabase,
                       actionsService: UserActionsServiceImpl(apiClient: apiClient),
                       metadataService: metadataService,
-                      kinopoiskKeyProvider: kinopoiskKeyProvider)
+                      kinopoiskKeyProvider: kinopoiskKeyProvider,
+                      contentStore: contentStore)
   }()
   
   // MARK: - API Client building

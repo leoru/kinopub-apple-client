@@ -44,6 +44,7 @@ class MediaItemModel: ObservableObject {
   @Published public var seasonSchedules: [Int: [EpisodeSchedule]] = [:]
 
   private var actionsService: UserActionsService
+  private var contentStore: ContentStore
   private var identity: MediaIdentity?
 
   public var isBookmarked: Bool { !folderIDsContainingItem.isEmpty }
@@ -58,7 +59,8 @@ class MediaItemModel: ObservableObject {
        linkProvider: NavigationLinkProvider,
        errorHandler: ErrorHandler,
        actionsService: UserActionsService = AppContext.shared.actionsService,
-       metadataService: MetadataService = AppContext.shared.metadataService) {
+       metadataService: MetadataService = AppContext.shared.metadataService,
+       contentStore: ContentStore = AppContext.shared.contentStore) {
     self.itemsService = itemsService
     self.mediaItemId = mediaItemId
     self.linkProvider = linkProvider
@@ -66,6 +68,7 @@ class MediaItemModel: ObservableObject {
     self.downloadManager = downloadManager
     self.actionsService = actionsService
     self.metadataService = metadataService
+    self.contentStore = contentStore
     if let knownItem {
       self.mediaItem = knownItem
     }
@@ -186,6 +189,7 @@ class MediaItemModel: ObservableObject {
     Task {
       do {
         try await actionsService.toggleWatching(id: mediaItemId, video: 1, season: nil)
+        contentStore.invalidate(family: .watch)
       } catch {
         isWatched = previous
         errorHandler.setError(error)
@@ -210,6 +214,7 @@ class MediaItemModel: ObservableObject {
           mediaItem = mediaItem
           isWatched = mediaItem.playbackAction == .playAgain
         }
+        contentStore.invalidate(family: .watch)
       } catch {
         episode.watched = previous
         mediaItem = mediaItem
@@ -224,6 +229,7 @@ class MediaItemModel: ObservableObject {
     Task {
       do {
         try await actionsService.clearHistoryForItem(id: mediaItemId)
+        contentStore.invalidate(family: .watch)
       } catch {
         errorHandler.setError(error)
       }
@@ -235,12 +241,16 @@ class MediaItemModel: ObservableObject {
     Task {
       do {
         try await actionsService.clearHistoryForMedia(id: episode.id)
+        contentStore.invalidate(family: .watch)
       } catch {
         errorHandler.setError(error)
       }
     }
   }
 
+  /// Bookmark folders live in `ContentStore` too (`.folder(id)`), so a toggle here
+  /// needs both folders it affects to refetch next time Library is shown, not sit
+  /// stale for up to 10 minutes.
   func toggleFolder(_ folder: Bookmark) {
     let previous = folderIDsContainingItem
     if folderIDsContainingItem.contains(folder.id) {
@@ -251,6 +261,7 @@ class MediaItemModel: ObservableObject {
     Task {
       do {
         try await itemsService.toggleBookmark(itemId: mediaItemId, folderId: folder.id)
+        contentStore.invalidate(family: .bookmarks)
       } catch {
         folderIDsContainingItem = previous
         errorHandler.setError(error)

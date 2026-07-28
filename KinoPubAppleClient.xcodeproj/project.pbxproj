@@ -7,9 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		57DF3824CA609C7DA4EB8324 /* RowSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 849905DC0A8DF6F36DF8A402 /* RowSnapshotStore.swift */; };
+		5CDA790E2BD84471ADAD5D9D /* ContentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A455BD91626C3A69A07FF16 /* ContentStore.swift */; };
 		957B7DB6C328FC72EA807FB4 /* KinopoiskKeyStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */; };
 		9BB427D377EF668A2FFC1A10 /* KinopoiskSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */; };
 		A7EDB3D1A6A6B06830D80416 /* KinopoiskKeySettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F6301ED273E06AFCEBCC48 /* KinopoiskKeySettingsModel.swift */; };
+		B59B61DA0A35CB9ED9636C2B /* RowKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DB07C35241802B74DE0958 /* RowKey.swift */; };
 		CC01461B2A783DF900F858AF /* NavigationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461A2A783DF900F858AF /* NavigationState.swift */; };
 		CC01461D2A783EEF00F858AF /* NavigationTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461C2A783EEF00F858AF /* NavigationTabs.swift */; };
 		CC01461F2A783F8400F858AF /* Routes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461E2A783F8400F858AF /* Routes.swift */; };
@@ -115,7 +118,10 @@
 
 /* Begin PBXFileReference section */
 		0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskKeyStorage.swift; sourceTree = "<group>"; };
+		32DB07C35241802B74DE0958 /* RowKey.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RowKey.swift; sourceTree = "<group>"; };
+		4A455BD91626C3A69A07FF16 /* ContentStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentStore.swift; sourceTree = "<group>"; };
 		76F6301ED273E06AFCEBCC48 /* KinopoiskKeySettingsModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskKeySettingsModel.swift; sourceTree = "<group>"; };
+		849905DC0A8DF6F36DF8A402 /* RowSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RowSnapshotStore.swift; sourceTree = "<group>"; };
 		8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskSettingsSection.swift; sourceTree = "<group>"; };
 		CC01461A2A783DF900F858AF /* NavigationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationState.swift; sourceTree = "<group>"; };
 		CC01461C2A783EEF00F858AF /* NavigationTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationTabs.swift; sourceTree = "<group>"; };
@@ -634,6 +640,7 @@
 				CCF1FF302A83CBF2004DCED9 /* User */,
 				CC60254B2AFF5480003D8391 /* UserActions */,
 				CCF3881F2A718AD100242581 /* VideoContent */,
+				E61DAEFBE7E94C850CB158EA /* Cache */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -693,6 +700,17 @@
 			path = AccessToken;
 			sourceTree = "<group>";
 		};
+		E61DAEFBE7E94C850CB158EA /* Cache */ = {
+			isa = PBXGroup;
+			children = (
+				32DB07C35241802B74DE0958 /* RowKey.swift */,
+				849905DC0A8DF6F36DF8A402 /* RowSnapshotStore.swift */,
+				4A455BD91626C3A69A07FF16 /* ContentStore.swift */,
+			);
+			name = Cache;
+			path = Cache;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -750,7 +768,7 @@
 			packageReferences = (
 				CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */,
-				CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */,
+				CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */,
 			);
 			productRefGroup = CC88E1E22A6586E600E9387F /* Products */;
 			projectDirPath = "";
@@ -872,6 +890,9 @@
 				957B7DB6C328FC72EA807FB4 /* KinopoiskKeyStorage.swift in Sources */,
 				A7EDB3D1A6A6B06830D80416 /* KinopoiskKeySettingsModel.swift in Sources */,
 				9BB427D377EF668A2FFC1A10 /* KinopoiskSettingsSection.swift in Sources */,
+				B59B61DA0A35CB9ED9636C2B /* RowKey.swift in Sources */,
+				57DF3824CA609C7DA4EB8324 /* RowSnapshotStore.swift in Sources */,
+				5CDA790E2BD84471ADAD5D9D /* ContentStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1125,7 +1146,7 @@
 				minimumVersion = 2.6.0;
 			};
 		};
-		CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */ = {
+		CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ashleymills/Reachability.swift";
 			requirement = {
@@ -1167,7 +1188,7 @@
 		};
 		CC8202FF2A8657BA0041079A /* Reachability */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */;
+			package = CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */;
 			productName = Reachability;
 		};
 		CCA200012D001002 /* KinoPubMetadata */ = {

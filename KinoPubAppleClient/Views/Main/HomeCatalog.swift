@@ -44,53 +44,93 @@ class HomeCatalog: ObservableObject {
   private var errorHandler: ErrorHandler
   private var itemsService: VideoContentService
   private var actionsService: UserActionsService
+  private var store: ContentStore
   private var bag = Set<AnyCancellable>()
 
   init(itemsService: VideoContentService,
        authState: AuthState,
        errorHandler: ErrorHandler,
-       actionsService: UserActionsService = AppContext.shared.actionsService) {
+       actionsService: UserActionsService = AppContext.shared.actionsService,
+       store: ContentStore = AppContext.shared.contentStore) {
     self.itemsService = itemsService
     self.authState = authState
     self.errorHandler = errorHandler
     self.actionsService = actionsService
+    self.store = store
   }
 
+  /// Paints whatever's cached immediately (instant on a warm cache, still empty on a
+  /// cold one — same first-launch behaviour as before), then refreshes in the
+  /// background only the rows whose TTL expired. A return trip within the TTL costs
+  /// zero requests.
   func fetch() async {
     guard authState.userState == .authorized else {
       subscribeForAuth()
       return
     }
 
-    async let continueWatching = fetchContinueWatchingRow()
-    async let shortcutRows = fetchShortcutRows()
+    assembleRows()
+    isLoaded = !rows.isEmpty
 
-    var assembled: [MediaRow] = []
-    if let row = await continueWatching {
-      assembled.append(row)
+    await withTaskGroup(of: Void.self) { group in
+      group.addTask { [store] in
+        await store.refreshIfStale(.continueWatching) { [weak self] in
+          guard let self else { throw CancellationError() }
+          return try await self.fetchContinueWatchingCards()
+        }
+      }
+      for shortcut in Self.shortcuts {
+        group.addTask { [store] in
+          await store.refreshIfStale(.shortcut(shortcut.shortcut, shortcut.contentType)) { [weak self] in
+            guard let self else { throw CancellationError() }
+            return try await self.fetchShortcutCards(shortcut)
+          }
+        }
+      }
     }
-    assembled.append(contentsOf: await shortcutRows)
 
-    rows = assembled
+    assembleRows()
     isLoaded = true
   }
 
+  /// Pull-to-refresh: forces every row to refetch regardless of TTL.
   func refresh() async {
-    isLoaded = false
     errorHandler.reset()
+    store.invalidate(family: .watch)
+    store.invalidate(family: .catalog)
     await fetch()
+  }
+
+  private func assembleRows() {
+    var assembled: [MediaRow] = []
+    let continueWatchingCards = store.cards(.continueWatching)
+    if !continueWatchingCards.isEmpty {
+      assembled.append(MediaRow(id: Self.continueWatchingRowID,
+                                title: "Continue Watching".localized,
+                                cards: continueWatchingCards))
+    }
+    for shortcut in Self.shortcuts {
+      let cards = store.cards(.shortcut(shortcut.shortcut, shortcut.contentType))
+      guard !cards.isEmpty else { continue }
+      assembled.append(MediaRow(id: shortcut.id, title: shortcut.title.localized, cards: cards))
+    }
+    rows = assembled
   }
 
   // MARK: - Continue watching actions
 
-  /// Clears history for the title and drops it from the row immediately.
+  /// Clears history for the title and drops it from the row immediately — the store
+  /// mutation is the source of truth `assembleRows()` reads back, so no local `rows`
+  /// bookkeeping is needed here anymore.
   func hide(_ card: MediaCard) {
-    removeFromContinueWatching(cardID: card.id)
+    store.removeCard(id: card.id, from: .continueWatching)
+    assembleRows()
     Task {
       do {
         try await actionsService.clearHistoryForItem(id: card.itemID)
       } catch {
         errorHandler.setError(error)
+        store.invalidate(family: .watch)
         await fetch()
       }
     }
@@ -100,40 +140,44 @@ class HomeCatalog: ObservableObject {
   /// Continue Watching has nothing left to offer for a finished title.
   func toggleWatched(_ card: MediaCard) {
     guard let video = card.video else { return }
-    removeFromContinueWatching(cardID: card.id)
+    store.removeCard(id: card.id, from: .continueWatching)
+    assembleRows()
     Task {
       do {
         try await actionsService.toggleWatching(id: card.itemID, video: video, season: card.season)
       } catch {
         errorHandler.setError(error)
+        store.invalidate(family: .watch)
         await fetch()
       }
     }
   }
 
-  private func removeFromContinueWatching(cardID: Int) {
-    guard let index = rows.firstIndex(where: { $0.id == Self.continueWatchingRowID }) else { return }
-    let row = rows[index]
-    let cards = row.cards.filter { $0.id != cardID }
-    if cards.isEmpty {
-      rows.remove(at: index)
-    } else {
-      rows[index] = MediaRow(id: row.id, title: row.title, count: row.count, cards: cards, destination: row.destination)
-    }
-  }
-
   // MARK: - Continue watching
 
-  private func fetchContinueWatchingRow() async -> MediaRow? {
+  private func fetchContinueWatchingCards() async throws -> [MediaCard] {
     async let moviesTask = try? itemsService.fetchWatchingMovies().items
     async let allSerialsTask = try? itemsService.fetchWatchingSerials(subscribedOnly: false).items
     async let watchlistTask = try? itemsService.fetchWatchingSerials(subscribedOnly: true).items
     async let historyTask = try? itemsService.fetchHistory().history
 
-    let movies = await moviesTask ?? []
-    let serials = await allSerialsTask ?? []
-    let watchlist = await watchlistTask ?? []
-    let history = await historyTask ?? []
+    let moviesResult = await moviesTask
+    let serialsResult = await allSerialsTask
+    let watchlistResult = await watchlistTask
+    let historyResult = await historyTask
+
+    // Each source degrades independently (one endpoint down still shows the other
+    // three) — but if every single one failed, this is a network outage, not "the
+    // user has nothing to continue watching". Throw so the store keeps the last
+    // known-good row instead of caching an empty one.
+    if moviesResult == nil, serialsResult == nil, watchlistResult == nil, historyResult == nil {
+      throw ContinueWatchingFetchError.allSourcesFailed
+    }
+
+    let movies = moviesResult ?? []
+    let serials = serialsResult ?? []
+    let watchlist = watchlistResult ?? []
+    let history = historyResult ?? []
 
     let watchlistIDs = Set(watchlist.map(\.id))
     let lastSeen = ContinueWatchingOrder.lastSeenByItemID(history)
@@ -156,17 +200,12 @@ class HomeCatalog: ObservableObject {
                                                 watchlistIDs: watchlistIDs,
                                                 lastSeen: lastSeen)
 
-    let cards = ordered.map {
+    return ordered.map {
       Self.card(for: $0,
                 history: newestEntry[$0.id],
                 isInHistory: historyIDs.contains($0.id),
                 isInWatchlist: watchlistIDs.contains($0.id))
     }
-    guard !cards.isEmpty else { return nil }
-
-    return MediaRow(id: Self.continueWatchingRowID,
-                    title: "Continue Watching".localized,
-                    cards: cards)
   }
 
   private static func newestEntryByItemID(_ history: [HistoryEntry]) -> [Int: HistoryEntry] {
@@ -236,31 +275,11 @@ class HomeCatalog: ObservableObject {
 
   // MARK: - Catalog shortcuts
 
-  private func fetchShortcutRows() async -> [MediaRow] {
-    await withTaskGroup(of: (Int, MediaRow?).self) { group in
-      for (index, shortcut) in Self.shortcuts.enumerated() {
-        group.addTask { [itemsService] in
-          do {
-            let data = try await itemsService.fetch(shortcut: shortcut.shortcut,
-                                                    contentType: shortcut.contentType,
-                                                    page: nil)
-            let cards = data.items.map(Self.card(for:))
-            guard !cards.isEmpty else { return (index, nil) }
-            return (index, MediaRow(id: shortcut.id, title: shortcut.title.localized, cards: cards))
-          } catch {
-            Logger.app.error("Failed to load row \(shortcut.id): \(error)")
-            return (index, nil)
-          }
-        }
-      }
-
-      // Task groups finish out of order; restore the declared row order.
-      var collected: [(Int, MediaRow)] = []
-      for await (index, row) in group {
-        if let row { collected.append((index, row)) }
-      }
-      return collected.sorted { $0.0 < $1.0 }.map(\.1)
-    }
+  private func fetchShortcutCards(_ shortcut: Shortcut) async throws -> [MediaCard] {
+    let data = try await itemsService.fetch(shortcut: shortcut.shortcut,
+                                             contentType: shortcut.contentType,
+                                             page: nil)
+    return data.items.map(Self.card(for:))
   }
 
   private static func card(for item: MediaItem) -> MediaCard {
@@ -275,4 +294,11 @@ class HomeCatalog: ObservableObject {
         Task { await self?.fetch() }
       }.store(in: &bag)
   }
+}
+
+private enum ContinueWatchingFetchError: Error {
+  /// All four underlying calls (movies/serials/watchlist/history) failed — a real
+  /// outage, not "nothing to continue watching". Signals `ContentStore` to keep the
+  /// cached row instead of overwriting it with an empty one.
+  case allSourcesFailed
 }

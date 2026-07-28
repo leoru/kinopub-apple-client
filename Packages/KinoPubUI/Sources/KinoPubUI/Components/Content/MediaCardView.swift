@@ -9,7 +9,7 @@ import KinoPubBackend
 
 /// Everything a poster card needs to draw itself, so rows can be built from any
 /// endpoint's payload rather than only from a full `MediaItem`.
-public struct MediaCard: Identifiable, Hashable {
+public struct MediaCard: Identifiable, Hashable, Codable {
   public let id: Int
   public let posterURL: String
   public let title: String
