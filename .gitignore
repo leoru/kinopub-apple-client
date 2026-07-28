@@ -34,3 +34,6 @@ playground.xcworkspace
 ## Cloudflare Workers
 workers/**/.dev.vars
 workers/**/node_modules/
+
+## tvoe.live scrape artifacts (6+ GB of posters/covers/logos)
+tools/tvoe_data/images/
