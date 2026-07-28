@@ -88,7 +88,9 @@ public final class KinopoiskSource: MetadataSource, @unchecked Sendable {
   /// re-modeled here.
   private func fetchDetailsPart(filmId: Int) async -> TitleMetadata {
     var part = TitleMetadata()
-    guard let details = try? await fetchDetails(filmId: filmId) else { return part }
+    let (details, debug) = await fetchDetails(filmId: filmId)
+    part.debugLog = [debug]
+    guard let details else { return part }
     part.artwork = Artwork(
       titleLogo: details.logoUrl.flatMap(URL.init(string:)),
       poster: details.posterUrl.flatMap(URL.init(string:)),
@@ -99,10 +101,11 @@ public final class KinopoiskSource: MetadataSource, @unchecked Sendable {
 
   private func fetchStaffPart(filmId: Int) async -> TitleMetadata {
     var part = TitleMetadata()
-    guard let members = try? await fetchStaff(filmId: filmId) else { return part }
+    let (members, debug) = await fetchStaff(filmId: filmId)
+    part.debugLog = [debug]
     var cast: [CastMember] = []
     var crew: [CastMember] = []
-    for member in members {
+    for member in members ?? [] {
       guard let name = member.nameRu, !name.isEmpty else { continue }
       let isActor = member.professionKey == "ACTOR"
       let character = isActor ? Self.splitCharacter(description: member.description, name: name) : nil
@@ -121,8 +124,9 @@ public final class KinopoiskSource: MetadataSource, @unchecked Sendable {
 
   private func fetchAwardsPart(filmId: Int) async -> TitleMetadata {
     var part = TitleMetadata()
-    guard let response = try? await fetchAwards(filmId: filmId) else { return part }
-    part.awards = response.items.compactMap { item in
+    let (response, debug) = await fetchAwards(filmId: filmId)
+    part.debugLog = [debug]
+    part.awards = (response?.items ?? []).compactMap { item in
       guard let name = item.name else { return nil }
       return Award(name: name, nominationName: item.nominationName, year: item.year, won: item.win ?? false)
     }
@@ -131,8 +135,9 @@ public final class KinopoiskSource: MetadataSource, @unchecked Sendable {
 
   private func fetchStillsPart(filmId: Int) async -> TitleMetadata {
     var part = TitleMetadata()
-    guard let response = try? await fetchImages(filmId: filmId) else { return part }
-    part.stills = response.items.compactMap { item in
+    let (response, debug) = await fetchImages(filmId: filmId)
+    part.debugLog = [debug]
+    part.stills = (response?.items ?? []).compactMap { item in
       guard let urlString = item.imageUrl, let url = URL(string: urlString) else { return nil }
       return StillImage(url: url, previewURL: item.previewUrl.flatMap(URL.init(string:)))
     }
@@ -141,8 +146,9 @@ public final class KinopoiskSource: MetadataSource, @unchecked Sendable {
 
   private func fetchFactsPart(filmId: Int) async -> TitleMetadata {
     var part = TitleMetadata()
-    guard let response = try? await fetchFacts(filmId: filmId) else { return part }
-    part.facts = response.items.compactMap { item in
+    let (response, debug) = await fetchFacts(filmId: filmId)
+    part.debugLog = [debug]
+    part.facts = (response?.items ?? []).compactMap { item in
       guard let raw = item.text, !raw.isEmpty else { return nil }
       return Fact(text: Self.stripHTML(raw), isSpoiler: item.spoiler ?? false)
     }
@@ -151,56 +157,61 @@ public final class KinopoiskSource: MetadataSource, @unchecked Sendable {
 
   // MARK: - Network + cache
 
-  private func fetchDetails(filmId: Int) async throws -> KinopoiskFilmDetails {
+  private func fetchDetails(filmId: Int) async -> (KinopoiskFilmDetails?, SourceDebugEntry) {
+    let path = "/api/v2.2/films/\(filmId)"
     let key = "kinopoisk/details/\(filmId)"
     let entry = await cache.deduped(key: key, ttl: Self.detailsTTL) { [self] in
-      await fetchAndCache(path: "/api/v2.2/films/\(filmId)", query: [], type: KinopoiskFilmDetails.self)
+      await fetchAndCache(path: path, query: [], type: KinopoiskFilmDetails.self)
     }
-    guard let entry, !entry.isNegative else { throw MetadataError.notFound }
-    return try await client.decode(KinopoiskFilmDetails.self, from: entry.payload)
+    let debug = debugEntry(endpoint: "details", path: path, query: [], entry: entry)
+    guard let entry, !entry.isNegative else { return (nil, debug) }
+    return (try? await client.decode(KinopoiskFilmDetails.self, from: entry.payload), debug)
   }
 
-  private func fetchStaff(filmId: Int) async throws -> [KinopoiskStaffMember] {
+  private func fetchStaff(filmId: Int) async -> ([KinopoiskStaffMember]?, SourceDebugEntry) {
+    let path = "/api/v1/staff"
+    let query = [URLQueryItem(name: "filmId", value: "\(filmId)")]
     let key = "kinopoisk/staff/\(filmId)"
     let entry = await cache.deduped(key: key, ttl: Self.detailsTTL) { [self] in
-      await fetchAndCache(path: "/api/v1/staff", query: [URLQueryItem(name: "filmId", value: "\(filmId)")],
-                           type: [KinopoiskStaffMember].self)
+      await fetchAndCache(path: path, query: query, type: [KinopoiskStaffMember].self)
     }
-    guard let entry, !entry.isNegative else { return [] }
-    return try await client.decode([KinopoiskStaffMember].self, from: entry.payload)
+    let debug = debugEntry(endpoint: "staff", path: path, query: query, entry: entry)
+    guard let entry, !entry.isNegative else { return (nil, debug) }
+    return (try? await client.decode([KinopoiskStaffMember].self, from: entry.payload), debug)
   }
 
-  private func fetchAwards(filmId: Int) async throws -> KinopoiskAwardsResponse {
+  private func fetchAwards(filmId: Int) async -> (KinopoiskAwardsResponse?, SourceDebugEntry) {
+    let path = "/api/v2.2/films/\(filmId)/awards"
     let key = "kinopoisk/awards/\(filmId)"
     let entry = await cache.deduped(key: key, ttl: Self.detailsTTL) { [self] in
-      await fetchAndCache(path: "/api/v2.2/films/\(filmId)/awards", query: [],
-                           type: KinopoiskAwardsResponse.self)
+      await fetchAndCache(path: path, query: [], type: KinopoiskAwardsResponse.self)
     }
-    guard let entry, !entry.isNegative else { return KinopoiskAwardsResponse(total: 0, items: []) }
-    return try await client.decode(KinopoiskAwardsResponse.self, from: entry.payload)
+    let debug = debugEntry(endpoint: "awards", path: path, query: [], entry: entry)
+    guard let entry, !entry.isNegative else { return (nil, debug) }
+    return (try? await client.decode(KinopoiskAwardsResponse.self, from: entry.payload), debug)
   }
 
-  private func fetchImages(filmId: Int) async throws -> KinopoiskImagesResponse {
+  private func fetchImages(filmId: Int) async -> (KinopoiskImagesResponse?, SourceDebugEntry) {
+    let path = "/api/v2.2/films/\(filmId)/images"
+    let query = [URLQueryItem(name: "type", value: "STILL"), URLQueryItem(name: "page", value: "1")]
     let key = "kinopoisk/images/\(filmId)"
     let entry = await cache.deduped(key: key, ttl: Self.detailsTTL) { [self] in
-      await fetchAndCache(
-        path: "/api/v2.2/films/\(filmId)/images",
-        query: [URLQueryItem(name: "type", value: "STILL"), URLQueryItem(name: "page", value: "1")],
-        type: KinopoiskImagesResponse.self
-      )
+      await fetchAndCache(path: path, query: query, type: KinopoiskImagesResponse.self)
     }
-    guard let entry, !entry.isNegative else { return KinopoiskImagesResponse(total: 0, totalPages: 0, items: []) }
-    return try await client.decode(KinopoiskImagesResponse.self, from: entry.payload)
+    let debug = debugEntry(endpoint: "images", path: path, query: query, entry: entry)
+    guard let entry, !entry.isNegative else { return (nil, debug) }
+    return (try? await client.decode(KinopoiskImagesResponse.self, from: entry.payload), debug)
   }
 
-  private func fetchFacts(filmId: Int) async throws -> KinopoiskFactsResponse {
+  private func fetchFacts(filmId: Int) async -> (KinopoiskFactsResponse?, SourceDebugEntry) {
+    let path = "/api/v2.2/films/\(filmId)/facts"
     let key = "kinopoisk/facts/\(filmId)"
     let entry = await cache.deduped(key: key, ttl: Self.detailsTTL) { [self] in
-      await fetchAndCache(path: "/api/v2.2/films/\(filmId)/facts", query: [],
-                           type: KinopoiskFactsResponse.self)
+      await fetchAndCache(path: path, query: [], type: KinopoiskFactsResponse.self)
     }
-    guard let entry, !entry.isNegative else { return KinopoiskFactsResponse(total: 0, items: []) }
-    return try await client.decode(KinopoiskFactsResponse.self, from: entry.payload)
+    let debug = debugEntry(endpoint: "facts", path: path, query: [], entry: entry)
+    guard let entry, !entry.isNegative else { return (nil, debug) }
+    return (try? await client.decode(KinopoiskFactsResponse.self, from: entry.payload), debug)
   }
 
   /// Shared fetch-decode-validate-cache step every endpoint above uses.
@@ -218,6 +229,30 @@ public final class KinopoiskSource: MetadataSource, @unchecked Sendable {
     } catch {
       return nil // transient (network blip, 402 quota, invalid key) — don't cache
     }
+  }
+
+  /// Kinopoisk Unofficial is never proxied — always a direct call with the user's own key.
+  private func debugEntry(
+    endpoint: String, path: String, query: [URLQueryItem], entry: MetadataCache.Entry?
+  ) -> SourceDebugEntry {
+    let urlString = (try? makeURL(path: path, query: query))?.absoluteString ?? (Self.baseURL + path)
+    guard let entry else {
+      return SourceDebugEntry(
+        source: .kinopoisk, endpoint: endpoint, url: urlString, proxied: false,
+        succeeded: false, responseBody: "No response — not configured, network error, or quota exceeded."
+      )
+    }
+    guard !entry.isNegative else {
+      return SourceDebugEntry(
+        source: .kinopoisk, endpoint: endpoint, url: urlString, proxied: false,
+        succeeded: false, responseBody: "Not found (404)."
+      )
+    }
+    let body = String(data: entry.payload, encoding: .utf8) ?? "<\(entry.payload.count) non-UTF8 bytes>"
+    return SourceDebugEntry(
+      source: .kinopoisk, endpoint: endpoint, url: urlString, proxied: false,
+      succeeded: true, responseBody: body
+    )
   }
 
   private func makeURL(path: String, query: [URLQueryItem]) throws -> URL {

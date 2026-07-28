@@ -183,6 +183,36 @@ public struct TrailerRef: Sendable, Hashable {
   }
 }
 
+/// Dev-facing record of one raw HTTP call a source made while building this
+/// `TitleMetadata` — what URL, whether it went through our proxy, whether it
+/// succeeded, and the raw response body. Powers the debug button on the item
+/// page footer; not for end-user display.
+public struct SourceDebugEntry: Sendable, Hashable, Identifiable {
+  public var id: String { source.rawValue + endpoint + url }
+  public let source: MetadataSourceID
+  public let endpoint: String
+  public let url: String
+  public let proxied: Bool
+  public let succeeded: Bool
+  public let responseBody: String
+
+  public init(
+    source: MetadataSourceID,
+    endpoint: String,
+    url: String,
+    proxied: Bool,
+    succeeded: Bool,
+    responseBody: String
+  ) {
+    self.source = source
+    self.endpoint = endpoint
+    self.url = url
+    self.proxied = proxied
+    self.succeeded = succeeded
+    self.responseBody = responseBody
+  }
+}
+
 /// Merged overlay the UI reads. kino.pub remains the base; this only fills gaps.
 public struct TitleMetadata: Sendable {
   public var cast: [CastMember] = []
@@ -207,6 +237,9 @@ public struct TitleMetadata: Sendable {
   public var productionCompanies: [ProductionCompany] = []
   public var tmdbId: Int?
   public var attribution: Set<MetadataSourceID> = []
+  /// Every raw HTTP call any source made for this title, across the whole merge —
+  /// concatenated, not "fill gap" like the other fields. Dev/debug only.
+  public var debugLog: [SourceDebugEntry] = []
 
   public init() {}
 
@@ -239,6 +272,7 @@ public struct TitleMetadata: Sendable {
     if productionCompanies.isEmpty { productionCompanies = other.productionCompanies }
     if tmdbId == nil { tmdbId = other.tmdbId }
     attribution.formUnion(other.attribution)
+    debugLog.append(contentsOf: other.debugLog)
   }
 
   /// Prefer existing name order; fill photo/character from overlay by normalized name.

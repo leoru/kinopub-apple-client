@@ -949,7 +949,10 @@ struct MediaItemInfoColumns: View {
                  attribution: externalMetadata.attribution,
                  tmdbId: externalMetadata.tmdbId,
                  isSeries: mediaItem.isSeries,
+                 debugLog: externalMetadata.debugLog,
                  onSectionFocused: onSectionFocused)
+
+      MetadataReferenceSection(onSectionFocused: onSectionFocused)
     }
     .padding(.horizontal, MediaItemLayout.horizontalInset)
   }
@@ -1244,8 +1247,10 @@ struct MediaItemInfoColumns: View {
     let attribution: Set<MetadataSourceID>
     let tmdbId: Int?
     let isSeries: Bool
+    var debugLog: [SourceDebugEntry] = []
     var onSectionFocused: (() -> Void)? = nil
     @Environment(\.openURL) private var openURL
+    @State private var showsDebugSheet = false
 
     var body: some View {
       HStack(alignment: .center, spacing: 10) {
@@ -1253,7 +1258,7 @@ struct MediaItemInfoColumns: View {
                    value: MediaItemInfoColumns.date(mediaItem.createdAt))
         if !mediaItem.uploadedSameDayAsUpdated {
             creditText(label: "∙", value: "")
-          
+
           creditText(label: "MediaItem_LastUpdate",
                      value: MediaItemInfoColumns.date(mediaItem.updatedAt))
         }
@@ -1264,11 +1269,28 @@ struct MediaItemInfoColumns: View {
           sourceButton(title: "TMDB", url: tmdbURL)
         }
 #endif
+        // Dev tool, all platforms — unlike the links above, there's nothing to
+        // browse to on tvOS, so it isn't gated the same way.
+        debugButton
       }
       .font(MediaItemInfoColumns.captionFont)
       .foregroundStyle(Color.KinoPub.subtitle)
+      .sheet(isPresented: $showsDebugSheet) {
+        DebugLogView(entries: debugLog)
+      }
+    }
+
+    private var debugButton: some View {
+      Button {
+        showsDebugSheet = true
+      } label: {
+        HStack(alignment: .center, spacing: 4) {
+          Text(verbatim: "Debug")
+          Image(systemName: "ladybug")
+        }
+      }
+      .buttonStyle(SourceChipButtonStyle())
 #if os(tvOS)
-      .focusable(true)
       .reportMediaItemSectionFocus(onSectionFocused)
 #endif
     }
@@ -1299,6 +1321,213 @@ struct MediaItemInfoColumns: View {
         }
       }
       .buttonStyle(SourceChipButtonStyle())
+    }
+  }
+
+  /// Raw request/response dump per source, for verifying what actually came back
+  /// (and whether via our proxy) without a separate debugging setup. Dev tool —
+  /// not for end users, hence the unlocalized "Debug"/verbatim labels throughout.
+  private struct DebugLogView: View {
+    let entries: [SourceDebugEntry]
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+      NavigationStack {
+        Group {
+          if entries.isEmpty {
+            ContentUnavailableView(
+              "No requests recorded",
+              systemImage: "questionmark.folder",
+              description: Text(verbatim: "Either no metadata source is configured for this title, or every field on it came from kino.pub alone.")
+            )
+          } else {
+            ScrollView {
+              VStack(alignment: .leading, spacing: 20) {
+                ForEach(entries) { entry in
+                  DebugEntryRow(entry: entry)
+                }
+              }
+              .padding()
+            }
+          }
+        }
+        .platformNavigationTitle("Metadata debug (\(entries.count))")
+#if !os(tvOS)
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button {
+              dismiss()
+            } label: {
+              Text("Close")
+            }
+          }
+        }
+#endif
+      }
+    }
+  }
+
+  private struct DebugEntryRow: View {
+    let entry: SourceDebugEntry
+
+    var body: some View {
+      VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 8) {
+          Text(verbatim: "\(entry.source.rawValue) · \(entry.endpoint)")
+            .font(.system(size: 15, weight: .semibold))
+          Spacer()
+          badge(entry.proxied ? "proxied" : "direct", tint: .secondary)
+          badge(entry.succeeded ? "ok" : "failed", tint: entry.succeeded ? .green : .red)
+        }
+        Text(entry.url)
+          .font(.system(size: 12, design: .monospaced))
+          .foregroundStyle(.secondary)
+#if !os(tvOS)
+          .textSelection(.enabled)
+#endif
+        Text(Self.prettyPrinted(entry.responseBody))
+          .font(.system(size: 11, design: .monospaced))
+#if !os(tvOS)
+          .textSelection(.enabled)
+#endif
+          .padding(8)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .background(Color.KinoPub.selectionBackground.opacity(0.5),
+                      in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+      }
+    }
+
+    private func badge(_ text: String, tint: Color) -> some View {
+      Text(verbatim: text)
+        .font(.system(size: 11, weight: .semibold))
+        .foregroundStyle(tint)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(tint.opacity(0.15), in: Capsule())
+    }
+
+    /// Best-effort reformat for readability — falls back to the raw text as-is
+    /// (e.g. for the non-JSON "no response"/"not found" placeholder bodies).
+    private static func prettyPrinted(_ raw: String) -> String {
+      guard let data = raw.data(using: .utf8),
+            let object = try? JSONSerialization.jsonObject(with: data),
+            let pretty = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]),
+            let text = String(data: pretty, encoding: .utf8)
+      else { return raw }
+      return text
+    }
+  }
+
+  /// Dev-facing map of every TMDB/Kinopoisk field or endpoint touched by this session's
+  /// integration work — what's actually parsed today vs. fetched-but-discarded vs. never
+  /// called. Hand-curated against real API responses, not the docs; re-audit before trusting
+  /// it against a newer TMDB/Kinopoisk response shape. Not for end-user consumption.
+  private struct MetadataReferenceSection: View {
+    var onSectionFocused: (() -> Void)? = nil
+
+    private enum RowStatus: String {
+      case parsed = "Parsed"
+      case fetchedUnused = "Fetched, unused"
+      case available = "Available"
+
+      var tint: Color {
+        switch self {
+        case .parsed: .green
+        case .fetchedUnused: .orange
+        case .available: .secondary
+        }
+      }
+    }
+
+    private struct Row: Identifiable {
+      let id: Int
+      let source: String
+      let name: String
+      let status: RowStatus
+    }
+
+    private static let rows: [Row] = {
+      var rows: [Row] = []
+      var next = 0
+      func add(_ source: String, _ name: String, _ status: RowStatus) {
+        rows.append(Row(id: next, source: source, name: name, status: status))
+        next += 1
+      }
+
+      add("TMDB", "/find (resolve by IMDb id)", .parsed)
+      add("TMDB", "/movie|tv/{id} (base details)", .parsed)
+      add("TMDB", "append_to_response: credits, aggregate_credits", .parsed)
+      add("TMDB", "append_to_response: images", .parsed)
+      add("TMDB", "append_to_response: videos", .parsed)
+      add("TMDB", "append_to_response: release_dates, content_ratings", .parsed)
+      add("TMDB", "append_to_response: keywords", .parsed)
+      add("TMDB", "append_to_response: external_ids → imdb_id", .parsed)
+      add("TMDB", "tagline", .parsed)
+      add("TMDB", "homepage", .parsed)
+      add("TMDB", "budget, revenue", .parsed)
+      add("TMDB", "production_companies, networks", .parsed)
+      add("TMDB", "next_episode_to_air, last_episode_to_air", .parsed)
+      add("TMDB", "/tv/{id}/season/{n} (episode schedule)", .parsed)
+      add("TMDB", "/person/{id} (bio, birthday, photo)", .parsed)
+      add("TMDB", "overview", .fetchedUnused)
+      add("TMDB", "genres", .fetchedUnused)
+      add("TMDB", "external_ids → tvdb_id, facebook_id, instagram_id, twitter_id", .fetchedUnused)
+      add("TMDB", "vote_average, vote_count", .fetchedUnused)
+      add("TMDB", "/movie|tv/{id}/reviews", .available)
+      add("TMDB", "/movie|tv/{id}/recommendations", .available)
+      add("TMDB", "/movie|tv/{id}/similar", .available)
+      add("TMDB", "/movie|tv/{id}/alternative_titles", .available)
+      add("TMDB", "/movie|tv/{id}/translations", .available)
+      add("TMDB", "/movie|tv/{id}/watch/providers", .available)
+      add("TMDB", "/collection/{id} (belongs_to_collection)", .available)
+      add("TMDB", "/discover/movie|tv", .available)
+      add("TMDB", "/trending/...", .available)
+      add("TMDB", "/certification/movie|tv/list", .available)
+
+      add("Kinopoisk", "/api/v2.2/films/{id} (details → artwork)", .parsed)
+      add("Kinopoisk", "/api/v1/staff?filmId= (cast/crew, RU names)", .parsed)
+      add("Kinopoisk", "/api/v2.2/films/{id}/awards", .parsed)
+      add("Kinopoisk", "/api/v2.2/films/{id}/images?type=STILL", .parsed)
+      add("Kinopoisk", "/api/v2.2/films/{id}/facts", .parsed)
+      add("Kinopoisk", "/api/v1/staff/{staffId} (person bio)", .available)
+      add("Kinopoisk", "/api/v2.2/films/{id}/box_office", .available)
+      add("Kinopoisk", "/api/v2.2/films/{id}/videos", .available)
+      add("Kinopoisk", "/api/v2.2/films/{id}/reviews", .available)
+      add("Kinopoisk", "/api/v2.2/films/{id}/similars", .available)
+      add("Kinopoisk", "/api/v2.2/films/{id}/relations", .available)
+      add("Kinopoisk", "/api/v2.1/films/{id}/sequels_and_prequels", .available)
+      add("Kinopoisk", "/api/v2.2/films/collections?type=...", .available)
+
+      return rows
+    }()
+
+    var body: some View {
+      VStack(alignment: .leading, spacing: 10) {
+        Text(verbatim: "Metadata field/endpoint reference")
+          .font(.system(size: 15, weight: .semibold))
+          .foregroundStyle(Color.KinoPub.text)
+        Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 5) {
+          GridRow {
+            Text(verbatim: "Source").foregroundStyle(.secondary)
+            Text(verbatim: "Field / endpoint").foregroundStyle(.secondary)
+            Text(verbatim: "Status").foregroundStyle(.secondary)
+          }
+          .font(.system(size: 11, weight: .semibold))
+          ForEach(Self.rows) { row in
+            GridRow {
+              Text(verbatim: row.source)
+              Text(verbatim: row.name)
+              Text(verbatim: row.status.rawValue)
+                .foregroundStyle(row.status.tint)
+            }
+            .font(.system(size: 12, design: .monospaced))
+          }
+        }
+      }
+#if os(tvOS)
+      .focusable(true)
+      .reportMediaItemSectionFocus(onSectionFocused)
+#endif
     }
   }
 

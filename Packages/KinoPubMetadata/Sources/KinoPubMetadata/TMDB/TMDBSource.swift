@@ -29,11 +29,21 @@ public final class TMDBSource: MetadataSource, @unchecked Sendable {
 
   public func titleMetadata(for identity: MediaIdentity) async throws -> TitleMetadata? {
     guard isConfigured else { throw MetadataError.notConfigured }
-    guard let resolved = try await resolveID(for: identity) else {
-      return nil
+    let (resolved, findDebug) = await resolveID(for: identity)
+    guard let resolved else {
+      var empty = TitleMetadata()
+      empty.debugLog = [findDebug]
+      return empty
     }
-    let details = try await fetchDetails(id: resolved.tmdbId, type: resolved.type)
-    return mapDetails(details, type: resolved.type, tmdbId: resolved.tmdbId)
+    let (details, detailsDebug) = await fetchDetails(id: resolved.tmdbId, type: resolved.type)
+    guard let details else {
+      var empty = TitleMetadata()
+      empty.debugLog = [findDebug, detailsDebug]
+      return empty
+    }
+    var meta = mapDetails(details, type: resolved.type, tmdbId: resolved.tmdbId)
+    meta.debugLog = [findDebug, detailsDebug]
+    return meta
   }
 
   public func artwork(for identity: MediaIdentity) async throws -> Artwork? {
@@ -50,7 +60,8 @@ public final class TMDBSource: MetadataSource, @unchecked Sendable {
 
   public func schedule(for identity: MediaIdentity, season: Int) async throws -> [EpisodeSchedule] {
     guard isConfigured else { throw MetadataError.notConfigured }
-    guard let resolved = try await resolveID(for: identity), resolved.type == .tv else {
+    let (resolved, _) = await resolveID(for: identity)
+    guard let resolved, resolved.type == .tv else {
       return []
     }
     return try await fetchSeason(tmdbId: resolved.tmdbId, season: season)
@@ -69,13 +80,17 @@ public final class TMDBSource: MetadataSource, @unchecked Sendable {
     let type: TMDBMediaType
   }
 
-  private func resolveID(for identity: MediaIdentity) async throws -> Resolved? {
-    guard let imdb = identity.imdb, !imdb.isEmpty else { return nil }
+  private func resolveID(for identity: MediaIdentity) async -> (Resolved?, SourceDebugEntry) {
+    guard let imdb = identity.imdb, !imdb.isEmpty else {
+      return (nil, SourceDebugEntry(source: .tmdb, endpoint: "find", url: "(no imdb id on this title)",
+                                    proxied: isConfigured, succeeded: false, responseBody: "Skipped — no IMDb id from kino.pub."))
+    }
     let key = "tmdb/find/\(imdb)"
+    let findPath = "/3/find/\(imdb)"
 
     let entry = await cache.deduped(key: key, ttl: Self.idTTL) { [self] in
       do {
-        let url = try makeURL(path: "/3/find/\(imdb)", query: [
+        let url = try makeURL(path: findPath, query: [
           URLQueryItem(name: "external_source", value: "imdb_id"),
           URLQueryItem(name: "language", value: configuration.language),
         ])
@@ -95,16 +110,35 @@ public final class TMDBSource: MetadataSource, @unchecked Sendable {
       }
     }
 
-    guard let entry, !entry.isNegative else { return nil }
-    let resolved = try await cache.decode(TMDBResolvedID.self, from: entry.payload)
-    guard let type = TMDBMediaType(rawValue: resolved.type) else { return nil }
-    return Resolved(tmdbId: resolved.tmdbId, type: type)
+    let debugURL = (try? makeURL(path: findPath, query: [])).map(\.absoluteString) ?? findPath
+    guard let entry else {
+      return (nil, SourceDebugEntry(source: .tmdb, endpoint: "find", url: debugURL, proxied: isConfigured,
+                                    succeeded: false, responseBody: "No response — not configured or network error."))
+    }
+    guard !entry.isNegative else {
+      return (nil, SourceDebugEntry(source: .tmdb, endpoint: "find", url: debugURL, proxied: isConfigured,
+                                    succeeded: false, responseBody: "No match for this IMDb id."))
+    }
+    // Only the resolved id is cached (the find response can list many candidates,
+    // most irrelevant) — that's also the most useful single fact for debugging:
+    // did we even match the right title.
+    guard let resolved = try? await cache.decode(TMDBResolvedID.self, from: entry.payload),
+          let type = TMDBMediaType(rawValue: resolved.type) else {
+      return (nil, SourceDebugEntry(source: .tmdb, endpoint: "find", url: debugURL, proxied: isConfigured,
+                                    succeeded: false, responseBody: "Resolved id cache entry failed to decode."))
+    }
+    let debugBody = "Resolved via /find to tmdbId=\(resolved.tmdbId), type=\(resolved.type) " +
+      "(only the resolved id is cached, not the full /find response)."
+    let debug = SourceDebugEntry(source: .tmdb, endpoint: "find", url: debugURL, proxied: isConfigured,
+                                 succeeded: true, responseBody: debugBody)
+    return (Resolved(tmdbId: resolved.tmdbId, type: type), debug)
   }
 
   // MARK: - Details
 
-  private func fetchDetails(id: Int, type: TMDBMediaType) async throws -> TMDBTitleDetails {
+  private func fetchDetails(id: Int, type: TMDBMediaType) async -> (TMDBTitleDetails?, SourceDebugEntry) {
     let key = "tmdb/details/\(type.rawValue)/\(id)"
+    let path = "/3/\(type.rawValue)/\(id)"
     let entry = await cache.deduped(key: key, ttl: Self.detailsTTL) { [self] in
       do {
         let append: String
@@ -114,7 +148,7 @@ public final class TMDBSource: MetadataSource, @unchecked Sendable {
         case .tv:
           append = "aggregate_credits,images,videos,content_ratings,keywords,external_ids"
         }
-        let url = try makeURL(path: "/3/\(type.rawValue)/\(id)", query: [
+        let url = try makeURL(path: path, query: [
           URLQueryItem(name: "language", value: configuration.language),
           URLQueryItem(name: "append_to_response", value: append),
           URLQueryItem(name: "include_image_language", value: "ru,en,null"),
@@ -127,8 +161,16 @@ public final class TMDBSource: MetadataSource, @unchecked Sendable {
         return nil
       }
     }
-    guard let entry, !entry.isNegative else { throw MetadataError.notFound }
-    return try await client.decode(TMDBTitleDetails.self, from: entry.payload)
+    let debugURL = (try? makeURL(path: path, query: [])).map(\.absoluteString) ?? path
+    guard let entry else {
+      return (nil, SourceDebugEntry(source: .tmdb, endpoint: "details", url: debugURL, proxied: isConfigured,
+                                    succeeded: false, responseBody: "No response — not configured or network error."))
+    }
+    let debugBody = String(data: entry.payload, encoding: .utf8) ?? "<\(entry.payload.count) non-UTF8 bytes>"
+    let debug = SourceDebugEntry(source: .tmdb, endpoint: "details", url: debugURL, proxied: isConfigured,
+                                 succeeded: !entry.isNegative, responseBody: debugBody)
+    guard !entry.isNegative else { return (nil, debug) }
+    return (try? await client.decode(TMDBTitleDetails.self, from: entry.payload), debug)
   }
 
   private func fetchSeason(tmdbId: Int, season: Int) async throws -> [EpisodeSchedule] {
