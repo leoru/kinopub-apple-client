@@ -19,9 +19,9 @@ Plus one thing neither of them does: **language learning while watching** — En
 
 | Platform | Priority | State |
 | --- | --- | --- |
-| tvOS 17+ | **Primary** | Builds and runs. Shared `.sidebarAdaptable` TabView chrome (Rivulet-style). Home is rebuilt; detail page and player still to go. |
-| iOS / iPadOS 16+ | Secondary | Works (inherited from upstream). Same TabView; bottom tab bar on iPhone. Kept building, not designed for. |
-| macOS 15+ | Secondary | Works (shared `.sidebarAdaptable` TabView sidebar). Kept building, not designed for. |
+| tvOS 26+ | **Primary** | Builds and runs. Shared `.sidebarAdaptable` TabView chrome (Rivulet-style). Home is rebuilt; detail page and player still to go. |
+| iOS / iPadOS 26+ | Secondary | Works (inherited from upstream). Same TabView; bottom tab bar on iPhone. Kept building, not designed for. |
+| macOS 26+ | Secondary | Works (shared `.sidebarAdaptable` TabView sidebar). Kept building, not designed for. |
 
 Non-goals for now: analytics/crash reporting (Firebase has been removed), Downloads on tvOS, and any
 custom theming that fights the platform HIG.
@@ -30,7 +30,8 @@ custom theming that fights the platform HIG.
 
 - Xcode 16
 - Swift 5.9
-- Deployment targets: tvOS 17.0, iOS 16.0, macOS 15.0
+- Deployment targets: tvOS 26.0, iOS 26.0, macOS 26.0 — matches Rivulet/Silo, no reason to hold back
+  from the newest APIs (Liquid Glass included) for an old floor nothing requires
 
 `KinoPubUI` contains a Metal shader (`Shaders/VariableBlur.metal`). Xcode 26+ ships the Metal
 toolchain as a separate component — if the build fails with "missing Metal Toolchain", run:
