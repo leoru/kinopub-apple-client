@@ -8,15 +8,16 @@
 import Foundation
 import SwiftUI
 import AVKit
+import KinoPubBackend
 import KinoPubUI
 
 struct PlayerView: View {
 
   @StateObject private var playerManager: PlayerManager
-  @State private var hideNavigationBar = false
-  @State private var showsSubtitlePicker = false
   @Environment(\.dismiss) private var dismiss
-  @EnvironmentObject var navigationState: NavigationState
+#if os(macOS)
+  @Environment(\.dismissWindow) private var dismissWindow
+#endif
 
   init(manager: @autoclosure @escaping () -> PlayerManager) {
     _playerManager = StateObject(wrappedValue: manager())
@@ -26,42 +27,37 @@ struct PlayerView: View {
     GeometryReader { _ in
       ZStack(alignment: .top) {
         videoPlayer
-#if !os(tvOS)
-        // The Menu button leaves the player on tvOS, and subtitles/audio live in the
-        // system transport bar — so the hand-rolled chrome only ships off-TV.
-        playerChrome
-#endif
+        // Off tvOS there is no chrome of ours at all: the system player already draws a
+        // transport bar, a subtitle menu and an audio menu, and the master playlist
+        // carries every kino.pub subtitle as a real HLS rendition for it to list. Ours
+        // was a second subtitles button next to the system one.
+#if os(tvOS)
         subtitleLayers
+#endif
+        playbackStateOverlay
       }
       .ignoresSafeArea(.all)
     }
     .ignoresSafeArea(.all)
-#if !os(tvOS)
-    .sheet(isPresented: $showsSubtitlePicker, onDismiss: { playerManager.player.play() }) {
-      SubtitleTrackPickerView(tracks: playerManager.subtitleTracks,
-                              primary: playerManager.primaryTrack,
-                              secondary: playerManager.secondaryTrack,
-                              selectPrimary: { playerManager.select(primary: $0) },
-                              selectSecondary: { playerManager.select(secondary: $0) })
-    }
-#endif
 #if os(macOS)
-    .toolbar(.hidden, for: .windowToolbar)
-    .onAppear(perform: {
-      toggleSidebar()
-    })
+    // The player has its own window (see `PlayerLink`), so the title bar stays: it
+    // carries the film's name and the close button. It used to be hidden while the
+    // player was pushed into the main window's detail column, which left the screen
+    // with no way out at all once playback hid the custom chevron.
+    .navigationTitle(playerManager.displayTitle ?? "")
+    // Escape leaves, the way it does out of full-screen video everywhere else. ⌘W still
+    // works too, and now closes the film rather than the app's window.
+    .onExitCommand {
+      dismissWindow(id: PlaybackWindowState.windowID)
+    }
 #endif
 #if os(iOS)
     .navigationBarHidden(true)
     .toolbar(.hidden, for: .tabBar)
-    .onChange(of: playerManager.isPlaying) { isPlaying in
-      hideNavigationBar = isPlaying
-    }
     .onAppear(perform: {
       UIApplication.shared.isIdleTimerDisabled = true
       UIDevice.current.setValue(UIInterfaceOrientation.landscapeLeft.rawValue, forKey: "orientation")
       AppDelegate.orientationLock = .landscape
-      toggleSidebar()
       Task {
         await playerManager.fetchWatchMark()
       }
@@ -89,8 +85,11 @@ struct PlayerView: View {
         await playerManager.fetchWatchMark()
       }
     }
-    .onChange(of: playerManager.isPlaying) { isPlaying in
-      hideNavigationBar = isPlaying
+    // Closing the window has to stop the sound with it. Only safe to hang off
+    // `onDisappear` on macOS: on iOS this view stays mounted underneath AVKit's
+    // full-screen presentation, and pausing there would stop playback on the way in.
+    .onDisappear {
+      playerManager.player.pause()
     }
 #endif
   }
@@ -106,6 +105,16 @@ struct PlayerView: View {
         await playerManager.preparePlayback()
         playerManager.player.play()
       }
+#elseif os(iOS)
+    // `entersFullScreenWhenPlaybackBegins` is what gets us the system Done button: AVKit
+    // lifts the controller into its own full-screen presentation, which is the only place
+    // it draws one. Tapping Done tells us through the delegate, and we leave the route
+    // rather than dropping the user back onto a letterboxed inline player.
+    SystemVideoPlayer(player: playerManager.player, onExitFullScreen: { dismiss() })
+      .task {
+        await playerManager.preparePlayback()
+        playerManager.player.play()
+      }
 #else
     VideoPlayer(player: playerManager.player)
       .task {
@@ -115,6 +124,66 @@ struct PlayerView: View {
 #endif
   }
 
+  /// The player never sits on a silent black screen: while the stream is being prepared
+  /// there is a spinner and the title, when it fails there is the reason, and either way
+  /// there is a way out that doesn't involve killing the app.
+  ///
+  /// The way out differs by platform on purpose. Off-TV it's a button. On tvOS it's the
+  /// Menu button and a line saying so: a SwiftUI overlay sibling of
+  /// `AVPlayerViewController` can't take focus from the Siri Remote, so a `Button` here
+  /// would render and never be pressable. Menu already exits through
+  /// `playerViewControllerShouldDismiss`.
+  @ViewBuilder
+  private var playbackStateOverlay: some View {
+    VStack {
+      Spacer()
+      switch playerManager.playbackState {
+      case .ready:
+        EmptyView()
+      case .preparing:
+        VStack(spacing: 24) {
+          ProgressView()
+          if let title = playerManager.displayTitle {
+            Text(title)
+              .font(.headline)
+          }
+          exitAffordance(label: "Cancel")
+        }
+      case .failed(let message):
+        VStack(spacing: 24) {
+          Text("Couldn't Load")
+            .font(.headline)
+          Text(message)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: 600)
+          exitAffordance(label: "Close")
+        }
+      }
+      Spacer()
+    }
+    .frame(maxWidth: .infinity)
+    .animation(.easeOut(duration: 0.2), value: playerManager.playbackState)
+  }
+
+  @ViewBuilder
+  private func exitAffordance(label: LocalizedStringKey) -> some View {
+#if os(tvOS)
+    Text("Press Menu to go back")
+      .font(.callout)
+      .foregroundStyle(.secondary)
+#elseif os(macOS)
+    // `dismiss()` is for presentations; closing the window it is the root of takes
+    // `dismissWindow`, which names the window explicitly.
+    Button(label) { dismissWindow(id: PlaybackWindowState.windowID) }
+#else
+    Button(label) { dismiss() }
+#endif
+  }
+
+  /// tvOS only. Sidecar SRT rendered by us, because the Siri Remote path still routes
+  /// subtitle choice through `transportBarCustomMenuItems`.
   @ViewBuilder
   private var subtitleLayers: some View {
     VStack {
@@ -127,75 +196,12 @@ struct PlayerView: View {
           .padding(.bottom, 48)
           .transition(.opacity)
       }
-
-#if !os(tvOS)
-      // Translation is unavailable on tvOS (canImport(Translation) excludes it), so the
-      // panel there could only ever say so — and it sat as a SwiftUI overlay above the
-      // system AVPlayerViewController, where the Siri Remote could never actually focus
-      // its word chips. Not worth shipping a dead control for a feature with no payoff.
-      if !playerManager.isPlaying,
-         let cue = playerManager.activeCue ?? playerManager.lastCue,
-         !cue.displayText.isEmpty {
-        SubtitleTranslatePanel(cueText: cue.displayText)
-          .padding(.horizontal, 24)
-          .padding(.bottom, 56)
-          .transition(.opacity)
-      }
-#endif
     }
     .animation(.easeOut(duration: 0.2), value: playerManager.isPlaying)
     .animation(.easeOut(duration: 0.2), value: playerManager.activeCue)
     .animation(.easeOut(duration: 0.2), value: playerManager.activeSecondaryCue)
   }
 
-#if !os(tvOS)
-  var playerChrome: some View {
-    HStack(alignment: .top) {
-      Button(action: { dismiss() }, label: {
-        Image(systemName: "chevron.backward")
-          .font(.system(size: 24))
-          .tint(Color.KinoPub.accent)
-      })
-#if os(macOS)
-      .buttonStyle(PlainButtonStyle())
-#endif
-      .frame(width: 70, height: 70)
-      .padding(.leading, 32)
-      .padding(.top, 16)
-      .contentShape(Rectangle())
-      Spacer()
-      if playerManager.canChooseSubtitles {
-        subtitlesButton
-      }
-    }
-    .fixedSize(horizontal: false, vertical: true)
-    .opacity(hideNavigationBar ? 0.0 : 1.0)
-    // Invisible chrome must not keep taking focus or taps while playback runs.
-    .disabled(hideNavigationBar)
-  }
-
-  private var subtitlesButton: some View {
-    Button(action: {
-      playerManager.player.pause()
-      showsSubtitlePicker = true
-    }, label: {
-      Image(systemName: "captions.bubble")
-        .font(.system(size: 24))
-        .tint(Color.KinoPub.accent)
-    })
-#if os(macOS)
-    .buttonStyle(PlainButtonStyle())
-#endif
-    .frame(width: 70, height: 70)
-    .padding(.trailing, 32)
-    .padding(.top, 16)
-    .contentShape(Rectangle())
-  }
-#endif
-
-  private func toggleSidebar() {
-    navigationState.columnVisibility = .detailOnly
-  }
 }
 
 #if os(tvOS)
@@ -242,6 +248,152 @@ private struct TVVideoPlayer: UIViewControllerRepresentable {
     func playerViewControllerShouldDismiss(_ playerViewController: AVPlayerViewController) -> Bool {
       onMenuPress()
       return false
+    }
+  }
+}
+
+#endif
+
+#if os(iOS)
+
+/// The system player, presented the way AVKit wants to be presented.
+///
+/// `entersFullScreenWhenPlaybackBegins` makes the controller lift itself out of this
+/// inline frame into its own full-screen presentation, and that presentation is the only
+/// thing that draws the system Done button — an embedded `AVPlayerViewController`, or the
+/// SwiftUI `VideoPlayer` that used to be here, never shows one. Done ends the
+/// presentation, which we forward so the route leaves too.
+private struct SystemVideoPlayer: UIViewControllerRepresentable {
+  let player: AVPlayer
+  let onExitFullScreen: () -> Void
+
+  func makeUIViewController(context: Context) -> AVPlayerViewController {
+    let controller = AVPlayerViewController()
+    controller.player = player
+    controller.delegate = context.coordinator
+    controller.entersFullScreenWhenPlaybackBegins = true
+    controller.exitsFullScreenWhenPlaybackEnds = true
+    controller.allowsPictureInPicturePlayback = true
+    return controller
+  }
+
+  func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
+    if controller.player !== player {
+      controller.player = player
+    }
+  }
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator(onExitFullScreen: onExitFullScreen)
+  }
+
+  final class Coordinator: NSObject, AVPlayerViewControllerDelegate {
+    let onExitFullScreen: () -> Void
+
+    init(onExitFullScreen: @escaping () -> Void) {
+      self.onExitFullScreen = onExitFullScreen
+    }
+
+    func playerViewController(_ playerViewController: AVPlayerViewController,
+                              willEndFullScreenPresentationWithAnimationCoordinator
+                              coordinator: UIViewControllerTransitionCoordinator) {
+      // Leave alongside the presentation rather than after it, so the inline player
+      // never gets a frame on screen on the way out.
+      coordinator.animate(alongsideTransition: nil) { [onExitFullScreen] context in
+        guard !context.isCancelled else { return }
+        onExitFullScreen()
+      }
+    }
+  }
+}
+
+#endif
+
+/// Opens the player wherever the platform puts it, so no call site has to know.
+///
+/// tvOS and iOS push it onto the navigation stack — on TV the system player screen owns
+/// the display and Menu leaves, on iOS AVKit lifts itself full-screen and draws Done.
+/// macOS gets its own window, the way the stock TV app takes a film out of the page it
+/// was on: the title bar carries the name and the close button, and ⌘W works.
+struct PlayerLink<Label: View>: View {
+
+  private let route: any Hashable
+  private let item: any PlayableItem
+  private let mode: WatchMode
+  private let label: Label
+
+#if os(macOS)
+  @Environment(\.openWindow) private var openWindow
+#endif
+
+  init(route: any Hashable,
+       item: any PlayableItem,
+       mode: WatchMode,
+       @ViewBuilder label: () -> Label) {
+    self.route = route
+    self.item = item
+    self.mode = mode
+    self.label = label()
+  }
+
+  var body: some View {
+#if os(macOS)
+    Button {
+      PlaybackWindowState.shared.request = PlaybackWindowState.Request(item: item, mode: mode)
+      openWindow(id: PlaybackWindowState.windowID)
+    } label: {
+      label
+    }
+#else
+    NavigationLink(value: route) {
+      label
+    }
+#endif
+  }
+}
+
+#if os(macOS)
+
+/// What the player window is currently showing. One window: a second film replaces the
+/// first rather than piling up, which is what the stock TV app does too.
+///
+/// Shared rather than injected, following `AppContext.shared`: a `Button` deep in the
+/// item page needs to write to it, and threading an `@EnvironmentObject` down for that
+/// would crash every preview that doesn't know to inject one.
+@MainActor
+final class PlaybackWindowState: ObservableObject {
+
+  static let shared = PlaybackWindowState()
+  static let windowID = "player"
+
+  struct Request: Identifiable {
+    let id = UUID()
+    let item: any PlayableItem
+    let mode: WatchMode
+  }
+
+  @Published var request: Request?
+}
+
+/// Contents of the player window. Keyed by request id so opening a different film builds
+/// a fresh `PlayerManager` instead of reusing one that has already prepared playback.
+struct PlayerWindowContent: View {
+
+  @ObservedObject private var playback = PlaybackWindowState.shared
+  @Environment(\.appContext) private var appContext
+
+  var body: some View {
+    if let request = playback.request {
+      PlayerView(manager: PlayerManager(playItem: request.item,
+                                        watchMode: request.mode,
+                                        downloadedFilesDatabase: appContext.downloadedFilesDatabase,
+                                        actionsService: appContext.actionsService))
+        .id(request.id)
+    } else {
+      // Reachable by reopening the window from the Window menu after it was closed.
+      Text("Nothing is playing")
+        .foregroundStyle(.secondary)
+        .frame(minWidth: 480, minHeight: 270)
     }
   }
 }

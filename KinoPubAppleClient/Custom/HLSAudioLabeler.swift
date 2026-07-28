@@ -2,41 +2,39 @@
 //  HLSAudioLabeler.swift
 //  KinoPubAppleClient
 //
-//  Rewrites a kino.pub HLS master so the system Audio picker shows useful names.
+//  Rewrites a kino.pub HLS master so audio renditions carry useful names.
 //
-//  AVKit reads `NAME=` off `#EXT-X-MEDIA:TYPE=AUDIO` — kino.pub puts only the
-//  language there ("Russian", "Russian", "Russian"). The API already knows the
-//  dub kind and studio; we stamp those into NAME before handing the playlist to
-//  AVPlayer. Child playlist URIs are made absolute so a file:// master still
-//  resolves against the CDN.
+//  kino.pub puts only the language in `NAME=` on `#EXT-X-MEDIA:TYPE=AUDIO`
+//  ("Russian", "Russian", "Russian"). The API already knows the dub kind and
+//  studio, so we stamp those in. What we write arrives as the selection option's
+//  common-metadata title — read it with `AVMediaSelectionOption.kinopubTrackName`,
+//  not `displayName`, which discards it (see that property's note). Child
+//  playlist URIs are made absolute because the rewritten master is served from
+//  memory, not from the CDN.
+//
+//  Delivery is `HLSMasterResourceLoader` below: AVPlayer requests the master
+//  through a custom scheme, the loader fetches and rewrites it inline, and any
+//  problem degrades to the CDN's own bytes. An earlier version wrote the
+//  rewritten master to a `file://` temp path instead — AVFoundation never
+//  finishes loading a file-URL master whose media is remote (the item just sits
+//  in `.unknown`), which showed up as every film spinning forever while
+//  trailers, which skip the rewrite, played fine.
 //
 
+import AVFoundation
 import Foundation
 import KinoPubBackend
+import KinoPubLogging
+import OSLog
 
 enum HLSAudioLabeler {
 
-  /// Fetches `remote`, rewrites AUDIO names from `tracks`, writes a temp master,
-  /// and returns its file URL.
-  static func labeledMasterURL(from remote: URL,
-                               tracks: [AudioTrackInfo]) async throws -> URL {
-    let (data, response) = try await URLSession.shared.data(from: remote)
-    if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-      throw LabelError.fetchFailed(http.statusCode)
-    }
-    guard let text = String(data: data, encoding: .utf8), text.contains("#EXTM3U") else {
-      throw LabelError.notAPlaylist
-    }
-
-    let rewritten = rewrite(text, baseURL: remote, tracks: tracks)
-    guard rewritten.contains("NAME=\"") else { throw LabelError.nothingToRewrite }
-
+  /// Older builds wrote rewritten masters under tmp and never deleted them.
+  /// One sweep at launch clears whatever they left behind.
+  static func removeLegacyTemporaryFiles() {
     let dir = FileManager.default.temporaryDirectory
       .appendingPathComponent("kinopub-hls", isDirectory: true)
-    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-    let file = dir.appendingPathComponent("\(UUID().uuidString).m3u8")
-    try rewritten.write(to: file, atomically: true, encoding: .utf8)
-    return file
+    try? FileManager.default.removeItem(at: dir)
   }
 
   /// Pure rewrite for tests: absolute-izes relative URIs and replaces AUDIO `NAME`s.
@@ -165,9 +163,68 @@ enum HLSAudioLabeler {
     return URL(string: string, relativeTo: base)?.absoluteString ?? string
   }
 
-  enum LabelError: Error {
-    case fetchFailed(Int)
-    case notAPlaylist
-    case nothingToRewrite
+}
+
+/// Feeds AVPlayer the relabeled master playlist without ever gating playback on it.
+///
+/// The player is pointed at the master URL with a custom scheme, which routes the
+/// request here; the loader fetches the real playlist, relabels the audio names, and
+/// answers from memory. Everything inside the playlist is absolute `https`, so all
+/// child playlists and segments load straight from the CDN — this delegate sees exactly
+/// one request. A payload that can't be rewritten is passed through untouched (worst
+/// case the Audio picker shows the CDN's plain names), and a fetch failure fails the
+/// player item so the screen shows an error instead of an endless spinner.
+final class HLSMasterResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
+
+  static let scheme = "kinopub-hls"
+
+  private let remote: URL
+  private let tracks: [AudioTrackInfo]
+  private let session: URLSession
+
+  init(remote: URL, tracks: [AudioTrackInfo]) {
+    self.remote = remote
+    self.tracks = tracks
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.timeoutIntervalForRequest = 15
+    self.session = URLSession(configuration: configuration)
+  }
+
+  /// The master URL with our scheme swapped in, so AVPlayer routes its request here.
+  static func maskedURL(for remote: URL) -> URL? {
+    var components = URLComponents(url: remote, resolvingAgainstBaseURL: false)
+    components?.scheme = scheme
+    return components?.url
+  }
+
+  func resourceLoader(_ resourceLoader: AVAssetResourceLoader,
+                      shouldWaitForLoadingOfRequestedResource loadingRequest: AVAssetResourceLoadingRequest) -> Bool {
+    Task { await serve(loadingRequest) }
+    return true
+  }
+
+  private func serve(_ request: AVAssetResourceLoadingRequest) async {
+    do {
+      let (data, response) = try await session.data(from: remote)
+      if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+        throw URLError(.badServerResponse)
+      }
+      let body = relabeledIfPossible(data)
+      request.contentInformationRequest?.contentType = "public.m3u8-playlist"
+      request.contentInformationRequest?.contentLength = Int64(body.count)
+      request.contentInformationRequest?.isByteRangeAccessSupported = false
+      request.dataRequest?.respond(with: body)
+      request.finishLoading()
+    } catch {
+      Logger.app.error("HLS master fetch failed, failing the item: \(error.localizedDescription)")
+      request.finishLoading(with: error)
+    }
+  }
+
+  private func relabeledIfPossible(_ data: Data) -> Data {
+    guard !tracks.isEmpty,
+          let text = String(data: data, encoding: .utf8),
+          text.contains("#EXTM3U") else { return data }
+    return Data(HLSAudioLabeler.rewrite(text, baseURL: remote, tracks: tracks).utf8)
   }
 }

@@ -23,6 +23,15 @@ enum WatchMode {
   case trailer
 }
 
+/// What the player screen shows besides video: a spinner (with a way out) while the
+/// stream is prepared, nothing once it's ready, the reason when it failed. The player
+/// must never sit on a silent black screen.
+enum PlaybackState: Equatable {
+  case preparing
+  case ready
+  case failed(String)
+}
+
 class PlayerManager: ObservableObject {
 
   @Published var isPlaying: Bool = false
@@ -32,6 +41,7 @@ class PlayerManager: ObservableObject {
   @Published var lastCue: SubtitleCue?
   @Published var subtitlesEnabled: Bool = false
   @Published var currentPlaybackTime: TimeInterval = 0
+  @Published private(set) var playbackState: PlaybackState = .preparing
 
   /// Every subtitle track this item offers, and the two that are showing.
   @Published private(set) var subtitleTracks: [SubtitleTrack] = []
@@ -51,6 +61,11 @@ class PlayerManager: ObservableObject {
   private var secondaryCues: [SubtitleCue] = []
   private var cueLoadTasks: [Task<Void, Never>] = []
   private var didPreparePlayback = false
+  /// Held strongly: `AVAssetResourceLoader` only keeps a weak reference to its delegate.
+  private var masterLoader: HLSMasterResourceLoader?
+  private var statusObservation: NSKeyValueObservation?
+  private var playbackFailureObserver: NSObjectProtocol?
+  private static let loaderQueue = DispatchQueue(label: "com.soda.kinopub.hls-master-loader")
 
 #if os(tvOS)
   /// The system player screen we drive on tvOS. Held weakly: AVKit owns it, we only
@@ -110,8 +125,9 @@ class PlayerManager: ObservableObject {
     configureSubtitles()
   }
 
-  /// Loads the playable URL into `player`, rewriting the HLS master so AUDIO `NAME`s
-  /// carry dub kind + studio. Safe to call more than once; only the first run does work.
+  /// Loads the playable URL into `player`. Safe to call more than once; only the first
+  /// run does work. Playback starts immediately — the audio-name rewrite happens inside
+  /// the resource loader while the master is being fetched, never as a step before it.
   @MainActor
   func preparePlayback() async {
     guard !didPreparePlayback else { return }
@@ -119,13 +135,12 @@ class PlayerManager: ObservableObject {
 
     guard let source = fileURL else {
       Logger.app.error("No playable URL for item \(self.playItem.id) in \(String(describing: self.watchMode)) mode")
+      playbackState = .failed("No playable link for this item".localized)
       return
     }
 
-    let url = await Self.resolvedPlaybackURL(source: source,
-                                             watchMode: watchMode,
-                                             tracks: playItem.audioTracks)
-    let item = AVPlayerItem(url: url)
+    let item = AVPlayerItem(asset: playbackAsset(for: source))
+    observePlaybackState(of: item)
     player.replaceCurrentItem(with: item)
 #if os(tvOS)
     audibleGroup = nil
@@ -136,28 +151,66 @@ class PlayerManager: ObservableObject {
 #endif
   }
 
-  /// Prefer a locally rewritten master with real dub names; fall back to the CDN URL.
-  private static func resolvedPlaybackURL(source: URL,
-                                          watchMode: WatchMode,
-                                          tracks: [AudioTrackInfo]) async -> URL {
+  /// Media masters route through `HLSMasterResourceLoader` so the Audio picker gets
+  /// real dub names; trailers, downloaded files and items without track metadata play
+  /// their URL directly.
+  private func playbackAsset(for source: URL) -> AVURLAsset {
     guard watchMode == .media,
-          !tracks.isEmpty,
+          !playItem.audioTracks.isEmpty,
           let scheme = source.scheme?.lowercased(),
-          scheme == "http" || scheme == "https" else {
-      return source
+          scheme == "http" || scheme == "https",
+          let masked = HLSMasterResourceLoader.maskedURL(for: source) else {
+      return AVURLAsset(url: source)
     }
-    do {
-      return try await HLSAudioLabeler.labeledMasterURL(from: source, tracks: tracks)
-    } catch {
-      Logger.app.error("HLS audio relabel failed, playing CDN master: \(error.localizedDescription)")
-      return source
+    let loader = HLSMasterResourceLoader(remote: source, tracks: playItem.audioTracks)
+    masterLoader = loader
+    let asset = AVURLAsset(url: masked)
+    asset.resourceLoader.setDelegate(loader, queue: Self.loaderQueue)
+    return asset
+  }
+
+  /// Keeps `playbackState` honest: ready when the item is, failed — with the reason —
+  /// when it dies, either before the first frame or mid-stream.
+  private func observePlaybackState(of item: AVPlayerItem) {
+    playbackState = .preparing
+    statusObservation = item.observe(\.status, options: [.new, .initial]) { [weak self] item, _ in
+      DispatchQueue.main.async {
+        guard let self else { return }
+        switch item.status {
+        case .readyToPlay:
+          self.playbackState = .ready
+        case .failed:
+          self.playbackState = .failed(Self.failureMessage(for: item))
+        default:
+          break
+        }
+      }
     }
+    playbackFailureObserver = NotificationCenter.default.addObserver(
+      forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main
+    ) { [weak self] note in
+      let error = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
+      self?.playbackState = .failed(error?.localizedDescription ?? "Couldn't Load".localized)
+    }
+  }
+
+  private static func failureMessage(for item: AVPlayerItem) -> String {
+    if let error = item.error {
+      return error.localizedDescription
+    }
+    if let comment = item.errorLog()?.events.last?.errorComment {
+      return comment
+    }
+    return "Couldn't Load".localized
   }
 
   deinit {
     cueLoadTasks.forEach { $0.cancel() }
     if let cueObserverToken {
       player.removeTimeObserver(cueObserverToken)
+    }
+    if let playbackFailureObserver {
+      NotificationCenter.default.removeObserver(playbackFailureObserver)
     }
 #if os(tvOS)
     audioReadyObservation?.invalidate()
@@ -173,13 +226,18 @@ class PlayerManager: ObservableObject {
 
   /// The tracks to open with: what was picked last time on this title, otherwise the
   /// defaults from Profile → Playback.
+  ///
+  /// tvOS only. Everywhere else the system player lists the HLS subtitle renditions from
+  /// the master itself and renders them, so downloading sidecar SRT there would fetch
+  /// files nothing draws.
   private func configureSubtitles() {
+#if os(tvOS)
     guard watchMode == .media else { return }
-
     subtitleTracks = SubtitleSelector.tracks(in: playItem.subtitles)
     let remembered = SubtitleTrackMemory.choice(for: playItem.metadata.id)
     let selection = SubtitleSelector.selection(in: subtitleTracks, remembered: remembered)
     apply(selection, remember: false)
+#endif
   }
 
   /// Picking a track is also a statement about the next episode, so every change from
@@ -519,14 +577,14 @@ extension PlayerManager {
       didChooseDefaultAudio = true
       let remembered = AudioTrackMemory.choice(for: playItem.metadata.id)
       let chosen = remembered.flatMap { name in
-        group.options.first { $0.displayName == name }
+        group.options.first { $0.kinopubTrackName == name }
       } ?? AudioTrackRanker.best(in: group.options)
       if let chosen {
         item.select(chosen, in: group)
         // Seed the persist baseline with what we opened on, so the polling write only
         // fires once the user actually switches away from this — the auto-pick itself is
         // not a "choice" worth remembering as one.
-        lastPersistedAudioName = chosen.displayName
+        lastPersistedAudioName = chosen.kinopubTrackName
       }
     }
     rebuildTransportBarMenus()
@@ -544,7 +602,7 @@ extension PlayerManager {
   /// choice, and a change since last time gets written down for the next episode.
   func persistAudioSelectionIfNeeded() {
     guard watchMode == .media, let option = currentAudioOption else { return }
-    let name = option.displayName
+    let name = option.kinopubTrackName
     guard name != lastPersistedAudioName else { return }
     lastPersistedAudioName = name
     AudioTrackMemory.remember(name, for: playItem.metadata.id)
@@ -597,9 +655,30 @@ extension PlayerManager {
 
 }
 
+extension AVMediaSelectionOption {
+
+  /// The rendition's `NAME=` from the master playlist — the label carrying dub kind and
+  /// studio, which is the whole point of `HLSAudioLabeler`.
+  ///
+  /// Not `displayName`: for an HLS audio rendition AVFoundation derives that from the
+  /// language and throws `NAME=` away, so every Russian dub of an item comes back as
+  /// plain "Russian". Verified against a kino.pub master — a rendition renamed to
+  /// "ZZPROBE-ONE" still reported `displayName == "Russian"` while the common metadata
+  /// title carried the new name. Ranking or remembering a track by `displayName` picks
+  /// between identical strings and lands on an arbitrary dub.
+  var kinopubTrackName: String {
+    let title = commonMetadata
+      .first { $0.commonKey == .commonKeyTitle }?
+      .stringValue?
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    if let title, !title.isEmpty { return title }
+    return displayName
+  }
+}
+
 /// The user's manually chosen audio track, kept per title the same way subtitles are, so
-/// the next episode opens with the same dub. The option's `displayName` is the stable
-/// handle — it carries the dub kind and studio, and it's what the menu shows.
+/// the next episode opens with the same dub. The rendition's playlist name is the stable
+/// handle — it carries the dub kind and studio.
 enum AudioTrackMemory {
   private static let storageKey = "audioTrackChoices"
 
@@ -627,8 +706,8 @@ enum AudioTrackMemory {
 ///
 /// Same ladder as the detail-page Audio column (`AudioTracks`): preferred languages,
 /// then A–Z, AD last within a language, kind (DUB → MVO → DVO → VO → AVO → Orig),
-/// studio A–Z, more channels first. The option's display name carries kind and studio;
-/// language comes from the option's locale / tag.
+/// studio A–Z, more channels first. The rendition's playlist name carries kind and
+/// studio; language comes from the option's locale / tag.
 enum AudioTrackRanker {
 
   static func best(in options: [AVMediaSelectionOption],
@@ -641,7 +720,7 @@ enum AudioTrackRanker {
 
   private static func sortKey(_ option: AVMediaSelectionOption,
                               preferredLanguages: [String]) -> AudioTracks.SortKey {
-    let name = option.displayName
+    let name = option.kinopubTrackName
     let lang = languageCode(for: option)
     return AudioTracks.sortKey(
       lang: lang,
@@ -660,7 +739,7 @@ enum AudioTrackRanker {
     }
     let tag = option.extendedLanguageTag ?? ""
     if !tag.isEmpty { return tag }
-    return option.displayName
+    return option.kinopubTrackName
   }
 }
 

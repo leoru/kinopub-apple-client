@@ -57,12 +57,28 @@ open KinoPubAppleClient.xcodeproj
 - Catalog browsing: `hot` / `fresh` / `popular` per content type, paginated
 - Search, bookmarks (folders + items), item details, seasons and episodes
 - Playback with resume ("continue watching" prompt) and watch-mark reporting
+- **The player is presented, not pushed, off tvOS**, and off tvOS it is nothing but the system player.
+  macOS gives it its own window the way the stock TV app lifts a film out of the page it was on: the title
+  bar carries the name and the close button, Escape leaves, ⌘W closes the film rather than the app. It
+  opens at 16:9 so a wide short window doesn't fill with black bars, and it's off the Window menu — the
+  only way in is pressing Play. iOS lets `AVPlayerViewController` take itself full-screen, which is the
+  only way it draws the system Done button. Automatic window tabbing is off app-wide
+  (`AppDelegate.applicationDidFinishLaunching`): AppKit was merging the player into the library window's
+  tab group, where it wore that window's back button and ⌘W closed everything
+- **Playback starts first; the dub relabel rides along.** The rewritten master is served to AVPlayer from
+  memory through `HLSMasterResourceLoader` (custom scheme, one request, children straight from the CDN).
+  It replaced writing the master to a `file://` temp path — AVFoundation never finishes loading a
+  file-URL master whose media is remote, so every film spun forever while trailers, which skip the
+  rewrite, played fine. A failed fetch now fails the item instead of hanging, and the player always shows
+  a spinner with Cancel, or the error with Close (`PlayerManager.playbackState`)
 - Downloads and offline playback (iOS/iPadOS/macOS only)
-- **English subtitles by default**, preferring non-CC/SDH sidecar tracks, parsed into synced cues and
-  rendered as an overlay (`Views/Player/Subtitle*.swift`); toggles live in Profile → Playback
-- **Dual subtitles**: any two of the item's tracks at once, stacked at the bottom of the frame, picked
-  from a captions button in the player and remembered for the next episode
-- On-pause word panel translating EN→RU on device (iOS 18 / macOS 15; not available on tvOS)
+- **Subtitles are the system's off tvOS.** The master playlist carries every kino.pub subtitle as a real
+  HLS rendition, so the system player lists and draws them; we add nothing. On tvOS only, sidecar SRT is
+  parsed into synced cues and drawn as an overlay, picked from the transport-bar menu — **English by
+  default**, preferring non-CC/SDH, toggles in Profile → Playback
+- **Dual subtitles** (two tracks stacked) — tvOS only, for the same reason
+- Tap-a-word translation on pause is **parked**, not shipped: `SubtitleTranslatePanel.swift` and
+  `SubtitleTrackPickerView.swift` build but nothing presents them (see the note at the top of each)
 - **The focus-preview hero is a `MediaRowsView(showsFeaturedPreview:)` option, currently off everywhere.**
   When on, the top ~560 points of the page belong to whatever the remote is on: its wide artwork fills the
   screen (cross-fading as focus moves, blurring into the background toward the rows), with the title,
@@ -112,6 +128,14 @@ These are real, verified, and up for grabs:
   remote pops the stack. If that turns out not to fire, it is a real bug, not a design choice.
 - **Subtitles don't follow the episode.** `MediaItem.subtitles` returns `videos?.first?.subtitles`, so a
   series always uses the first video's tracks. See `Packages/KinoPubBackend/.../Models/MediaItem.swift`.
+- **The player window has not been clicked through since the last round of fixes.** Escape-to-close, the
+  16:9 opening size, tabbing being off, and the film's name in the title bar are all read, not seen —
+  driving the app from here is blocked (a DerivedData build isn't in the computer-use app list, AppleEvents
+  wait on a TCC prompt, `screencapture` has no Screen Recording grant). Same for iOS: that Done both
+  closes the presentation and pops the route is reasoned from the delegate contract, not observed.
+- **Space doesn't pause on macOS** — reported, and not fixed by this round. With our overlay chrome gone
+  the system player should get the key itself; if it still doesn't, the next thing to check is what holds
+  first responder inside the window, not to add another hand-rolled shortcut.
 - **tvOS player is unverified on a real remote.** `PlayerView` now drives `AVPlayerViewController`
   directly on tvOS (`TVVideoPlayer` in `Views/Player/PlayerView.swift`) — no hand-rolled chrome, the
   Subtitles picker lives in `transportBarCustomMenuItems` (dual tracks + sidecar), audio is left to the
@@ -127,6 +151,17 @@ These are real, verified, and up for grabs:
   kino.pub subtitle is a sidecar SRT (srt × 189, embed × 0, CC × 0), so the system picker could reach
   nothing ours can't. **Needs a real-remote check** that `[]` hides the button rather than showing an
   Off-only one, and that every expected track still appears in our menu.
+- **Whether the system Audio picker itself shows the relabeled dub names is unverified.** `NAME=` from the
+  master reaches AVFoundation as the option's common-metadata title, but *not* as `displayName` — a
+  rendition renamed to "ZZPROBE-ONE" still reported `displayName == "Russian"`. Our own ranking and
+  "remember this dub" now read the metadata title (`AVMediaSelectionOption.kinopubTrackName`), so they
+  see real names; which of the two AVKit's picker renders on tvOS has only been reasoned about, not seen
+  on a screen.
+- **kino.pub declares one AUDIO group per video variant, so the system picker lists every dub three
+  times.** A master with four dubs publishes `audio1080`, `audio720` and `audio480` groups, and
+  `mediaSelectionGroup(forMediaCharacteristic: .audible)` returns all 12 renditions — verified against a
+  live master. De-duplicating means picking one group and hiding the rest, which touches which rendition
+  the ABR ladder actually plays, so it wasn't done blind.
 - **The player's title only shows the series name when reached from the item page.** `Episode` carries
   a `seriesTitle` filled in by `MediaItemHeroView`/`SeasonsRailView` right before playback; the
   standalone season-browsing route (`Routes.season`, opened from Catalog/Search/Bookmarks/Main without

@@ -2,6 +2,13 @@
 //  SubtitleTranslatePanel.swift
 //  KinoPubAppleClient
 //
+//  PARKED — nothing builds this view. Tap-a-word-to-translate on pause was never good
+//  enough to show anyone: kino.pub has no such feature, it only ever worked off tvOS
+//  (the Translation framework is unavailable there), and the panel sat as a SwiftUI
+//  overlay above the system player where it fought the real transport controls. Kept as
+//  source so the work isn't lost; wire it back only once the basics kino.pub already
+//  does well are done.
+//
 
 import SwiftUI
 

@@ -2,6 +2,11 @@
 //  SubtitleTrackPickerView.swift
 //  KinoPubAppleClient
 //
+//  PARKED — nothing presents this sheet. Off tvOS the system player lists every subtitle
+//  itself (the master playlist carries them all as HLS renditions), so our captions
+//  button was a second Subtitles control sitting next to the real one. tvOS picks tracks
+//  through `PlayerManager.subtitlesMenu` in the transport bar instead.
+//
 
 import SwiftUI
 import KinoPubBackend
