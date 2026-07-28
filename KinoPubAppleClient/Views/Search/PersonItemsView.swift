@@ -35,18 +35,15 @@ struct PersonItemsView: View {
   }
 
   var body: some View {
-    GeometryReader { geometryProxy in
-      ContentItemsListView(
-        width: geometryProxy.size.width,
-        items: $catalog.items,
-        onLoadMoreContent: { catalog.loadMoreContent(after: $0) },
-        onRefresh: { await catalog.refresh() },
-        navigationLinkProvider: { linkProvider.link(for: $0) },
-        emptyMessage: showsEmptyMessage ? "No Results" : nil
-      ) {
-        hero
-        creditsHeader
-      }
+    ContentItemsListView(
+      items: $catalog.items,
+      onLoadMoreContent: { catalog.loadMoreContent(after: $0) },
+      onRefresh: { await catalog.refresh() },
+      navigationLinkProvider: { linkProvider.link(for: $0) },
+      emptyMessage: showsEmptyMessage ? "No Results" : nil
+    ) {
+      hero
+      creditsHeader
     }
     .background(Color.KinoPub.background)
     .platformNavigationTitle(person.name)

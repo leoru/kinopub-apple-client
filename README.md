@@ -37,13 +37,6 @@ custom theming that fights the platform HIG.
 - **Dark appearance only** for now (`.preferredColorScheme(.dark)` + `UIUserInterfaceStyle = Dark`).
   Light comes back as a deliberate pass once dark is good.
 
-`KinoPubUI` contains a Metal shader (`Shaders/VariableBlur.metal`). Xcode 26+ ships the Metal
-toolchain as a separate component — if the build fails with "missing Metal Toolchain", run:
-
-```
-xcodebuild -downloadComponent MetalToolchain
-```
-
 There is a **single multiplatform target** (`KinoPubAppleClient`, product name `KinoPub`) covering all
 platforms. Platform differences live in `#if os(tvOS)` / `#if os(iOS)` / `#if os(macOS)` blocks — please
 do not add a second target.
@@ -84,16 +77,14 @@ open KinoPubAppleClient.xcodeproj
 - **Dual subtitles** (two tracks stacked) — tvOS only, for the same reason
 - Tap-a-word translation on pause is **parked**, not shipped: `SubtitleTranslatePanel.swift` and
   `SubtitleTrackPickerView.swift` build but nothing presents them (see the note at the top of each)
-- **The focus-preview hero is a `MediaRowsView(showsFeaturedPreview:)` option, currently off everywhere.**
-  When on, the top ~560 points of the page belong to whatever the remote is on: its wide artwork fills the
-  screen (cross-fading as focus moves, blurring into the background toward the rows), with the title,
-  original title, rating, metadata and plot over it — a link that opens the item, and where the trailer
-  will play. Claiming focus onto the first card exists only to feed that hero. **Home and Saved both pass
-  `showsFeaturedPreview: false`** for now: the progressive blur re-rendered on every focus move was too
-  heavy on device and drew over the tab bar. With it off the screens are plain rows and the remote rests
-  on the tab bar by default (no first-card claim) — it should return as a lighter, non-focus-driven top
-  slider. Cards carry no captions under the hero; grids, which have no preview, show the title of the
-  focused card only.
+- **The old focus-preview hero (`MediaRowsView(showsFeaturedPreview:)`) is off everywhere and will
+  not come back in that form.** When on, it reserved ~560pt for whichever card had focus (Netflix-
+  style), clipped shelves, and the progressive blur was too heavy / drew over the tab bar. **D1**
+  replaces that direction with an Apple TV–style **banner** (static art for v1; same / simplified
+  hero component as detail; carousel deferred if not OOTB) with **Music/Journal-style variable
+  blur** over static art — **no blur over video on tvOS/macOS**; blur OK over video on iPhone/iPad —
+  see [modernization plan](docs/en/plans/modernization.md). Until that rebuild ships, Home and Saved
+  are plain rows.
 - **Backgrounds and type are the system's** (`Color.KinoPub.background` / `.text` / `.subtitle`): black
   and true white on a TV in dark appearance, instead of the old hand-picked #1C202B grey and #B0B1B5
   "white".
@@ -234,12 +225,13 @@ What "done" looks like, so nobody has to guess:
   order the API returns it: whatever got a new episode most recently is first. Following a show for
   new episodes is the point of saving anything; a folder of films abandoned half-way is not. Cards
   carry the "+12" badge and the resume bar, and the row is dropped when the watchlist is empty.
-- **Home** is rows, not a grid. First row is **Continue watching**, then category/collection rows.
-  **No hero banner** — there are no personalized recommendations to justify one; it would just be a
-  big advert.
-- **Continue watching is a landscape row** — wide cover art (recognisable from the couch) with a play
-  glyph, resume bar and "S2, E5 · 42 min" over the image. It reads as a different kind of row from the
-  poster shelves below it, the way the Apple TV app treats it.
+- **Home** is rows, not a grid. First row area is an **Apple TV–style banner** (static cinematic
+  art for v1; carousel deferred if not straightforward), then **Continue watching**, then
+  category/collection rows. Not a Netflix-style focus preview of the selected shelf card. See
+  [modernization plan D1](docs/en/plans/modernization.md).
+- **Continue watching is a landscape row** — wide still with a play glyph and resume bar on the
+  image, title + "S2, E5 · 42 min" in the caption below (episode-card layout). Long-press for the
+  context menu — no ⋯ button on the card.
 - **Continue watching merges unfinished + watchlist + recent history**, ordered by intent: recently
   started (played this week), then watchlist titles with new episodes, then the rest of the watchlist,
   then other unfinished. Most recently played first within each group.
@@ -248,8 +240,10 @@ What "done" looks like, so nobody has to guess:
   both rated it, otherwise whichever did, hidden when neither. Colour by tier — gold with laurel wings
   at 8.0+, green from 7.0, grey from 6.0, red below. The tier follows the *displayed* value, so a card
   reading "8.0" always gets the gold treatment.
-- **Detail page** leads with artwork that gives way to the **trailer**, blurred progressively toward
-  the overlaid title, metadata and plot; then one continuous rail of every episode across
+- **Detail page** leads with full-bleed hero artwork that may give way to a **muted trailer**
+  (when the API provides one); title, metadata and plot sit over Music/Journal-style **variable
+  blur** on static art (plus a subtle gradient if needed). **tvOS/macOS: no blur over video**;
+  **iPhone/iPad: blur OK over video too**. Then one continuous rail of every episode across
   seasons (tabs scroll to a season rather than swapping the list), opening on the first
   unfinished episode. Season tabs and the Ratings label stay hidden while the hero/trailer
   owns focus. Native tvOS buttons — no tiny iOS-sized controls.
@@ -270,8 +264,9 @@ that line is polish, and everything above it is unfinished business.
 - tvOS build hygiene, CI across tvOS/iOS/macOS, all four package test suites green
 - Row-based home led by Continue Watching, ordered by intent and rendered as landscape cards with
   episode stills, resume bars and "S1, E7 · 51 min"
-- Detail page: full-bleed hero with a Metal variable blur, the trailer playing muted behind the
-  artwork, native action buttons, season tabs over a rail of episode stills
+- Detail page: full-bleed hero with private `variableBlur` (Metal shader removed), the trailer
+  playing muted behind the artwork, native-style action buttons (white Play pill + circular
+  secondaries — not glass on hero), season tabs over a rail of episode stills
 - Tabs: Search · Home · Movies · Series · Saved · Settings, icon-only where it should be
 - Combined score badges on posters, separate IMDb/Kinopoisk marks on detail pages
 - White accent throughout; the site's green is gone
@@ -279,6 +274,9 @@ that line is polish, and everything above it is unfinished business.
   the system's lift, specular shine and remote-tracking parallax, not a hand-rolled tilt
 - Long-press menus on Continue Watching and episode cards; Continue Watching merges watchlist +
   recent history (recently started → new episodes → watchlist → rest)
+- **UI modernization Phase 2 (in progress):** `ShelfMetrics` proportional ~6-column posters,
+  landscape cards use episode-rail caption layout, Metal ProgressiveBlur replaced with private
+  `variableBlur` overlay — see [modernization plan](docs/en/plans/modernization.md)
 
 ### Phase A — Plan-minimum: parity with what I already use
 

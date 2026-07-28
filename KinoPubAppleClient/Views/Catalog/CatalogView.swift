@@ -107,14 +107,12 @@ struct CatalogView: View {
   }
 
   private var grid: some View {
-    GeometryReader { geometryProxy in
-      ContentItemsListView(width: geometryProxy.size.width, items: $catalog.items, onLoadMoreContent: { item in
-        catalog.loadMoreContent(after: item)
-      }, onRefresh: {
-        await catalog.refresh()
-      }, navigationLinkProvider: { item in
-        CatalogRoutesLinkProvider().link(for: item)
-      })
-    }
+    ContentItemsListView(items: $catalog.items, onLoadMoreContent: { item in
+      catalog.loadMoreContent(after: item)
+    }, onRefresh: {
+      await catalog.refresh()
+    }, navigationLinkProvider: { item in
+      CatalogRoutesLinkProvider().link(for: item)
+    })
   }
 }

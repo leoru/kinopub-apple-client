@@ -470,7 +470,7 @@ private struct EpisodeRailCard: View {
         .textCase(.uppercase)
         .lineLimit(1)
     }
-    .frame(width: Self.cardWidth - Self.captionPadding * 2, alignment: .leading)
+    .frame(maxWidth: .infinity, alignment: .leading)
   }
 
   @ViewBuilder
@@ -498,7 +498,7 @@ private struct EpisodeRailCard: View {
           .fixedSize(horizontal: false, vertical: true)
       }
     }
-    .frame(width: Self.cardWidth - Self.captionPadding * 2, alignment: .leading)
+    .frame(maxWidth: .infinity, alignment: .leading)
   }
 
   private var still: some View {

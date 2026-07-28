@@ -54,6 +54,8 @@ public struct MediaRowsView: View {
   }
 
   @FocusState private var focusedCard: CardKey?
+  @Environment(\.dynamicTypeSize) private var typeSize
+  @State private var containerWidth: CGFloat = 1920
 
   /// What the backdrop is showing. Separate from `focusedCard` so the artwork holds
   /// when focus leaves for the tab bar instead of dropping to a bare background.
@@ -84,8 +86,18 @@ public struct MediaRowsView: View {
         // Nil means focus went to the tab bar or a pushed screen; keep the artwork.
         if let newValue { backdropCard = newValue }
       }
+      .onGeometryChange(for: CGFloat.self) { proxy in
+        proxy.size.width
+      } action: { width in
+        if width > 0 { containerWidth = width }
+      }
 #else
     scroll
+      .onGeometryChange(for: CGFloat.self) { proxy in
+        proxy.size.width
+      } action: { width in
+        if width > 0 { containerWidth = width }
+      }
 #endif
   }
 
@@ -143,7 +155,7 @@ public struct MediaRowsView: View {
       Color.KinoPub.background
 
       if let card = card(for: backdropCard) {
-        ProgressiveBlur(startPoint: 0.3, maxRadius: 60, layers: 5) {
+        ZStack {
           AsyncImage(url: URL(string: card.backdropImageURL)) { image in
             image
               .resizable()
@@ -151,6 +163,8 @@ public struct MediaRowsView: View {
           } placeholder: {
             Color.clear
           }
+          // Private variableBlur overlay — samples the still behind it.
+          ProgressiveBlur(startPoint: 0.3, maxRadius: 60)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
@@ -226,7 +240,7 @@ public struct MediaRowsView: View {
       }
     }
     .frame(height: Self.previewHeight, alignment: .bottomLeading)
-    .padding(.horizontal, Self.horizontalInset)
+    .safeAreaPadding(.horizontal, ShelfMetrics.posters(width: containerWidth, typeSize: typeSize).inset)
     .padding(.bottom, Self.previewBottomInset)
     // A shadow rather than a scrim: the artwork stays at full brightness and the type
     // still holds up over a pale frame.
@@ -249,16 +263,21 @@ public struct MediaRowsView: View {
 
   @ViewBuilder
   private func section(for row: MediaRow) -> some View {
+    let metrics = shelfMetrics(for: row)
     VStack(alignment: .leading, spacing: 12) {
       header(for: row)
-        .padding(.horizontal, Self.horizontalInset)
+        .safeAreaPadding(.horizontal, metrics.inset)
 
       ScrollView(.horizontal, showsIndicators: false) {
-        LazyHStack(alignment: .top, spacing: Self.cardSpacing) {
+        LazyHStack(alignment: .top, spacing: metrics.gutter) {
           ForEach(row.cards) { card in
             NavigationLink(value: navigationLinkProvider(card)) {
               MediaCardView(card: card, caption: Self.cardCaption)
             }
+            .containerRelativeFrame(.horizontal,
+                                    count: metrics.columns,
+                                    span: 1,
+                                    spacing: metrics.gutter)
 #if !os(tvOS)
             .buttonStyle(MediaCardButtonStyle())
 #endif
@@ -266,9 +285,9 @@ public struct MediaRowsView: View {
             .modifier(MediaCardContextMenuModifier(actions: contextMenuProvider?(card) ?? []))
           }
         }
-        .padding(.horizontal, Self.horizontalInset)
+        .safeAreaPadding(.horizontal, metrics.inset)
         // Focus grows the card past its frame; without room the lift gets clipped.
-        .padding(.vertical, Self.focusPadding)
+        .padding(.vertical, Metrics.focusPadding)
       }
 #if os(tvOS)
       // Native poster effect on the shelf (not each link): lift / specular / tilt stay
@@ -280,6 +299,13 @@ public struct MediaRowsView: View {
 #endif
     }
     .onAppear { onRowAppear?(row) }
+  }
+
+  private func shelfMetrics(for row: MediaRow) -> ShelfMetrics {
+    if row.cards.first?.isLandscape == true {
+      return .landscape(width: containerWidth, typeSize: typeSize)
+    }
+    return .posters(width: containerWidth, typeSize: typeSize)
   }
 
   /// A row whose content has a screen of its own gets a focusable title leading to it;
@@ -314,25 +340,19 @@ public struct MediaRowsView: View {
   static let previewMetaFont: Font = .system(size: 24, weight: .medium)
   static let previewOverviewFont: Font = .system(size: 24, weight: .regular)
 
-  static let rowSpacing: CGFloat = 40
-  static let cardSpacing: CGFloat = 40
-  static let horizontalInset: CGFloat = 80
-  static let focusPadding: CGFloat = 32
-  static let headerFont: Font = .system(size: 32, weight: .semibold)
-  static let countFont: Font = .system(size: 26, weight: .regular)
-  static let chevronFont: Font = .system(size: 24, weight: .semibold)
+  static let rowSpacing: CGFloat = Metrics.rowSpacing
+  static let headerFont: Font = TypeScale.rowHeader
+  static let countFont: Font = TypeScale.rowCount
+  static let chevronFont: Font = TypeScale.rowChevron
 #else
   /// No focus off TV, so no preview and no reserved room for one — the cards have to
   /// name themselves.
   static let cardCaption: MediaCardCaption = .always
 
-  static let rowSpacing: CGFloat = 24
-  static let cardSpacing: CGFloat = 16
-  static let horizontalInset: CGFloat = 16
-  static let focusPadding: CGFloat = 4
-  static let headerFont: Font = .system(size: 22, weight: .semibold)
-  static let countFont: Font = .system(size: 17, weight: .regular)
-  static let chevronFont: Font = .system(size: 15, weight: .semibold)
+  static let rowSpacing: CGFloat = Metrics.rowSpacing
+  static let headerFont: Font = TypeScale.rowHeader
+  static let countFont: Font = TypeScale.rowCount
+  static let chevronFont: Font = TypeScale.rowChevron
 #endif
 }
 

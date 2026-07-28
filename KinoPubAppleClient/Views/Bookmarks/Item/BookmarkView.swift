@@ -43,15 +43,13 @@ struct BookmarkView: View {
   }
 
   private var grid: some View {
-    GeometryReader { geometryProxy in
-      ContentItemsListView(width: geometryProxy.size.width, items: $model.items, onLoadMoreContent: { item in
-        
-      }, onRefresh: {
-        await model.refresh()
-      }, navigationLinkProvider: { item in
-        BookmarksRoutesLinkProvider().link(for: item)
-      })
-    }
+    ContentItemsListView(items: $model.items, onLoadMoreContent: { item in
+
+    }, onRefresh: {
+      await model.refresh()
+    }, navigationLinkProvider: { item in
+      BookmarksRoutesLinkProvider().link(for: item)
+    })
   }
 }
 //

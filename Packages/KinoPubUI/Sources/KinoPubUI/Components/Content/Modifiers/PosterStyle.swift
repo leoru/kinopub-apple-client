@@ -7,13 +7,13 @@
 
 import Foundation
 import SwiftUI
-/// A view modifier that applies a poster style to a view.
+
+/// Fixed-size poster frames for legacy call sites (downloads, season list).
+/// Prefer `CardAspect` + `ShelfMetrics` for shelves and grids.
 public struct PosterStyle: ViewModifier {
-  /// The size options for the poster style.
   public enum Size {
     case small, regular, medium, big
-    
-    /// The width of the poster based on the size option.
+
     public var width: CGFloat {
       switch self {
       case .small: return 53
@@ -22,48 +22,37 @@ public struct PosterStyle: ViewModifier {
       case .big: return 250
       }
     }
-    
-    /// The height of the poster based on the size option.
+
     public var height: CGFloat {
-      switch self {
-      case .small: return 80
-      case .regular: return 180
-      case .medium: return 250
-      case .big: return 375
-      }
+      width / CardAspect.poster.ratio
     }
   }
-  
+
   public enum Orientation {
     case vertical
     case horizontal
   }
-  
+
   let size: Size
   let orientation: Orientation
-  
+
   public func body(content: Content) -> some View {
-    var result: AnyView = AnyView(content)
-    
-    if orientation == .vertical {
-      result = AnyView(result.frame(width: size.width, height: size.height))
-    } else {
-      result = AnyView(result.frame(width: size.height, height: size.width))
+    Group {
+      switch orientation {
+      case .vertical:
+        content.frame(width: size.width, height: size.height)
+      case .horizontal:
+        // Landscape frame: width follows 16:9 from the poster height token.
+        content.frame(width: size.height, height: size.height / CardAspect.landscape.ratio)
+      }
     }
-    
-    return result
-      .cornerRadius(8)
-      .shadow(radius: 8)
+    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    .shadow(radius: 8)
   }
 }
 
 public extension View {
-  /// Applies the poster style to a view with the specified size option.
-  ///
-  /// - Parameter size: The size option for the poster style.
-  /// - Parameter orientation: The orientation option for the poster style.
-  /// - Returns: A modified view with the poster style applied.
   func posterStyle(size: PosterStyle.Size, orientation: PosterStyle.Orientation) -> some View {
-    return ModifiedContent(content: self, modifier: PosterStyle(size: size, orientation: orientation))
+    modifier(PosterStyle(size: size, orientation: orientation))
   }
 }

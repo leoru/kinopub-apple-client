@@ -11,7 +11,6 @@ import KinoPubBackend
 
 public struct ContentItemsListView<Header: View>: View {
 
-  var width: CGFloat
   @Binding public var items: [MediaItem]
   public var onLoadMoreContent: (MediaItem) -> Void
   public var onRefresh: @Sendable () async -> Void
@@ -22,45 +21,12 @@ public struct ContentItemsListView<Header: View>: View {
   private let emptyMessage: LocalizedStringKey?
   private let header: Header
 
-#if os(iOS)
-  @Environment(\.horizontalSizeClass) private var sizeClass
-#endif
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+  @State private var containerWidth: CGFloat = 1920
 
 #if os(tvOS)
   @FocusState private var focusedItemID: Int?
 #endif
-
-  var useReducedThumbnailSize: Bool {
-#if os(iOS)
-    if sizeClass == .compact {
-      return true
-    }
-#endif
-    if dynamicTypeSize >= .xxxLarge {
-      return true
-    }
-
-#if os(iOS)
-    if width <= 390 {
-      return true
-    }
-#elseif os(macOS)
-    if width <= 520 {
-      return true
-    }
-#endif
-
-    return false
-  }
-
-  var cellSize: Double {
-#if os(tvOS)
-    return MediaCardView.cardWidth
-#else
-    return useReducedThumbnailSize ? 140 : 180
-#endif
-  }
 
   /// A grid has no preview above it, so the focused card is what names the item.
 #if os(tvOS)
@@ -69,12 +35,18 @@ public struct ContentItemsListView<Header: View>: View {
   static var cardCaption: MediaCardCaption { .always }
 #endif
 
-  var gridLayout: [GridItem] {
-    [GridItem(.adaptive(minimum: cellSize), spacing: 25, alignment: .top)]
+  private var metrics: ShelfMetrics {
+    .posters(width: containerWidth, typeSize: dynamicTypeSize)
   }
 
-  public init(width: CGFloat,
-              items: Binding<[MediaItem]>,
+  private var gridColumns: [GridItem] {
+    Array(
+      repeating: GridItem(.flexible(), spacing: metrics.gutter, alignment: .top),
+      count: metrics.columns
+    )
+  }
+
+  public init(items: Binding<[MediaItem]>,
               onLoadMoreContent: @escaping (MediaItem) -> Void,
               onRefresh: @escaping @Sendable () async -> Void,
               navigationLinkProvider: @escaping (MediaItem) -> any Hashable,
@@ -82,7 +54,6 @@ public struct ContentItemsListView<Header: View>: View {
               emptyMessage: LocalizedStringKey? = nil,
               @ViewBuilder header: () -> Header) {
     self._items = items
-    self.width = width
     self.onRefresh = onRefresh
     self.onLoadMoreContent = onLoadMoreContent
     self.navigationLinkProvider = navigationLinkProvider
@@ -105,7 +76,7 @@ public struct ContentItemsListView<Header: View>: View {
             .frame(maxWidth: .infinity)
             .padding(.top, 40)
         } else {
-          LazyVGrid(columns: gridLayout, content: {
+          LazyVGrid(columns: gridColumns, spacing: metrics.gutter) {
             if items.isEmpty, placeholderCount > 0 {
               ForEach(0..<placeholderCount, id: \.self) { _ in
                 placeholderCard
@@ -114,7 +85,6 @@ public struct ContentItemsListView<Header: View>: View {
               ForEach(items, id: \.id) { item in
                 NavigationLink(value: navigationLinkProvider(item)) {
                   MediaCardView(card: MediaCard(item), caption: Self.cardCaption)
-                    .padding(.vertical, 20)
                     .onAppear {
                       onLoadMoreContent(item)
                     }
@@ -127,12 +97,18 @@ public struct ContentItemsListView<Header: View>: View {
 #endif
               }
             }
-          })
-          .padding(.horizontal, 16)
+          }
+          .safeAreaPadding(.horizontal, metrics.inset)
+          .padding(.vertical, Metrics.focusPadding)
         }
       }
     }
     .refreshable(action: onRefresh)
+    .onGeometryChange(for: CGFloat.self) { proxy in
+      proxy.size.width
+    } action: { width in
+      if width > 0 { containerWidth = width }
+    }
 #if os(tvOS)
     // Default priority — `.userInitiated` yanked focus back to the first cell on every
     // return from a detail page.
@@ -143,33 +119,30 @@ public struct ContentItemsListView<Header: View>: View {
   /// Same footprint as a real poster card (tile + caption line), inert so focus
   /// stays on the filters / search field while the page is still loading.
   private var placeholderCard: some View {
-    VStack(alignment: .center, spacing: MediaCardView.captionSpacing) {
+    VStack(alignment: .leading, spacing: Metrics.cardCaptionSpacing) {
       Color.KinoPub.placeholder
-        .frame(width: MediaCardView.cardWidth, height: MediaCardView.posterHeight)
-        .clipShape(RoundedRectangle(cornerRadius: MediaCardView.cornerRadius, style: .continuous))
+        .aspectRatio(CardAspect.poster.ratio, contentMode: .fit)
+        .frame(maxWidth: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: Metrics.cardCornerRadius, style: .continuous))
 
       Text(" ")
-        .font(MediaCardView.titleFont)
+        .font(TypeScale.cardTitle)
         .opacity(0)
-        .frame(width: MediaCardView.cardWidth)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
-    .frame(width: MediaCardView.cardWidth)
-    .padding(.vertical, 20)
     .accessibilityHidden(true)
   }
 
 }
 
 public extension ContentItemsListView where Header == EmptyView {
-  init(width: CGFloat,
-       items: Binding<[MediaItem]>,
+  init(items: Binding<[MediaItem]>,
        onLoadMoreContent: @escaping (MediaItem) -> Void,
        onRefresh: @escaping @Sendable () async -> Void,
        navigationLinkProvider: @escaping (MediaItem) -> any Hashable,
        placeholderCount: Int = 0,
        emptyMessage: LocalizedStringKey? = nil) {
-    self.init(width: width,
-              items: items,
+    self.init(items: items,
               onLoadMoreContent: onLoadMoreContent,
               onRefresh: onRefresh,
               navigationLinkProvider: navigationLinkProvider,
@@ -185,15 +158,13 @@ struct ContentItemsListView_Previews: PreviewProvider {
     @State var items: [MediaItem] = [MediaItem.mock()]
 
     var body: some View {
-      GeometryReader { geometryProxy in
-        ContentItemsListView(width: geometryProxy.size.width, items: $items, onLoadMoreContent: { _ in
+      ContentItemsListView(items: $items, onLoadMoreContent: { _ in
 
-        }, onRefresh: {
+      }, onRefresh: {
 
-        }, navigationLinkProvider: { _ in
-          return ""
-        })
-      }
+      }, navigationLinkProvider: { _ in
+        return ""
+      })
     }
   }
 

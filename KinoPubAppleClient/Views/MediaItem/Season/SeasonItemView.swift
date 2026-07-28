@@ -41,7 +41,7 @@ public struct SeasonItemView: View {
     } placeholder: {
       Color.KinoPub.placeholder
         .frame(width: PosterStyle.Size.regular.height,
-               height: PosterStyle.Size.regular.width)
+               height: PosterStyle.Size.regular.height / CardAspect.landscape.ratio)
     }
     .cornerRadius(8)
   }

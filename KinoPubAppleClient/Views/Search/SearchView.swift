@@ -33,32 +33,29 @@ struct SearchView: View {
 
   var body: some View {
     NavigationStack(path: $navigationState.searchRoutes) {
-      GeometryReader { geometryProxy in
-        ContentItemsListView(
-          width: geometryProxy.size.width,
-          items: $catalog.items,
-          onLoadMoreContent: { item in
-            catalog.loadMoreContent(after: item)
-          },
-          onRefresh: {
-            await catalog.refresh()
-          },
-          navigationLinkProvider: { item in
-            SearchRoutesLinkProvider().link(for: item)
-          },
-          placeholderCount: showsPlaceholders ? Self.placeholderCount : 0,
-          emptyMessage: showsEmptyMessage ? "No Results" : nil
-        ) {
+      ContentItemsListView(
+        items: $catalog.items,
+        onLoadMoreContent: { item in
+          catalog.loadMoreContent(after: item)
+        },
+        onRefresh: {
+          await catalog.refresh()
+        },
+        navigationLinkProvider: { item in
+          SearchRoutesLinkProvider().link(for: item)
+        },
+        placeholderCount: showsPlaceholders ? Self.placeholderCount : 0,
+        emptyMessage: showsEmptyMessage ? "No Results" : nil
+      ) {
 #if os(tvOS)
-          if navigationState.canReturnFromSearch {
-            tvBackRow
-          }
+        if navigationState.canReturnFromSearch {
+          tvBackRow
+        }
 #endif
-          // Filters scroll away with the grid — pinning them above a remnant
-          // GeometryReader was eating half the screen and delaying `.searchable`.
-          if !catalog.isSearching {
-            LibraryFiltersBar(catalog: catalog)
-          }
+        // Filters scroll away with the grid — pinning them above a remnant
+        // GeometryReader was eating half the screen and delaying `.searchable`.
+        if !catalog.isSearching {
+          LibraryFiltersBar(catalog: catalog)
         }
       }
       .searchable(text: $searchFieldText, placement: .automatic)

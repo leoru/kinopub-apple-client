@@ -2,14 +2,10 @@
 //  MediaActionButtonStyle.swift
 //  KinoPubUI
 //
-//  Rivulet-style hero action controls: fixed glass pill + matching circles.
-//  Resting = translucent white + material; focused = solid white, content inverts
-//  to black, gentle scale. Ported from Rivulet's HeroPillButton / HeroCircleButton
-//  / FocusableActionButton so detail pages share one look across clients.
-//
-//  Non-tvOS pointer: secondary controls lighten slightly on hover (no white invert —
-//  that stays focus/primary-only), press scales immediately on touch-down, and the
-//  ghost ellipsis picks up the same resting secondary plate so it is hittable.
+//  Hero action controls: primary white pill + translucent circular secondaries.
+//  Matches Apple TV (prominent Play, quieter circles) — not Liquid Glass overlays.
+//  Resting primary = solid white / black content; focused = scale + same invert.
+//  Secondary circles = translucent plate at rest, solid white when focused.
 //
 
 import SwiftUI
@@ -52,9 +48,7 @@ public enum MediaActionMetrics {
 public struct MediaActionPillStyle: ButtonStyle {
   /// When set, the pill won't shrink below this width (Play). `nil` = hug content (Watchlist).
   public var minWidth: CGFloat?
-  /// Primary CTA (Play): on non-tvOS this locks the focused look — solid white fill,
-  /// inverted content — because there's no focus engine; the focused chrome *is* the
-  /// primary subtype. On tvOS focus still drives the transition.
+  /// Primary CTA (Play): solid white at rest — Apple TV prominence, not glass.
   public var isPrimary: Bool
 
   public init(minWidth: CGFloat? = nil, isPrimary: Bool = false) {
@@ -109,47 +103,34 @@ private struct MediaActionPillChrome<Content: View>: View {
   @Environment(\.isFocused) private var isFocused
   @State private var isHovered = false
 
-  /// On tvOS, focus lights the pill. Elsewhere the primary (Play) pill stays in the
-  /// focused look permanently — that chrome is the platform's "primary" subtype.
-  private var showsFocusedChrome: Bool {
+  /// Primary is always the prominent (white) look. Secondary lights on focus / hover.
+  private var showsProminentChrome: Bool {
+    if isPrimary { return true }
 #if os(tvOS)
-    isFocused
+    return isFocused
 #else
-    isPrimary || isFocused
-#endif
-  }
-
-  private var showsHoverChrome: Bool {
-#if os(tvOS)
-    false
-#else
-    !isPrimary && isHovered && !showsFocusedChrome
+    return isFocused || isHovered
 #endif
   }
 
   var body: some View {
     content
-      .foregroundStyle(isFocused ? Color.black : isHovered ? Color.black : Color.white)
+      .foregroundStyle(showsProminentChrome ? Color.black : Color.white)
       .padding(.horizontal, MediaActionMetrics.pillHorizontalPadding)
       .frame(minWidth: minWidth, minHeight: MediaActionMetrics.buttonHeight)
       .background {
-        ZStack {
-          Capsule(style: .continuous)
-            .fill(.ultraThinMaterial)
-            .opacity(isFocused || isPrimary ? 0 : 1)
-          Capsule(style: .continuous)
-            .fill(isFocused ? Color.white : isHovered ? Color.white : fillColor)
-        }
+        Capsule(style: .continuous)
+          .fill(fillColor)
       }
       .overlay {
         Capsule(style: .continuous)
-          .strokeBorder(Color.white.opacity(showsHoverChrome ? 0.5 : 0.5), lineWidth: 0.5)
-          .opacity(showsFocusedChrome ? 0 : 1)
+          .strokeBorder(Color.white.opacity(0.35), lineWidth: Metrics.hairline)
+          .opacity(showsProminentChrome ? 0 : 1)
       }
       .clipShape(Capsule(style: .continuous))
-      .shadow(color: .black.opacity(isFocused ? 0.4 : isHovered && isPrimary ? 0.6 : 0), radius: isHovered ? 14 : 8, y: isHovered ? 10 : 4)
+      .shadow(color: .black.opacity(showsProminentChrome ? 0.35 : 0.2), radius: 8, y: 4)
       .scaleEffect(scale)
-      .animation(.spring(response: 0.25, dampingFraction: 0.8), value: showsFocusedChrome)
+      .animation(.spring(response: 0.25, dampingFraction: 0.8), value: showsProminentChrome)
       .animation(.easeOut(duration: 0.15), value: isHovered)
       .animation(.spring(response: 0.15, dampingFraction: 0.9), value: isPressed)
 #if !os(tvOS)
@@ -159,9 +140,9 @@ private struct MediaActionPillChrome<Content: View>: View {
   }
 
   private var fillColor: Color {
-    if showsFocusedChrome { return Color.black.opacity(0.5) }
-    if showsHoverChrome { return Color.black.opacity(0.3) }
-    return Color.black.opacity(0.5)
+    if showsProminentChrome { return Color.white }
+    // Secondary labeled pill: translucent, not glass material.
+    return Color.white.opacity(0.22)
   }
 
   private var scale: CGFloat {
@@ -182,34 +163,29 @@ private struct MediaActionCircleChrome<Content: View>: View {
   @Environment(\.isFocused) private var isFocused
   @State private var isHovered = false
 
-  private var showsHoverChrome: Bool {
+  private var showsProminentChrome: Bool {
 #if os(tvOS)
-    true
+    isFocused
 #else
-    isHovered && !isFocused
+    isFocused || isHovered
 #endif
   }
 
   var body: some View {
     content
-      .foregroundStyle(isFocused ? Color.black : Color.white)
+      .foregroundStyle(showsProminentChrome ? Color.black : Color.white)
       .frame(width: MediaActionMetrics.buttonHeight, height: MediaActionMetrics.buttonHeight)
       .background {
-        ZStack {
-          Circle()
-            .fill(.ultraThinMaterial)
-            .opacity(isFocused ? 0 : 1)
-          Circle()
-            .fill(fillColor)
-        }
+        Circle()
+          .fill(fillColor)
       }
       .overlay {
         Circle()
-          .strokeBorder(Color.white.opacity(showsHoverChrome ? 0.5 : 0.5), lineWidth: 0.5)
-          .opacity(isFocused ? 0 : 1)
+          .strokeBorder(Color.white.opacity(0.35), lineWidth: Metrics.hairline)
+          .opacity(showsProminentChrome ? 0 : 1)
       }
       .clipShape(Circle())
-      .shadow(color: .black.opacity(showsHoverChrome ? 0.25 : 0.25), radius: 8, y: 2)
+      .shadow(color: .black.opacity(0.25), radius: 8, y: 2)
       .scaleEffect(scale)
       .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isFocused)
       .animation(.easeOut(duration: 0.15), value: isHovered)
@@ -221,9 +197,8 @@ private struct MediaActionCircleChrome<Content: View>: View {
   }
 
   private var fillColor: Color {
-    if isFocused { return Color.white }
-    if showsHoverChrome { return Color.black.opacity(0.4) }
-    return Color.black.opacity(0.3)
+    if showsProminentChrome { return Color.white }
+    return Color.white.opacity(0.22)
   }
 
   private var scale: CGFloat {
@@ -240,37 +215,27 @@ private struct MediaActionGhostChrome<Content: View>: View {
   @Environment(\.isFocused) private var isFocused
   @State private var isHovered = false
 
-  /// Hover uses the secondary circle plate — not the solid white focus invert.
   private var showsSecondaryPlate: Bool {
 #if os(tvOS)
-    false
+    isFocused
 #else
-    isHovered && !isFocused
+    isHovered || isFocused
 #endif
   }
 
   var body: some View {
     content
-      .foregroundStyle(Color.white)
+      .foregroundStyle(showsSecondaryPlate && isFocused ? Color.black : Color.white)
       .frame(width: MediaActionMetrics.buttonHeight, height: MediaActionMetrics.buttonHeight)
       .contentShape(Circle())
       .background {
-        ZStack {
-          if showsSecondaryPlate {
-            Circle()
-              .fill(.ultraThinMaterial)
-            Circle()
-              .fill(Color.black.opacity(0.5))
-          }
-          Circle()
-            .fill(Color.black.opacity(0.15))
-            .opacity(isFocused || isHovered ? 1 : 0)
-        }
+        Circle()
+          .fill(isFocused ? Color.white : Color.white.opacity(showsSecondaryPlate ? 0.22 : 0))
       }
       .overlay {
-        if showsSecondaryPlate {
+        if showsSecondaryPlate && !isFocused {
           Circle()
-            .strokeBorder(Color.white.opacity(0.5), lineWidth: 0.5)
+            .strokeBorder(Color.white.opacity(0.35), lineWidth: Metrics.hairline)
         }
       }
       .clipShape(Circle())
@@ -295,8 +260,7 @@ private struct MediaActionGhostChrome<Content: View>: View {
 /// Thin capsule track used inside the play pill when playback has already started.
 public struct MediaActionProgressTrack: View {
   public var progress: Double
-  /// When true (Play primary on non-tvOS), use the inverted track colours even
-  /// without focus — matching the primary pill chrome.
+  /// When true (Play primary), use the inverted track colours for the white pill.
   public var forceFocusedColors: Bool
   @Environment(\.isFocused) private var isFocused
 
@@ -306,11 +270,8 @@ public struct MediaActionProgressTrack: View {
   }
 
   private var inverted: Bool {
-#if os(tvOS)
-    isFocused
-#else
+    // Primary play pill is always white → dark track.
     forceFocusedColors || isFocused
-#endif
   }
 
   public var body: some View {
@@ -340,13 +301,12 @@ public struct MediaActionProgressTrack: View {
 // MARK: - Convenience modifiers
 
 public extension View {
-  /// Play / Resume pill — primary CTA. Min width floor; on non-tvOS uses the focused
-  /// (solid white) look as its resting primary subtype.
+  /// Play / Resume pill — primary CTA. Solid white at rest (Apple TV prominence).
   func mediaActionPlayPillStyle() -> some View {
     buttonStyle(MediaActionPillStyle(minWidth: MediaActionMetrics.playPillMinWidth, isPrimary: true))
   }
 
-  /// Labeled secondary pill (Watchlist) — hugs its content, no minimum width.
+  /// Labeled secondary pill (Watchlist) — hugs its content, translucent resting plate.
   func mediaActionPillStyle() -> some View {
     buttonStyle(MediaActionPillStyle(minWidth: nil, isPrimary: false))
   }

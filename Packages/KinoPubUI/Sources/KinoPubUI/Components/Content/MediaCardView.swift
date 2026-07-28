@@ -142,7 +142,14 @@ public enum MediaCardCaption {
   case always
 }
 
-/// A poster card sized for the platform, with a tvOS focus lift.
+/// Poster or landscape card. Width comes from the parent (`containerRelativeFrame` /
+/// grid column); height from `CardAspect`. Landscape cards follow the episode-rail
+/// layout: play glyph + progress on the still, title / meta in the caption below —
+/// no ⋯ overflow control on the card (long-press context menu only).
+///
+/// Behavioural identity: same focus animation, caption reveal, progress semantics,
+/// watched treatment and existing badge slots; only aspect and which slots have
+/// content differ. New badge slots (editorial awards etc.) wait on design (D10).
 public struct MediaCardView: View {
 
   private let card: MediaCard
@@ -153,98 +160,48 @@ public struct MediaCardView: View {
     self.caption = caption
   }
 
-  /// Read straight from the focus system rather than a value a button style hands down,
-  /// so the card responds the same under the native `.borderless` style (which gives the
-  /// real system parallax) as it did under the old hand-rolled one.
   @Environment(\.isFocused) private var cardFocused
 
-  public var body: some View {
-    VStack(alignment: .center, spacing: Self.captionSpacing) {
-      poster
-
-      if caption != .none {
-        title
-      }
-    }
-    .frame(width: width)
-  }
-
-  /// Hidden rather than absent while unfocused, so neighbouring cards keep their
-  /// baselines and the row does not jump as focus travels along it.
-  private var title: some View {
-    Text(card.title)
-      .lineLimit(1)
-      .font(Self.titleFont)
-      .foregroundStyle(Color.KinoPub.text)
-      .multilineTextAlignment(.center)
-      .frame(width: width, alignment: .center)
-      .opacity(caption == .always || cardFocused ? 1 : 0)
-      .animation(.easeOut(duration: 0.12), value: cardFocused)
-  }
-
-  private var width: CGFloat {
-    card.isLandscape ? Self.landscapeWidth : Self.cardWidth
-  }
-
-  private var imageHeight: CGFloat {
-    card.isLandscape ? Self.landscapeHeight : Self.posterHeight
-  }
+  private var aspect: CardAspect { card.isLandscape ? .landscape : .poster }
 
   private var imageURL: String {
     card.landscapeImageURL ?? card.posterURL
   }
 
-#if os(tvOS)
-  /// Apple's borderless recipe, verbatim: a plain sized image and nothing else. The
-  /// `.borderless` button style gives it the rounded corners, the drop shadow, and on
-  /// focus lifts and scales the *whole* image — the frame grows past its neighbours —
-  /// then shows the specular highlight and tilts to the remote's touch surface. We add no
-  /// clip, shape or shadow of our own: a `clipShape`/`clipped` pins the frame, so the
-  /// picture zooms inside a fixed rect and crops instead of the card growing. Overlays are
-  /// gone for the same reason — each extra image layer gets its own highlight and the
-  /// effect fragments. Score/progress can return as text in the caption if wanted.
-  private var poster: some View {
-    AsyncImage(url: URL(string: imageURL),
-               transaction: Transaction(animation: .easeIn(duration: 0.25))) { phase in
-      if let image = phase.image {
-        image
-          .resizable()
-          .transition(.opacity)
-      } else {
-        // Round the placeholder ourselves: `.borderless` rounds the loaded image, but a
-        // bare fill tile would sit square until the poster arrives. Clip only this branch —
-        // clipping the image too is what pinned the frame and broke the focus zoom.
-        Color.KinoPub.placeholder
-          .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
-      }
-    }
-    .frame(width: width, height: imageHeight)
-    // Bind the borderless focus effect to this AsyncImage explicitly — without it the
-    // system may attach highlight to nothing useful and cards get no lift/specular/tilt.
-    .hoverEffect(.highlight)
-  }
-#else
-  /// The card off tvOS: artwork with the score, progress and — for a continue-watching
-  /// still — the playback footer over it. There is no focus here, so overlays are free.
-  private var poster: some View {
-    ZStack(alignment: .bottom) {
+  public var body: some View {
+    VStack(alignment: .leading, spacing: Metrics.cardCaptionSpacing) {
       artwork
 
-      if card.isLandscape {
-        playbackFooter
-      } else if let progress = card.progress {
-        progressBar(progress)
+      if caption != .none {
+        captionBlock
       }
     }
+  }
+
+  // MARK: - Artwork
+
+  @ViewBuilder
+  private var artwork: some View {
+    ZStack(alignment: .bottom) {
+      stillImage
+
+      if card.isLandscape {
+        landscapeOverlays
+      } else if let progress = card.progress {
+#if !os(tvOS)
+        progressBar(progress)
+#endif
+      }
+    }
+#if !os(tvOS)
     .overlay(alignment: .topLeading) {
-      // Continue-watching cards lead with playback state; a score there is clutter.
       if !card.isLandscape, let rating = card.rating {
         RatingBadgeView(rating: rating)
           .padding(3)
       }
     }
     .overlay(alignment: .topTrailing) {
-      if let badge = card.badge {
+      if !card.isLandscape, let badge = card.badge {
         Text(badge)
           .font(.caption.weight(.bold))
           .padding(.horizontal, 6)
@@ -255,134 +212,121 @@ public struct MediaCardView: View {
           .padding(3)
       }
     }
-    .frame(width: width, height: imageHeight)
-    .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
-  }
 #endif
+    .aspectRatio(aspect.ratio, contentMode: .fit)
+    .frame(maxWidth: .infinity)
+#if os(tvOS)
+    // `.borderless` owns corners + focus lift. Landscape overlays are shapes /
+    // symbols (not extra images) so the highlight stays one unit.
+    .hoverEffect(.highlight)
+#else
+    .clipShape(RoundedRectangle(cornerRadius: Metrics.cardCornerRadius, style: .continuous))
+#endif
+  }
 
-  @ViewBuilder
-  private var artwork: some View {
-    // Artwork fades up out of the placeholder tile rather than popping in — with no
-    // skeletons left, this is what covers the gap while a poster downloads.
-    let image = AsyncImage(url: URL(string: imageURL),
-                           transaction: Transaction(animation: .easeIn(duration: 0.25))) { phase in
+  private var stillImage: some View {
+    AsyncImage(url: URL(string: imageURL),
+               transaction: Transaction(animation: .easeIn(duration: 0.25))) { phase in
       if let image = phase.image {
         image
           .resizable()
           .aspectRatio(contentMode: .fill)
-          .frame(width: width, height: imageHeight)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .clipped()
           .transition(.opacity)
       } else {
         Color.KinoPub.placeholder
-          .frame(width: width, height: imageHeight)
-      }
-    }
-
-    Group {
-#if !os(tvOS)
-      if card.isLandscape {
-        // Blur only the bottom strip, where the playback footer sits, so the still
-        // stays crisp above it. Beats a black fade — the artwork shows through.
-        ProgressiveBlur(startPoint: 0.6, maxRadius: 24, layers: 4) { image }
-      } else {
-        image
-      }
-#else
-      // No footer on tvOS, so no strip to blur — the bare still.
-      image
+#if os(tvOS)
+          .clipShape(RoundedRectangle(cornerRadius: Metrics.cardCornerRadius, style: .continuous))
 #endif
+      }
     }
-    // The `.fill` overflow and the rounding both belong to the card as a whole now, so the
-    // clip lives on `poster`, not here — see the note there.
-    .frame(width: width, height: imageHeight)
-//    .clipped()
   }
 
-  /// Play glyph, resume bar and episode label over the bottom of the still. The text
-  /// is vibrant-secondary at rest and turns solid white on focus.
-  private var playbackFooter: some View {
-    HStack(spacing: 10) {
-      Image(systemName: "play.fill")
-        .font(.system(size: Self.footerGlyphSize))
-
-      Capsule()
-        .fill(.secondary)
-        .frame(width: Self.footerBarWidth, height: 4)
-        .overlay(alignment: .leading) {
-          Capsule()
-            .fill(cardFocused ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
-            .frame(width: Self.footerBarWidth * (card.progress ?? 0), height: 4)
-        }
-
-      if let label = card.overlayLabel {
-        Text(label)
-          .font(Self.footerFont)
-          .lineLimit(1)
+  /// Play glyph (bottom-leading) + progress pinned to the still's bottom edge.
+  /// Labels live in the caption — nothing translucent over the picture.
+  @ViewBuilder
+  private var landscapeOverlays: some View {
+    ZStack(alignment: .bottomLeading) {
+      if let progress = card.progress {
+        progressBar(progress)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
       }
-      Spacer(minLength: 0)
+
+      Image(systemName: "play.fill")
+        .font(TypeScale.cardMeta)
+        .foregroundStyle(.white)
+        .shadow(color: .black.opacity(0.55), radius: 6, y: 1)
+        .padding(12)
     }
-    .foregroundStyle(cardFocused ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
-    .animation(.easeOut(duration: 0.15), value: cardFocused)
-    .padding(.horizontal, 14)
-    .padding(.bottom, 12)
-    .padding(.top, 28)
   }
 
   private func progressBar(_ progress: Double) -> some View {
     GeometryReader { geometry in
       ZStack(alignment: .leading) {
-        Capsule().fill(Color.black.opacity(0.65))
+        Capsule().fill(Color.black.opacity(0.55))
         Capsule()
           .fill(Color.KinoPub.accent)
-          .frame(width: geometry.size.width * progress)
+          .frame(width: geometry.size.width * min(max(progress, 0), 1))
       }
     }
-    .frame(height: 8)
-    .padding(.horizontal, 10)
-    .padding(.bottom, 10)
+    .frame(height: Metrics.progressBarHeight)
   }
 
-  // MARK: - Metrics
+  // MARK: - Caption
 
+  /// Hidden rather than absent while unfocused, so neighbouring cards keep their
+  /// baselines and the row does not jump as focus travels along it.
+  private var captionBlock: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Text(card.title)
+        .lineLimit(card.isLandscape ? 2 : 1)
+        .font(TypeScale.cardTitle)
+        .foregroundStyle(Color.KinoPub.text)
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+
+      if card.isLandscape, let label = card.overlayLabel, !label.isEmpty {
+        Text(label)
+          .font(TypeScale.cardMeta)
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .textCase(.uppercase)
+          .lineLimit(1)
+          .frame(maxWidth: .infinity, alignment: .leading)
+      }
+    }
+    .opacity(caption == .always || cardFocused ? 1 : 0)
+    .animation(.easeOut(duration: 0.12), value: cardFocused)
+  }
+
+  // MARK: - Legacy metrics (call sites / placeholders until fully migrated)
+
+  /// Fallback poster width when a caller still needs a concrete size (placeholders).
+  public static var cardWidth: CGFloat {
+    ShelfMetrics.posters(width: referenceWidth, typeSize: .large)
+      .cardWidth(in: referenceWidth)
+  }
+
+  public static var posterHeight: CGFloat { cardWidth / CardAspect.poster.ratio }
+  public static var landscapeWidth: CGFloat {
+    ShelfMetrics.landscape(width: referenceWidth, typeSize: .large)
+      .cardWidth(in: referenceWidth)
+  }
+  public static var landscapeHeight: CGFloat { landscapeWidth / CardAspect.landscape.ratio }
+  public static var cornerRadius: CGFloat { Metrics.cardCornerRadius }
+  public static var captionSpacing: CGFloat { Metrics.cardCaptionSpacing }
+  public static var titleFont: Font { TypeScale.cardTitle }
+  public static var subtitleFont: Font { TypeScale.cardSubtitle }
+
+  private static var referenceWidth: CGFloat {
 #if os(tvOS)
-  static let cornerRadius: CGFloat = 14
-  /// Room under the poster so the focused card, which `.borderless` scales up, clears its
-  /// caption instead of sitting right on top of it.
-  static let captionSpacing: CGFloat = 20
-  static let cardWidth: CGFloat = 200
-  static let posterHeight: CGFloat = 300
-  static let landscapeWidth: CGFloat = 360
-  static let landscapeHeight: CGFloat = 203
-  static let footerFont: Font = .system(size: 18, weight: .semibold)
-  static let footerGlyphSize: CGFloat = 16
-  static let footerBarWidth: CGFloat = 56
-  static let titleFont: Font = .system(size: 24, weight: .medium)
-  static let subtitleFont: Font = .system(size: 20, weight: .regular)
+    1920
 #elseif os(macOS)
-  static let cornerRadius: CGFloat = 14
-  static let captionSpacing: CGFloat = 6
-  static let cardWidth: CGFloat = 165
-  static let posterHeight: CGFloat = 250
-  static let landscapeWidth: CGFloat = 300
-  static let landscapeHeight: CGFloat = 169
-  static let footerFont: Font = .system(size: 13, weight: .semibold)
-  static let footerGlyphSize: CGFloat = 12
-  static let footerBarWidth: CGFloat = 44
-  static let titleFont: Font = .system(size: 16, weight: .medium)
-  static let subtitleFont: Font = .system(size: 14, weight: .regular)
+    1100
 #else
-  static let cornerRadius: CGFloat = 14
-  static let captionSpacing: CGFloat = 6
-  static let cardWidth: CGFloat = 140
-  static let posterHeight: CGFloat = 210
-  static let landscapeWidth: CGFloat = 260
-  static let landscapeHeight: CGFloat = 146
-  static let footerFont: Font = .system(size: 12, weight: .semibold)
-  static let footerGlyphSize: CGFloat = 11
-  static let footerBarWidth: CGFloat = 40
-  static let titleFont: Font = .system(size: 15, weight: .medium)
-  static let subtitleFont: Font = .system(size: 13, weight: .regular)
+    390
 #endif
+  }
 }
 
 #Preview {
@@ -394,4 +338,5 @@ public struct MediaCardView: View {
                                 kinopoiskRating: 8.3,
                                 progress: 0.4,
                                 badge: "2"))
+  .frame(width: 260)
 }
