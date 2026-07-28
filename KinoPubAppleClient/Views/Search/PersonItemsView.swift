@@ -86,14 +86,14 @@ struct PersonItemsView: View {
 
   private var hero: some View {
     HStack(alignment: .top, spacing: Self.heroSpacing) {
-      avatar
+      CastAvatarView(name: person.name, photoURL: personMetadata.photo ?? person.photoURL)
 
       VStack(alignment: .leading, spacing: 8) {
         Text(person.name)
           .font(Self.nameFont)
           .foregroundStyle(Color.KinoPub.text)
 
-        Text(LocalizedStringKey(person.role.titleKey))
+        Text(person.role.titleKey.localized)
           .font(Self.roleFont)
           .foregroundStyle(Color.KinoPub.subtitle)
 
@@ -112,36 +112,6 @@ struct PersonItemsView: View {
     .padding(.horizontal, Self.horizontalInset)
     .padding(.top, Self.verticalPadding)
     .padding(.bottom, 8)
-  }
-
-  private var avatar: some View {
-    ZStack {
-      Circle()
-        .fill(Color.KinoPub.selectionBackground)
-      if let photo = personMetadata.photo ?? person.photoURL {
-        AsyncImage(url: photo) { phase in
-          if let image = phase.image {
-            image
-              .resizable()
-              .scaledToFill()
-          } else {
-            Text(initials)
-              .font(Self.initialsFont)
-              .foregroundStyle(Color.KinoPub.text)
-          }
-        }
-      } else {
-        Text(initials)
-          .font(Self.initialsFont)
-          .foregroundStyle(Color.KinoPub.text)
-      }
-    }
-    .frame(width: Self.avatarSize, height: Self.avatarSize)
-    .clipShape(Circle())
-  }
-
-  private var initials: String {
-    person.name.split(separator: " ").prefix(2).compactMap { $0.first }.map(String.init).joined()
   }
 
   private var biography: String? {
@@ -229,25 +199,21 @@ struct PersonItemsView: View {
   static let heroSpacing: CGFloat = 28
   static let horizontalInset: CGFloat = 80
   static let verticalPadding: CGFloat = 16
-  static let avatarSize: CGFloat = 160
   static let bioPreviewLimit = 220
   static let nameFont: Font = .system(size: 44, weight: .bold)
   static let roleFont: Font = .system(size: 24, weight: .regular)
   static let metaFont: Font = .system(size: 22, weight: .regular)
   static let bioFont: Font = .system(size: 22, weight: .regular)
   static let sectionFont: Font = .system(size: 28, weight: .semibold)
-  static let initialsFont: Font = .system(size: 48, weight: .medium)
 #else
   static let heroSpacing: CGFloat = 16
   static let horizontalInset: CGFloat = 16
   static let verticalPadding: CGFloat = 8
-  static let avatarSize: CGFloat = 88
   static let bioPreviewLimit = 160
   static let nameFont: Font = .system(size: 24, weight: .bold)
   static let roleFont: Font = .system(size: 14, weight: .regular)
   static let metaFont: Font = .system(size: 13, weight: .regular)
   static let bioFont: Font = .system(size: 14, weight: .regular)
   static let sectionFont: Font = .system(size: 17, weight: .semibold)
-  static let initialsFont: Font = .system(size: 28, weight: .medium)
 #endif
 }

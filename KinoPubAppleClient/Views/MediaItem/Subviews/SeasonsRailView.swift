@@ -37,6 +37,11 @@ struct SeasonsRailView: View {
   /// Fired when any control in this rail takes focus, so the page can snap to the
   /// seasons "page" and stop the outer scroll from drifting between episodes/tabs.
   var onSectionFocused: (() -> Void)? = nil
+#if os(tvOS)
+  /// Bumped by the detail page when it flips from the hero onto this rail — we then
+  /// park focus on the selected season tab so Play cannot reclaim the remote.
+  var pageEntryToken: Int = 0
+#endif
   var onHide: ((Episode, Season) -> Void)?
   var onToggleWatched: ((Episode, Season) -> Void)?
   /// Full TMDB season schedules keyed by season number — used to date kino episodes
@@ -196,6 +201,9 @@ struct SeasonsRailView: View {
           focusedEpisodeID = bridgeDownEpisodeID
         }
       }
+      .onChange(of: pageEntryToken) { _, _ in
+        focusedSeasonID = selectedSeasonID ?? seasons.first?.id
+      }
 #endif
     }
   }
@@ -267,7 +275,9 @@ struct SeasonsRailView: View {
   private func railCard(for entry: RailEntry) -> some View {
     switch entry {
     case .playable(let season, let episode, let schedule) where schedule?.isUpcoming != true:
-      NavigationLink(value: linkProvider.player(for: filled(episode, in: season))) {
+      PlayerLink(route: linkProvider.player(for: filled(episode, in: season)),
+                 item: filled(episode, in: season),
+                 mode: .media) {
         EpisodeRailCard(
           title: Self.displayTitle(episode: episode, schedule: schedule),
           number: episode.number,

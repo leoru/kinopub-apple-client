@@ -35,7 +35,9 @@ struct SeasonView: View {
     ScrollView {
       LazyVGrid(columns: gridLayout, content: {
         ForEach(model.season.episodes, id: \.id) { item in
-          NavigationLink(value: model.linkProvider.player(for: model.filledEpisode(item))) {
+          PlayerLink(route: model.linkProvider.player(for: model.filledEpisode(item)),
+                     item: model.filledEpisode(item),
+                     mode: .media) {
             SeasonItemView(episode: item)
               .padding(.bottom, 16)
           }

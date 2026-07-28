@@ -19,13 +19,13 @@ import SwiftUI
 public enum MediaActionMetrics {
 #if os(tvOS)
   /// Minimum width for the Play / Resume pill. Watchlist and other labeled pills hug content.
-  public static let playPillMinWidth: CGFloat = 250
+  public static let playPillMinWidth: CGFloat = 200
   public static let buttonHeight: CGFloat = 66
-  public static let iconPointSize: CGFloat = 22
+  public static let iconPointSize: CGFloat = 26
   public static let circleIconPointSize: CGFloat = 24
   public static let labelFont = Font.system(size: 22, weight: .semibold)
   public static let progressWidth: CGFloat = 60
-  public static let progressHeight: CGFloat = 3
+  public static let progressHeight: CGFloat = 5
   public static let contentSpacing: CGFloat = 12
   public static let pillHorizontalPadding: CGFloat = 28
   public static let rowSpacing: CGFloat = 16
@@ -129,7 +129,7 @@ private struct MediaActionPillChrome<Content: View>: View {
 
   var body: some View {
     content
-      .foregroundStyle(showsFocusedChrome ? Color.black : Color.white)
+      .foregroundStyle(isFocused ? Color.black : isHovered ? Color.black : Color.white)
       .padding(.horizontal, MediaActionMetrics.pillHorizontalPadding)
       .frame(minWidth: minWidth, minHeight: MediaActionMetrics.buttonHeight)
       .frame(height: MediaActionMetrics.buttonHeight)
@@ -137,18 +137,18 @@ private struct MediaActionPillChrome<Content: View>: View {
         ZStack {
           Capsule(style: .continuous)
             .fill(.ultraThinMaterial)
-            .opacity(showsFocusedChrome ? 0 : 1)
+            .opacity(isFocused || isPrimary ? 0 : 1)
           Capsule(style: .continuous)
-            .fill(fillColor)
+            .fill(isFocused ? Color.white : isHovered ? Color.white : fillColor)
         }
       }
       .overlay {
         Capsule(style: .continuous)
-          .strokeBorder(Color.white.opacity(showsHoverChrome ? 0.35 : 0.2), lineWidth: 0.5)
+          .strokeBorder(Color.white.opacity(showsHoverChrome ? 0.5 : 0.5), lineWidth: 0.5)
           .opacity(showsFocusedChrome ? 0 : 1)
       }
       .clipShape(Capsule(style: .continuous))
-      .shadow(color: .black.opacity(showsHoverChrome ? 0.25 : 0), radius: 8, y: 2)
+      .shadow(color: .black.opacity(isFocused ? 0.4 : isHovered && isPrimary ? 0.6 : 0), radius: isHovered ? 14 : 8, y: isHovered ? 10 : 4)
       .scaleEffect(scale)
       .animation(.spring(response: 0.25, dampingFraction: 0.8), value: showsFocusedChrome)
       .animation(.easeOut(duration: 0.15), value: isHovered)
@@ -160,9 +160,9 @@ private struct MediaActionPillChrome<Content: View>: View {
   }
 
   private var fillColor: Color {
-    if showsFocusedChrome { return Color.white }
-    if showsHoverChrome { return Color.white.opacity(0.32) }
-    return Color.white.opacity(0.2)
+    if showsFocusedChrome { return Color.black.opacity(0.5) }
+    if showsHoverChrome { return Color.black.opacity(0.3) }
+    return Color.black.opacity(0.5)
   }
 
   private var scale: CGFloat {
@@ -185,7 +185,7 @@ private struct MediaActionCircleChrome<Content: View>: View {
 
   private var showsHoverChrome: Bool {
 #if os(tvOS)
-    false
+    true
 #else
     isHovered && !isFocused
 #endif
@@ -206,11 +206,11 @@ private struct MediaActionCircleChrome<Content: View>: View {
       }
       .overlay {
         Circle()
-          .strokeBorder(Color.white.opacity(showsHoverChrome ? 0.35 : 0.2), lineWidth: 0.5)
+          .strokeBorder(Color.white.opacity(showsHoverChrome ? 0.5 : 0.5), lineWidth: 0.5)
           .opacity(isFocused ? 0 : 1)
       }
       .clipShape(Circle())
-      .shadow(color: .black.opacity(showsHoverChrome ? 0.25 : 0), radius: 8, y: 2)
+      .shadow(color: .black.opacity(showsHoverChrome ? 0.25 : 0.25), radius: 8, y: 2)
       .scaleEffect(scale)
       .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isFocused)
       .animation(.easeOut(duration: 0.15), value: isHovered)
@@ -223,8 +223,8 @@ private struct MediaActionCircleChrome<Content: View>: View {
 
   private var fillColor: Color {
     if isFocused { return Color.white }
-    if showsHoverChrome { return Color.white.opacity(0.24) }
-    return Color.white.opacity(0.12)
+    if showsHoverChrome { return Color.black.opacity(0.4) }
+    return Color.black.opacity(0.3)
   }
 
   private var scale: CGFloat {
@@ -252,7 +252,7 @@ private struct MediaActionGhostChrome<Content: View>: View {
 
   var body: some View {
     content
-      .foregroundStyle(isFocused ? Color.black : Color.white)
+      .foregroundStyle(Color.white)
       .frame(width: MediaActionMetrics.buttonHeight, height: MediaActionMetrics.buttonHeight)
       .contentShape(Circle())
       .background {
@@ -261,21 +261,20 @@ private struct MediaActionGhostChrome<Content: View>: View {
             Circle()
               .fill(.ultraThinMaterial)
             Circle()
-              .fill(Color.white.opacity(0.18))
+              .fill(Color.black.opacity(0.5))
           }
           Circle()
-            .fill(Color.white)
-            .opacity(isFocused ? 1 : 0)
+            .fill(Color.black.opacity(0.15))
+            .opacity(isFocused || isHovered ? 1 : 0)
         }
       }
       .overlay {
         if showsSecondaryPlate {
           Circle()
-            .strokeBorder(Color.white.opacity(0.3), lineWidth: 0.5)
+            .strokeBorder(Color.white.opacity(0.5), lineWidth: 0.5)
         }
       }
       .clipShape(Circle())
-      .shadow(color: .black.opacity(showsSecondaryPlate ? 0.25 : 0), radius: 8, y: 2)
       .scaleEffect(scale)
       .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isFocused)
       .animation(.easeOut(duration: 0.15), value: isHovered)
@@ -323,19 +322,19 @@ public struct MediaActionProgressTrack: View {
       .overlay(alignment: .leading) {
         Capsule()
           .fill(fillColor)
-          .frame(width: max(0, MediaActionMetrics.progressWidth * min(max(progress, 0), 1)),
+          .frame(width: max(6, MediaActionMetrics.progressWidth * min(max(progress, 0), 1)),
                  height: MediaActionMetrics.progressHeight)
       }
   }
 
   private var trackColor: Color {
     inverted
-      ? Color.black.opacity(0.2)
+      ? Color.black.opacity(0.3)
       : Color.white.opacity(0.25)
   }
 
   private var fillColor: Color {
-    inverted ? Color.black.opacity(0.55) : Color.white.opacity(0.9)
+    inverted ? Color.black.opacity(0.55) : Color.white.opacity(1)
   }
 }
 

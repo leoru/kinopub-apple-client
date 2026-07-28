@@ -372,29 +372,30 @@ struct MediaItemHeroView: View {
   }
 
   var body: some View {
-    // The content drives the height (with a floor) rather than a fixed frame: a fixed
-    // one centres anything taller than itself, and `clipped()` then eats the buttons.
+#if os(tvOS)
+    // Fills the hero slideshow slide; bottom-aligned over the pinned backdrop.
+    // Force dark so `Color.primary` / scores / plot stay light over the artwork —
+    // same always-readable chrome as the Apple TV app, without hard-coding whites.
     content
-#if os(tvOS)
-      // Fills the hero slideshow slide; bottom-aligned over the pinned backdrop.
+      .environment(\.colorScheme, .dark)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-#else
-      .frame(maxWidth: .infinity, minHeight: Self.heroHeight, alignment: .bottomLeading)
-      .background {
-        ZStack {
-          scrollingBackdrop
-          scrollingScrim
-        }
+      // The same muted preview, promoted to sound and full screen without restarting.
+      // Menu on the remote dismisses it — no chrome of our own over the picture.
+      .fullScreenCover(isPresented: $isTrailerFullScreen, onDismiss: { trailer.setFullScreen(false) }) {
+        fullScreenTrailer
       }
-      .clipped()
-      .background(visibilityProbe)
-#endif
-#if os(tvOS)
-    // The same muted preview, promoted to sound and full screen without restarting.
-    // Menu on the remote dismisses it — no chrome of our own over the picture.
-    .fullScreenCover(isPresented: $isTrailerFullScreen, onDismiss: { trailer.setFullScreen(false) }) {
-      fullScreenTrailer
+#else
+    // Backdrop stays in the ambient scheme so the bottom seam still blends into the
+    // page colour; only the overlay chrome is forced dark.
+    ZStack(alignment: .bottomLeading) {
+      scrollingBackdrop
+      scrollingScrim
+      content
+        .environment(\.colorScheme, .dark)
     }
+    .frame(maxWidth: .infinity, minHeight: Self.heroHeight, alignment: .bottomLeading)
+    .clipped()
+    .background(visibilityProbe)
 #endif
   }
 
@@ -478,18 +479,38 @@ struct MediaItemHeroView: View {
 
   // MARK: - Foreground
 
+  /// Wide screens (tvOS / Mac): title+actions | plot | starring.
+  /// Phone keeps a single stacked column — three columns do not fit.
   private var content: some View {
-    HStack(alignment: .bottom, spacing: Self.creditsGutter) {
-      mainColumn
-      Spacer(minLength: 0)
+#if os(iOS)
+    VStack(alignment: .leading, spacing: Self.contentSpacing) {
+      leadingColumn
+      plotColumn
       credits
     }
     .padding(.horizontal, Self.horizontalInset)
     .padding(.bottom, Self.bottomInset)
     .frame(maxWidth: .infinity, alignment: .leading)
+#else
+    HStack(alignment: .bottom, spacing: Self.columnGutter) {
+      leadingColumn
+        .frame(maxWidth: Self.leadingMaxWidth, alignment: .leading)
+
+      plotColumn
+        .frame(maxWidth: Self.plotMaxWidth, alignment: .leading)
+
+      Spacer(minLength: 0)
+
+      credits
+    }
+    .padding(.horizontal, Self.horizontalInset)
+    .padding(.bottom, Self.bottomInset)
+    .frame(maxWidth: .infinity, alignment: .leading)
+#endif
   }
 
-  private var mainColumn: some View {
+  /// Logo / title, metadata, then the action row — left column on wide layouts.
+  private var leadingColumn: some View {
     VStack(alignment: .leading, spacing: Self.contentSpacing) {
       // Shadowed as a block, with the actions left out of it: the buttons carry their
       // own material, and a drop shadow under one that scales on focus is an extra
@@ -500,16 +521,16 @@ struct MediaItemHeroView: View {
       }
       .heroTextShadow()
 
-      // Actions above the plot so Up from Play is a dead end → fullscreen trailer,
-      // and Down lands on the description. Plot above the row stole Up and made
-      // "focus description" feel like the trailer gesture.
+      // Actions sit with the title so Up from Play is a dead end → fullscreen trailer.
+      // The plot is a sibling column (or below on phone), not above the row.
       actions
         .padding(.top, Self.actionsGap)
-
-      MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot, focus: $focus)
-        .heroTextShadow()
     }
-    .frame(maxWidth: Self.textMaxWidth, alignment: .leading)
+  }
+
+  private var plotColumn: some View {
+    MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot, focus: $focus)
+      .heroTextShadow()
   }
 
   @ViewBuilder
@@ -640,11 +661,13 @@ struct MediaItemHeroView: View {
 #if os(tvOS)
     // The focus engine only forwards a move it can't act on, so this fires exactly when
     // a hero button is focused and there is nowhere above to go — the hero is the top of
-    // the page. Left/right between the buttons and Down to the rail still navigate as
-    // usual; only the dead-end Up is repurposed, and only when a trailer is actually up.
+    // the page. Left/right reach the plot column; dead-end Up opens the trailer; Down
+    // hands off to the content slide when spatial focus won't leave the row.
     .onMoveCommand { direction in
       if direction == .up, trailer.player != nil, trailer.isReady {
         isTrailerFullScreen = true
+      } else if direction == .down {
+        focus = .exitToContent
       }
     }
 #endif
@@ -856,40 +879,43 @@ struct MediaItemHeroView: View {
   static let horizontalInset: CGFloat = 80
   static let bottomInset: CGFloat = 60
   static let contentSpacing: CGFloat = 12
-  static let textMaxWidth: CGFloat = 900
-  static let logoMaxWidth: CGFloat = 720
-  static let logoMaxHeight: CGFloat = 180
+  static let leadingMaxWidth: CGFloat = 720
+  static let plotMaxWidth: CGFloat = 560
+  static let logoMaxWidth: CGFloat = 640
+  static let logoMaxHeight: CGFloat = 160
   static let titleFont: Font = .system(size: 62, weight: .bold)
   static let metaSpacing: CGFloat = 20
   static let actionsGap: CGFloat = 20
-  static let creditsMaxWidth: CGFloat = 520
-  static let creditsGutter: CGFloat = 60
+  static let creditsMaxWidth: CGFloat = 360
+  static let columnGutter: CGFloat = 48
 #elseif os(macOS)
   static let heroHeight: CGFloat = 460
   static let horizontalInset: CGFloat = 32
   static let bottomInset: CGFloat = 28
   static let contentSpacing: CGFloat = 8
-  static let textMaxWidth: CGFloat = 620
-  static let logoMaxWidth: CGFloat = 480
-  static let logoMaxHeight: CGFloat = 120
+  static let leadingMaxWidth: CGFloat = 480
+  static let plotMaxWidth: CGFloat = 420
+  static let logoMaxWidth: CGFloat = 420
+  static let logoMaxHeight: CGFloat = 110
   static let titleFont: Font = .system(size: 36, weight: .bold)
   static let metaSpacing: CGFloat = 12
   static let actionsGap: CGFloat = 12
-  static let creditsMaxWidth: CGFloat = 300
-  static let creditsGutter: CGFloat = 28
+  static let creditsMaxWidth: CGFloat = 280
+  static let columnGutter: CGFloat = 28
 #else
   static let heroHeight: CGFloat = 380
   static let horizontalInset: CGFloat = 20
   static let bottomInset: CGFloat = 20
   static let contentSpacing: CGFloat = 8
-  static let textMaxWidth: CGFloat = 560
+  static let leadingMaxWidth: CGFloat = 560
+  static let plotMaxWidth: CGFloat = 560
   static let logoMaxWidth: CGFloat = 360
   static let logoMaxHeight: CGFloat = 96
   static let titleFont: Font = .system(size: 28, weight: .bold)
   static let metaSpacing: CGFloat = 10
   static let actionsGap: CGFloat = 10
   static let creditsMaxWidth: CGFloat = 240
-  static let creditsGutter: CGFloat = 16
+  static let columnGutter: CGFloat = 16
 #endif
 }
 

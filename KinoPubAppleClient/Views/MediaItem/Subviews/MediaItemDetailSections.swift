@@ -13,12 +13,9 @@ import AppKit
 
 // MARK: - Ratings
 
-/// Score tiles with their vote counts, the way microiptv lays them out: one per
-/// source, hidden when that source has nothing.
-///
-/// On pointer platforms a tile opens that score's page (IMDb / Kinopoisk); hover
-/// brightens the plate and shows an external-link arrow beside the service name.
-/// On tvOS the tile is only a focus stop — no outbound links on the 10-foot UI.
+/// Score tiles: our aggregate first, then one per source, then internal views.
+/// Pointer platforms open the source page when a real URL exists; aggregate and
+/// views tiles are display-only.
 struct MediaItemRatingsSection: View {
 
   let mediaItem: MediaItem
@@ -26,6 +23,8 @@ struct MediaItemRatingsSection: View {
   /// so "Ratings" doesn't caption the wide art peeking under the hero.
   var showsHeader: Bool = true
   var onSectionFocused: (() -> Void)? = nil
+  /// tvOS: when non-nil, the first tile accepts `.content` page entry focus.
+  var pageEntryFocus: FocusState<MediaItemFocusTarget?>.Binding? = nil
   @Environment(\.openURL) private var openURL
 
   fileprivate struct Score: Identifiable {
@@ -33,6 +32,17 @@ struct MediaItemRatingsSection: View {
     let logo: MediaScoreLogo.Source
     let value: Double
     let votes: Int?
+  }
+
+  private var aggregate: Rating? {
+    Rating(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating)
+  }
+
+  private var aggregateVotes: Int {
+    [mediaItem.imdbVotes, mediaItem.kinopoiskVotes]
+      .compactMap { $0 }
+      .filter { $0 > 0 }
+      .reduce(0, +)
   }
 
   private var scores: [Score] {
@@ -46,8 +56,12 @@ struct MediaItemRatingsSection: View {
     return result
   }
 
+  private var hasContent: Bool {
+    aggregate != nil || !scores.isEmpty || mediaItem.views > 0
+  }
+
   var body: some View {
-    if !scores.isEmpty {
+    if hasContent {
       VStack(alignment: .leading, spacing: 12) {
         if showsHeader {
           MediaItemSectionHeader("Ratings")
@@ -55,11 +69,23 @@ struct MediaItemRatingsSection: View {
         }
 
         HStack(alignment: .top, spacing: Self.spacing) {
-          ForEach(scores) { score in
+          if let aggregate {
+            AggregateRatingTile(rating: aggregate,
+                                votes: aggregateVotes,
+                                onSectionFocused: onSectionFocused,
+                                pageEntryFocus: pageEntryFocus)
+          }
+          ForEach(Array(scores.enumerated()), id: \.element.id) { index, score in
             RatingTile(score: score,
                        url: scoreURL(score),
                        openURL: openURL,
-                       onSectionFocused: onSectionFocused)
+                       onSectionFocused: onSectionFocused,
+                       pageEntryFocus: aggregate == nil && index == 0 ? pageEntryFocus : nil)
+          }
+          if mediaItem.views > 0 {
+            ViewsRatingTile(views: mediaItem.views,
+                            onSectionFocused: onSectionFocused,
+                            pageEntryFocus: aggregate == nil && scores.isEmpty ? pageEntryFocus : nil)
           }
         }
         .padding(.horizontal, MediaItemLayout.horizontalInset)
@@ -86,21 +112,69 @@ struct MediaItemRatingsSection: View {
 
 #if os(tvOS)
   static let spacing: CGFloat = 24
-  static let tileWidth: CGFloat = 260
   static let tilePadding: CGFloat = 24
-  static let valueFont: Font = .system(size: 40, weight: .semibold)
-  static let captionFont: Font = .system(size: 22, weight: .regular)
-  static let imdbLogoHeight: CGFloat = 22
-  static let kinopoiskLogoHeight: CGFloat = 24
+  static let iconSize: CGFloat = 48
+  static let valueFont: Font = .system(size: 48, weight: .bold, design: .rounded)
+  static let titleFont: Font = .system(size: 22, weight: .semibold)
+  static let captionFont: Font = .system(size: 20, weight: .regular)
 #else
   static let spacing: CGFloat = 12
-  static let tileWidth: CGFloat = 150
   static let tilePadding: CGFloat = 14
-  static let valueFont: Font = .system(size: 24, weight: .semibold)
+  static let iconSize: CGFloat = 32
+  static let valueFont: Font = .system(size: 32, weight: .semibold, design: .rounded)
+  static let titleFont: Font = .system(size: 14, weight: .semibold)
   static let captionFont: Font = .system(size: 13, weight: .regular)
-  static let imdbLogoHeight: CGFloat = 13
-  static let kinopoiskLogoHeight: CGFloat = 14
 #endif
+}
+
+private struct AggregateRatingTile: View {
+  let rating: Rating
+  let votes: Int
+  var onSectionFocused: (() -> Void)? = nil
+  var pageEntryFocus: FocusState<MediaItemFocusTarget?>.Binding? = nil
+  @Environment(\.colorScheme) private var colorScheme
+
+  var body: some View {
+    content
+#if os(tvOS)
+      // Focus stop for the rail — no press chrome, the tile is not an action.
+      .focusable(true)
+      .modifier(OptionalPageEntryFocus(binding: pageEntryFocus))
+      .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+  }
+
+  private var content: some View {
+    HStack(alignment: .center, spacing: 10) {
+      ZStack {
+        Circle()
+          .fill(rating.tier.color)
+        Image(systemName: "star.fill")
+          .font(.system(size: MediaItemRatingsSection.iconSize * 0.58, weight: .semibold))
+          .foregroundStyle(colorScheme == .dark ? Color.black : Color.white)
+      }
+      .frame(width: MediaItemRatingsSection.iconSize, height: MediaItemRatingsSection.iconSize)
+
+      AggregateRatingLabel(rating: rating)
+
+      VStack(alignment: .leading, spacing: 2) {
+        Text("Rating")
+          .font(MediaItemRatingsSection.titleFont)
+          .foregroundStyle(Color.KinoPub.text)
+        if votes > 0 {
+          Text("\(votes.formatted(.number.grouping(.automatic))) \("votes".localized)")
+            .font(MediaItemRatingsSection.captionFont)
+            .foregroundStyle(Color.KinoPub.subtitle)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+      }
+    }
+    .padding(MediaItemRatingsSection.tilePadding)
+    .background(
+      Color.KinoPub.selectionBackground.opacity(0.5),
+      in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+    )
+  }
 }
 
 private struct RatingTile: View {
@@ -108,7 +182,10 @@ private struct RatingTile: View {
   let url: URL?
   let openURL: OpenURLAction
   var onSectionFocused: (() -> Void)? = nil
+  var pageEntryFocus: FocusState<MediaItemFocusTarget?>.Binding? = nil
   @State private var isHovered = false
+
+  private var isLink: Bool { url != nil }
 
   var body: some View {
     Button {
@@ -116,90 +193,115 @@ private struct RatingTile: View {
     } label: {
       tileContent
     }
-    .buttonStyle(RatingTileButtonStyle(isHovered: isHovered))
+    .buttonStyle(RatingTileButtonStyle())
 #if !os(tvOS)
     .onHover { isHovered = $0 }
-    .pointingHandCursorOnHover()
+    .pointingHandCursorOnHover(enabled: isLink)
 #endif
 #if os(tvOS)
+    .modifier(OptionalPageEntryFocus(binding: pageEntryFocus))
     .reportMediaItemSectionFocus(onSectionFocused)
 #endif
   }
 
   private var tileContent: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    HStack(alignment: .center, spacing: 10) {
+      MediaScoreLogo(score.logo, height: MediaItemRatingsSection.iconSize, style: .color)
+        .frame(width: MediaItemRatingsSection.iconSize, height: MediaItemRatingsSection.iconSize)
+
       Text(String(format: "%.1f", score.value))
         .font(MediaItemRatingsSection.valueFont)
-        .foregroundStyle(Color.KinoPub.text)
+        // .monospacedDigit()
+        .foregroundStyle(Color.KinoPub.subtitle)
 
-      HStack(spacing: 8) {
-        MediaScoreLogo(score.logo, height: Self.logoHeight(score.logo))
-        Text(score.id)
-          .font(MediaItemRatingsSection.captionFont)
-#if !os(tvOS)
-        if isHovered, url != nil {
-          Image(systemName: "arrow.up.right")
-            .font(MediaItemRatingsSection.captionFont)
-            .transition(.opacity)
+      VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 6) {
+          Text(score.id)
+            .font(MediaItemRatingsSection.titleFont)
+            .foregroundStyle(Color.KinoPub.text)
+          if isLink {
+            Image(systemName: "arrow.up.right")
+              .font(MediaItemRatingsSection.captionFont)
+              .foregroundStyle(Color.KinoPub.subtitle)
+          }
         }
-#endif
+        if let votes = score.votes, votes > 0 {
+          Text("\(votes.formatted(.number.grouping(.automatic))) \("votes".localized)")
+            .font(MediaItemRatingsSection.captionFont)
+            .foregroundStyle(Color.KinoPub.subtitle)
+            .fixedSize(horizontal: false, vertical: true)
+        }
       }
-      .foregroundStyle(Color.KinoPub.subtitle)
+    }
+    .padding(MediaItemRatingsSection.tilePadding)
+    .background(
+      Color.KinoPub.selectionBackground.opacity(isLink && isHovered ? 0.72 : 0.5),
+      in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+    )
+    .animation(.easeOut(duration: 0.15), value: isHovered)
+  }
+}
 
-      if let votes = score.votes, votes > 0 {
-        Text("\(votes.formatted(.number.grouping(.automatic))) \("votes".localized)")
+private struct ViewsRatingTile: View {
+  let views: Int
+  var onSectionFocused: (() -> Void)? = nil
+  var pageEntryFocus: FocusState<MediaItemFocusTarget?>.Binding? = nil
+
+  var body: some View {
+    HStack(alignment: .center, spacing: 10) {
+      Text(views.formatted(.number.grouping(.automatic)))
+        .font(MediaItemRatingsSection.valueFont)
+        // .monospacedDigit()
+        .foregroundStyle(Color.KinoPub.subtitle)
+
+      VStack(alignment: .leading, spacing: 2) {
+        Text("MediaItem_Views")
+          .font(MediaItemRatingsSection.titleFont)
+          .foregroundStyle(Color.KinoPub.text)
+        Text("MediaItem_ViewsInternal")
           .font(MediaItemRatingsSection.captionFont)
           .foregroundStyle(Color.KinoPub.subtitle)
           .fixedSize(horizontal: false, vertical: true)
       }
     }
-    .frame(width: MediaItemRatingsSection.tileWidth, alignment: .leading)
     .padding(MediaItemRatingsSection.tilePadding)
-    .background(
-      Color.KinoPub.selectionBackground.opacity(isHovered ? 0.72 : 0.5),
-      in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-    )
-    .animation(.easeOut(duration: 0.15), value: isHovered)
-  }
-
-  private static func logoHeight(_ source: MediaScoreLogo.Source) -> CGFloat {
-    switch source {
-    case .imdb: return MediaItemRatingsSection.imdbLogoHeight
-    case .kinopoisk: return MediaItemRatingsSection.kinopoiskLogoHeight
-    }
+#if os(tvOS)
+    .focusable(true)
+    .modifier(OptionalPageEntryFocus(binding: pageEntryFocus))
+    .reportMediaItemSectionFocus(onSectionFocused)
+#endif
   }
 }
 
-/// Lift under focus; on pointer platforms also scale on press and brighten via hover
-/// state passed from the tile. No filled focus plate — the tile is already a panel.
+/// Press feedback only — no hover shadow on the score tiles.
 private struct RatingTileButtonStyle: ButtonStyle {
-  var isHovered: Bool = false
-
   func makeBody(configuration: ButtonStyleConfiguration) -> some View {
-    Tile(configuration: configuration, isHovered: isHovered)
+    configuration.label
+      .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+      .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
   }
+}
 
-  private struct Tile: View {
-    let configuration: ButtonStyleConfiguration
-    let isHovered: Bool
-    @Environment(\.isFocused) private var isFocused
+#if os(tvOS)
+/// Applies `.focused(..., equals: .content)` when the page hands us the entry binding.
+private struct OptionalPageEntryFocus: ViewModifier {
+  var binding: FocusState<MediaItemFocusTarget?>.Binding?
 
-    var body: some View {
-      configuration.label
-        .scaleEffect(isFocused ? 1.05 : (configuration.isPressed ? 0.96 : 1.0))
-        .shadow(color: .black.opacity(isFocused ? 0.45 : (isHovered ? 0.2 : 0)),
-                radius: isFocused ? 14 : 8,
-                y: isFocused ? 6 : 2)
-        .animation(.easeOut(duration: 0.18), value: isFocused)
-        .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
+  @ViewBuilder
+  func body(content: Content) -> some View {
+    if let binding {
+      content.focused(binding, equals: .content)
+    } else {
+      content
     }
   }
 }
+#endif
 
 // MARK: - Cast
 
-/// Round portraits, as on Apple TV. Photos and character names come from TMDB when
-/// the metadata proxy is configured; otherwise initials and the role label.
+/// Poster-shaped portraits. Photos and character names come from TMDB when the
+/// metadata proxy is configured; otherwise initials and the role label.
 ///
 /// Each one leads to that person's credits, which is also what makes the rail
 /// reachable: a tvOS scroll view moves by focus, and portraits that were plain text
@@ -238,7 +340,7 @@ struct MediaItemCastSection: View {
           LazyHStack(alignment: .top, spacing: Self.spacing) {
             ForEach(people, id: \.person.id) { entry in
               NavigationLink(value: linkProvider.person(for: entry.person)) {
-                portrait(entry.person, member: entry.member)
+                CastPortraitView(person: entry.person, member: entry.member)
               }
               .buttonStyle(PortraitButtonStyle())
 #if os(tvOS)
@@ -253,75 +355,150 @@ struct MediaItemCastSection: View {
     }
   }
 
-  private func portrait(_ person: MediaPerson, member: CastMember) -> some View {
-    VStack(spacing: 6) {
-      ZStack {
-        Circle()
-          .fill(Color.KinoPub.selectionBackground)
-        if let photo = member.photo {
-          AsyncImage(url: photo) { phase in
-            if let image = phase.image {
-              image
-                .resizable()
-                .scaledToFill()
-            } else {
-              Text(initials(of: person.name))
-                .font(Self.initialsFont)
-                .foregroundStyle(Color.KinoPub.text)
-            }
+#if os(tvOS)
+  static let spacing: CGFloat = 28
+  static let focusPadding: CGFloat = 16
+#else
+  static let spacing: CGFloat = 16
+  static let focusPadding: CGFloat = 4
+#endif
+}
+
+/// Poster-shaped portrait art shared by the cast rail and the person page hero.
+struct CastAvatarView: View {
+  let name: String
+  var photoURL: URL? = nil
+  @Environment(\.colorScheme) private var colorScheme
+
+  var body: some View {
+    ZStack {
+      // Solid plate — focus shadow sits behind this, not through the gradient.
+      Self.posterShape
+        .fill(colorScheme == .dark ? Color.black : Color.white)
+
+      if let photoURL {
+        AsyncImage(url: photoURL) { phase in
+          switch phase {
+          case .success(let image):
+            image
+              .resizable()
+              .scaledToFill()
+          default:
+            placeholder
           }
-        } else {
-          Text(initials(of: person.name))
-            .font(Self.initialsFont)
-            .foregroundStyle(Color.KinoPub.text)
         }
-      }
-      .frame(width: Self.avatarSize, height: Self.avatarSize)
-      .clipShape(Circle())
-
-      Text(person.name)
-        .font(Self.nameFont)
-        .foregroundStyle(Color.KinoPub.text)
-//        .lineLimit(2)
-        .multilineTextAlignment(.center)
-
-
-      if let character = member.character, !character.isEmpty, person.role == .actor {
-        Text(character)
-          .font(Self.roleFont)
-          .foregroundStyle(Color.KinoPub.subtitle)
-//          .lineLimit(2)
-          .multilineTextAlignment(.center)
       } else {
+        placeholder
       }
     }
-    .frame(width: Self.avatarSize + 0)
+    .frame(width: Self.avatarWidth, height: Self.avatarHeight)
+    .clipShape(Self.posterShape)
+    .overlay { rimOverlay }
   }
 
-  private func initials(of name: String) -> String {
-    name.split(separator: " ").prefix(2).compactMap { $0.first }.map(String.init).joined()
+  private var placeholder: some View {
+    ZStack {
+      Self.posterShape
+        .fill(
+          LinearGradient(
+            colors: [
+              Color.primary.opacity(colorScheme == .dark ? 0.22 : 0.14),
+              Color.primary.opacity(colorScheme == .dark ? 0.10 : 0.06)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+          )
+        )
+      Text(Self.initials(of: name))
+        .font(Self.initialsFont)
+        .foregroundStyle(Color.KinoPub.text)
+    }
+  }
+
+  private var rimOverlay: some View {
+    let rim = colorScheme == .dark ? Color.white : Color.black
+    return Self.posterShape
+      .strokeBorder(
+        LinearGradient(
+          colors: [rim.opacity(0.15), rim.opacity(0.4)],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        ),
+        lineWidth: 0.5
+      )
+      .blur(radius: 0)
+  }
+
+  static func initials(of name: String) -> String {
+    String(
+      name.split(separator: " ")
+        .prefix(2)
+        .compactMap { $0.first }
+        .map { String($0).uppercased() }
+        .joined()
+        .prefix(2)
+    )
+  }
+
+  static let posterShape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+  static let avatarWidth: CGFloat = 120
+  static let avatarHeight: CGFloat = 180
+
+#if os(tvOS)
+  static let initialsFont: Font = .system(size: 42, weight: .semibold, design: .rounded)
+#else
+  static let initialsFont: Font = .system(size: 36, weight: .semibold, design: .rounded)
+#endif
+}
+
+/// Poster tile + name/role under it for the cast rail.
+struct CastPortraitView: View {
+  let person: MediaPerson
+  let member: CastMember
+
+  var body: some View {
+    VStack(spacing: 6) {
+      CastAvatarView(name: person.name, photoURL: member.photo)
+
+      VStack(spacing: 4) {
+        Text(person.name)
+          .font(Self.nameFont)
+          .foregroundStyle(Color.KinoPub.text)
+          .lineLimit(2)
+          .multilineTextAlignment(.center)
+
+        subtitleLabel
+          .font(Self.roleFont)
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .lineLimit(2)
+          .multilineTextAlignment(.center)
+      }
+    }
+    .frame(width: CastAvatarView.avatarWidth)
+  }
+
+  /// Character when TMDB has one; otherwise the credit role (Actor / Director).
+  @ViewBuilder
+  private var subtitleLabel: some View {
+    if let character = member.character?.trimmingCharacters(in: .whitespacesAndNewlines),
+       !character.isEmpty {
+      Text(character)
+    } else {
+      Text(person.role.titleKey.localized)
+    }
   }
 
 #if os(tvOS)
-  static let spacing: CGFloat = 28
-  static let avatarSize: CGFloat = 140
-  static let focusPadding: CGFloat = 16
-  static let initialsFont: Font = .system(size: 44, weight: .medium)
   static let nameFont: Font = .system(size: 24, weight: .medium)
   static let roleFont: Font = .system(size: 20, weight: .regular)
 #else
-  static let spacing: CGFloat = 16
-  static let avatarSize: CGFloat = 72
-  static let focusPadding: CGFloat = 4
-  static let initialsFont: Font = .system(size: 24, weight: .medium)
   static let nameFont: Font = .system(size: 12, weight: .regular)
   static let roleFont: Font = .system(size: 12, weight: .regular)
 #endif
 }
 
-/// The lift the episode cards use, kept a touch smaller: these are round and sit in a
-/// denser rail, where the same jump reads as a wobble. Pointer platforms also lighten
-/// the plate on hover and scale on press.
+/// The lift the episode cards use, kept a touch smaller: these sit in a denser
+/// rail, where the same jump reads as a wobble. Pointer platforms also scale on press.
 private struct PortraitButtonStyle: ButtonStyle {
   func makeBody(configuration: ButtonStyleConfiguration) -> some View {
     Portrait(configuration: configuration)
@@ -334,7 +511,6 @@ private struct PortraitButtonStyle: ButtonStyle {
 
     var body: some View {
       configuration.label
-//        .brightness(isHovered ? 0.08 : 0)
         .scaleEffect(isFocused ? 1.05 : (configuration.isPressed ? 0.96 : 1.0))
         .shadow(color: .black.opacity(isFocused ? 0.45 : (isHovered ? 0.2 : 0)),
                 radius: isFocused ? 14 : 8,
@@ -400,6 +576,172 @@ struct MediaItemSimilarSection: View {
   static let spacing: CGFloat = 16
   static let focusPadding: CGFloat = 6
 #endif
+}
+
+// MARK: - Awards
+
+/// From Kinopoisk Unofficial, when the user has their own key configured — hidden
+/// entirely otherwise, same gate pattern as `MediaItemRatingsSection`.
+struct MediaItemAwardsSection: View {
+  let awards: [Award]
+  var onSectionFocused: (() -> Void)? = nil
+
+  var body: some View {
+    if !awards.isEmpty {
+      VStack(alignment: .leading, spacing: 12) {
+        MediaItemSectionHeader("Awards")
+        VStack(alignment: .leading, spacing: 8) {
+          ForEach(Array(awards.enumerated()), id: \.offset) { _, award in
+            AwardRow(award: award, onSectionFocused: onSectionFocused)
+          }
+        }
+        .padding(.horizontal, MediaItemLayout.horizontalInset)
+      }
+    }
+  }
+}
+
+private struct AwardRow: View {
+  let award: Award
+  var onSectionFocused: (() -> Void)? = nil
+
+  var body: some View {
+    HStack(alignment: .top, spacing: 12) {
+      Image(systemName: award.won ? "trophy.fill" : "trophy")
+        .foregroundStyle(award.won ? Color.yellow : Color.KinoPub.subtitle)
+        .frame(width: 20)
+
+      VStack(alignment: .leading, spacing: 2) {
+        Text(award.nominationName.map { "\(award.name) — \($0)" } ?? award.name)
+          .foregroundStyle(Color.KinoPub.text)
+        if let year = award.year {
+          Text(String(year))
+            .font(.caption)
+            .foregroundStyle(Color.KinoPub.subtitle)
+        }
+      }
+
+      Spacer(minLength: 0)
+    }
+    .padding(.vertical, 6)
+#if os(tvOS)
+    .focusable(true)
+    .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+  }
+}
+
+// MARK: - Photos
+
+struct MediaItemPhotosSection: View {
+  let stills: [StillImage]
+  var onSectionFocused: (() -> Void)? = nil
+  @State private var selectedStill: StillImage?
+
+  var body: some View {
+    if !stills.isEmpty {
+      VStack(alignment: .leading, spacing: 12) {
+        MediaItemSectionHeader("Photos")
+        ScrollView(.horizontal, showsIndicators: false) {
+          LazyHStack(alignment: .top, spacing: Self.spacing) {
+            ForEach(stills) { still in
+              Button {
+                selectedStill = still
+              } label: {
+                stillTile(url: still.previewURL ?? still.url)
+              }
+#if os(tvOS)
+              .buttonStyle(.borderless)
+              .reportMediaItemSectionFocus(onSectionFocused)
+#else
+              .buttonStyle(.plain)
+              .pointingHandCursorOnHover()
+#endif
+            }
+          }
+          .padding(.horizontal, MediaItemLayout.horizontalInset)
+          .padding(.vertical, Self.focusPadding)
+        }
+      }
+      .sheet(item: $selectedStill) { still in
+        AsyncImage(url: still.url) { image in
+          image.resizable().aspectRatio(contentMode: .fit)
+        } placeholder: {
+          ProgressView()
+        }
+      }
+    }
+  }
+
+  private func stillTile(url: URL?) -> some View {
+    AsyncImage(url: url) { image in
+      image.resizable().aspectRatio(contentMode: .fill)
+    } placeholder: {
+      Color.KinoPub.selectionBackground
+    }
+    .frame(width: Self.tileWidth, height: Self.tileWidth * 9 / 16)
+    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+  }
+
+#if os(tvOS)
+  static let spacing: CGFloat = 24
+  static let focusPadding: CGFloat = 24
+  static let tileWidth: CGFloat = 320
+#else
+  static let spacing: CGFloat = 12
+  static let focusPadding: CGFloat = 6
+  static let tileWidth: CGFloat = 200
+#endif
+}
+
+// MARK: - Facts
+
+struct MediaItemFactsSection: View {
+  let facts: [Fact]
+  var onSectionFocused: (() -> Void)? = nil
+
+  var body: some View {
+    if !facts.isEmpty {
+      VStack(alignment: .leading, spacing: 12) {
+        MediaItemSectionHeader("Facts")
+        VStack(alignment: .leading, spacing: 12) {
+          ForEach(facts) { fact in
+            FactRow(fact: fact, onSectionFocused: onSectionFocused)
+          }
+        }
+        .padding(.horizontal, MediaItemLayout.horizontalInset)
+      }
+    }
+  }
+}
+
+private struct FactRow: View {
+  let fact: Fact
+  var onSectionFocused: (() -> Void)? = nil
+  @State private var isRevealed = false
+
+  var body: some View {
+    Group {
+      if fact.isSpoiler && !isRevealed {
+        Button {
+          isRevealed = true
+        } label: {
+          Text("Tap to reveal spoiler")
+            .italic()
+            .foregroundStyle(Color.KinoPub.subtitle)
+        }
+        .buttonStyle(.plain)
+      } else {
+        Text(fact.text)
+          .foregroundStyle(Color.KinoPub.text)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+    }
+#if os(tvOS)
+    .focusable(true)
+    .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+  }
 }
 
 // MARK: - Information columns
@@ -525,15 +867,6 @@ struct MediaItemInfoColumns: View {
       sections.append(InfoSection(id: "status",
                                   caption: "MediaItem_Status",
                                   values: [InfoValue(id: "status", title: statusKey.localized)]))
-    }
-
-    if mediaItem.views > 0 {
-      sections.append(InfoSection(
-        id: "views",
-        caption: "MediaItem_Views",
-        values: [InfoValue(id: "views",
-                           title: mediaItem.views.formatted(.number.grouping(.automatic)))]
-      ))
     }
 
     var flagValues: [InfoValue] = []
@@ -1126,8 +1459,8 @@ struct MediaItemPlotView: View {
       .frame(maxWidth: Self.maxWidth, alignment: .leading)
       // Measured whichever branch is showing, so the decision keeps up with the plot
       // changing and with the frame it is laid out in.
-      .onPreferenceChange(PlotClampedHeightKey.self) { clampedHeight = $0 }
-      .onPreferenceChange(PlotFullHeightKey.self) { fullHeight = $0 }
+      // .onPreferenceChange(PlotClampedHeightKey.self) { clampedHeight = $0 }
+      // .onPreferenceChange(PlotFullHeightKey.self) { fullHeight = $0 }
   }
 
   @ViewBuilder
@@ -1139,7 +1472,12 @@ struct MediaItemPlotView: View {
       paragraph(showsMore: isTruncated)
     }
     .buttonStyle(ExpandableButtonStyle())
-    .focused($focus, equals: .heroOther)
+    .focused($focus, equals: .plot)
+    .onMoveCommand { direction in
+      if direction == .down {
+        focus = .exitToContent
+      }
+    }
     .sheet(isPresented: $showsFullText) {
       plotSheet
     }
@@ -1165,7 +1503,7 @@ struct MediaItemPlotView: View {
     MediaItemDetailSheet(title: Text(title)) {
       Text(plot)
         .font(MediaItemSheetLayout.bodyFont)
-        .foregroundStyle(Color.KinoPub.text)
+        .foregroundStyle(Color.white)
         .multilineTextAlignment(.leading)
     }
   }
@@ -1174,6 +1512,7 @@ struct MediaItemPlotView: View {
     HStack(alignment: .lastTextBaseline, spacing: 14) {
       Text(plot)
         .font(Self.font)
+        .foregroundStyle(Color.white)
         .lineLimit(Self.lineLimit)
         .multilineTextAlignment(.leading)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1181,36 +1520,37 @@ struct MediaItemPlotView: View {
         // unclamped in the same width beside it. Both are backgrounds of the visible
         // line, so both are proposed the width it actually got — the width already
         // narrowed by the "More" label when one is shown.
-        .background {
-          GeometryReader { geometry in
-            Color.clear.preference(key: PlotClampedHeightKey.self, value: geometry.size.height)
-          }
-        }
-        .background {
-          Text(plot)
-            .font(Self.font)
-            .multilineTextAlignment(.leading)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background {
-              GeometryReader { geometry in
-                Color.clear.preference(key: PlotFullHeightKey.self, value: geometry.size.height)
-              }
-            }
-            .hidden()
-        }
+        // .background {
+        //   GeometryReader { geometry in
+        //     Color.clear.preference(key: PlotClampedHeightKey.self, value: geometry.size.height)
+        //   }
+        // }
+        // .background {
+        //   Text(plot)
+        //     .font(Self.font)
+        //     .multilineTextAlignment(.leading)
+        //     .fixedSize(horizontal: false, vertical: true)
+        //     .frame(maxWidth: .infinity, alignment: .leading)
+        //     .background {
+        //       GeometryReader { geometry in
+        //         Color.clear.preference(key: PlotFullHeightKey.self, value: geometry.size.height)
+        //       }
+        //     }
+        //     .hidden()
+        // }
 
       // Only laid out when shown: with the plot fitting there is nothing more to read,
       // so the label is gone rather than reserved-and-invisible — its width no longer
       // narrows a paragraph that has room to spare.
-      if showsMore {
-        Text("More")
-          .font(Self.moreFont.weight(.semibold))
-          .textCase(.uppercase)
-          .tracking(Self.moreTracking)
-          .opacity(Self.moreOpacity)
-          .fixedSize()
-      }
+      
+      // if showsMore {
+      //   Text("More")
+      //     .font(Self.moreFont.weight(.semibold))
+      //     .textCase(.uppercase)
+      //     .tracking(Self.moreTracking)
+      //     .opacity(Self.moreOpacity)
+      //     .fixedSize()
+      // }
     }
   }
 
@@ -1224,12 +1564,13 @@ struct MediaItemPlotView: View {
   static let moreFont: Font = .caption2
 
 #if os(tvOS)
-  static let lineLimit = 3
-  static let maxWidth: CGFloat = 900
-  static let moreTracking: CGFloat = 1.2
-#else
-  static let lineLimit = 3
+  static let lineLimit = 4
+  /// Parent hero column caps width; this is the soft ceiling inside the centre column.
   static let maxWidth: CGFloat = 560
+  static let moreTracking: CGFloat = 1
+#else
+  static let lineLimit = 4
+  static let maxWidth: CGFloat = 420
   static let moreTracking: CGFloat = 0.8
 #endif
 }

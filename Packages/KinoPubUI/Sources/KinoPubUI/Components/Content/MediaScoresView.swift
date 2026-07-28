@@ -6,26 +6,42 @@
 import Foundation
 import SwiftUI
 
-/// A rating source's logo, template-rendered so it takes the surrounding tint.
-/// Public because the detail page labels its score tiles with the same marks.
+/// A rating source's logo. Template for tinted metadata lines; colour assets for
+/// the detail score tiles.
 public struct MediaScoreLogo: View {
 
   public enum Source: String {
     case imdb
     case kinopoisk
+
+    fileprivate var colorAssetName: String {
+      switch self {
+      case .imdb: return "imdb_color"
+      case .kinopoisk: return "kinopoisk_color_2"
+      }
+    }
+  }
+
+  public enum Style {
+    /// Single-colour glyph that takes the surrounding foreground.
+    case template
+    /// Full-colour brand mark from the asset catalogue.
+    case color
   }
 
   private let source: Source
   private let height: CGFloat
+  private let style: Style
 
-  public init(_ source: Source, height: CGFloat) {
+  public init(_ source: Source, height: CGFloat, style: Style = .template) {
     self.source = source
     self.height = height
+    self.style = style
   }
 
   public var body: some View {
-    Image(source.rawValue, bundle: .module)
-      .renderingMode(.template)
+    Image(style == .color ? source.colorAssetName : source.rawValue, bundle: .module)
+      .renderingMode(style == .color ? .original : .template)
       .resizable()
       .aspectRatio(contentMode: .fit)
       .frame(height: height)

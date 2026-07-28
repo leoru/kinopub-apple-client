@@ -11,9 +11,11 @@ import AppKit
 public extension View {
   /// macOS: swap in the pointing-hand cursor while the pointer is over the view.
   /// No-op elsewhere — iPad pointer hover still works via `onHover` on the caller.
-  func pointingHandCursorOnHover() -> some View {
+  /// Pass `enabled: false` when the view looks interactive but does not open anything.
+  func pointingHandCursorOnHover(enabled: Bool = true) -> some View {
 #if os(macOS)
     onHover { hovering in
+      guard enabled else { return }
       if hovering {
         NSCursor.pointingHand.push()
       } else {

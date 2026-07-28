@@ -18,6 +18,13 @@ import KinoPubMetadata
 enum MediaItemFocusTarget: Hashable {
   case play
   case heroOther
+  case plot
+  /// Invisible landing below the hero plot — Down from the synopsis hits this, then
+  /// we flip to the content slide. Without it, focus cannot reach the clipped slide.
+  case exitToContent
+  /// First control on the content slide (season tab or ratings). Held explicitly so
+  /// `defaultFocus` cannot yank us back to Play and re-show the hero.
+  case content
 }
 
 #if os(tvOS)
@@ -35,6 +42,9 @@ enum MediaItemContentAnchor: String, Hashable {
   case top
   case ratings
   case cast
+  case awards
+  case photos
+  case facts
   case similar
   case info
 }
@@ -55,6 +65,8 @@ struct MediaItemView: View {
   @State private var slide: MediaItemSlide = .hero
   @State private var contentAnchor: MediaItemContentAnchor = .top
   @State private var contentSnapToken: Int = 0
+  @State private var contentEntryToken: Int = 0
+  @FocusState private var contentUpBridgeFocused: Bool
 #endif
 
   /// The content arrives after the first render, so the focus engine has nothing to
@@ -103,6 +115,12 @@ struct MediaItemView: View {
 #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
 #endif
+#if os(macOS)
+    // Let the hero show through the window toolbar — same idea as Photos / Music on Mac.
+    // Hidden background + dark scheme keeps the back chevron readable over artwork.
+    .toolbarBackground(.hidden, for: .windowToolbar)
+    .toolbarColorScheme(.dark, for: .windowToolbar)
+#endif
     .task {
       itemModel.fetchData()
     }
@@ -119,9 +137,35 @@ struct MediaItemView: View {
     }
 #if os(tvOS)
     .onChange(of: focus) { newFocus in
-      if newFocus != nil {
+      switch newFocus {
+      case .exitToContent:
+        // Flip first, then park focus on a real content control. Clearing to nil alone
+        // lets `defaultFocus(.play)` reclaim the remote and bounce us back to the hero.
+        activateContent(.top)
+        contentEntryToken &+= 1
+        Task { @MainActor in
+          try? await Task.sleep(for: .milliseconds(32))
+          if hasSeasons {
+            // SeasonsRailView reacts to contentEntryToken and focuses a season tab.
+            focus = nil
+          } else {
+            focus = .content
+          }
+        }
+      case .content:
+        if slide != .content {
+          activateContent(contentAnchor)
+        }
+      case .play, .heroOther, .plot:
         showHeroSlide()
+      case nil:
+        break
       }
+    }
+    .onChange(of: contentUpBridgeFocused) { focused in
+      guard focused else { return }
+      showHeroSlide()
+      focus = .play
     }
 #endif
     .onChange(of: isHeroOnScreen) { onScreen in
@@ -158,6 +202,10 @@ struct MediaItemView: View {
         heroSlide
           .frame(width: size.width, height: size.height)
           .focusSection()
+          // While the content slide owns the page, keep hero controls out of the
+          // focus engine — otherwise Play (still in the tree, just offset away)
+          // steals focus and `onChange` flips us back.
+          .disabled(slide == .content)
 
         contentSlide
           .frame(width: size.width, height: size.height)
@@ -196,12 +244,24 @@ struct MediaItemView: View {
             .frame(height: 0)
             .id(MediaItemContentAnchor.top)
 
+#if os(tvOS)
+          // Geometric Up from the first content band lands here, then we restore the hero.
+          Color.clear
+            .frame(maxWidth: .infinity)
+            .frame(height: 8)
+            .focusable()
+            .focused($contentUpBridgeFocused)
+            .focusEffectDisabled()
+            .accessibilityHidden(true)
+#endif
+
           if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
             SeasonsRailView(seasons: seasons,
                             linkProvider: itemModel.linkProvider,
                             seriesTitle: itemModel.mediaItem.localizedTitle,
                             showsChrome: true,
                             onSectionFocused: { activateContent(.top) },
+                            pageEntryToken: contentEntryToken,
                             onHide: { episode, season in
                               itemModel.hide(episode: episode, season: season)
                             },
@@ -218,7 +278,8 @@ struct MediaItemView: View {
                                   showsHeader: true,
                                   onSectionFocused: {
                                     activateContent(hasSeasons ? .ratings : .top)
-                                  })
+                                  },
+                                  pageEntryFocus: hasSeasons ? nil : $focus)
             .id(MediaItemContentAnchor.ratings)
 
           MediaItemCastSection(mediaItem: itemModel.mediaItem,
@@ -226,6 +287,18 @@ struct MediaItemView: View {
                                externalMetadata: itemModel.externalMetadata,
                                onSectionFocused: { activateContent(.cast) })
             .id(MediaItemContentAnchor.cast)
+
+          MediaItemAwardsSection(awards: itemModel.externalMetadata.awards,
+                                 onSectionFocused: { activateContent(.awards) })
+            .id(MediaItemContentAnchor.awards)
+
+          MediaItemPhotosSection(stills: itemModel.externalMetadata.stills,
+                                 onSectionFocused: { activateContent(.photos) })
+            .id(MediaItemContentAnchor.photos)
+
+          MediaItemFactsSection(facts: itemModel.externalMetadata.facts,
+                                onSectionFocused: { activateContent(.facts) })
+            .id(MediaItemContentAnchor.facts)
 
           MediaItemSimilarSection(items: itemModel.similarItems,
                                   linkProvider: itemModel.linkProvider,
@@ -322,6 +395,9 @@ struct MediaItemView: View {
           MediaItemCastSection(mediaItem: itemModel.mediaItem,
                                linkProvider: itemModel.linkProvider,
                                externalMetadata: itemModel.externalMetadata)
+          MediaItemAwardsSection(awards: itemModel.externalMetadata.awards)
+          MediaItemPhotosSection(stills: itemModel.externalMetadata.stills)
+          MediaItemFactsSection(facts: itemModel.externalMetadata.facts)
           MediaItemSimilarSection(items: itemModel.similarItems, linkProvider: itemModel.linkProvider)
           MediaItemInfoColumns(mediaItem: itemModel.mediaItem,
                                externalMetadata: itemModel.externalMetadata)

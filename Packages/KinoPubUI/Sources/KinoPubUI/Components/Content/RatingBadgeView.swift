@@ -78,14 +78,13 @@ public struct RatingBadgeView: View {
 
       Text(rating.formatted)
         .font(.system(size: Self.fontSize, weight: .bold))
-//        .monospacedDigit()
-        .foregroundStyle( rating.tier.showsWings ? .black :.white)
+        .foregroundStyle(rating.tier.showsWings ? .black : .white)
 
       if rating.tier.showsWings {
         wing(mirrored: true)
       }
     }
-    .padding(.horizontal, rating.tier.showsWings ? Self.horizontalPadding/2 : Self.horizontalPadding)
+    .padding(.horizontal, rating.tier.showsWings ? Self.horizontalPadding / 2 : Self.horizontalPadding)
     .padding(.vertical, Self.verticalPadding)
     .background(rating.tier.color, in: Capsule())
   }
@@ -113,11 +112,60 @@ public struct RatingBadgeView: View {
 #endif
 }
 
+/// Large aggregate score for the detail ratings row: coloured digits and laurel
+/// wings when the tier earns them — not the poster capsule.
+public struct AggregateRatingLabel: View {
+
+  private let rating: Rating
+
+  public init(rating: Rating) {
+    self.rating = rating
+  }
+
+  public var body: some View {
+    HStack(spacing: Self.wingSpacing) {
+      if rating.tier.showsWings {
+        wing(mirrored: false)
+      }
+
+      Text(rating.formatted)
+        .font(.system(size: Self.fontSize, weight: .bold))
+        .monospacedDigit()
+        .foregroundStyle(rating.tier.color)
+
+      if rating.tier.showsWings {
+        wing(mirrored: true)
+      }
+    }
+  }
+
+  private func wing(mirrored: Bool) -> some View {
+    Image("wing", bundle: .module)
+      .renderingMode(.template)
+      .resizable()
+      .aspectRatio(contentMode: .fit)
+      .frame(height: Self.wingHeight)
+      .foregroundStyle(rating.tier.color)
+      .scaleEffect(x: mirrored ? -1 : 1)
+  }
+
+#if os(tvOS)
+  static let fontSize: CGFloat = 44
+  static let wingHeight: CGFloat = 36
+  static let wingSpacing: CGFloat = 6
+#else
+  static let fontSize: CGFloat = 28
+  static let wingHeight: CGFloat = 22
+  static let wingSpacing: CGFloat = 4
+#endif
+}
+
 #Preview {
   VStack(alignment: .leading, spacing: 12) {
     ForEach([9.1, 7.4, 6.2, 4.8], id: \.self) { score in
       if let rating = Rating(imdb: score, kinopoisk: score) {
         RatingBadgeView(rating: rating)
+        AggregateRatingLabel(rating: rating)
       }
     }
   }
