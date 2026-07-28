@@ -37,9 +37,14 @@ typealias AppContextProtocol = AuthorizationServiceProvider
 & UserServiceProvider
 & UserActionsServiceProvider
 & MetadataServiceProvider
+& KinopoiskKeyProviderProvider
 
 protocol MetadataServiceProvider {
   var metadataService: MetadataService { get }
+}
+
+protocol KinopoiskKeyProviderProvider {
+  var kinopoiskKeyProvider: KinopoiskKeyProvider { get }
 }
 
 // MARK: - AppContext
@@ -57,7 +62,8 @@ struct AppContext: AppContextProtocol {
   var downloadedFilesDatabase: DownloadedFilesDatabase<DownloadMeta>
   var actionsService: UserActionsService
   var metadataService: MetadataService
-  
+  var kinopoiskKeyProvider: KinopoiskKeyProvider
+
   static let shared: AppContext = {
     let configuration = BundleConfiguration()
     let keychainStorage = KeychainStorageImpl()
@@ -78,8 +84,10 @@ struct AppContext: AppContextProtocol {
     let metadataConfig = MetadataConfiguration(
       proxyBaseURL: configuration.tmdbProxyBaseURL.flatMap(URL.init(string:))
     )
+    let kinopoiskKeyProvider = KinopoiskKeyProvider()
     let metadataService = MetadataService(sources: [
-      TMDBSource(configuration: metadataConfig)
+      TMDBSource(configuration: metadataConfig),
+      KinopoiskSource(keyProvider: kinopoiskKeyProvider)
     ])
 
     return AppContext(configuration: configuration,
@@ -92,7 +100,8 @@ struct AppContext: AppContextProtocol {
                       downloadManager: downloadManager,
                       downloadedFilesDatabase: downloadedFilesDatabase,
                       actionsService: UserActionsServiceImpl(apiClient: apiClient),
-                      metadataService: metadataService)
+                      metadataService: metadataService,
+                      kinopoiskKeyProvider: kinopoiskKeyProvider)
   }()
   
   // MARK: - API Client building

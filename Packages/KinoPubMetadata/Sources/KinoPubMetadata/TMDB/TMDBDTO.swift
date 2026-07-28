@@ -46,9 +46,17 @@ struct TMDBTitleDetails: Codable, Sendable {
   let id: Int
   let overview: String?
   let tagline: String?
+  let homepage: String?
   let status: String?
   let inProduction: Bool?
   let genres: [TMDBNamed]?
+  /// Movie-only.
+  let budget: Int?
+  let revenue: Int?
+  let productionCompanies: [TMDBCompany]?
+  /// TV-only — the distribution service (HBO, Netflix...), distinct from who
+  /// produced it.
+  let networks: [TMDBCompany]?
   let credits: TMDBCredits?
   let aggregateCredits: TMDBCredits?
   let images: TMDBImages?
@@ -61,14 +69,28 @@ struct TMDBTitleDetails: Codable, Sendable {
   let lastEpisodeToAir: TMDBEpisodeAir?
 
   enum CodingKeys: String, CodingKey {
-    case id, overview, tagline, status, genres, credits, images, videos, keywords
+    case id, overview, tagline, homepage, status, genres, budget, revenue, networks
+    case credits, images, videos, keywords
     case inProduction = "in_production"
+    case productionCompanies = "production_companies"
     case aggregateCredits = "aggregate_credits"
     case externalIds = "external_ids"
     case releaseDates = "release_dates"
     case contentRatings = "content_ratings"
     case nextEpisodeToAir = "next_episode_to_air"
     case lastEpisodeToAir = "last_episode_to_air"
+  }
+}
+
+struct TMDBCompany: Codable, Sendable {
+  let name: String?
+  let logoPath: String?
+  let originCountry: String?
+
+  enum CodingKeys: String, CodingKey {
+    case name
+    case logoPath = "logo_path"
+    case originCountry = "origin_country"
   }
 }
 

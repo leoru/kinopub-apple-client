@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		957B7DB6C328FC72EA807FB4 /* KinopoiskKeyStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */; };
+		9BB427D377EF668A2FFC1A10 /* KinopoiskSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */; };
+		A7EDB3D1A6A6B06830D80416 /* KinopoiskKeySettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F6301ED273E06AFCEBCC48 /* KinopoiskKeySettingsModel.swift */; };
 		CC01461B2A783DF900F858AF /* NavigationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461A2A783DF900F858AF /* NavigationState.swift */; };
 		CC01461D2A783EEF00F858AF /* NavigationTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461C2A783EEF00F858AF /* NavigationTabs.swift */; };
 		CC01461F2A783F8400F858AF /* Routes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461E2A783F8400F858AF /* Routes.swift */; };
@@ -36,7 +39,6 @@
 		CC71E7062A6DD119004AFB3F /* KinoPubKit in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7052A6DD119004AFB3F /* KinoPubKit */; };
 		CC71E7082A6DD119004AFB3F /* KinoPubLogging in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7072A6DD119004AFB3F /* KinoPubLogging */; };
 		CC71E70A2A6DD119004AFB3F /* KinoPubUI in Frameworks */ = {isa = PBXBuildFile; productRef = CC71E7092A6DD119004AFB3F /* KinoPubUI */; };
-		CCA200012D001001 /* KinoPubMetadata in Frameworks */ = {isa = PBXBuildFile; productRef = CCA200012D001002 /* KinoPubMetadata */; };
 		CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC71E7252A6DD643004AFB3F /* AppDelegate.swift */; };
 		CC748DEE2A83CCA200D87C0C /* UserServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC748DED2A83CCA200D87C0C /* UserServiceImpl.swift */; };
 		CC7734482A86BBBC00FE56CF /* TabsNavigationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7734472A86BBBC00FE56CF /* TabsNavigationView.swift */; };
@@ -45,12 +47,6 @@
 		CC7FCE872A72ACB700DFC0A9 /* AuthModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */; };
 		CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */; };
 		CC7FCE942A730DA400DFC0A9 /* PopupView in Frameworks */ = {isa = PBXBuildFile; productRef = CC7FCE932A730DA400DFC0A9 /* PopupView */; };
-		CCA100012D0001 /* HLSManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0002 /* HLSManifest.swift */; };
-		CCA100012D0003 /* StreamSurvey.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0004 /* StreamSurvey.swift */; };
-		CCA100012D0021 /* HLSAudioLabeler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0020 /* HLSAudioLabeler.swift */; };
-		CCA100012D0005 /* StreamSurveyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0006 /* StreamSurveyView.swift */; };
-		CCA100012D0010 /* TVProfileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0011 /* TVProfileSettingsView.swift */; };
-		CCA200012D001010 /* DataSourcesAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA200012D001011 /* DataSourcesAttributionView.swift */; };
 		CC8202FD2A8656E70041079A /* BestVideoQualityFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8202FC2A8656E70041079A /* BestVideoQualityFinder.swift */; };
 		CC8203002A8657BA0041079A /* Reachability in Frameworks */ = {isa = PBXBuildFile; productRef = CC8202FF2A8657BA0041079A /* Reachability */; };
 		CC87E6372B020F730096BDC3 /* PlayerTimeObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC87E6362B020F730096BDC3 /* PlayerTimeObserver.swift */; };
@@ -81,6 +77,13 @@
 		CCA100012C6F000100000C05 /* BookmarkFolderTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C06 /* BookmarkFolderTabView.swift */; };
 		CCA100012C6F000100000C07 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C08 /* LibraryView.swift */; };
 		CCA100012C6F000100000C09 /* PersonalLibraryCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C0A /* PersonalLibraryCatalog.swift */; };
+		CCA100012D0001 /* HLSManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0002 /* HLSManifest.swift */; };
+		CCA100012D0003 /* StreamSurvey.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0004 /* StreamSurvey.swift */; };
+		CCA100012D0005 /* StreamSurveyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0006 /* StreamSurveyView.swift */; };
+		CCA100012D0010 /* TVProfileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0011 /* TVProfileSettingsView.swift */; };
+		CCA100012D0021 /* HLSAudioLabeler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0020 /* HLSAudioLabeler.swift */; };
+		CCA200012D001001 /* KinoPubMetadata in Frameworks */ = {isa = PBXBuildFile; productRef = CCA200012D001002 /* KinoPubMetadata */; };
+		CCA200012D001010 /* DataSourcesAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA200012D001011 /* DataSourcesAttributionView.swift */; };
 		CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */; };
 		CCC70B8A2A7FC15F00274E5F /* BookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B892A7FC15F00274E5F /* BookmarkView.swift */; };
 		CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */; };
@@ -111,6 +114,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskKeyStorage.swift; sourceTree = "<group>"; };
+		76F6301ED273E06AFCEBCC48 /* KinopoiskKeySettingsModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskKeySettingsModel.swift; sourceTree = "<group>"; };
+		8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskSettingsSection.swift; sourceTree = "<group>"; };
 		CC01461A2A783DF900F858AF /* NavigationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationState.swift; sourceTree = "<group>"; };
 		CC01461C2A783EEF00F858AF /* NavigationTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationTabs.swift; sourceTree = "<group>"; };
 		CC01461E2A783F8400F858AF /* Routes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Routes.swift; sourceTree = "<group>"; };
@@ -145,12 +151,6 @@
 		CC78FC492A82D5D100C5BDFD /* DownloadedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadedItemView.swift; sourceTree = "<group>"; };
 		CC7FCE862A72ACB700DFC0A9 /* AuthModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModel.swift; sourceTree = "<group>"; };
 		CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClientError+Description.swift"; sourceTree = "<group>"; };
-		CCA100012D0002 /* HLSManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSManifest.swift; sourceTree = "<group>"; };
-		CCA100012D0004 /* StreamSurvey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurvey.swift; sourceTree = "<group>"; };
-		CCA100012D0020 /* HLSAudioLabeler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSAudioLabeler.swift; sourceTree = "<group>"; };
-		CCA100012D0006 /* StreamSurveyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurveyView.swift; sourceTree = "<group>"; };
-		CCA100012D0011 /* TVProfileSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVProfileSettingsView.swift; sourceTree = "<group>"; };
-		CCA200012D001011 /* DataSourcesAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSourcesAttributionView.swift; sourceTree = "<group>"; };
 		CC8202FC2A8656E70041079A /* BestVideoQualityFinder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BestVideoQualityFinder.swift; sourceTree = "<group>"; };
 		CC87E6362B020F730096BDC3 /* PlayerTimeObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerTimeObserver.swift; sourceTree = "<group>"; };
 		CC88E1E12A6586E600E9387F /* KinoPub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KinoPub.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -160,7 +160,6 @@
 		CC88E1EA2A6586E700E9387F /* KinoPubAppleClient.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KinoPubAppleClient.entitlements; sourceTree = "<group>"; };
 		CC88E1F62A6589DC00E9387F /* KinoPubBackend */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubBackend; path = Packages/KinoPubBackend; sourceTree = "<group>"; };
 		CC88E1F72A65A42B00E9387F /* KinoPubUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubUI; path = Packages/KinoPubUI; sourceTree = "<group>"; };
-		CCA200012D001003 /* KinoPubMetadata */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubMetadata; path = Packages/KinoPubMetadata; sourceTree = "<group>"; };
 		CCA100012C6F000100000002 /* SubtitlePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitlePreferences.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000004 /* SubtitleSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleSelector.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000006 /* SubtitleCueParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleCueParser.swift; sourceTree = "<group>"; };
@@ -185,6 +184,13 @@
 		CCA100012C6F000100000C06 /* BookmarkFolderTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkFolderTabView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C08 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C0A /* PersonalLibraryCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalLibraryCatalog.swift; sourceTree = "<group>"; };
+		CCA100012D0002 /* HLSManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSManifest.swift; sourceTree = "<group>"; };
+		CCA100012D0004 /* StreamSurvey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurvey.swift; sourceTree = "<group>"; };
+		CCA100012D0006 /* StreamSurveyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurveyView.swift; sourceTree = "<group>"; };
+		CCA100012D0011 /* TVProfileSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVProfileSettingsView.swift; sourceTree = "<group>"; };
+		CCA100012D0020 /* HLSAudioLabeler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSAudioLabeler.swift; sourceTree = "<group>"; };
+		CCA200012D001003 /* KinoPubMetadata */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubMetadata; path = Packages/KinoPubMetadata; sourceTree = "<group>"; };
+		CCA200012D001011 /* DataSourcesAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSourcesAttributionView.swift; sourceTree = "<group>"; };
 		CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidthThresholdReader.swift; sourceTree = "<group>"; };
 		CCC70B892A7FC15F00274E5F /* BookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkView.swift; sourceTree = "<group>"; };
 		CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkModel.swift; sourceTree = "<group>"; };
@@ -360,6 +366,8 @@
 				CC71E6F72A6C0626004AFB3F /* ProfileView.swift */,
 				CCA100012D0011 /* TVProfileSettingsView.swift */,
 				CCA200012D001011 /* DataSourcesAttributionView.swift */,
+				76F6301ED273E06AFCEBCC48 /* KinopoiskKeySettingsModel.swift */,
+				8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */,
 			);
 			path = Profile;
 			sourceTree = "<group>";
@@ -670,6 +678,7 @@
 			children = (
 				CCF388372A71C87E00242581 /* KeychainStorage.swift */,
 				CCF3883B2A71C8D600242581 /* KeychainStorageImpl.swift */,
+				0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */,
 			);
 			path = KeychainStorage;
 			sourceTree = "<group>";
@@ -860,6 +869,9 @@
 				CCE9C6DC2A73DB87007923C0 /* BookmarksCatalog.swift in Sources */,
 				CC2115212A7AA6F8001996BD /* String+Localization.swift in Sources */,
 				CCF1F24E2A8526CF002DA9AA /* Bundle+Data.swift in Sources */,
+				957B7DB6C328FC72EA807FB4 /* KinopoiskKeyStorage.swift in Sources */,
+				A7EDB3D1A6A6B06830D80416 /* KinopoiskKeySettingsModel.swift in Sources */,
+				9BB427D377EF668A2FFC1A10 /* KinopoiskSettingsSection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1017,10 +1029,10 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soda.kinopub;
 				PRODUCT_NAME = KinoPub;
@@ -1064,10 +1076,10 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soda.kinopub;
 				PRODUCT_NAME = KinoPub;
@@ -1148,10 +1160,6 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = KinoPubUI;
 		};
-		CCA200012D001002 /* KinoPubMetadata */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = KinoPubMetadata;
-		};
 		CC7FCE932A730DA400DFC0A9 /* PopupView */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */;
@@ -1161,6 +1169,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */;
 			productName = Reachability;
+		};
+		CCA200012D001002 /* KinoPubMetadata */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KinoPubMetadata;
 		};
 		CCF388342A71C83500242581 /* KeychainAccess */ = {
 			isa = XCSwiftPackageProductDependency;

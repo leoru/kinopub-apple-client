@@ -39,6 +39,7 @@ final class TMDBDTODecodingTests: XCTestCase {
     // ru preferred over higher-voted en/null
     XCTAssertEqual(details.images?.bestLogoPath(preferring: ["ru", "en", nil]), "/ruLogo.png")
     XCTAssertEqual(details.images?.bestLogoPath(preferring: ["en", nil]), "/enLogo.png")
+    XCTAssertEqual(details.tagline, "Mischief. Mayhem. Soap.")
   }
 
   func testTVAggregateCreditsAndAgeRating() throws {

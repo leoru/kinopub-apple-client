@@ -2504,6 +2504,29 @@
         }
       }
     },
+    "MediaItem_ViewsInternal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "on KinoPub"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KinoPub"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "на KinoPub"
+          }
+        }
+      }
+    },
     "MediaItem_Voice" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2889,6 +2912,23 @@
         }
       }
     },
+    "No playable link for this item" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No playable link for this item"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "У этого элемента нет ссылки для воспроизведения"
+          }
+        }
+      }
+    },
     "No Results" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2931,6 +2971,23 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Нет результатов"
+          }
+        }
+      }
+    },
+    "Nothing is playing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing is playing"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ничего не воспроизводится"
           }
         }
       }
@@ -3067,6 +3124,9 @@
         }
       }
     },
+    "Player" : {
+
+    },
     "Popular" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3154,6 +3214,23 @@
         }
       }
     },
+    "Press Menu to go back" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Press Menu to go back"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите Menu, чтобы вернуться"
+          }
+        }
+      }
+    },
     "Profile" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3173,6 +3250,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Профиль"
+          }
+        }
+      }
+    },
+    "Rating" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rating"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Įvertinimas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рейтинг"
           }
         }
       }
@@ -3540,6 +3640,141 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Фото актёров, даты серий и логотипы названий — из The Movie Database."
+          }
+        }
+      }
+    },
+    "Kinopoisk" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kinopoisk"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kinopoisk"
+          }
+        }
+      }
+    },
+    "API key" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API key"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API-ключ"
+          }
+        }
+      }
+    },
+    "Validate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Validate"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверить"
+          }
+        }
+      }
+    },
+    "Awards" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Awards"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Награды"
+          }
+        }
+      }
+    },
+    "Photos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фото"
+          }
+        }
+      }
+    },
+    "Facts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Facts"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Факты"
+          }
+        }
+      }
+    },
+    "Tap to reveal spoiler" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to reveal spoiler"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите, чтобы увидеть спойлер"
+          }
+        }
+      }
+    },
+    "Settings_Tip_Kinopoisk" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add your own Kinopoisk Unofficial API key for photos, facts and awards on detail pages."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Добавьте свой ключ Kinopoisk Unofficial API для фото, фактов и наград на странице тайтла."
           }
         }
       }
@@ -3949,6 +4184,26 @@
     "themoviedb.org" : {
       "comment" : "The name of the TMDB website.",
       "isCommentAutoGenerated" : true
+    },
+    "kinopoiskapiunofficial.tech" : {
+      "comment" : "The name of the Kinopoisk Unofficial API website.",
+      "isCommentAutoGenerated" : true
+    },
+    "Photos, facts and awards are fetched using your own Kinopoisk Unofficial API key — a third-party service, not an official Kinopoisk product." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos, facts and awards are fetched using your own Kinopoisk Unofficial API key — a third-party service, not an official Kinopoisk product."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фото, факты и награды загружаются с помощью вашего собственного ключа Kinopoisk Unofficial API — стороннего сервиса, не являющегося официальным продуктом Kinopoisk."
+          }
+        }
+      }
     },
     "This product uses the TMDB API but is not endorsed or certified by TMDB." : {
       "localizations" : {

@@ -30,6 +30,7 @@ struct ProfileView: View {
 #if os(tvOS)
     TVProfileSettingsView(
       model: model,
+      kinopoiskKeyProvider: appContext.kinopoiskKeyProvider,
       selectedLanguage: $selectedLanguage,
       preferEnglishSubtitles: $preferEnglishSubtitles,
       preferNonCCSubtitles: $preferNonCCSubtitles,
@@ -69,6 +70,8 @@ struct ProfileView: View {
 
             languageSection
             playbackSection
+
+            KinopoiskSettingsSection(keyProvider: appContext.kinopoiskKeyProvider)
 
             Section(header: Text("Data sources")) {
               DataSourcesAttributionView()

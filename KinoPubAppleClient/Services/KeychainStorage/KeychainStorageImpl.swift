@@ -10,9 +10,15 @@ import KeychainAccess
 
 final class KeychainStorageImpl: KeychainStorage {
 
+  private let service: String
+
   private lazy var keychain: Keychain = {
-    return Keychain(service: "com.kunst.kinopub")
+    return Keychain(service: service)
   }()
+
+  init(service: String = "com.kunst.kinopub") {
+    self.service = service
+  }
 
   public func object<Value>(for key: Key<Value>) -> Value? where Value: Decodable, Value: Encodable {
     do {

@@ -298,7 +298,7 @@ microiptv leaves a lot on the table. We shouldn't.
 - [x] **The trailer plays behind the hero artwork** — muted, a beat after the page settles, filling
       the frame with no transport chrome, dropping back to the artwork when it ends
 - [ ] Trailers on the detail page as a proper section, not only the hero takeover
-- [ ] Awards
+- [x] Awards — via Kinopoisk Unofficial (see Phase C½), not kino.pub's own payload
 - [ ] Collections (`GET /v1/collections`, `/v1/collections/view?id=`)
 - [x] **Every production country**, not just the first — microiptv shows one
 - [x] Ratings section: IMDb and Kinopoisk with vote counts. kino.pub's own thumbs up/down tally is
@@ -332,20 +332,47 @@ rather than the system language). What's missing is memory of what the user pick
       bottom — eyes that have to travel across the screen miss both. Each track keeps its own timings.
       Profile → Playback only seeds the default second language for items nothing was picked on yet.
 
-### Phase C½ — External metadata (TMDB first, Kinopoisk later)
+### Phase C½ — External metadata (TMDB + Kinopoisk Unofficial)
 
 Cast photos, character names, title logos and episode air dates come from **TMDB** through
 `Packages/KinoPubMetadata` and a Cloudflare Worker proxy (`workers/tmdb-proxy/`). Matching is by
 `MediaItem.imdb`. Set `TMDBProxyBaseURL` in `Info.plist` after deploying the worker.
 
-**Kinopoisk API Unofficial** (`kinopoiskapiunofficial.tech`) remains the plan for Russian character
-names, awards, premiere dates and box office — richer RU data TMDB doesn't carry.
+**Kinopoisk API Unofficial** (`kinopoiskapiunofficial.tech`) is live as a second, per-user
+`MetadataSource` — each user pastes their own key in Settings (Profile → Kinopoisk on iOS/macOS,
+Profile → Kinopoisk on tvOS), validated on entry, stored in its own Keychain service so a kino.pub
+logout doesn't wipe it. It's a third-party service scraping Kinopoisk's data, not an official
+Kinopoisk product — confirmed no official API issues consumer keys at all. Client-only for now: no
+backend of ours is involved, no data leaves the device. Free tier caps at 500 requests/day per key
+(confirmed live via the API's own error message) — plenty for a single user browsing normally, not
+enough for any kind of bulk pull on one key.
 
 - [x] TMDB package + proxy + cast photos / character names / title logos
 - [x] TMDB person details on the credits page (`/3/person/{id}` — bio, birthday, place of birth)
 - [x] Episode air dates + upcoming unplayable (Phase F via TMDB)
-- [ ] Kinopoisk Unofficial: Russian character names, awards, premiere dates
-- [ ] Confirm Kinopoisk keyless vs keyed endpoints
+- [x] TMDB tagline, budget/revenue, production companies / TV network — plumbed into
+      `TitleMetadata` (already part of the response TMDB was sending us, just never decoded before),
+      not yet surfaced in any UI section
+- [x] Kinopoisk Unofficial: per-user API key in Settings, validated (distinguishes invalid key from
+      "valid, but today's quota is used up"), own long-TTL (90-day) cache
+- [x] Kinopoisk Unofficial: awards, photo/stills gallery, "facts" section, Russian character names
+      merged into the existing cast rail — all as new detail-page sections, hidden when empty
+- [x] Confirmed keyed, not keyless — `X-API-KEY` header, free tier 500 requests/day
+- [ ] Kinopoisk Unofficial: premiere dates — not implemented
+- [ ] Kinopoisk Unofficial: box office — the API exposes it (`/films/{id}/box_office`), not wired
+      into the live per-user source yet (TMDB's own budget/revenue shipped instead, see above)
+- [ ] Kinopoisk Unofficial: deeper person-bio page enrichment (birthday, biography, spouses via
+      `/staff/{staffId}`) — deliberately deferred; needs a second person-id slot alongside
+      `CastMember.tmdbPersonId`, kino.pub has no native person id to key off of today
+- [ ] Surface TMDB's tagline / box office / production company logo somewhere on the detail page
+      (data is ready, no UI yet)
+- [ ] "Donate" fetched Kinopoisk data back to a shared backend so it isn't gated by each user's own
+      500/day — explicitly postponed, no backend exists for this yet
+
+See `tools/kinopub-snapshot/` and `tools/kinopoisk-metadata/` for the offline side of this: a local
+snapshot of kino.pub's own catalog plus a separate bulk Kinopoisk-metadata puller (own API key, own
+500/day budget, unrelated to what ships in the app) — building toward a locally cached, matched
+metadata library independent of any one third-party service's rate limits.
 
 ### Phase D — Exploratory: IMDb-sourced top lists
 

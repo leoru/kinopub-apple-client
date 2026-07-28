@@ -12,6 +12,20 @@ public struct Artwork: Sendable, Hashable {
   }
 }
 
+/// A studio (movies) or distribution network/service (TV — HBO, Netflix...).
+public struct ProductionCompany: Sendable, Hashable, Identifiable {
+  public var id: String { name }
+  public let name: String
+  public let logoURL: URL?
+  public let originCountry: String?
+
+  public init(name: String, logoURL: URL? = nil, originCountry: String? = nil) {
+    self.name = name
+    self.logoURL = logoURL
+    self.originCountry = originCountry
+  }
+}
+
 public struct CastMember: Sendable, Hashable, Identifiable {
   public var id: String { "\(tmdbPersonId.map(String.init) ?? name):\(department ?? "")" }
 
@@ -130,6 +144,29 @@ public struct SkipSegments: Sendable, Hashable {
   }
 }
 
+/// A gallery image (stills, not the single hero poster/backdrop in `Artwork`).
+public struct StillImage: Sendable, Hashable, Identifiable {
+  public var id: String { url.absoluteString }
+  public let url: URL
+  public let previewURL: URL?
+
+  public init(url: URL, previewURL: URL? = nil) {
+    self.url = url
+    self.previewURL = previewURL
+  }
+}
+
+public struct Fact: Sendable, Hashable, Identifiable {
+  public var id: String { text }
+  public let text: String
+  public let isSpoiler: Bool
+
+  public init(text: String, isSpoiler: Bool = false) {
+    self.text = text
+    self.isSpoiler = isSpoiler
+  }
+}
+
 public struct TrailerRef: Sendable, Hashable {
   public let site: String
   public let key: String
@@ -153,6 +190,8 @@ public struct TitleMetadata: Sendable {
   public var artwork: Artwork = Artwork()
   public var schedule: [Int: [EpisodeSchedule]] = [:]
   public var awards: [Award] = []
+  public var stills: [StillImage] = []
+  public var facts: [Fact] = []
   public var nextEpisode: EpisodeRef?
   public var lastEpisode: EpisodeRef?
   public var status: String?
@@ -160,6 +199,12 @@ public struct TitleMetadata: Sendable {
   public var ageRating: String?
   public var keywords: [String] = []
   public var trailers: [TrailerRef] = []
+  public var tagline: String?
+  public var homepage: URL?
+  /// Movie-only; both nil for series (TMDB doesn't report box office for TV).
+  public var budget: Int?
+  public var revenue: Int?
+  public var productionCompanies: [ProductionCompany] = []
   public var tmdbId: Int?
   public var attribution: Set<MetadataSourceID> = []
 
@@ -178,6 +223,8 @@ public struct TitleMetadata: Sendable {
       if schedule[season] == nil { schedule[season] = episodes }
     }
     if awards.isEmpty { awards = other.awards }
+    if stills.isEmpty { stills = other.stills }
+    if facts.isEmpty { facts = other.facts }
     if nextEpisode == nil { nextEpisode = other.nextEpisode }
     if lastEpisode == nil { lastEpisode = other.lastEpisode }
     if status == nil { status = other.status }
@@ -185,6 +232,11 @@ public struct TitleMetadata: Sendable {
     if ageRating == nil { ageRating = other.ageRating }
     if keywords.isEmpty { keywords = other.keywords }
     if trailers.isEmpty { trailers = other.trailers }
+    if tagline == nil { tagline = other.tagline }
+    if homepage == nil { homepage = other.homepage }
+    if budget == nil { budget = other.budget }
+    if revenue == nil { revenue = other.revenue }
+    if productionCompanies.isEmpty { productionCompanies = other.productionCompanies }
     if tmdbId == nil { tmdbId = other.tmdbId }
     attribution.formUnion(other.attribution)
   }

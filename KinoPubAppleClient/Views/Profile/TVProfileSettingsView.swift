@@ -16,6 +16,7 @@ import KinoPubUI
 struct TVProfileSettingsView: View {
 
   @ObservedObject var model: ProfileModel
+  let kinopoiskKeyProvider: KinopoiskKeyProvider
   @Binding var selectedLanguage: String
   @Binding var preferEnglishSubtitles: Bool
   @Binding var preferNonCCSubtitles: Bool
@@ -49,6 +50,7 @@ struct TVProfileSettingsView: View {
       accountSection
       languageSection
       playbackSection
+      kinopoiskSection
       dataSourcesSection
 #if DEBUG
       diagnosticsSection
@@ -84,6 +86,8 @@ struct TVProfileSettingsView: View {
         },
         selection: $secondSubtitleLanguage
       )
+    case .kinopoisk:
+      TVKinopoiskKeyView(keyProvider: kinopoiskKeyProvider)
 #if DEBUG
     case .streamSurvey:
       StreamSurveyView()
@@ -158,6 +162,18 @@ struct TVProfileSettingsView: View {
       .buttonStyle(SettingsPillButtonStyle())
       .focused($focusedItem, equals: .secondLang)
       .disabled(!dualSubtitlesEnabled)
+    }
+  }
+
+  private var kinopoiskSection: some View {
+    SettingsSection("Kinopoisk") {
+      Button {
+        path.append(SettingsRoute.kinopoisk)
+      } label: {
+        SettingsPillLabel(title: "API key", showsChevron: true)
+      }
+      .buttonStyle(SettingsPillButtonStyle())
+      .focused($focusedItem, equals: .kinopoisk)
     }
   }
 
@@ -322,6 +338,7 @@ private struct SettingsSection<Content: View>: View {
 private enum SettingsRoute: Hashable {
   case language
   case secondSubtitleLanguage
+  case kinopoisk
 #if DEBUG
   case streamSurvey
 #endif
@@ -333,6 +350,7 @@ private enum SettingsFocusItem: Hashable {
   case nonCC
   case dual
   case secondLang
+  case kinopoisk
   case dataSources
   case logout
   case diagnostics
@@ -353,6 +371,8 @@ private struct SettingsTip {
       return SettingsTip(messageKey: "Settings_Tip_DualSubtitles")
     case .secondLang:
       return SettingsTip(messageKey: "Settings_Tip_SecondLanguage")
+    case .kinopoisk:
+      return SettingsTip(messageKey: "Settings_Tip_Kinopoisk")
     case .dataSources:
       return SettingsTip(messageKey: "Settings_Tip_DataSources")
     case .logout:
@@ -489,6 +509,52 @@ private struct SettingsChoiceView: View {
         focusedID = selection
       }
     }
+  }
+}
+
+// MARK: - Kinopoisk key destination
+
+/// First text-entry UI anywhere in this app — auth is device-code OAuth, so
+/// there was no existing pattern to follow. `TextField` does work on tvOS (the
+/// system on-screen keyboard comes up on focus+click), but typing a 30+ char
+/// key via Siri Remote is inherently clunky — an accepted compromise for now,
+/// same spirit as this app's other "unverified on real remote" callouts.
+private struct TVKinopoiskKeyView: View {
+  @StateObject private var model: KinopoiskKeySettingsModel
+  @FocusState private var isFieldFocused: Bool
+
+  init(keyProvider: KinopoiskKeyProvider) {
+    _model = StateObject(wrappedValue: KinopoiskKeySettingsModel(keyProvider: keyProvider))
+  }
+
+  var body: some View {
+    SettingsSplitLayout(title: "Kinopoisk", pageSymbol: "photo.stack", tipKey: "Settings_Tip_Kinopoisk") {
+      TextField("API key", text: $model.keyText)
+        .textFieldStyle(.plain)
+        .padding(.horizontal, Metrics.pillHorizontalPadding)
+        .padding(.vertical, Metrics.pillVerticalPadding)
+        .background(
+          Capsule(style: .continuous)
+            .fill(isFieldFocused ? Color.white : Color.KinoPub.selectionBackground)
+        )
+        .focused($isFieldFocused)
+
+      Button {
+        Task { await model.validate() }
+      } label: {
+        SettingsPillLabel(title: "Validate")
+      }
+      .buttonStyle(SettingsPillButtonStyle())
+      .disabled(!model.isValidateEnabled)
+
+      Text(model.statusText)
+        .font(.system(size: Metrics.tipPointSize))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, Metrics.pillHorizontalPadding)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+    .background(Color.KinoPub.background.ignoresSafeArea())
+    .defaultFocus($isFieldFocused, true)
   }
 }
 

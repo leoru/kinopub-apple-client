@@ -63,7 +63,7 @@ struct SearchView: View {
       }
       .searchable(text: $searchFieldText, placement: .automatic)
       .platformNavigationTitle(navigationTitleText)
-      .background(Color.KinoPub.background)
+//      .background(Color.KinoPub.background)
 #if !os(tvOS)
       .toolbar {
         if navigationState.canReturnFromSearch {

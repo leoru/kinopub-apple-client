@@ -11,10 +11,13 @@ public actor MetadataHTTPClient {
     self.decoder = JSONDecoder()
   }
 
-  public func getData(url: URL) async throws -> Data {
+  public func getData(url: URL, headers: [String: String] = [:]) async throws -> Data {
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
     request.setValue("application/json", forHTTPHeaderField: "Accept")
+    for (key, value) in headers {
+      request.setValue(value, forHTTPHeaderField: key)
+    }
 
     let (data, response) = try await session.data(for: request)
     guard let http = response as? HTTPURLResponse else {
@@ -26,8 +29,8 @@ public actor MetadataHTTPClient {
     return data
   }
 
-  public func get<T: Decodable>(_ type: T.Type, url: URL) async throws -> T {
-    let data = try await getData(url: url)
+  public func get<T: Decodable>(_ type: T.Type, url: URL, headers: [String: String] = [:]) async throws -> T {
+    let data = try await getData(url: url, headers: headers)
     return try decode(T.self, from: data)
   }
 

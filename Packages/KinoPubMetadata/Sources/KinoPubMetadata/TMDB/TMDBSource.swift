@@ -202,6 +202,23 @@ public final class TMDBSource: MetadataSource, @unchecked Sendable {
     meta.status = details.status
     meta.inProduction = details.inProduction
     meta.keywords = details.keywords?.all.compactMap(\.name) ?? []
+    meta.tagline = details.tagline?.isEmpty == false ? details.tagline : nil
+    meta.homepage = details.homepage.flatMap { $0.isEmpty ? nil : URL(string: $0) }
+    meta.budget = (details.budget ?? 0) > 0 ? details.budget : nil
+    meta.revenue = (details.revenue ?? 0) > 0 ? details.revenue : nil
+
+    // TV shows report their distribution service (HBO, Netflix...) as `networks`,
+    // not `production_companies` — that's who made it, not who's streaming it,
+    // and "which service is this on" is the more useful signal here.
+    let companies = (type == .tv ? details.networks : details.productionCompanies) ?? []
+    meta.productionCompanies = companies.compactMap { company in
+      guard let name = company.name, !name.isEmpty else { return nil }
+      return ProductionCompany(
+        name: name,
+        logoURL: imageURL(path: company.logoPath, size: .logoW500),
+        originCountry: company.originCountry
+      )
+    }
 
     let credits = type == .tv ? (details.aggregateCredits ?? details.credits) : details.credits
     meta.cast = (credits?.cast ?? []).compactMap(mapCast)
