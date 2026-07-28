@@ -52,13 +52,9 @@ public struct Bookmark: Codable {
     } else if let stringCount = try? container.decode(String.self, forKey: .count) {
       count = stringCount
     } else {
-      throw DecodingError.typeMismatch(
-        String.self,
-        DecodingError.Context(
-          codingPath: container.codingPath + [CodingKeys.count],
-          debugDescription: "Expected bookmark count to be a string or integer."
-        )
-      )
+      // `/v1/bookmarks/get-item-folders` returns folders with no `count` at all; a
+      // missing or unreadable count means "nothing to show", not a failed screen.
+      count = ""
     }
   }
 }
