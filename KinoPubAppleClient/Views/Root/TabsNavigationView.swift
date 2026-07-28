@@ -51,20 +51,14 @@ struct TabsNavigationView: View {
 #endif
 
   var body: some View {
-    Group {
-      if #available(iOS 18.0, tvOS 18.0, macOS 15.0, *) {
-        modernTabs
-      } else {
-        legacyTabs
+    modernTabs
+      .environmentObject(navigationState)
+      .environmentObject(errorHandler)
+      .task { await loadSidebarChrome() }
+      .onChange(of: navigationState.selectedTab) { _, _ in
+        guard !showSettings else { return }
+        Task { await syncSidebarFolders() }
       }
-    }
-    .environmentObject(navigationState)
-    .environmentObject(errorHandler)
-    .task { await loadSidebarChrome() }
-    .onChange(of: navigationState.selectedTab) { _ in
-      guard !showSettings else { return }
-      Task { await syncSidebarFolders() }
-    }
   }
 
   /// Re-selecting the current tab pops that tab's stack to root (Apple Music /
@@ -82,9 +76,8 @@ struct TabsNavigationView: View {
     )
   }
 
-  // MARK: - Modern TabView
+  // MARK: - TabView
 
-  @available(iOS 18.0, tvOS 18.0, macOS 15.0, *)
   @ViewBuilder
   private var modernTabs: some View {
 #if os(tvOS)
@@ -99,7 +92,6 @@ struct TabsNavigationView: View {
   // MARK: - tvOS (flat, profile first, circle icons)
 
 #if os(tvOS)
-  @available(tvOS 18.0, *)
   @ViewBuilder
   private var tvSidebarTabs: some View {
     if #available(tvOS 27.0, *) {
@@ -133,9 +125,8 @@ struct TabsNavigationView: View {
     }
   }
 
-  /// tvOS 18–26: no sidebar header API and no `Tab.badge` — profile is the first tab,
+  /// tvOS 26: no sidebar header API and no `Tab.badge` — profile is the first tab,
   /// days ride in the title; Library count likewise.
-  @available(tvOS 18.0, *)
   @ViewBuilder
   private var tvSidebarTabsWithProfileTab: some View {
     TabView(selection: tabSelection) {
@@ -154,7 +145,6 @@ struct TabsNavigationView: View {
     .tabViewStyle(.sidebarAdaptable)
   }
 
-  @available(tvOS 18.0, *)
   @TabContentBuilder<NavigationTabs>
   private var tvBrowseTabs: some TabContent<NavigationTabs> {
     Tab(value: NavigationTabs.search) {
@@ -244,7 +234,6 @@ struct TabsNavigationView: View {
   // MARK: - macOS (sections + footer + customization)
 
 #if os(macOS)
-  @available(macOS 15.0, *)
   @ViewBuilder
   private var macSidebarTabs: some View {
     TabView(selection: tabSelection) {
@@ -329,7 +318,6 @@ struct TabsNavigationView: View {
   // MARK: - iOS / iPad (Library combined; Downloads own tab)
 
 #if os(iOS)
-  @available(iOS 18.0, *)
   @ViewBuilder
   private var phonePadTabs: some View {
     TabView(selection: tabSelection) {
@@ -439,56 +427,6 @@ struct TabsNavigationView: View {
     let parts = name.split(separator: " ").prefix(2)
     let letters = parts.compactMap { $0.first.map(String.init) }
     return letters.isEmpty ? String(name.prefix(1)).uppercased() : letters.joined().uppercased()
-  }
-
-  // MARK: - Legacy TabView (pre–Tab API)
-
-  private var legacyTabs: some View {
-    TabView(selection: tabSelection) {
-      searchContent
-        .tag(NavigationTabs.search)
-        .tabItem { Label("Search", systemImage: "magnifyingglass") }
-
-      homeContent
-        .tag(NavigationTabs.home)
-        .tabItem { Label("For You", systemImage: "play.fill") }
-
-      moviesContent
-        .tag(NavigationTabs.movies)
-        .tabItem { Label("Movies", systemImage: "movieclapper") }
-
-      seriesContent
-        .tag(NavigationTabs.series)
-        .tabItem { Label("Series", systemImage: "rectangle.stack") }
-
-#if os(macOS)
-      WatchlistView()
-        .tag(NavigationTabs.watchlist)
-        .tabItem { Label("Watchlist", systemImage: "text.append") }
-
-      RecentlyWatchedView()
-        .tag(NavigationTabs.recentlyWatched)
-        .tabItem { Label("History", systemImage: "memories") }
-
-      savedContent
-        .tag(NavigationTabs.bookmarks)
-        .tabItem { Label("All Bookmarks", systemImage: "bookmark") }
-#else
-      libraryContent
-        .tag(NavigationTabs.library)
-        .tabItem { Label("Library", systemImage: "rectangle.stack.fill.badge.person.crop") }
-#endif
-
-#if !os(tvOS)
-      downloadsContent
-        .tag(NavigationTabs.downloads)
-        .tabItem { Label("Downloads", systemImage: "laptopcomputer.and.arrow.down") }
-#endif
-
-      settingsContent
-        .tag(NavigationTabs.settings)
-        .tabItem { Label("Settings", systemImage: "gear") }
-    }
   }
 
   // MARK: - Tab roots

@@ -24,19 +24,16 @@ struct PlayerView: View {
   }
 
   var body: some View {
-    GeometryReader { _ in
-      ZStack(alignment: .top) {
-        videoPlayer
-        // Off tvOS there is no chrome of ours at all: the system player already draws a
-        // transport bar, a subtitle menu and an audio menu, and the master playlist
-        // carries every kino.pub subtitle as a real HLS rendition for it to list. Ours
-        // was a second subtitles button next to the system one.
+    ZStack(alignment: .top) {
+      videoPlayer
+      // Off tvOS there is no chrome of ours at all: the system player already draws a
+      // transport bar, a subtitle menu and an audio menu, and the master playlist
+      // carries every kino.pub subtitle as a real HLS rendition for it to list. Ours
+      // was a second subtitles button next to the system one.
 #if os(tvOS)
-        subtitleLayers
+      subtitleLayers
 #endif
-        playbackStateOverlay
-      }
-      .ignoresSafeArea(.all)
+      playbackStateOverlay
     }
     .ignoresSafeArea(.all)
 #if os(macOS)
@@ -224,6 +221,8 @@ private struct TVVideoPlayer: UIViewControllerRepresentable {
     let controller = AVPlayerViewController()
     controller.player = manager.player
     controller.delegate = context.coordinator
+    controller.speeds = AVPlaybackSpeed.systemDefaultSpeeds
+    controller.allowsPictureInPicturePlayback = true
     manager.attach(to: controller)
     return controller
   }

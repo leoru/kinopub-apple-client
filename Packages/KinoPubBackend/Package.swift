@@ -1,12 +1,11 @@
-// swift-tools-version: 5.9
-// The swift-tools-version declares the minimum version of Swift required to build this package.
+// swift-tools-version: 6.2
 
 import PackageDescription
 
 let package = Package(
   name: "KinoPubBackend",
   defaultLocalization: "en",
-  platforms: [.macOS(.v13), .iOS(.v16), .tvOS(.v17)],
+  platforms: [.macOS(.v26), .iOS(.v26), .tvOS(.v26)],
   products: [
     .library(
       name: "KinoPubBackend",
@@ -30,5 +29,6 @@ let package = Package(
       resources: [
         .copy("Fixtures")
       ])
-  ]
+  ],
+  swiftLanguageModes: [.v5]
 )

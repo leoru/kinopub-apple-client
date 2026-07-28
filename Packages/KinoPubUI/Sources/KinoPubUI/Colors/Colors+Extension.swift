@@ -21,16 +21,15 @@ extension Color {
     public static let accentRed = Color("accent_red_color", bundle: .module)
     public static let accentBlue = Color("accent_blue_color", bundle: .module)
 
-    /// The page background — black on a TV in dark appearance.
+    /// The page background — black on a TV (app is dark-only for now).
     public static var background: Color {
 #if os(macOS)
       Color(nsColor: .windowBackgroundColor)
 #elseif os(tvOS)
-      // tvOS has no `systemBackground` — it is unavailable, not merely different. The
-      // platform's own background is black in dark appearance and white in light, so
-      // resolve it the same way rather than picking a grey.
-//      Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? .black : .white })
-        Color(uiColor: .clear)
+      // tvOS has no `systemBackground`. Liquid Glass samples what is behind the view;
+      // a clear page background samples the system window instead of a real page.
+      // Dark-locked for now — light returns as its own pass (modernization Phase 0).
+      Color.black
 #else
       Color(uiColor: .systemBackground)
 #endif

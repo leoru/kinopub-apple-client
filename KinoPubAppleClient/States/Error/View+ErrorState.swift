@@ -18,8 +18,8 @@ extension View {
   /// - Returns: A modified view with error handling.
   func handleError(state: Binding<ErrorHandler.State>) -> some View {
     self.popup(isPresented: state.showError) {
-  //    ToastContentView(text: state.error.wrappedValue ?? "") REPLACE IT ITS AWFUL TODO
-  //      .padding()
+      // PopupView requires a content builder; error text is not shown here yet.
+      EmptyView()
     } customize: {
       $0
         .type(.floater())

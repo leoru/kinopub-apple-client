@@ -1,11 +1,10 @@
-// swift-tools-version: 5.9
-// The swift-tools-version declares the minimum version of Swift required to build this package.
+// swift-tools-version: 6.2
 
 import PackageDescription
 
 let package = Package(
   name: "KinoPubUI",
-  platforms: [.macOS(.v13), .iOS(.v16), .tvOS(.v17)],
+  platforms: [.macOS(.v26), .iOS(.v26), .tvOS(.v26)],
   products: [
     .library(
       name: "KinoPubUI",
@@ -27,5 +26,8 @@ let package = Package(
     .testTarget(
       name: "KinoPubUITests",
       dependencies: ["KinoPubUI"])
-  ]
+  ],
+  // Tools 6.2 is required for `.v26` platforms; stay on language mode 5 until
+  // ObservableObject view models move to @Observable (see research/en/04 §4.4).
+  swiftLanguageModes: [.v5]
 )

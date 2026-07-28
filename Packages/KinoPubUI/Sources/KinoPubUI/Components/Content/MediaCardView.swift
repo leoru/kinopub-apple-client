@@ -219,6 +219,9 @@ public struct MediaCardView: View {
       }
     }
     .frame(width: width, height: imageHeight)
+    // Bind the borderless focus effect to this AsyncImage explicitly — without it the
+    // system may attach highlight to nothing useful and cards get no lift/specular/tilt.
+    .hoverEffect(.highlight)
   }
 #else
   /// The card off tvOS: artwork with the score, progress and — for a continue-watching

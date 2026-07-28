@@ -29,7 +29,6 @@ public struct ContentItemsListView<Header: View>: View {
 
 #if os(tvOS)
   @FocusState private var focusedItemID: Int?
-  @State private var hasClaimedFocus = false
 #endif
 
   var useReducedThumbnailSize: Bool {
@@ -135,14 +134,9 @@ public struct ContentItemsListView<Header: View>: View {
     }
     .refreshable(action: onRefresh)
 #if os(tvOS)
-    .defaultFocus($focusedItemID, items.first?.id, priority: .userInitiated)
-    .task(id: items.first?.id) {
-      guard !hasClaimedFocus, let firstID = items.first?.id else { return }
-      try? await Task.sleep(for: .milliseconds(120))
-      guard !Task.isCancelled, focusedItemID == nil else { return }
-      focusedItemID = firstID
-      hasClaimedFocus = true
-    }
+    // Default priority — `.userInitiated` yanked focus back to the first cell on every
+    // return from a detail page.
+    .defaultFocus($focusedItemID, items.first?.id)
 #endif
   }
 

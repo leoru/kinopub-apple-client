@@ -55,7 +55,6 @@ class PlayerManager: ObservableObject {
   private var watchMode: WatchMode
   private var downloadedFilesDatabase: DownloadedFilesDatabase<DownloadMeta>
   private var rateObservation: NSKeyValueObservation?
-  private var itemObservation: NSKeyValueObservation?
   private var actionsService: UserActionsService
   private var cues: [SubtitleCue] = []
   private var secondaryCues: [SubtitleCue] = []
@@ -268,9 +267,6 @@ class PlayerManager: ObservableObject {
   private func apply(_ selection: SubtitleSelector.Selection, remember: Bool) {
     cueLoadTasks.forEach { $0.cancel() }
     cueLoadTasks = []
-    // A pending embedded-track fallback belongs to the tracks being replaced; leaving it
-    // armed turns an embedded English track back on under the new pick.
-    itemObservation = nil
 
     primaryTrack = selection.primary
     secondaryTrack = selection.secondary
@@ -303,10 +299,9 @@ class PlayerManager: ObservableObject {
         await self?.loadSidecarSubtitles(from: url, shift: primary.subtitle.shift, isPrimary: true)
       })
     } else {
-      // Fallback: try an embedded HLS legible track once the item is ready.
-      itemObservation = player.observe(\.currentItem, options: [.new, .initial]) { [weak self] _, _ in
-        self?.selectEmbeddedEnglishTrackIfNeeded()
-      }
+      // Stream survey: every kino.pub subtitle is a sidecar SRT (embed × 0). No HLS
+      // legible fallback — selecting an embedded track would only mis-fire.
+      Logger.app.debug("Primary subtitle has no sidecar URL; overlay stays empty")
     }
 
     if let secondary = selection.secondary, let url = sidecarURL(for: secondary) {
@@ -344,38 +339,6 @@ class PlayerManager: ObservableObject {
       }
     } catch {
       Logger.app.error("Failed to load subtitles: \(error)")
-      guard isPrimary, !Task.isCancelled else { return }
-      await MainActor.run {
-        self.selectEmbeddedEnglishTrackIfNeeded()
-      }
-    }
-  }
-
-  private func selectEmbeddedEnglishTrackIfNeeded() {
-    guard cues.isEmpty else { return }
-    guard let item = player.currentItem else { return }
-    guard let group = item.asset.mediaSelectionGroup(forMediaCharacteristic: .legible) else { return }
-
-    let options = group.options.filter { option in
-      let langs = option.extendedLanguageTag?.lowercased() ?? ""
-      let name = option.displayName
-      let isEnglish = SubtitleSelector.isEnglish(langs)
-        || SubtitleSelector.isEnglish(option.locale?.language.languageCode?.identifier ?? "")
-        || name.lowercased().contains("english")
-        || name.lowercased().hasPrefix("en")
-      if !isEnglish { return false }
-      if SubtitleSelector.isForcedDisplayName(name) { return false }
-      if SubtitlePreferences.preferNonCCSubtitles && SubtitleSelector.looksLikeCCDisplayName(name) {
-        return false
-      }
-      return true
-    }
-
-    if let option = options.first {
-      item.select(option, in: group)
-      DispatchQueue.main.async {
-        self.subtitlesEnabled = true
-      }
     }
   }
 
@@ -433,6 +396,7 @@ class PlayerManager: ObservableObject {
   /// Pick up where the title was left off. There is no prompt any more: the remembered
   /// time is where playback resumes, and the transport bar's own scrubber is right there
   /// for anyone who meant to start over.
+  @MainActor
   func fetchWatchMark() async {
     do {
       watchMark = try await actionsService.fetchWatchMark(id: playItem.metadata.id, video: playItem.metadata.video, season: playItem.metadata.season)
@@ -522,8 +486,7 @@ extension PlayerManager {
   /// Safe to drop here because kino.pub ships every subtitle as a sidecar SRT and the HLS
   /// subtitle renditions are just its own WebVTT copies of those same files (Stream survey:
   /// srt × 189, embed × 0, CC × 0) — so nothing the system picker could reach is missing
-  /// from ours. This only hides the picker UI; the fallback that programmatically selects
-  /// an embedded English legible track (`selectEmbeddedEnglishTrackIfNeeded`) is unaffected.
+  /// from ours. This only hides the picker UI.
   private func hideSystemSubtitlePicker(on controller: AVPlayerViewController) {
     controller.allowedSubtitleOptionLanguages = []
   }
@@ -537,7 +500,43 @@ extension PlayerManager {
     if let subtitle = displaySubtitle {
       metadata.append(makeMetadataItem(.iTunesMetadataTrackSubTitle, value: subtitle))
     }
+    if let media = playItem as? MediaItem {
+      if !media.plot.isEmpty {
+        metadata.append(makeMetadataItem(.commonIdentifierDescription, value: media.plot))
+      }
+      let genreNames = media.genres.compactMap(\.title).filter { !$0.isEmpty }
+      if !genreNames.isEmpty {
+        metadata.append(makeMetadataItem(.commonIdentifierType, value: genreNames.joined(separator: ", ")))
+      }
+      // Poster artwork for the Info panel / Control Center / Apple TV home screen.
+      let posterURL = [media.posters.big, media.posters.medium, media.posters.small]
+        .first { !$0.isEmpty }
+        .flatMap(URL.init(string:))
+      if let posterURL {
+        Task { [weak self] in
+          await self?.attachArtwork(from: posterURL, to: item, base: metadata)
+        }
+      }
+    }
     item.externalMetadata = metadata
+  }
+
+  private func attachArtwork(from url: URL, to item: AVPlayerItem, base: [AVMetadataItem]) async {
+    do {
+      let (data, _) = try await URLSession.shared.data(from: url)
+      guard !data.isEmpty else { return }
+      let artwork = AVMutableMetadataItem()
+      artwork.identifier = .commonIdentifierArtwork
+      artwork.value = data as NSData
+      artwork.dataType = kCMMetadataBaseDataType_JPEG as String
+      artwork.extendedLanguageTag = "und"
+      let next = base + [artwork]
+      await MainActor.run {
+        item.externalMetadata = next
+      }
+    } catch {
+      Logger.app.debug("Player artwork metadata skipped: \(error.localizedDescription)")
+    }
   }
 
   private func makeMetadataItem(_ identifier: AVMetadataIdentifier, value: String) -> AVMetadataItem {

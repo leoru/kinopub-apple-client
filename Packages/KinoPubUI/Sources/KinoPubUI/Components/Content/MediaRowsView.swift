@@ -59,10 +59,6 @@ public struct MediaRowsView: View {
   /// when focus leaves for the tab bar instead of dropping to a bare background.
   @State private var backdropCard: CardKey?
 
-  /// Set once the screen has handed focus to its first card, so coming back from an
-  /// item page restores where the user was instead of snapping to the top again.
-  @State private var hasClaimedFocus: Bool = false
-
   public init(rows: [MediaRow],
               navigationLinkProvider: @escaping (MediaCard) -> any Hashable,
               showsFeaturedPreview: Bool = true,
@@ -77,22 +73,16 @@ public struct MediaRowsView: View {
 
   public var body: some View {
 #if os(tvOS)
-    // Always hand the remote the first card once rows exist — otherwise the sidebar
-    // keeps focus on launch. Featured preview also needs that focus to drive artwork.
+    // Hand the remote the first card once rows exist — otherwise the sidebar keeps
+    // focus on launch. Featured preview also needs that focus to drive artwork.
+    // Default priority (not `.userInitiated`): returning from a detail page must not
+    // yank focus back onto the first card of the first row.
     scroll
       .background(featuredBackground)
-      .defaultFocus($focusedCard, firstCardKey, priority: .userInitiated)
+      .defaultFocus($focusedCard, firstCardKey)
       .onChange(of: focusedCard) { _, newValue in
         // Nil means focus went to the tab bar or a pushed screen; keep the artwork.
         if let newValue { backdropCard = newValue }
-      }
-      .task {
-        guard !hasClaimedFocus, let firstCardKey else { return }
-        // The stack is lazy — the card is not there to focus on the same runloop pass.
-        try? await Task.sleep(for: .milliseconds(120))
-        guard !Task.isCancelled, focusedCard == nil else { return }
-        focusedCard = firstCardKey
-        hasClaimedFocus = true
       }
 #else
     scroll
@@ -269,14 +259,7 @@ public struct MediaRowsView: View {
             NavigationLink(value: navigationLinkProvider(card)) {
               MediaCardView(card: card, caption: Self.cardCaption)
             }
-#if os(tvOS)
-            // The native tvOS poster effect: rounded corners, drop shadow, and on focus a
-            // lift, the caption sliding down, a specular highlight and a touch-surface tilt
-            // — all from `.borderless`, no custom code. It applies to the *image*, so the
-            // card's label is just that (overlays would each get their own highlight and
-            // fragment the effect); see MediaCardView.
-            .buttonStyle(.borderless)
-#else
+#if !os(tvOS)
             .buttonStyle(MediaCardButtonStyle())
 #endif
             .focused($focusedCard, equals: CardKey(row: row.id, card: card.id))
@@ -287,6 +270,14 @@ public struct MediaRowsView: View {
         // Focus grows the card past its frame; without room the lift gets clipped.
         .padding(.vertical, Self.focusPadding)
       }
+#if os(tvOS)
+      // Native poster effect on the shelf (not each link): lift / specular / tilt stay
+      // one unit. Scroll-clip off so focus scale isn't cropped; focusSection so Up/Down
+      // treat the row as a navigable band.
+      .buttonStyle(.borderless)
+      .scrollClipDisabled()
+      .focusSection()
+#endif
     }
     .onAppear { onRowAppear?(row) }
   }
@@ -324,8 +315,8 @@ public struct MediaRowsView: View {
   static let previewOverviewFont: Font = .system(size: 24, weight: .regular)
 
   static let rowSpacing: CGFloat = 40
-  static let cardSpacing: CGFloat = 36
-  static let horizontalInset: CGFloat = 48
+  static let cardSpacing: CGFloat = 40
+  static let horizontalInset: CGFloat = 80
   static let focusPadding: CGFloat = 32
   static let headerFont: Font = .system(size: 32, weight: .semibold)
   static let countFont: Font = .system(size: 26, weight: .regular)

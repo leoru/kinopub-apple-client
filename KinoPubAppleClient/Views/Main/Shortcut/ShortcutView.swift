@@ -27,7 +27,6 @@ struct ShortcutSelectionView: View {
         KinoPubButton(title: "Apply".localized, color: .accent) {
           dismiss()
         }
-        .frame(width: 100, height: 30)
         .padding()
 #endif
       }

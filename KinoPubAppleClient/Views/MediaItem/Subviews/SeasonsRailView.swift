@@ -13,14 +13,10 @@ import KinoPubMetadata
 /// rail to that season's first episode rather than swapping the content out. Opens
 /// scrolled to the first unfinished episode.
 ///
-/// Focus rules (tvOS): a full-width focus bridge sits between the season tabs and the
-/// episode rail. Geometric Up from any episode always hits the bridge (not empty space
-/// or a random tab); the bridge then hands focus to the *selected* season tab and
-/// leaves the rail frozen. Down from a tab hits the same bridge and continues into
-/// the rail. Left/Right on tabs still selects + scrolls when the season changes.
-///
-/// (`onMoveCommand` alone is not enough — the focus engine only forwards a move it
-/// cannot resolve, so Up that geometrically finds Season 4 never reaches the handler.)
+/// Focus rules (tvOS): the season tabs are a `focusSection` spanning the full width, so
+/// geometric Up from any episode card lands on the tab strip (not empty space or a
+/// random tab). `defaultFocus` parks on the selected season. Left/Right on tabs still
+/// selects + scrolls when the season changes.
 ///
 /// Section chrome (season tabs) stays hidden while the hero owns the page, so the
 /// trailer/wide art isn't captioned by "Season 1" peeking under it; it fades in once
@@ -55,14 +51,8 @@ struct SeasonsRailView: View {
   /// True while a tab-driven scroll is in flight, so a stray episode focus update
   /// doesn't yank the selected tab back mid-jump.
   @State private var isScrollingFromTab = false
-  /// Set while an episode holds focus, so the bridge knows Up-from-rail vs Down-from-tabs.
-  @State private var episodeHadFocus = false
   @FocusState private var focusedSeasonID: Int?
   @FocusState private var focusedEpisodeID: Int?
-#if os(tvOS)
-  @FocusState private var bridgeFocused: Bool
-  @Namespace private var seasonTabsScope
-#endif
 
   private enum RailEntry: Identifiable {
     case playable(season: Season, episode: Episode, schedule: EpisodeSchedule?)
@@ -140,8 +130,8 @@ struct SeasonsRailView: View {
     } ?? entries.first
   }
 
-  /// Episode to land on when Down crosses the bridge from the season tabs.
-  private var bridgeDownEpisodeID: Int? {
+  /// Episode to land on when Down crosses from the season tabs into the rail.
+  private var firstEpisodeInSelectedSeason: Int? {
     if let selectedSeasonID,
        let first = entries.first(where: { $0.season.id == selectedSeasonID }) {
       return first.id
@@ -155,9 +145,6 @@ struct SeasonsRailView: View {
         if showsChrome {
           seasonTabs(proxy: proxy)
             .transition(.opacity)
-#if os(tvOS)
-          focusBridge
-#endif
         }
 
         episodeRail
@@ -175,31 +162,16 @@ struct SeasonsRailView: View {
       .onChange(of: focusedSeasonID) { _, seasonID in
         if seasonID != nil { onSectionFocused?() }
         // Left/Right onto a *different* tab selects + scrolls. Re-focusing the already
-        // selected tab (Up via the bridge) leaves the rail frozen.
+        // selected tab leaves the rail frozen.
         guard let seasonID, seasonID != selectedSeasonID else { return }
         selectSeason(seasonID, proxy: proxy, animated: true)
       }
       .onChange(of: focusedEpisodeID) { _, episodeID in
-        if episodeID != nil {
-          episodeHadFocus = true
-          onSectionFocused?()
-        }
+        if episodeID != nil { onSectionFocused?() }
         guard !isScrollingFromTab,
               let episodeID,
               let entry = entries.first(where: { $0.id == episodeID }) else { return }
         selectedSeasonID = entry.season.id
-      }
-      .onChange(of: bridgeFocused) { _, focused in
-        guard focused else { return }
-        onSectionFocused?()
-        if episodeHadFocus {
-          // Up from the rail → selected season tab, do not scroll.
-          episodeHadFocus = false
-          focusedSeasonID = selectedSeasonID ?? seasons.first?.id
-        } else {
-          // Down from the tabs → into the episode rail.
-          focusedEpisodeID = bridgeDownEpisodeID
-        }
       }
       .onChange(of: pageEntryToken) { _, _ in
         focusedSeasonID = selectedSeasonID ?? seasons.first?.id
@@ -224,31 +196,20 @@ struct SeasonsRailView: View {
           }
 #if os(tvOS)
           .focused($focusedSeasonID, equals: season.id)
-          .prefersDefaultFocus(season.id == selectedSeason?.id, in: seasonTabsScope)
 #endif
           .buttonStyle(SeasonTabButtonStyle(isSelected: season.id == selectedSeason?.id))
         }
       }
       .padding(.horizontal, Self.horizontalInset)
-//      .padding(.vertical, Self.focusPadding)
     }
 #if os(tvOS)
-    .focusScope(seasonTabsScope)
+    // Full-width focus section so Up from any episode finds the tab strip; defaultFocus
+    // parks on the selected season rather than a programmatic bridge.
+    .frame(maxWidth: .infinity)
+    .focusSection()
+    .defaultFocus($focusedSeasonID, selectedSeasonID ?? seasons.first?.id)
 #endif
   }
-
-#if os(tvOS)
-  /// Full-width focus target between tabs and episodes. Geometry always finds this on
-  /// Up from any card in the rail, so we never depend on a dead-end `onMoveCommand`.
-  private var focusBridge: some View {
-    Color.clear
-      .frame(maxWidth: .infinity)
-      .frame(height: 8)
-      .focusable()
-      .focused($bridgeFocused)
-      .accessibilityHidden(true)
-  }
-#endif
 
   // MARK: - Episode rail
 
@@ -269,6 +230,10 @@ struct SeasonsRailView: View {
     }
     .contentMargins(.horizontal, Self.horizontalInset, for: .scrollContent)
     .scrollClipDisabled()
+#if os(tvOS)
+    .focusSection()
+    .defaultFocus($focusedEpisodeID, firstEpisodeInSelectedSeason)
+#endif
   }
 
   @ViewBuilder

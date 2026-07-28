@@ -1,21 +1,21 @@
-// swift-tools-version: 5.9
-// The swift-tools-version declares the minimum version of Swift required to build this package.
+// swift-tools-version: 6.2
 
 import PackageDescription
 
 let package = Package(
-    name: "KinoPubLogging",
-    platforms: [.macOS(.v13), .iOS(.v16), .tvOS(.v17)],
-    products: [
-        .library(
-            name: "KinoPubLogging",
-            targets: ["KinoPubLogging"])
-    ],
-    targets: [
-        .target(
-            name: "KinoPubLogging"),
-        .testTarget(
-            name: "KinoPubLoggingTests",
-            dependencies: ["KinoPubLogging"])
-    ]
+  name: "KinoPubLogging",
+  platforms: [.macOS(.v26), .iOS(.v26), .tvOS(.v26)],
+  products: [
+    .library(
+      name: "KinoPubLogging",
+      targets: ["KinoPubLogging"])
+  ],
+  targets: [
+    .target(
+      name: "KinoPubLogging"),
+    .testTarget(
+      name: "KinoPubLoggingTests",
+      dependencies: ["KinoPubLogging"])
+  ],
+  swiftLanguageModes: [.v5]
 )

@@ -32,6 +32,10 @@ custom theming that fights the platform HIG.
 - Swift 5.9
 - Deployment targets: tvOS 26.0, iOS 26.0, macOS 26.0 — matches Rivulet/Silo, no reason to hold back
   from the newest APIs (Liquid Glass included) for an old floor nothing requires
+- Local packages (`KinoPubUI` / `Backend` / `Kit` / `Logging` / `Metadata`) also declare
+  `.macOS(.v26) / .iOS(.v26) / .tvOS(.v26)` (`swift-tools-version: 6.2`, language mode 5)
+- **Dark appearance only** for now (`.preferredColorScheme(.dark)` + `UIUserInterfaceStyle = Dark`).
+  Light comes back as a deliberate pass once dark is good.
 
 `KinoPubUI` contains a Metal shader (`Shaders/VariableBlur.metal`). Xcode 26+ ships the Metal
 toolchain as a separate component — if the build fails with "missing Metal Toolchain", run:
@@ -116,6 +120,14 @@ These are real, verified, and up for grabs:
 
 - **The pause panel's focus behaviour is unverified on a real remote.** The word chips now use a
   focus-reactive button style, but nobody has driven it with a Siri Remote yet.
+- **Seasons rail focus on a real remote is unverified** after replacing the programmatic
+  `focusBridge` with `focusSection` + `defaultFocus` (`SeasonsRailView.swift`). Up from an
+  episode should land on the selected season tab; if it lands on a random tab or dead space,
+  restore a bridge or add `resetFocus(in:)`.
+- **Poster card `.hoverEffect(.highlight)` is unverified on a real remote.** Added so
+  `.borderless` binds its lift/specular/tilt to the `AsyncImage` poster
+  (`MediaCardView.swift`); needs a Siri Remote check that the system focus effect actually
+  appears.
 - **The detail page's default focus is unverified on a real remote.** `MediaItemView` names Play with
   `.defaultFocus($focus, .play)`; a headless simulator draws no focus at all, so this has only been
   read, not seen.

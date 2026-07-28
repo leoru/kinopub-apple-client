@@ -87,7 +87,6 @@
 		CCA100012D0021 /* HLSAudioLabeler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0020 /* HLSAudioLabeler.swift */; };
 		CCA200012D001001 /* KinoPubMetadata in Frameworks */ = {isa = PBXBuildFile; productRef = CCA200012D001002 /* KinoPubMetadata */; };
 		CCA200012D001010 /* DataSourcesAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA200012D001011 /* DataSourcesAttributionView.swift */; };
-		CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */; };
 		CCC70B8A2A7FC15F00274E5F /* BookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B892A7FC15F00274E5F /* BookmarkView.swift */; };
 		CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */; };
 		CCC70B922A7FCA0D00274E5F /* ErrorHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B912A7FCA0D00274E5F /* ErrorHandler.swift */; };
@@ -197,7 +196,6 @@
 		CCA100012D0020 /* HLSAudioLabeler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSAudioLabeler.swift; sourceTree = "<group>"; };
 		CCA200012D001003 /* KinoPubMetadata */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubMetadata; path = Packages/KinoPubMetadata; sourceTree = "<group>"; };
 		CCA200012D001011 /* DataSourcesAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSourcesAttributionView.swift; sourceTree = "<group>"; };
-		CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidthThresholdReader.swift; sourceTree = "<group>"; };
 		CCC70B892A7FC15F00274E5F /* BookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkView.swift; sourceTree = "<group>"; };
 		CCC70B8B2A7FC16A00274E5F /* BookmarkModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkModel.swift; sourceTree = "<group>"; };
 		CCC70B912A7FCA0D00274E5F /* ErrorHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorHandler.swift; sourceTree = "<group>"; };
@@ -406,7 +404,6 @@
 				CCA100012C6F000100000204 /* View+PlatformNavigationTitle.swift */,
 				CCF1F24D2A8526CF002DA9AA /* Bundle+Data.swift */,
 				CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */,
-				CCB4879E2A77DAC200FA4483 /* WidthThresholdReader.swift */,
 				CC2115202A7AA6F8001996BD /* String+Localization.swift */,
 				CCA100012C6F000100000A02 /* MediaCardContextMenus.swift */,
 				CCF2ABB32AED39E0000448A8 /* WindowSettings.swift */,
@@ -813,7 +810,6 @@
 				CC71E7012A6DD043004AFB3F /* AuthView.swift in Sources */,
 				CC01461D2A783EEF00F858AF /* NavigationTabs.swift in Sources */,
 				CCF388432A71CB3F00242581 /* AccessTokenPlugin.swift in Sources */,
-				CCB4879F2A77DAC200FA4483 /* WidthThresholdReader.swift in Sources */,
 				CC21151D2A7A8FA7001996BD /* MediaItemModel.swift in Sources */,
 				CCA100012D0005 /* StreamSurveyView.swift in Sources */,
 				CCA100012D0010 /* TVProfileSettingsView.swift in Sources */,

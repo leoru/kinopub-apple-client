@@ -1,10 +1,10 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.2
 
 import PackageDescription
 
 let package = Package(
   name: "KinoPubMetadata",
-  platforms: [.macOS(.v13), .iOS(.v16), .tvOS(.v17)],
+  platforms: [.macOS(.v26), .iOS(.v26), .tvOS(.v26)],
   products: [
     .library(
       name: "KinoPubMetadata",
@@ -25,5 +25,6 @@ let package = Package(
       resources: [
         .copy("Fixtures")
       ])
-  ]
+  ],
+  swiftLanguageModes: [.v5]
 )

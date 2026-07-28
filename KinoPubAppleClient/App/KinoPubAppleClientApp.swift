@@ -42,6 +42,9 @@ struct KinoPubAppleClientApp: App {
         .environmentObject(navigationState)
         .environmentObject(authState)
         .environmentObject(errorHandler)
+        // Dark-only until light is a deliberate pass (modernization Phase 0).
+        // Info.plist UIUserInterfaceStyle=Dark covers system chrome; this covers SwiftUI.
+        .preferredColorScheme(.dark)
 #if os(macOS)
         .frame(minWidth: WindowSize.macos.width, minHeight: WindowSize.macos.height)
 #endif
@@ -61,6 +64,7 @@ struct KinoPubAppleClientApp: App {
         .environmentObject(navigationState)
         .environmentObject(authState)
         .environmentObject(errorHandler)
+        .preferredColorScheme(.dark)
     }
     // Off the Window menu: the only way in is pressing Play. A menu item opens the scene
     // with nothing to play, which is just an empty black window.
@@ -83,6 +87,7 @@ struct KinoPubAppleClientApp: App {
     Settings {
       SettingsView()
         .environmentObject(windowSettings)
+        .preferredColorScheme(.dark)
     }
 #endif
   }

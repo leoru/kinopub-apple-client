@@ -26,7 +26,9 @@ Read this before changing code. The product direction, current state and roadmap
   every press of Up and strands the user with the tab bar out of reach.
 - **Colours come from the system.** `Color.KinoPub.background`, `.text` and `.subtitle` resolve to the
   platform's own background and label colours. Don't reintroduce hand-picked greys; accents stay in the
-  asset catalogue.
+  asset catalogue. **Dark appearance only for now** (scene-root `.preferredColorScheme(.dark)` +
+  `UIUserInterfaceStyle = Dark`); do not half-support light until that deliberate pass lands. On tvOS,
+  `Color.KinoPub.background` is `Color.black` so Liquid Glass samples a real page, not a clear window.
 - **No skeletons.** A screen that is waiting shows nothing, then `LoadingIndicatorView` once the wait
   is long enough to notice, then fades the real content in. Don't reintroduce stand-in cards, shimmer
   or greyed-out text — Apple's own apps don't.

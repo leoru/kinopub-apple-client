@@ -132,7 +132,6 @@ private struct MediaActionPillChrome<Content: View>: View {
       .foregroundStyle(isFocused ? Color.black : isHovered ? Color.black : Color.white)
       .padding(.horizontal, MediaActionMetrics.pillHorizontalPadding)
       .frame(minWidth: minWidth, minHeight: MediaActionMetrics.buttonHeight)
-      .frame(height: MediaActionMetrics.buttonHeight)
       .background {
         ZStack {
           Capsule(style: .continuous)

@@ -136,7 +136,7 @@ struct MediaItemView: View {
       trailer.start(url: url)
     }
 #if os(tvOS)
-    .onChange(of: focus) { newFocus in
+    .onChange(of: focus) { _, newFocus in
       switch newFocus {
       case .exitToContent:
         // Flip first, then park focus on a real content control. Clearing to nil alone
@@ -162,13 +162,13 @@ struct MediaItemView: View {
         break
       }
     }
-    .onChange(of: contentUpBridgeFocused) { focused in
+    .onChange(of: contentUpBridgeFocused) { _, focused in
       guard focused else { return }
       showHeroSlide()
       focus = .play
     }
 #endif
-    .onChange(of: isHeroOnScreen) { onScreen in
+    .onChange(of: isHeroOnScreen) { _, onScreen in
       trailer.setActive(onScreen)
     }
     .onDisappear {
@@ -313,7 +313,7 @@ struct MediaItemView: View {
         .padding(.top, MediaItemLayout.sectionSpacing)
         .padding(.bottom, MediaItemLayout.sectionSpacing)
       }
-      .onChange(of: contentSnapToken) { _ in
+      .onChange(of: contentSnapToken) { _, _ in
         snapContent(proxy: proxy)
       }
     }
@@ -479,7 +479,7 @@ struct MediaItemSectionFocusReporter: ViewModifier {
   @Environment(\.isFocused) private var isFocused
 
   func body(content: Content) -> some View {
-    content.onChange(of: isFocused) { focused in
+    content.onChange(of: isFocused) { _, focused in
       if focused { onSectionFocused() }
     }
   }

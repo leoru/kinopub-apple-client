@@ -41,14 +41,8 @@ struct SubtitleTranslatePanel: View {
       }
 
       if let selectedWord, !cleanWord(selectedWord).isEmpty {
-        if #available(macOS 15.0, iOS 18.0, *) {
-          WordTranslationView(word: cleanWord(selectedWord))
-            .padding(.top, 4)
-        } else {
-          Text("On-device translation requires macOS 15.0 or iOS 18.0.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        }
+        WordTranslationView(word: cleanWord(selectedWord))
+          .padding(.top, 4)
       }
     }
     .padding(20)
@@ -63,11 +57,9 @@ struct SubtitleTranslatePanel: View {
 
 /// Owns the translation session for one word.
 ///
-/// This lives in its own view for two reasons: a stored property cannot be marked
-/// `@available` when the enclosing type is available earlier, and `.translationTask`
-/// has to observe the very same `@State` that requests the translation — the previous
-/// version kept them in separate views, so the request never reached a task.
-@available(macOS 15.0, iOS 18.0, *)
+/// This lives in its own view so `.translationTask` observes the very same `@State`
+/// that requests the translation — keeping them in separate views meant the request
+/// never reached a task.
 private struct WordTranslationView: View {
   let word: String
 
