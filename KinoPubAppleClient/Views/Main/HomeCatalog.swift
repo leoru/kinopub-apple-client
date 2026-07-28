@@ -38,6 +38,8 @@ class HomeCatalog: ObservableObject {
   /// Empty until the first fetch lands — the screen shows a spinner rather than
   /// stand-in artwork, the way the Apple TV app waits.
   @Published public private(set) var rows: [MediaRow] = []
+  /// Up to six contained banner cards sampled from the catalog shelves below.
+  @Published public private(set) var bannerCards: [MediaCard] = []
   @Published public private(set) var isLoaded: Bool = false
 
   private var authState: AuthState
@@ -115,6 +117,38 @@ class HomeCatalog: ObservableObject {
       assembled.append(MediaRow(id: shortcut.id, title: shortcut.title.localized, cards: cards))
     }
     rows = assembled
+    refreshBannerCards(from: assembled)
+  }
+
+  /// v1 hack: up to six unique titles drawn at random from the catalog shelves
+  /// (not Continue Watching). Prefer cards that already carry wide artwork.
+  /// Keeps the previous selection when most of it is still in the pool so a
+  /// background refresh does not reshuffle the banner under the remote.
+  private func refreshBannerCards(from rows: [MediaRow]) {
+    var seen = Set<Int>()
+    var pool: [MediaCard] = []
+    for row in rows where row.id != Self.continueWatchingRowID {
+      for card in row.cards where seen.insert(card.id).inserted {
+        pool.append(card)
+      }
+    }
+
+    let preferred = pool.filter { $0.backdropURL != nil }
+    let source = preferred.isEmpty ? pool : preferred
+    let sourceIDs = Set(source.map(\.id))
+
+    let kept = bannerCards.filter { sourceIDs.contains($0.id) }
+    if kept.count >= min(3, source.count), !source.isEmpty {
+      var next = kept
+      if next.count < 6 {
+        let missing = source.filter { card in !next.contains(where: { $0.id == card.id }) }
+        next.append(contentsOf: missing.shuffled().prefix(6 - next.count))
+      }
+      bannerCards = Array(next.prefix(6))
+      return
+    }
+
+    bannerCards = Array(source.shuffled().prefix(6))
   }
 
   // MARK: - Continue watching actions

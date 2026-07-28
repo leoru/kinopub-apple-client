@@ -90,32 +90,33 @@ struct MainView: View {
   }
 
   private var rows: some View {
-    MediaRowsView(rows: catalog.rows, navigationLinkProvider: { card in
-      MainRoutes.detailsById(card.id)
-    },
-    // The focused-card blur hero is off on Home for now — too heavy on device, and it hid
-    // the tab bar. Plain rows until it returns as a lighter top slider.
-    showsFeaturedPreview: false,
-    contextMenuProvider: { card in
-      // Continue Watching is the only home row whose long-press can hide or mark a
-      // specific resume point. Catalog posters stay tap-to-open.
-      guard card.isLandscape else { return [] }
-      return MediaCardContextMenus.actions(
-        for: card,
-        includeGoToTitle: true,
-        onHide: { catalog.hide(card) },
-        onToggleWatched: { catalog.toggleWatched(card) },
-        onGoToTitle: { navigationState.mainRoutes.append(.detailsById(card.itemID)) },
-        onBrowseHistory: { navigationState.mainRoutes.append(.history) },
-        onBrowseWatchlist: {
+    MediaRowsView(
+      rows: catalog.rows,
+      bannerCards: catalog.bannerCards,
+      navigationLinkProvider: { card in
+        MainRoutes.detailsById(card.id)
+      },
+      contextMenuProvider: { card in
+        // Continue Watching is the only home row whose long-press can hide or mark a
+        // specific resume point. Catalog posters stay tap-to-open.
+        guard card.isLandscape else { return [] }
+        return MediaCardContextMenus.actions(
+          for: card,
+          includeGoToTitle: true,
+          onHide: { catalog.hide(card) },
+          onToggleWatched: { catalog.toggleWatched(card) },
+          onGoToTitle: { navigationState.mainRoutes.append(.detailsById(card.itemID)) },
+          onBrowseHistory: { navigationState.mainRoutes.append(.history) },
+          onBrowseWatchlist: {
 #if os(macOS)
-          navigationState.selectedTab = .watchlist
+            navigationState.selectedTab = .watchlist
 #else
-          navigationState.selectedTab = .library
+            navigationState.selectedTab = .library
 #endif
-        }
-      )
-    })
+          }
+        )
+      }
+    )
 #if !os(tvOS)
     .refreshable {
       await catalog.refresh()

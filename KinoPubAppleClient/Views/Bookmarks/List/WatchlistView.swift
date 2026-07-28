@@ -75,8 +75,7 @@ struct WatchlistView: View {
     } else {
       MediaRowsView(
         rows: [MediaRow(id: "watchlist", title: "Watchlist".localized, cards: cards)],
-        navigationLinkProvider: { card in BookmarksRoutes.detailsById(card.id) },
-        showsFeaturedPreview: false
+        navigationLinkProvider: { card in BookmarksRoutes.detailsById(card.id) }
       )
     }
   }

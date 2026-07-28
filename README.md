@@ -77,14 +77,12 @@ open KinoPubAppleClient.xcodeproj
 - **Dual subtitles** (two tracks stacked) — tvOS only, for the same reason
 - Tap-a-word translation on pause is **parked**, not shipped: `SubtitleTranslatePanel.swift` and
   `SubtitleTrackPickerView.swift` build but nothing presents them (see the note at the top of each)
-- **The old focus-preview hero (`MediaRowsView(showsFeaturedPreview:)`) is off everywhere and will
-  not come back in that form.** When on, it reserved ~560pt for whichever card had focus (Netflix-
-  style), clipped shelves, and the progressive blur was too heavy / drew over the tab bar. **D1**
-  replaces that direction with an Apple TV–style **banner** (static art for v1; same / simplified
-  hero component as detail; carousel deferred if not OOTB) with **Music/Journal-style variable
-  blur** over static art — **no blur over video on tvOS/macOS**; blur OK over video on iPhone/iPad —
-  see [modernization plan](docs/en/plans/modernization.md). Until that rebuild ships, Home and Saved
-  are plain rows.
+- **Home opens with a contained 16:9 banner shelf** (up to six cards sampled from the
+  catalog rows below): wide backdrop, inset vertical poster, titles + IMDb/Kinopoisk
+  scores, private `variableBlur` over static art — **no CTAs for v1**, **no Netflix-style
+  focus preview**. Phone fills width; tvOS / macOS / iPad landscape keep ~2 columns so
+  cards stay padded, not full-bleed. The old `showsFeaturedPreview` path is deleted. See
+  [modernization plan D1](docs/en/plans/modernization.md).
 - **Backgrounds and type are the system's** (`Color.KinoPub.background` / `.text` / `.subtitle`): black
   and true white on a TV in dark appearance, instead of the old hand-picked #1C202B grey and #B0B1B5
   "white".
@@ -225,10 +223,10 @@ What "done" looks like, so nobody has to guess:
   order the API returns it: whatever got a new episode most recently is first. Following a show for
   new episodes is the point of saving anything; a folder of films abandoned half-way is not. Cards
   carry the "+12" badge and the resume bar, and the row is dropped when the watchlist is empty.
-- **Home** is rows, not a grid. First row area is an **Apple TV–style banner** (static cinematic
-  art for v1; carousel deferred if not straightforward), then **Continue watching**, then
-  category/collection rows. Not a Netflix-style focus preview of the selected shelf card. See
-  [modernization plan D1](docs/en/plans/modernization.md).
+- **Home** is rows, not a grid. First is a **horizontal shelf of contained 16:9 banner
+  cards** (up to six, sampled from the shelves below; static art, no CTAs), then
+  **Continue watching**, then category/collection rows. Not a Netflix-style focus preview
+  of the selected shelf card. See [modernization plan D1](docs/en/plans/modernization.md).
 - **Continue watching is a landscape row** — wide still with a play glyph and resume bar on the
   image, title + "S2, E5 · 42 min" in the caption below (episode-card layout). Long-press for the
   context menu — no ⋯ button on the card.
@@ -274,9 +272,11 @@ that line is polish, and everything above it is unfinished business.
   the system's lift, specular shine and remote-tracking parallax, not a hand-rolled tilt
 - Long-press menus on Continue Watching and episode cards; Continue Watching merges watchlist +
   recent history (recently started → new episodes → watchlist → rest)
-- **UI modernization Phase 2 (in progress):** `ShelfMetrics` proportional ~6-column posters,
+- **UI modernization Phase 2:** `ShelfMetrics` proportional ~6-column posters,
   landscape cards use episode-rail caption layout, Metal ProgressiveBlur replaced with private
   `variableBlur` overlay — see [modernization plan](docs/en/plans/modernization.md)
+- **UI modernization Phase 3 (Home banner, partial):** contained 16:9 banner shelf on Home;
+  Netflix `showsFeaturedPreview` path deleted. Detail-page hero/focus polish still open.
 
 ### Phase A — Plan-minimum: parity with what I already use
 

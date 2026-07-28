@@ -39,6 +39,15 @@ public struct ShelfMetrics: Equatable, Sendable {
     return .init(inset: p.inset, gutter: p.gutter, columns: max(2, p.columns - 1))
   }
 
+  /// Contained 16:9 Home banner cards. Phone fills the width (1 column); wide
+  /// canvases keep ~2 columns so each card stays a padded hero with neighbors
+  /// peeking — not a full-bleed mural.
+  public static func banner(width: CGFloat, typeSize: DynamicTypeSize) -> Self {
+    let p = posters(width: width, typeSize: typeSize)
+    let columns: Int = width < 900 ? 1 : 2
+    return .init(inset: p.inset, gutter: max(p.gutter, 24), columns: columns)
+  }
+
   /// Card width implied by this metrics for a given container width.
   public func cardWidth(in containerWidth: CGFloat) -> CGFloat {
     let usable = containerWidth - inset * 2 - gutter * CGFloat(max(columns - 1, 0))

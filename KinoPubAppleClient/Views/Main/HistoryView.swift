@@ -27,8 +27,7 @@ struct HistoryView: View {
       } else {
         MediaRowsView(
           rows: [MediaRow(id: "history", title: "Recently Watched".localized, cards: cards)],
-          navigationLinkProvider: { card in MainRoutes.detailsById(card.itemID) },
-          showsFeaturedPreview: false
+          navigationLinkProvider: { card in MainRoutes.detailsById(card.itemID) }
         )
       }
     }

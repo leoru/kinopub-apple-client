@@ -77,8 +77,7 @@ struct LibraryView: View {
     } else {
       MediaRowsView(
         rows: catalog.rows,
-        navigationLinkProvider: { card in BookmarksRoutes.detailsById(card.itemID) },
-        showsFeaturedPreview: false
+        navigationLinkProvider: { card in BookmarksRoutes.detailsById(card.itemID) }
       )
     }
   }
