@@ -1607,6 +1607,17 @@
         }
       }
     },
+    "Like" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Like"}}, "ru": {"stringUnit": {"state": "translated", "value": "Нравится"}}}},
+    "Dislike" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Dislike"}}, "ru": {"stringUnit": {"state": "translated", "value": "Не нравится"}}}},
+    "Reviews" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Reviews"}}, "ru": {"stringUnit": {"state": "translated", "value": "Рецензии"}}}},
+    "New Folder" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "New Folder"}}, "ru": {"stringUnit": {"state": "translated", "value": "Новая папка"}}}},
+    "Folder name" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Folder name"}}, "ru": {"stringUnit": {"state": "translated", "value": "Название папки"}}}},
+    "Create" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Create"}}, "ru": {"stringUnit": {"state": "translated", "value": "Создать"}}}},
+    "Add to Watchlist" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Add to Watchlist"}}, "ru": {"stringUnit": {"state": "translated", "value": "В список"}}}},
+    "Remove from Watchlist" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Remove from Watchlist"}}, "ru": {"stringUnit": {"state": "translated", "value": "Убрать из списка"}}}},
+    "Positive" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Positive"}}, "ru": {"stringUnit": {"state": "translated", "value": "Положительная"}}}},
+    "Negative" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Negative"}}, "ru": {"stringUnit": {"state": "translated", "value": "Отрицательная"}}}},
+    "Neutral" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Neutral"}}, "ru": {"stringUnit": {"state": "translated", "value": "Нейтральная"}}}},
     "Logout" : {
       "localizations" : {
         "en" : {

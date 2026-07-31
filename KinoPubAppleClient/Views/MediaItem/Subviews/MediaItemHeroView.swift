@@ -347,10 +347,14 @@ struct MediaItemHeroView: View {
   var linkProvider: NavigationLinkProvider
   var isWatched: Bool
   var isBookmarked: Bool
+  /// Series watchlist flag (`togglewatchlist`) — not the same as bookmark folders.
+  var isInWatchlist: Bool = false
   var folders: [Bookmark]
   var folderIDsContainingItem: Set<Int>
   var onWatchedToggle: () -> Void
   var onFolderToggle: (Bookmark) -> Void
+  var onWatchlistToggle: (() -> Void)? = nil
+  var onCreateFolder: ((String) -> Void)? = nil
   var onClearFromContinueWatching: () -> Void = {}
   /// Opens the Saved / watchlist tab — same destination as the CW long-press action.
   var onBrowseWatchlist: (() -> Void)? = nil
@@ -360,6 +364,8 @@ struct MediaItemHeroView: View {
   /// tvOS only: the Up gesture lifts the muted inline preview into a real full-screen
   /// player. Kept here so the same view that owns the preview owns its promotion.
   @State private var isTrailerFullScreen = false
+  @State private var showNewFolderAlert = false
+  @State private var newFolderName = ""
 
   private var isSeries: Bool {
     !(mediaItem.seasons?.isEmpty ?? true)
@@ -683,15 +689,24 @@ struct MediaItemHeroView: View {
     .mediaActionCircleStyle()
     .focused($focus, equals: .heroOther)
     .accessibilityLabel("Bookmarks")
+    .alert("New Folder", isPresented: $showNewFolderAlert) {
+      TextField("Folder name", text: $newFolderName)
+      Button("Create") {
+        onCreateFolder?(newFolderName)
+        newFolderName = ""
+      }
+      Button("Cancel", role: .cancel) { newFolderName = "" }
+    }
   }
 
-  /// Labeled add control — same folder menu as the bookmark circle, but with a title
-  /// so it reads as the primary "save this" affordance at ten feet.
+  /// Series watchlist toggle — `/v1/watching/togglewatchlist`, not bookmark folders.
   @ViewBuilder
   private var watchlistPill: some View {
-    folderMenuLabel {
+    Button {
+      onWatchlistToggle?()
+    } label: {
       HStack(spacing: MediaActionMetrics.contentSpacing) {
-        Image(systemName: "plus")
+        Image(systemName: isInWatchlist ? "checkmark" : "plus")
           .font(.system(size: MediaActionMetrics.iconPointSize, weight: .semibold))
         Text("Watchlist")
           .font(MediaActionMetrics.labelFont)
@@ -700,7 +715,7 @@ struct MediaItemHeroView: View {
     }
     .mediaActionPillStyle()
     .focused($focus, equals: .heroOther)
-    .accessibilityLabel("Watchlist")
+    .accessibilityLabel(isInWatchlist ? "Remove from Watchlist" : "Add to Watchlist")
   }
 
   private var watchedButton: some View {
@@ -739,7 +754,7 @@ struct MediaItemHeroView: View {
         }
       }
 
-      if isSeries, isBookmarked, let onBrowseWatchlist {
+      if isSeries, isInWatchlist || isBookmarked, let onBrowseWatchlist {
         Button(action: onBrowseWatchlist) {
           Label("Browse My Watchlist", systemImage: "rectangle.grid.3x2")
         }
@@ -753,30 +768,33 @@ struct MediaItemHeroView: View {
     .accessibilityLabel("More")
   }
 
-  /// kino.pub bookmarks are folders, so both the bookmark circle and the Watchlist
-  /// pill offer the list rather than a single on/off.
+  /// kino.pub bookmarks are folders — the circle opens the list (plus create).
   @ViewBuilder
   private func folderMenuLabel<Content: View>(@ViewBuilder label: () -> Content) -> some View {
-    if folders.isEmpty {
-      Button(action: {}) { label() }
-        .disabled(true)
-    } else {
-      Menu {
-        ForEach(folders, id: \.id) { folder in
-          Button {
-            onFolderToggle(folder)
-          } label: {
-            SwiftUI.Label(folder.title,
-                          systemImage: folderIDsContainingItem.contains(folder.id) ? "checkmark" : "")
-          }
+    Menu {
+      ForEach(folders, id: \.id) { folder in
+        Button {
+          onFolderToggle(folder)
+        } label: {
+          SwiftUI.Label(folder.title,
+                        systemImage: folderIDsContainingItem.contains(folder.id) ? "checkmark" : "")
         }
-      } label: {
-        label()
       }
-      // Folder membership arrives after first paint; rebuild the menu when it flips
-      // so `bookmark` → `bookmark.fill` actually reaches the screen.
-      .id(isBookmarked)
+      if onCreateFolder != nil {
+        if !folders.isEmpty { Divider() }
+        Button {
+          newFolderName = ""
+          showNewFolderAlert = true
+        } label: {
+          SwiftUI.Label("New Folder", systemImage: "folder.badge.plus")
+        }
+      }
+    } label: {
+      label()
     }
+    // Folder membership arrives after first paint; rebuild the menu when it flips
+    // so `bookmark` → `bookmark.fill` actually reaches the screen.
+    .id("\(isBookmarked)-\(folders.count)")
   }
 
   @ViewBuilder

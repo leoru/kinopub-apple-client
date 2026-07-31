@@ -458,7 +458,8 @@ struct CastPortraitView: View {
 
   var body: some View {
     VStack(spacing: 6) {
-      CastAvatarView(name: person.name, photoURL: member.photo)
+      CastAvatarView(name: person.name,
+                     photoURL: member.photo ?? ActorImageProvider.photoURL(for: person.name))
 
       VStack(spacing: 4) {
         Text(person.name)
@@ -694,6 +695,75 @@ struct MediaItemPhotosSection: View {
 #endif
 }
 
+// MARK: - Community vote
+
+/// Thumbs next to Ratings. kino.pub votes are one-shot — highlight sticks, no re-cast.
+struct MediaItemCommunityVoteSection: View {
+  let likeCount: Int
+  let dislikeCount: Int
+  let myVote: MediaItemUserVote
+  var onVote: (Bool) -> Void
+  var onSectionFocused: (() -> Void)? = nil
+
+  var body: some View {
+    HStack(spacing: MediaItemRatingsSection.spacing) {
+      voteButton(up: true)
+      voteButton(up: false)
+    }
+    .padding(.horizontal, MediaItemLayout.horizontalInset)
+  }
+
+  private func voteButton(up: Bool) -> some View {
+    let active = myVote == (up ? .up : .down)
+    let count = up ? likeCount : dislikeCount
+    let symbol = active
+      ? (up ? "hand.thumbsup.fill" : "hand.thumbsdown.fill")
+      : (up ? "hand.thumbsup" : "hand.thumbsdown")
+    return Button {
+      onVote(up)
+    } label: {
+      HStack(spacing: 8) {
+        Image(systemName: symbol)
+          .font(.system(size: Self.iconSize, weight: .semibold))
+        if count > 0 {
+          Text("\(count.formatted(.number.grouping(.automatic)))")
+            .font(MediaItemRatingsSection.titleFont)
+        }
+      }
+      .foregroundStyle(active ? (up ? Color.KinoPub.background : Color.white) : Color.KinoPub.text)
+      .padding(.horizontal, MediaItemRatingsSection.tilePadding)
+      .padding(.vertical, MediaItemRatingsSection.tilePadding * 0.7)
+      .background(
+        active
+          ? (up ? Color.KinoPub.text : Color.red.opacity(0.85))
+          : Color.KinoPub.selectionBackground.opacity(0.5),
+        in: Capsule(style: .continuous)
+      )
+    }
+    .buttonStyle(CommunityVoteButtonStyle())
+    .disabled(myVote != .none && !active)
+    .accessibilityLabel(up ? "Like" : "Dislike")
+#if os(tvOS)
+    .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+  }
+
+#if os(tvOS)
+  static let iconSize: CGFloat = 28
+#else
+  static let iconSize: CGFloat = 16
+#endif
+}
+
+private struct CommunityVoteButtonStyle: ButtonStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .opacity(configuration.isPressed ? 0.85 : 1)
+      .scaleEffect(configuration.isPressed ? 0.98 : 1)
+      .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+  }
+}
+
 // MARK: - Facts
 
 struct MediaItemFactsSection: View {
@@ -711,6 +781,92 @@ struct MediaItemFactsSection: View {
         }
         .padding(.horizontal, MediaItemLayout.horizontalInset)
       }
+    }
+  }
+}
+
+// MARK: - Reviews
+
+struct MediaItemReviewsSection: View {
+  let reviews: [Review]
+  var onSectionFocused: (() -> Void)? = nil
+
+  private var visible: [Review] { Array(reviews.prefix(Self.limit)) }
+
+  var body: some View {
+    if !visible.isEmpty {
+      VStack(alignment: .leading, spacing: 12) {
+        MediaItemSectionHeader("Reviews")
+        VStack(alignment: .leading, spacing: 16) {
+          ForEach(visible) { review in
+            ReviewRow(review: review, onSectionFocused: onSectionFocused)
+          }
+        }
+        .padding(.horizontal, MediaItemLayout.horizontalInset)
+      }
+    }
+  }
+
+  static let limit = 5
+}
+
+private struct ReviewRow: View {
+  let review: Review
+  var onSectionFocused: (() -> Void)? = nil
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 10) {
+        if let sentiment = sentimentLabel {
+          Text(sentiment)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.KinoPub.subtitle)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Color.KinoPub.selectionBackground.opacity(0.5),
+                        in: Capsule(style: .continuous))
+        }
+        Text(review.author)
+          .font(.subheadline.weight(.semibold))
+          .foregroundStyle(Color.KinoPub.text)
+          .lineLimit(1)
+        if let date = review.date, !date.isEmpty {
+          Text(date)
+            .font(.caption)
+            .foregroundStyle(Color.KinoPub.subtitle)
+            .lineLimit(1)
+        }
+      }
+      if !review.title.isEmpty {
+        Text(review.title)
+          .font(.headline)
+          .foregroundStyle(Color.KinoPub.text)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      Text(truncatedBody)
+        .font(.body)
+        .foregroundStyle(Color.KinoPub.subtitle)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+#if os(tvOS)
+    .focusable(true)
+    .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+  }
+
+  private var truncatedBody: String {
+    let trimmed = review.body.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard trimmed.count > 420 else { return trimmed }
+    let end = trimmed.index(trimmed.startIndex, offsetBy: 420)
+    return String(trimmed[..<end]).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
+  }
+
+  private var sentimentLabel: String? {
+    switch review.sentiment?.uppercased() {
+    case "POSITIVE": return "Positive".localized
+    case "NEGATIVE": return "Negative".localized
+    case "NEUTRAL": return "Neutral".localized
+    default: return nil
     }
   }
 }

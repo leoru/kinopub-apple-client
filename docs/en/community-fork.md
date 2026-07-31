@@ -96,14 +96,14 @@ When pulling something new from `community/main`:
 
 #### UI still ours to build / polish
 
-- [ ] Vote UI on the detail page (counts already decode via `communityVotes`)
+- [x] Vote UI on the detail page (counts already decode via `communityVotes`)
 - [ ] Collections tab / Home rows
 - [ ] Filter UI chips for rating/quality
-- [ ] Reviews section on the detail page (`TitleMetadata.reviews` is ready)
-- [ ] Prefer `ActorImageProvider` when TMDB photo is missing
+- [x] Reviews section on the detail page (`TitleMetadata.reviews` is ready)
+- [x] Prefer `ActorImageProvider` when TMDB photo is missing
 - [ ] Sport / channels UI + optional external XMLTV EPG (`Services/EPG/*` in community)
 - [ ] Downloads list polish (HLS interrupted rows, storage footer) — Kit is ready; keep our chrome
-- [ ] Watchlist toggle / create-folder chrome on detail & Library (APIs ready)
+- [x] Watchlist toggle / create-folder chrome on detail (APIs ready; Library polish later)
 - [ ] Raise marktimes interval once local store covers resume (community still ticks every 10s;
       local store alone is not anti-DDoS)
 

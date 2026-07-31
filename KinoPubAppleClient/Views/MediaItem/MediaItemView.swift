@@ -45,6 +45,7 @@ enum MediaItemContentAnchor: String, Hashable {
   case awards
   case photos
   case facts
+  case reviews
   case similar
   case info
 }
@@ -227,10 +228,15 @@ struct MediaItemView: View {
                       linkProvider: itemModel.linkProvider,
                       isWatched: itemModel.isWatched,
                       isBookmarked: itemModel.isBookmarked,
+                      isInWatchlist: itemModel.isInWatchlist,
                       folders: itemModel.folders,
                       folderIDsContainingItem: itemModel.folderIDsContainingItem,
                       onWatchedToggle: { itemModel.toggleWatched() },
                       onFolderToggle: { itemModel.toggleFolder($0) },
+                      onWatchlistToggle: { itemModel.toggleWatchlist() },
+                      onCreateFolder: { itemModel.createFolderAndAdd(named: $0) },
+                      onClearFromContinueWatching: { itemModel.clearFromContinueWatching() },
+                      onBrowseWatchlist: { navigationState.selectedTab = .watchlist },
                       titleLogoURL: itemModel.externalMetadata.titleLogoURL)
   }
 
@@ -282,6 +288,14 @@ struct MediaItemView: View {
                                   pageEntryFocus: hasSeasons ? nil : $focus)
             .id(MediaItemContentAnchor.ratings)
 
+          MediaItemCommunityVoteSection(likeCount: itemModel.likeCount,
+                                        dislikeCount: itemModel.dislikeCount,
+                                        myVote: itemModel.myVote,
+                                        onVote: { itemModel.vote(up: $0) },
+                                        onSectionFocused: {
+                                          activateContent(hasSeasons ? .ratings : .top)
+                                        })
+
           MediaItemCastSection(mediaItem: itemModel.mediaItem,
                                linkProvider: itemModel.linkProvider,
                                externalMetadata: itemModel.externalMetadata,
@@ -299,6 +313,10 @@ struct MediaItemView: View {
           MediaItemFactsSection(facts: itemModel.externalMetadata.facts,
                                 onSectionFocused: { activateContent(.facts) })
             .id(MediaItemContentAnchor.facts)
+
+          MediaItemReviewsSection(reviews: itemModel.externalMetadata.reviews,
+                                  onSectionFocused: { activateContent(.reviews) })
+            .id(MediaItemContentAnchor.reviews)
 
           MediaItemSimilarSection(items: itemModel.similarItems,
                                   linkProvider: itemModel.linkProvider,
@@ -366,10 +384,13 @@ struct MediaItemView: View {
                             linkProvider: itemModel.linkProvider,
                             isWatched: itemModel.isWatched,
                             isBookmarked: itemModel.isBookmarked,
+                            isInWatchlist: itemModel.isInWatchlist,
                             folders: itemModel.folders,
                             folderIDsContainingItem: itemModel.folderIDsContainingItem,
                             onWatchedToggle: { itemModel.toggleWatched() },
                             onFolderToggle: { itemModel.toggleFolder($0) },
+                            onWatchlistToggle: { itemModel.toggleWatchlist() },
+                            onCreateFolder: { itemModel.createFolderAndAdd(named: $0) },
                             onClearFromContinueWatching: { itemModel.clearFromContinueWatching() },
                             onBrowseWatchlist: { navigationState.selectedTab = .watchlist },
                             titleLogoURL: itemModel.externalMetadata.titleLogoURL)
@@ -392,12 +413,17 @@ struct MediaItemView: View {
           }
 
           MediaItemRatingsSection(mediaItem: itemModel.mediaItem, showsHeader: true)
+          MediaItemCommunityVoteSection(likeCount: itemModel.likeCount,
+                                        dislikeCount: itemModel.dislikeCount,
+                                        myVote: itemModel.myVote,
+                                        onVote: { itemModel.vote(up: $0) })
           MediaItemCastSection(mediaItem: itemModel.mediaItem,
                                linkProvider: itemModel.linkProvider,
                                externalMetadata: itemModel.externalMetadata)
           MediaItemAwardsSection(awards: itemModel.externalMetadata.awards)
           MediaItemPhotosSection(stills: itemModel.externalMetadata.stills)
           MediaItemFactsSection(facts: itemModel.externalMetadata.facts)
+          MediaItemReviewsSection(reviews: itemModel.externalMetadata.reviews)
           MediaItemSimilarSection(items: itemModel.similarItems, linkProvider: itemModel.linkProvider)
           MediaItemInfoColumns(mediaItem: itemModel.mediaItem,
                                externalMetadata: itemModel.externalMetadata)
