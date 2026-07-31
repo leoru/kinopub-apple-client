@@ -742,7 +742,7 @@ struct MediaItemCommunityVoteSection: View {
         in: Capsule(style: .continuous)
       )
     }
-    .buttonStyle(CommunityVoteButtonStyle())
+    .buttonStyle(.borderless)
     .disabled(myVote != .none && !active)
     .accessibilityLabel(up ? "Like" : "Dislike")
 #if os(tvOS)
@@ -757,14 +757,14 @@ struct MediaItemCommunityVoteSection: View {
 #endif
 }
 
-private struct CommunityVoteButtonStyle: ButtonStyle {
-  func makeBody(configuration: Configuration) -> some View {
-    configuration.label
-      .opacity(configuration.isPressed ? 0.85 : 1)
-      .scaleEffect(configuration.isPressed ? 0.98 : 1)
-      .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
-  }
-}
+//private struct CommunityVoteButtonStyle: ButtonStyle {
+//  func makeBody(configuration: Configuration) -> some View {
+//    configuration.label
+//      .opacity(configuration.isPressed ? 0.85 : 1)
+//      .scaleEffect(configuration.isPressed ? 0.98 : 1)
+//      .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+//  }
+//}
 
 // MARK: - Facts
 

@@ -8,23 +8,19 @@
 
 /* Begin PBXBuildFile section */
 		359B8BE15FCC4D9983B859BF /* StreamQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CF41D6D63054F0F92A507B1 /* StreamQuality.swift */; };
-		C746BAF04ACC4B519A6D7046 /* LocalWatchProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */; };
-		84B06A5DC1674B8DBDF075FC /* DeviceIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673B11D8E07244CCADA6EBBB /* DeviceIdentity.swift */; };
-		AA967A14831E15AEAAEED74F /* HLSAssetDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C70AA7F1483953DE245D765 /* HLSAssetDownloadManager.swift */; };
-		F08E8EEFDA71BBFFA2322126 /* HLSDownloadsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC78C38545E52587CFE1639 /* HLSDownloadsStore.swift */; };
-		DA5FF86605A41E11AE2AC428 /* SeasonDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6061CC9A771DBC1648BCA1F0 /* SeasonDownloadManager.swift */; };
-		BAE1B37E90AC85EEB728965C /* CollectionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C102076A821C81AC8BAB6DE6 /* CollectionsService.swift */; };
 		5154F406DBC7545E25F4B0EE /* CollectionsServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF84111EC8ACE8C4885E1A76 /* CollectionsServiceImpl.swift */; };
-		F545EAE1AFF5BFE43A86788A /* DeviceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC55C398012BAC5D583D1A45 /* DeviceService.swift */; };
-		E00AE1C02A30DF43F42BBB0D /* DeviceServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285B09E94948CDC959E3D287 /* DeviceServiceImpl.swift */; };
-		9181898AA7F0D28971B9EAB2 /* DeviceCapabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B122808656F8D05B7D97DC /* DeviceCapabilities.swift */; };
-		A33EDB761E32D7E524DDAB0F /* ActorImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A9752C15D23B6E4419BA5E1 /* ActorImageProvider.swift */; };
 		57DF3824CA609C7DA4EB8324 /* RowSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 849905DC0A8DF6F36DF8A402 /* RowSnapshotStore.swift */; };
 		5CDA790E2BD84471ADAD5D9D /* ContentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A455BD91626C3A69A07FF16 /* ContentStore.swift */; };
+		84B06A5DC1674B8DBDF075FC /* DeviceIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673B11D8E07244CCADA6EBBB /* DeviceIdentity.swift */; };
+		9181898AA7F0D28971B9EAB2 /* DeviceCapabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B122808656F8D05B7D97DC /* DeviceCapabilities.swift */; };
 		957B7DB6C328FC72EA807FB4 /* KinopoiskKeyStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */; };
 		9BB427D377EF668A2FFC1A10 /* KinopoiskSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */; };
+		A33EDB761E32D7E524DDAB0F /* ActorImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A9752C15D23B6E4419BA5E1 /* ActorImageProvider.swift */; };
 		A7EDB3D1A6A6B06830D80416 /* KinopoiskKeySettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F6301ED273E06AFCEBCC48 /* KinopoiskKeySettingsModel.swift */; };
+		AA967A14831E15AEAAEED74F /* HLSAssetDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C70AA7F1483953DE245D765 /* HLSAssetDownloadManager.swift */; };
 		B59B61DA0A35CB9ED9636C2B /* RowKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DB07C35241802B74DE0958 /* RowKey.swift */; };
+		BAE1B37E90AC85EEB728965C /* CollectionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C102076A821C81AC8BAB6DE6 /* CollectionsService.swift */; };
+		C746BAF04ACC4B519A6D7046 /* LocalWatchProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */; };
 		CC01461B2A783DF900F858AF /* NavigationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461A2A783DF900F858AF /* NavigationState.swift */; };
 		CC01461D2A783EEF00F858AF /* NavigationTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461C2A783EEF00F858AF /* NavigationTabs.swift */; };
 		CC01461F2A783F8400F858AF /* Routes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461E2A783F8400F858AF /* Routes.swift */; };
@@ -125,27 +121,31 @@
 		CCF388412A71C9CF00242581 /* AccessTokenServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388402A71C9CF00242581 /* AccessTokenServiceImpl.swift */; };
 		CCF388432A71CB3F00242581 /* AccessTokenPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388422A71CB3F00242581 /* AccessTokenPlugin.swift */; };
 		CCFDF43E2A828B6B0035D8E0 /* Providers.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFDF43D2A828B6B0035D8E0 /* Providers.swift */; };
+		DA5FF86605A41E11AE2AC428 /* SeasonDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6061CC9A771DBC1648BCA1F0 /* SeasonDownloadManager.swift */; };
+		E00AE1C02A30DF43F42BBB0D /* DeviceServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285B09E94948CDC959E3D287 /* DeviceServiceImpl.swift */; };
+		F08E8EEFDA71BBFFA2322126 /* HLSDownloadsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC78C38545E52587CFE1639 /* HLSDownloadsStore.swift */; };
+		F545EAE1AFF5BFE43A86788A /* DeviceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC55C398012BAC5D583D1A45 /* DeviceService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		3CF41D6D63054F0F92A507B1 /* StreamQuality.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamQuality.swift; sourceTree = "<group>"; };
-		C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalWatchProgressStore.swift; sourceTree = "<group>"; };
-		673B11D8E07244CCADA6EBBB /* DeviceIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdentity.swift; sourceTree = "<group>"; };
+		0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskKeyStorage.swift; sourceTree = "<group>"; };
+		13B122808656F8D05B7D97DC /* DeviceCapabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceCapabilities.swift; sourceTree = "<group>"; };
+		285B09E94948CDC959E3D287 /* DeviceServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceServiceImpl.swift; sourceTree = "<group>"; };
+		32DB07C35241802B74DE0958 /* RowKey.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RowKey.swift; sourceTree = "<group>"; };
 		3C70AA7F1483953DE245D765 /* HLSAssetDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSAssetDownloadManager.swift; sourceTree = "<group>"; };
+		3CF41D6D63054F0F92A507B1 /* StreamQuality.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamQuality.swift; sourceTree = "<group>"; };
+		4A455BD91626C3A69A07FF16 /* ContentStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentStore.swift; sourceTree = "<group>"; };
 		5CC78C38545E52587CFE1639 /* HLSDownloadsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSDownloadsStore.swift; sourceTree = "<group>"; };
 		6061CC9A771DBC1648BCA1F0 /* SeasonDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonDownloadManager.swift; sourceTree = "<group>"; };
-		C102076A821C81AC8BAB6DE6 /* CollectionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsService.swift; sourceTree = "<group>"; };
-		AF84111EC8ACE8C4885E1A76 /* CollectionsServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsServiceImpl.swift; sourceTree = "<group>"; };
-		AC55C398012BAC5D583D1A45 /* DeviceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceService.swift; sourceTree = "<group>"; };
-		285B09E94948CDC959E3D287 /* DeviceServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceServiceImpl.swift; sourceTree = "<group>"; };
-		13B122808656F8D05B7D97DC /* DeviceCapabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceCapabilities.swift; sourceTree = "<group>"; };
-		8A9752C15D23B6E4419BA5E1 /* ActorImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActorImageProvider.swift; sourceTree = "<group>"; };
-		0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskKeyStorage.swift; sourceTree = "<group>"; };
-		32DB07C35241802B74DE0958 /* RowKey.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RowKey.swift; sourceTree = "<group>"; };
-		4A455BD91626C3A69A07FF16 /* ContentStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentStore.swift; sourceTree = "<group>"; };
+		673B11D8E07244CCADA6EBBB /* DeviceIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdentity.swift; sourceTree = "<group>"; };
 		76F6301ED273E06AFCEBCC48 /* KinopoiskKeySettingsModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskKeySettingsModel.swift; sourceTree = "<group>"; };
 		849905DC0A8DF6F36DF8A402 /* RowSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RowSnapshotStore.swift; sourceTree = "<group>"; };
 		8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskSettingsSection.swift; sourceTree = "<group>"; };
+		8A9752C15D23B6E4419BA5E1 /* ActorImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActorImageProvider.swift; sourceTree = "<group>"; };
+		AC55C398012BAC5D583D1A45 /* DeviceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceService.swift; sourceTree = "<group>"; };
+		AF84111EC8ACE8C4885E1A76 /* CollectionsServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsServiceImpl.swift; sourceTree = "<group>"; };
+		C102076A821C81AC8BAB6DE6 /* CollectionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsService.swift; sourceTree = "<group>"; };
+		C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalWatchProgressStore.swift; sourceTree = "<group>"; };
 		CC01461A2A783DF900F858AF /* NavigationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationState.swift; sourceTree = "<group>"; };
 		CC01461C2A783EEF00F858AF /* NavigationTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationTabs.swift; sourceTree = "<group>"; };
 		CC01461E2A783F8400F858AF /* Routes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Routes.swift; sourceTree = "<group>"; };
@@ -267,6 +267,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3F62C34DB1BD4457BD04AAF8 /* LocalWatchProgress */ = {
+			isa = PBXGroup;
+			children = (
+				C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */,
+			);
+			path = LocalWatchProgress;
+			sourceTree = "<group>";
+		};
 		A1C011EC710C511EC710C501 /* Collections */ = {
 			isa = PBXGroup;
 			children = (
@@ -274,15 +282,6 @@
 				AF84111EC8ACE8C4885E1A76 /* CollectionsServiceImpl.swift */,
 			);
 			path = Collections;
-			sourceTree = "<group>";
-		};
-		D3D1CE5E001CE5E001CE5E01 /* Device */ = {
-			isa = PBXGroup;
-			children = (
-				AC55C398012BAC5D583D1A45 /* DeviceService.swift */,
-				285B09E94948CDC959E3D287 /* DeviceServiceImpl.swift */,
-			);
-			path = Device;
 			sourceTree = "<group>";
 		};
 		AC701A6E5A1C701A6E500001 /* ActorImages */ = {
@@ -681,14 +680,6 @@
 			path = Player;
 			sourceTree = "<group>";
 		};
-		3F62C34DB1BD4457BD04AAF8 /* LocalWatchProgress */ = {
-			isa = PBXGroup;
-			children = (
-				C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */,
-			);
-			path = LocalWatchProgress;
-			sourceTree = "<group>";
-		};
 		CCF388172A7187F900242581 /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -765,6 +756,15 @@
 			path = AccessToken;
 			sourceTree = "<group>";
 		};
+		D3D1CE5E001CE5E001CE5E01 /* Device */ = {
+			isa = PBXGroup;
+			children = (
+				AC55C398012BAC5D583D1A45 /* DeviceService.swift */,
+				285B09E94948CDC959E3D287 /* DeviceServiceImpl.swift */,
+			);
+			path = Device;
+			sourceTree = "<group>";
+		};
 		E61DAEFBE7E94C850CB158EA /* Cache */ = {
 			isa = PBXGroup;
 			children = (
@@ -772,7 +772,6 @@
 				849905DC0A8DF6F36DF8A402 /* RowSnapshotStore.swift */,
 				4A455BD91626C3A69A07FF16 /* ContentStore.swift */,
 			);
-			name = Cache;
 			path = Cache;
 			sourceTree = "<group>";
 		};
@@ -833,7 +832,7 @@
 			packageReferences = (
 				CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */,
-				CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */,
+				CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */,
 			);
 			productRefGroup = CC88E1E22A6586E600E9387F /* Products */;
 			projectDirPath = "";
@@ -1222,7 +1221,7 @@
 				minimumVersion = 2.6.0;
 			};
 		};
-		CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */ = {
+		CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ashleymills/Reachability.swift";
 			requirement = {
@@ -1264,7 +1263,7 @@
 		};
 		CC8202FF2A8657BA0041079A /* Reachability */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */;
+			package = CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */;
 			productName = Reachability;
 		};
 		CCA200012D001002 /* KinoPubMetadata */ = {
