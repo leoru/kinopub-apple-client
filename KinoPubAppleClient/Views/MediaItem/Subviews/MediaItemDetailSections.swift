@@ -319,14 +319,16 @@ struct MediaItemCastSection: View {
       roleDepartment: "Directing",
       from: externalMetadata
     ).map {
-      (MediaPerson(name: $0.name, role: .director, photoURL: $0.photo, tmdbPersonId: $0.tmdbPersonId), $0)
+      let photo = $0.photo ?? ActorImageProvider.photoURL(for: $0.name)
+      return (MediaPerson(name: $0.name, role: .director, photoURL: photo, tmdbPersonId: $0.tmdbPersonId), $0)
     }
     let actors = TitleMetadata.enrich(
       names: mediaItem.castMembers,
       roleDepartment: "Acting",
       from: externalMetadata
     ).map {
-      (MediaPerson(name: $0.name, role: .actor, photoURL: $0.photo, tmdbPersonId: $0.tmdbPersonId), $0)
+      let photo = $0.photo ?? ActorImageProvider.photoURL(for: $0.name)
+      return (MediaPerson(name: $0.name, role: .actor, photoURL: photo, tmdbPersonId: $0.tmdbPersonId), $0)
     }
     return directors + actors
   }

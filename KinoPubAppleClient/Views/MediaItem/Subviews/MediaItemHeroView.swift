@@ -347,13 +347,10 @@ struct MediaItemHeroView: View {
   var linkProvider: NavigationLinkProvider
   var isWatched: Bool
   var isBookmarked: Bool
-  /// Series watchlist flag (`togglewatchlist`) — not the same as bookmark folders.
-  var isInWatchlist: Bool = false
   var folders: [Bookmark]
   var folderIDsContainingItem: Set<Int>
   var onWatchedToggle: () -> Void
   var onFolderToggle: (Bookmark) -> Void
-  var onWatchlistToggle: (() -> Void)? = nil
   var onCreateFolder: ((String) -> Void)? = nil
   var onClearFromContinueWatching: () -> Void = {}
   /// Opens the Saved / watchlist tab — same destination as the CW long-press action.
@@ -699,14 +696,14 @@ struct MediaItemHeroView: View {
     }
   }
 
-  /// Series watchlist toggle — `/v1/watching/togglewatchlist`, not bookmark folders.
+  /// Labeled save control — same bookmark-folder menu as the circle (not
+  /// `/v1/watching/togglewatchlist`: a checkmark here would collide with Mark as Watched).
+  /// // DESIGN: separate series-watchlist chrome TBD — API is `UserActionsService.toggleWatchlist`.
   @ViewBuilder
   private var watchlistPill: some View {
-    Button {
-      onWatchlistToggle?()
-    } label: {
+    folderMenuLabel {
       HStack(spacing: MediaActionMetrics.contentSpacing) {
-        Image(systemName: isInWatchlist ? "checkmark" : "plus")
+        Image(systemName: "plus")
           .font(.system(size: MediaActionMetrics.iconPointSize, weight: .semibold))
         Text("Watchlist")
           .font(MediaActionMetrics.labelFont)
@@ -715,7 +712,7 @@ struct MediaItemHeroView: View {
     }
     .mediaActionPillStyle()
     .focused($focus, equals: .heroOther)
-    .accessibilityLabel(isInWatchlist ? "Remove from Watchlist" : "Add to Watchlist")
+    .accessibilityLabel("Watchlist")
   }
 
   private var watchedButton: some View {
@@ -754,7 +751,7 @@ struct MediaItemHeroView: View {
         }
       }
 
-      if isSeries, isInWatchlist || isBookmarked, let onBrowseWatchlist {
+      if isSeries, isBookmarked, let onBrowseWatchlist {
         Button(action: onBrowseWatchlist) {
           Label("Browse My Watchlist", systemImage: "rectangle.grid.3x2")
         }

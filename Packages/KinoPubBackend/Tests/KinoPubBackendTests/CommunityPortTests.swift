@@ -107,6 +107,25 @@ final class CommunityPortTests: XCTestCase {
     XCTAssertEqual(request.parameters?["mixedPlaylist"] as? Int, 1)
   }
 
+  func testDeviceNotifyPutsIdentityInFormBody() {
+    let request = DeviceNotifyRequest(
+      title: "Alexander's MacBook",
+      hardware: "MacBook Pro M1 Max, macOS 27",
+      software: "KinoPub, v0.56 (123)"
+    )
+    XCTAssertEqual(request.path, "/v1/device/notify")
+    XCTAssertEqual(request.method, "POST")
+    XCTAssertFalse(request.forceSendAsGetParams)
+    XCTAssertEqual(request.parameters?["title"] as? String, "Alexander's MacBook")
+    XCTAssertEqual(request.parameters?["hardware"] as? String, "MacBook Pro M1 Max, macOS 27")
+    XCTAssertEqual(request.parameters?["software"] as? String, "KinoPub, v0.56 (123)")
+  }
+
+  func testListAndRemoveDevicePaths() {
+    XCTAssertEqual(ListDevicesRequest().path, "/v1/device")
+    XCTAssertEqual(RemoveDeviceRequest(id: 42).path, "/v1/device/42/remove")
+  }
+
   // MARK: - Client-side filter facets
 
   func testClientSideFacetsMatchQualityAndRatings() {

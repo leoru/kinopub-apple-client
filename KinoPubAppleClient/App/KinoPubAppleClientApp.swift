@@ -45,10 +45,12 @@ struct KinoPubAppleClientApp: App {
         // Dark-only until light is a deliberate pass (modernization Phase 0).
         // Info.plist UIUserInterfaceStyle=Dark covers system chrome; this covers SwiftUI.
         .preferredColorScheme(.dark)
-        // Advertise HEVC/4K/HDR + mixedPlaylist once authorized so kino.pub serves
-        // streams AVPlayer can open (community fork's DeviceService.syncCapabilities).
+        // Register a readable device identity + advertise HEVC/4K/HDR once authorized
+        // so the kino.pub Devices list isn't "unknown / unknown" and streams match
+        // what AVPlayer can open.
         .task(id: authState.userState) {
           if authState.userState == .authorized {
+            await AppContext.shared.deviceService.registerDeviceIdentity()
             await AppContext.shared.deviceService.syncCapabilities()
           }
         }

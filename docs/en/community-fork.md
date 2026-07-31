@@ -11,7 +11,7 @@ AltStore, Sport, richer device/download stack).
 | --- | --- |
 | `git rebase` / merge `community/main` onto us | **No.** Mutual non-ancestors, opposing UI, opposing metadata strategies. Conflict storm with no product win. |
 | Add a second remote and cherry-pick / copy technical slices | **Yes.** This is what we do. |
-| Hand-port features as needed | **Yes** for UI-facing work — steal API/models/services, write our own screens. |
+| Hand-port features as needed | **Yes** for system/API work. **UI chrome is DESIGN TBD** — leave `// DESIGN:` comments at call sites; do not invent buttons/layouts from their Views. |
 
 ### Remotes
 
@@ -29,119 +29,90 @@ target — we never push our UI there. Use it to read, cherry-pick isolated back
 
 **Take (technical / system):**
 
-- Device streaming profile (`support4k` / `supportHevc` / `supportHdr` / `mixedPlaylist`) + auto-sync
-- Vote API (`GET /v1/items/vote`)
-- Collections API
-- Client-side library facets (KP/IMDb min rating, 4K/HD/AC3) — server ignores those query params
-- Keyless Kinopoisk extras via `https://kpapp.link/kpapi/films/<id>/{facts,reviews,staff,images}`
-- Actor CDN portraits `https://m.pushbr.com/actors/<md5(ru name)>.jpg`
-- Player failure diagnostics / resume thresholds when they beat ours
-- Local watch-progress store + shared `WatchProgress` classifier
-- Stream quality cap via `AVPlayerItem.preferredMaximumResolution`
-- Bookmark/watchlist mutation quirks (body POST vs query)
-- Downloads / Sport / TV channels later, as backend slices only
+- Device identity (`POST /v1/device/notify`) + streaming profile (HEVC/4K/HDR/`mixedPlaylist`)
+- Vote / Collections / watchlist / bookmark-folder APIs
+- Client-side library facets (KP/IMDb min rating, 4K/HD/AC3)
+- Keyless Kinopoisk extras + actor CDN portraits
+- Local watch-progress + `WatchProgress` classifier
+- Stream quality cap via `preferredMaximumResolution`
+- Downloads Kit hardening / iOS HLS offline (backend + Kit; keep our chrome)
+- TV channels service (no Sport UI yet)
 
 **Leave (their UI / product choices):**
 
-- Their SwiftUI chrome, skeletons, filter sheets, Sport tab layout
-- Their “related” shelf (same type + first genre) — we already use real `GET /v1/items/similar`
-- Their removal of TMDB — we keep TMDB via our worker for logos / schedules / cast
-- Their `MediaLibraryStore` as a ContentStore replacement — cherry-pick ideas only
-- Their `WatchingSerial` model / Comments / FilterDataService / SectionVisibilityStore /
-  WidthThresholdReader
+- Their SwiftUI chrome, skeletons, filter sheets, Sport tab, Devices settings screens
+- Their “related” shelf — we use `GET /v1/items/similar`
+- Their removal of TMDB — we keep the worker
+- Their `MediaLibraryStore` as a `ContentStore` replacement
+- Wiring `/v1/watching/togglewatchlist` to a checkmark control — **our** checkmark means Mark as Watched
 
-### How metadata works without keys (why their Mac build “just worked”)
+### How metadata works without keys
 
-They do **not** ship a Kinopoisk Unofficial API key. Facts, reviews, staff, and stills come from
-the public third-party proxy `kpapp.link` (no auth headers; verified 200 on live probes). Actor
-headshots come from `m.pushbr.com` keyed by MD5 of the Russian name. Ratings/plot still come from
-kino.pub OAuth (`ClientID`/`ClientSecret` in Info.plist — the shared xbmc client, not a Kinopoisk key).
+They do **not** ship a Kinopoisk Unofficial API key. Facts/reviews/staff/stills come from
+`kpapp.link`; actor headshots from `m.pushbr.com` (MD5 of Russian name). We keep TMDB + optional
+keyed Kinopoisk **and** always-on `KinopoiskProxySource`.
 
-We keep our richer per-user Kinopoisk Unofficial path **and** wire `KinopoiskProxySource` as an
-always-on fallback so detail extras work with zero Settings. Proxy is a third-party dependency;
-sections stay empty if it dies.
+---
 
-### Port checklist (steal next)
+## Device identity (why kino.pub showed “unknown”)
 
-When pulling something new from `community/main`:
+kino.pub’s account Devices list uses three notify fields + settings badges:
 
-1. Prefer `Packages/KinoPubBackend` Request/Model/Response files + a thin `*Service` in
-   `KinoPubAppleClient/Services/`.
-2. Add / keep mocks so previews compile.
-3. Do **not** copy their Views. Wire into our VMs / `MediaRowsView` / detail sections.
-4. Note the steal in this file or README API notes.
-5. Tick the matching roadmap checkbox when the UI lands.
+| Field | Community (raw) | Ours (middle ground) |
+| --- | --- | --- |
+| `title` | Host / `UIDevice.name` | same |
+| `hardware` | machine id (`MacBookPro18,2`) | `MacBook Pro M1 Max, macOS 27` |
+| `software` | `macOS Version … (Build …)` | `KinoPub, v0.56 (build)` |
+| badges | settings: HLS4 / region / 4K / HEVC / HDR | same via `syncCapabilities` |
 
-#### Already ported
+Wired on authorize: `registerDeviceIdentity()` then `syncCapabilities()`.
+API notes: [`docs/api/device.md`](../api/device.md).
+List/remove are on `DeviceService` — Profile chrome is `// DESIGN:` stub only.
 
-- [x] `VoteRequest` / `VoteData` + `UserActionsService.vote`
-- [x] Collections requests/models/responses + `CollectionsService`
-- [x] Device settings + `DeviceService.syncCapabilities` (HEVC/4K/HDR/mixedPlaylist)
-- [x] `LibraryFilter` client-side facets (KP/IMDb/4K/HD/AC3)
-- [x] `KinopoiskExtrasService` (Backend) + `KinopoiskProxySource` (Metadata, always on)
-- [x] `ActorImageProvider` (CDN MD5 fallback)
-- [x] `FileInfo.dedupedByQuality` for mixed playlists
-- [x] Downloads Kit hardening — reject error bodies, delete local file, resume control DB,
-      non-discretionary background session, human filenames, speed/ETA
-- [x] iOS HLS offline (`HLSAssetDownloadManager` / `HLSDownloadsStore`) + season mp4 queue
-- [x] Player prefers local HLS/mp4 when the file exists (identity + episode match)
-- [x] TV channels service — `GET /v1/tv` via `VideoContentService.fetchTVChannels` (no Sport UI/EPG yet)
-- [x] Bookmark toggle as body POST (`forceSendAsGetParams = false`) — query silently no-ops
-- [x] `EmptyResponseData` null / empty / non-object tolerant decode
-- [x] `WatchProgress` classifier (+ unit tests) wired into Episode/Video/History/playback helpers
-- [x] `LocalWatchProgressStore` + PlayerManager record/clear/resume-on-ready + Home CW merge
-- [x] `StreamQuality` + `preferredMaximumResolution` + Settings picker
-- [x] `ToggleWatchlistRequest` + `UserActionsService.toggleWatchlist`
-- [x] Bookmark folder create/remove + `CreateBookmarkFolderData` (service layer)
+---
 
-#### UI still ours to build / polish
+## Already ported (system)
 
-- [x] Vote UI on the detail page (counts already decode via `communityVotes`)
+- [x] Vote / Collections / Device settings + syncCapabilities
+- [x] Device notify identity (`DeviceIdentity` + `DeviceNotifyRequest` body POST)
+- [x] Device list/remove service APIs (`ManagedDevice`, no Settings UI yet)
+- [x] `LibraryFilter` client facets
+- [x] Kinopoisk proxy + `ActorImageProvider`
+- [x] `FileInfo.dedupedByQuality`
+- [x] Downloads Kit hardening + iOS HLS offline + season queue
+- [x] Player prefers local HLS/mp4 when present
+- [x] TV channels `GET /v1/tv`
+- [x] Bookmark toggle body POST + null-tolerant `EmptyResponseData`
+- [x] `WatchProgress` + `LocalWatchProgressStore` + player/Home wiring
+- [x] `StreamQuality` + Settings picker
+- [x] `ToggleWatchlistRequest` + folder create/remove **service** APIs
+
+## System still to port (no UI inventing)
+
+Prefer these next. Land Backend/`*Service` + `// DESIGN:` comments where chrome will sit.
+
+| Priority | Slice | Community path | Notes |
+| --- | --- | --- | --- |
+| HIGH | `period` on `/v1/items` | `FilterItemsRequest.period` | Server-side hot/popular window (`day`/`week`/`month`/`year`). Add to `LibraryFilter` + `ItemsRequest`. Chip chrome = DESIGN. |
+| HIGH | `ResponseCache` | `Client/ResponseCache.swift` + APIClient hook | Opt-in TTL for genres/countries (disk) — **not** personalized shelves (`ContentStore` stays). |
+| MEDIUM | `clear-for-season` | `ClearHistoryRequest.Scope.season` | We have item/media clear; season scope missing. Service only until season-rail action is designed. |
+| MEDIUM | `NetworkMonitor` | `KinoPubKit/Network/NetworkMonitor.swift` | Debounced `NWPathMonitor`. Banner chrome = DESIGN; don’t copy their tab-lock. |
+| MEDIUM | Raise marktimes interval | Player `PlayerTimeObserver` period | Still 10s (same as community). Local store covers resume — can raise once we measure. |
+| LOW | Device settings UI | their `Views/Profile/Device/*` | Service ready; Settings list/remove = DESIGN. |
+| LOW | Collections Home rows | Collections service already here | Row chrome = DESIGN. |
+| SKIP | EPG / Sport UI, Comments, `FilterDataService`, `SectionVisibilityStore`, `WidthThresholdReader`, `WatchingSerial`, wholesale `MediaLibraryStore` | — | Leave alone. |
+
+## DESIGN stubs (do not ship chrome from community)
+
+Agents: add a `// DESIGN:` comment at the call site; **do not** invent buttons.
+
+- [ ] Profile → Devices list / remove (`DeviceService.listDevices` ready)
+- [ ] Series watchlist distinct from bookmark folders / Mark as Watched  
+      (`actionsService.toggleWatchlist` ready — **not** a checkmark)
 - [ ] Collections tab / Home rows
-- [ ] Filter UI chips for rating/quality
-- [x] Reviews section on the detail page (`TitleMetadata.reviews` is ready)
-- [x] Prefer `ActorImageProvider` when TMDB photo is missing
-- [ ] Sport / channels UI + optional external XMLTV EPG (`Services/EPG/*` in community)
-- [ ] Downloads list polish (HLS interrupted rows, storage footer) — Kit is ready; keep our chrome
-- [x] Watchlist toggle / create-folder chrome on detail (APIs ready; Library polish later)
-- [ ] Raise marktimes interval once local store covers resume (community still ticks every 10s;
-      local store alone is not anti-DDoS)
+- [ ] Library filter chips (rating/quality already filtered client-side; `period` when ported)
+- [ ] Sport / channels + optional XMLTV EPG
+- [ ] Downloads list polish (HLS interrupted rows, storage footer)
+- [ ] Offline / reachability banner (`NetworkMonitor` when ported)
 
-#### Remaining inventory (priority)
-
-**MUST (done or landing with this pass)**
-
-| Slice | Community path | Notes |
-| --- | --- | --- |
-| Bookmark toggle body POST | `ToggleBookmarkFolderRequest` | Query → 404 / silent no-op |
-| Null-tolerant `EmptyResponseData` | `Responses/EmptyResponseData.swift` | history clear returns literal `null` |
-| `WatchProgress` | `Models/WatchProgress.swift` + tests | Single finished / resumable thresholds |
-| `LocalWatchProgressStore` | `Services/LocalWatchProgress/*` | Instant CW; seek wait for `readyToPlay` |
-
-**HIGH**
-
-| Slice | Status | Notes |
-| --- | --- | --- |
-| `StreamQuality` + Settings | landing | Cap ABR via `preferredMaximumResolution` |
-| `ToggleWatchlistRequest` | landing | Service first; UI later |
-| Bookmark folder create/remove | landing | Body POST; `CreateBookmarkFolderData` |
-| `MediaLibraryStore` ideas | skip wholesale | Do **not** replace `ContentStore`; cherry-pick later |
-
-**MEDIUM (next)**
-
-| Slice | Community path | Notes |
-| --- | --- | --- |
-| `ResponseCache` | their Kit / services | TTL HTTP cache |
-| `period` on `/v1/items` | library filter | Hot/popular windows |
-| Device notify / list / remove | device API | Multi-device management |
-| `NetworkMonitor` | reachability UX | Offline banner |
-| Clear history for season | `clear-for-season` | Already partial on our side |
-
-**SKIP for now**
-
-- EPG / Sport UI
-- Comments
-- `FilterDataService`
-- `SectionVisibilityStore`
-- `WidthThresholdReader`
-- Their `WatchingSerial` model
+Detail vote / reviews / actor CDN fallback already landed earlier — leave until a design pass says otherwise; no further UI invention from the community fork.

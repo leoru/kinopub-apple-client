@@ -73,6 +73,9 @@ struct ProfileView: View {
             languageSection
             playbackSection
 
+            // DESIGN: Devices section — `DeviceService.listDevices` / `removeDevice` are ready
+            // (identity + HEVC/4K/HDR already sync on auth). Layout TBD before shipping chrome.
+
             KinopoiskSettingsSection(keyProvider: appContext.kinopoiskKeyProvider)
 
             Section(header: Text("Data sources")) {

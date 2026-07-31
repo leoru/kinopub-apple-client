@@ -68,8 +68,6 @@ class MediaItemModel: ObservableObject {
   @Published public var folders: [Bookmark] = []
   @Published public var folderIDsContainingItem: Set<Int> = []
   @Published public var isWatched: Bool = false
-  /// Series watchlist (`/v1/watching/togglewatchlist`) — independent of bookmark folders.
-  @Published public var isInWatchlist: Bool = false
   @Published public var myVote: MediaItemUserVote = .none
   @Published public var likeCount: Int = 0
   @Published public var dislikeCount: Int = 0
@@ -122,7 +120,6 @@ class MediaItemModel: ObservableObject {
         mediaItem.seasons = mediaItem.seasons?.map({ $0.mediaId = mediaId; return $0 })
         AppContext.shared.localProgressStore.cacheItem(mediaItem)
         isWatched = mediaItem.playbackAction == .playAgain
-        isInWatchlist = mediaItem.inWatchlist == true || mediaItem.subscribed == true
         seedVoteCounts()
         itemLoaded = true
         identity = MediaIdentity(mediaItem: mediaItem)
@@ -311,20 +308,9 @@ class MediaItemModel: ObservableObject {
     }
   }
 
-  /// Subscribe / unsubscribe a series on the watchlist. Bookmark folders stay separate.
-  func toggleWatchlist() {
-    let previous = isInWatchlist
-    isInWatchlist.toggle()
-    Task {
-      do {
-        try await actionsService.toggleWatchlist(id: mediaItemId)
-        contentStore.invalidate(family: .watch)
-      } catch {
-        isInWatchlist = previous
-        errorHandler.setError(error)
-      }
-    }
-  }
+  // DESIGN: series `/v1/watching/togglewatchlist` is available via
+  // `actionsService.toggleWatchlist` — do not wire it to a checkmark control here;
+  // checkmark already means Mark as Watched. Needs its own chrome when designed.
 
   /// Create a bookmark folder and put this item in it.
   func createFolderAndAdd(named name: String) {
