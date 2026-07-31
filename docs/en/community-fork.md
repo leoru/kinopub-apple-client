@@ -75,8 +75,15 @@ Already ported into this tree (backend + services; UI mostly still ours to build
 - [x] `KinopoiskExtrasService` (Backend) + `KinopoiskProxySource` (Metadata, always on)
 - [x] `ActorImageProvider` (CDN MD5 fallback)
 - [x] `FileInfo.dedupedByQuality` for mixed playlists
+- [x] Downloads Kit hardening — reject error bodies, delete local file, resume control DB,
+      non-discretionary background session, human filenames, speed/ETA
+- [x] iOS HLS offline (`HLSAssetDownloadManager` / `HLSDownloadsStore`) + season mp4 queue
+- [x] Player prefers local HLS/mp4 when the file exists (identity + episode match)
+- [x] TV channels service — `GET /v1/tv` via `VideoContentService.fetchTVChannels` (no Sport UI/EPG yet)
 - [ ] Vote UI on the detail page (counts already decode via `communityVotes`)
 - [ ] Collections tab / Home rows
 - [ ] Filter UI chips for rating/quality
 - [ ] Reviews section on the detail page (`TitleMetadata.reviews` is ready)
 - [ ] Prefer `ActorImageProvider` when TMDB photo is missing
+- [ ] Sport / channels UI + optional external XMLTV EPG (`Services/EPG/*` in community)
+- [ ] Downloads list polish (HLS interrupted rows, storage footer) — Kit is ready; keep our chrome

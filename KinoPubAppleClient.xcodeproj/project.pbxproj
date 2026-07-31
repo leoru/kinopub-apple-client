@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AA967A14831E15AEAAEED74F /* HLSAssetDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C70AA7F1483953DE245D765 /* HLSAssetDownloadManager.swift */; };
+		F08E8EEFDA71BBFFA2322126 /* HLSDownloadsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC78C38545E52587CFE1639 /* HLSDownloadsStore.swift */; };
+		DA5FF86605A41E11AE2AC428 /* SeasonDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6061CC9A771DBC1648BCA1F0 /* SeasonDownloadManager.swift */; };
 		BAE1B37E90AC85EEB728965C /* CollectionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C102076A821C81AC8BAB6DE6 /* CollectionsService.swift */; };
 		5154F406DBC7545E25F4B0EE /* CollectionsServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF84111EC8ACE8C4885E1A76 /* CollectionsServiceImpl.swift */; };
 		F545EAE1AFF5BFE43A86788A /* DeviceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC55C398012BAC5D583D1A45 /* DeviceService.swift */; };
@@ -122,6 +125,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		3C70AA7F1483953DE245D765 /* HLSAssetDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSAssetDownloadManager.swift; sourceTree = "<group>"; };
+		5CC78C38545E52587CFE1639 /* HLSDownloadsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSDownloadsStore.swift; sourceTree = "<group>"; };
+		6061CC9A771DBC1648BCA1F0 /* SeasonDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonDownloadManager.swift; sourceTree = "<group>"; };
 		C102076A821C81AC8BAB6DE6 /* CollectionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsService.swift; sourceTree = "<group>"; };
 		AF84111EC8ACE8C4885E1A76 /* CollectionsServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsServiceImpl.swift; sourceTree = "<group>"; };
 		AC55C398012BAC5D583D1A45 /* DeviceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceService.swift; sourceTree = "<group>"; };
@@ -320,6 +326,9 @@
 		CC44462F2A828B2F0017F499 /* Download */ = {
 			isa = PBXGroup;
 			children = (
+				3C70AA7F1483953DE245D765 /* HLSAssetDownloadManager.swift */,
+				5CC78C38545E52587CFE1639 /* HLSDownloadsStore.swift */,
+				6061CC9A771DBC1648BCA1F0 /* SeasonDownloadManager.swift */,
 				CCFDF43D2A828B6B0035D8E0 /* Providers.swift */,
 			);
 			path = Download;
@@ -846,6 +855,9 @@
 				CCF2ABB42AED39E0000448A8 /* WindowSettings.swift in Sources */,
 				CCF388252A718AF300242581 /* VideoContentServiceImpl.swift in Sources */,
 				CC0146352A78439600F858AF /* NavigationLinkProvider.swift in Sources */,
+				AA967A14831E15AEAAEED74F /* HLSAssetDownloadManager.swift in Sources */,
+				F08E8EEFDA71BBFFA2322126 /* HLSDownloadsStore.swift in Sources */,
+				DA5FF86605A41E11AE2AC428 /* SeasonDownloadManager.swift in Sources */,
 				CCFDF43E2A828B6B0035D8E0 /* Providers.swift in Sources */,
 				CCF388412A71C9CF00242581 /* AccessTokenServiceImpl.swift in Sources */,
 				CC71E7262A6DD643004AFB3F /* AppDelegate.swift in Sources */,

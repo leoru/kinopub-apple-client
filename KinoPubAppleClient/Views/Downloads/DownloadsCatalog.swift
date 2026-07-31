@@ -33,14 +33,23 @@ class DownloadsCatalog: ObservableObject {
   }
   
   func refresh() {
-    self.downloadedItems = downloadsDatabase.readData() ?? []
+    // Drop DB rows whose file was deleted out-of-band (Files app, OS reclaim).
+    let stored = downloadsDatabase.readData() ?? []
+    var present: [DownloadedFileInfo<DownloadMeta>] = []
+    for info in stored {
+      if FileManager.default.fileExists(atPath: info.localFileURL.path) {
+        present.append(info)
+      } else {
+        downloadsDatabase.remove(fileInfo: info)
+      }
+    }
+    self.downloadedItems = present
     self.activeDownloads = downloadManager.activeDownloads.map({ $0.value })
     cancellables.removeAll()
     self.activeDownloads.forEach({
       let c = $0.objectWillChange.sink(receiveValue: { self.objectWillChange.send() })
       self.cancellables.append(c)
     })
-    
   }
   
   func deleteDownloadedItem(at indexSet: IndexSet) {

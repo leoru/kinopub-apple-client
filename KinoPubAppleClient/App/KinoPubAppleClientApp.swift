@@ -52,6 +52,11 @@ struct KinoPubAppleClientApp: App {
             await AppContext.shared.deviceService.syncCapabilities()
           }
         }
+#if os(iOS)
+        .task {
+          await AppContext.shared.downloadNotificationManager.requestPermission()
+        }
+#endif
 #if os(macOS)
         .frame(minWidth: WindowSize.macos.width, minHeight: WindowSize.macos.height)
 #endif

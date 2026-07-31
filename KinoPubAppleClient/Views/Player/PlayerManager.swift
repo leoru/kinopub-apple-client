@@ -89,11 +89,30 @@ class PlayerManager: ObservableObject {
   private var fileURL: URL? {
     switch watchMode {
     case .media:
-      let downloadedFiles = downloadedFilesDatabase.readData()
-      if let file = downloadedFiles?.filter({ $0.metadata.id == playItem.id }).first {
-        return file.localFileURL
+      // DownloadMeta.id is the series/content id; Episode.id is the episode id while
+      // metadata.id is the series. Match either so a downloaded item opened from detail
+      // plays locally instead of streaming.
+      let contentIds: Set<Int> = [playItem.id, playItem.metadata.id]
+      for contentId in contentIds {
+        if let hls = AppContext.shared.hlsDownloadsStore.asset(
+          forId: contentId,
+          video: playItem.metadata.video,
+          season: playItem.metadata.season
+        ) {
+          return hls.localFileURL
+        }
       }
-      return URL(string: BestVideoQualityFinder.findBestURL(for: playItem.files))
+      let downloadedFiles = downloadedFilesDatabase.readData() ?? []
+      let sameItem = downloadedFiles.filter { contentIds.contains($0.metadata.id) }
+      let playURLs = Set(playItem.files.map(\.url.http))
+      let chosen = sameItem.first(where: { playURLs.contains($0.originalURL.absoluteString) })
+        ?? sameItem.first
+      if let chosen, FileManager.default.fileExists(atPath: chosen.localFileURL.path) {
+        return chosen.localFileURL
+      }
+      let urlString = BestVideoQualityFinder.findBestURL(for: playItem.files)
+      guard !urlString.isEmpty else { return nil }
+      return URL(string: urlString)
     case .trailer:
       return playItem.trailerURL
     }

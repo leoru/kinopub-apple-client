@@ -76,7 +76,9 @@ open KinoPubAppleClient.xcodeproj
   file-URL master whose media is remote, so every film spun forever while trailers, which skip the
   rewrite, played fine. A failed fetch now fails the item instead of hanging, and the player always shows
   a spinner with Cancel, or the error with Close (`PlayerManager.playbackState`)
-- Downloads and offline playback (iOS/iPadOS/macOS only)
+- Downloads and offline playback (iOS/iPadOS/macOS only) — mp4 with resume-across-relaunch,
+  reject of tiny HTTP error bodies, iOS HLS `.movpkg` (all dubs/subs), season queue, player
+  prefers a present local file over streaming. No download UI on tvOS.
 - **Subtitles are the system's off tvOS.** The master playlist carries every kino.pub subtitle as a real
   HLS rendition, so the system player lists and draws them; we add nothing. On tvOS only, sidecar SRT is
   parsed into synced cues and drawn as an overlay, picked from the transport-bar menu — **English by
@@ -459,7 +461,8 @@ Two tiers, and the cheap one is worth shipping first:
 - [x] Source: TMDB by IMDb id via `KinoPubMetadata` (kino.pub still has no air dates)
 
 ### Later
-- [ ] TV channels tab (`GET /v1/tv/index`)
+- [ ] TV channels / Sport UI — backend ready (`GET /v1/tv` → `fetchTVChannels`); EPG is external
+      XMLTV in the community fork, not kino.pub — port only when we surface Sport
 - [x] **Viewing history screen** — reachable from Continue Watching's context menu (not a tab yet)
 - [ ] Top Shelf extension
 
@@ -496,15 +499,14 @@ upstream change fails loudly instead of silently emptying a row.
 `/v1/history`, `/v1/history/clear-for-item`, `/v1/history/clear-for-media`, `/v1/genres`,
 `/v1/countries`, `/v1/items` (library filters plus `actor`/`director`; rating/quality facets are
 **client-side** — see `LibraryFilter.clientSideMatches`), `/v1/collections`,
-`/v1/collections/view`, `/v1/device/info`, `/v1/device/{id}/settings` (HEVC/4K/HDR/mixedPlaylist
-auto-synced on authorize), device-code auth.
+`/v1/collections/view`, `/v1/tv` (channels service; no Sport UI yet), `/v1/device/info`,
+`/v1/device/{id}/settings` (HEVC/4K/HDR/mixedPlaylist auto-synced on authorize), device-code auth.
 
 **Available, not yet wired:**
 
 | Endpoint | Use |
 | --- | --- |
 | `GET /v1/items` | Still unused there: `finished`, `letter` (and server-side `quality`/`conditions` are no-ops) |
-| `GET /v1/tv/index` | TV channels / Sport (community has EPG on top; lowest priority) |
 | `GET /v1/types` | Content-type reference for filters |
 | `GET /v1/items/comments` | Title comments (community has it; not ported yet) |
 

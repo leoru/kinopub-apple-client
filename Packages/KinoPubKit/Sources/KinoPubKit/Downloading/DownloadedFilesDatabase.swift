@@ -54,7 +54,8 @@ public class DownloadedFilesDatabase<Meta: Codable & Equatable>: DownloadedFiles
     var currentData = readData() ?? []
     currentData.removeAll(where: { $0.originalURL == fileInfo.originalURL })
     writeData(currentData)
-    try? fileSaver.removeFile(at: fileInfo.originalURL)
+    // Delete the actual file on disk (was previously deleting the remote URL — a no-op).
+    try? fileSaver.removeFile(at: fileInfo.localFileURL)
     Logger.kit.debug("[DOWNLOAD] file data removed: \(fileInfo.originalURL)")
   }
 }

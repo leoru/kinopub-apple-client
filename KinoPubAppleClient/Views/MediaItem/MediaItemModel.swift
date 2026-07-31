@@ -270,7 +270,36 @@ class MediaItemModel: ObservableObject {
   }
   
   func startDownload(item: DownloadableMediaItem, file: FileInfo) {
-    _ = downloadManager.startDownload(url: URL(string: file.url.http)!, withMetadata: DownloadMeta.make(from: item))
+    let meta = DownloadMeta.make(from: item, quality: file.quality)
+#if os(iOS)
+    // Prefer offline HLS (.movpkg) — full quality + all dubs/subs. Fall back to mp4.
+    if let hls = URL(string: file.url.hls4), !file.url.hls4.isEmpty {
+      let result = AppContext.shared.hlsDownloadManager.startDownload(meta: meta, hlsURL: hls)
+      switch result {
+      case .started, .alreadyDownloading, .alreadyDownloaded:
+        return
+      case .failed:
+        break
+      }
+    }
+#endif
+    guard let url = URL(string: file.url.http), !file.url.http.isEmpty else { return }
+    _ = downloadManager.startDownload(url: url, withMetadata: meta)
+  }
+
+  /// Enqueues every episode of a season at `quality` (mp4 path). Non-TV only.
+  @discardableResult
+  func startSeasonDownload(mediaId: Int, seriesTitle: String, season: Season, quality: String?) -> Int {
+#if os(tvOS)
+    return 0
+#else
+    AppContext.shared.seasonDownloadManager.downloadSeason(
+      mediaId: mediaId,
+      seriesTitle: seriesTitle,
+      season: season,
+      quality: quality
+    )
+#endif
   }
 
 }

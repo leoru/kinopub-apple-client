@@ -15,6 +15,15 @@ public struct FileInfo: Codable, Hashable {
   public let qualityID: Int
   public let url: URLInfo
 
+  public init(codec: String, w: Int, h: Int, quality: String, qualityID: Int, url: URLInfo) {
+    self.codec = codec
+    self.w = w
+    self.h = h
+    self.quality = quality
+    self.qualityID = qualityID
+    self.url = url
+  }
+
   private enum CodingKeys: String, CodingKey {
     case codec = "codec"
     case w = "w"
