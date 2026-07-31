@@ -175,7 +175,9 @@ struct AppContext: AppContextProtocol {
         CURLLoggingPlugin(),
         ResponseLoggingPlugin(),
         AccessTokenPlugin(accessTokenService: accessTokenService)
-      ]
+      ],
+      // Genres/countries only (see CacheableRequest). Personalized rows stay on ContentStore.
+      cache: ResponseCache()
     )
   }
 }

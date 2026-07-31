@@ -76,12 +76,33 @@ public struct YearRange: Identifiable, Hashable {
   }
 }
 
+/// Hot/popular window for `/v1/items?period=`. Server-side (unlike rating/HD facets).
+/// DESIGN: chip chrome in `LibraryFiltersBar` TBD — values are ready to send.
+public enum CatalogPeriod: String, CaseIterable, Identifiable, Hashable {
+  case day
+  case week
+  case month
+  case year
+
+  public var id: Self { self }
+
+  /// Localization key for when the filter chrome lands.
+  public var titleKey: String {
+    switch self {
+    case .day: return "Period_Day"
+    case .week: return "Period_Week"
+    case .month: return "Period_Month"
+    case .year: return "Period_Year"
+    }
+  }
+}
+
 /// Everything the library listing filters on. `nil` means "any".
 ///
 /// Rating / quality / AC3 facets are applied **client-side**. The mobile `/v1/items`
-/// API only honors type/genre/country/year/sort/actor/director — `imdb` / `kinopoisk` /
-/// `quality` / `conditions` query params are silently ignored (verified by the
-/// dungeon-master-xx fork against the live API). Each `MediaItem` already carries
+/// API only honors type/genre/country/year/sort/actor/director/`period` — `imdb` /
+/// `kinopoisk` / `quality` / `conditions` query params are silently ignored (verified
+/// by the dungeon-master-xx fork against the live API). Each `MediaItem` already carries
 /// `imdbRating` / `kinopoiskRating` / `quality` / `ac3`, so we filter the page locally.
 public struct LibraryFilter: Equatable, Hashable {
   public var contentType: MediaType?
@@ -91,6 +112,8 @@ public struct LibraryFilter: Equatable, Hashable {
   public var years: YearRange?
   /// Set for a person's credits, which are the same listing narrowed to one name.
   public var person: MediaPerson?
+  /// Popularity window (`day`/`week`/`month`/`year`) — sent server-side.
+  public var period: CatalogPeriod?
 
   /// Minimum Kinopoisk rating (0…10). Applied client-side.
   public var kinopoiskMin: Double?
@@ -112,6 +135,7 @@ public struct LibraryFilter: Equatable, Hashable {
     countryID: Int? = nil,
     years: YearRange? = nil,
     person: MediaPerson? = nil,
+    period: CatalogPeriod? = nil,
     kinopoiskMin: Double? = nil,
     imdbMin: Double? = nil,
     wantHD: Bool = false,
@@ -125,6 +149,7 @@ public struct LibraryFilter: Equatable, Hashable {
     self.countryID = countryID
     self.years = years
     self.person = person
+    self.period = period
     self.kinopoiskMin = kinopoiskMin
     self.imdbMin = imdbMin
     self.wantHD = wantHD
@@ -139,6 +164,7 @@ public struct LibraryFilter: Equatable, Hashable {
       || genreID != nil
       || countryID != nil
       || years != nil
+      || period != nil
       || hasClientSideFacets
   }
 

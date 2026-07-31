@@ -38,6 +38,11 @@ public struct ItemsRequest: Endpoint {
     if let years = filter.years {
       params["year"] = years.apiValue
     }
+    // Popularity window — server-side (not a client facet). Sent for views/watchers
+    // rankings; approximating via `created_at` would empty those lists.
+    if let period = filter.period {
+      params["period"] = period.rawValue
+    }
     // `actor` / `director`, matched on the name as it appears in the credits. Commas
     // and pluses are this parameter's OR and AND, so a single name goes as written.
     if let person = filter.person {

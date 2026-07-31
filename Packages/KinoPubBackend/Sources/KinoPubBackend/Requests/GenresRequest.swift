@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct GenresRequest: Endpoint {
+public struct GenresRequest: Endpoint, CacheableRequest {
 
   private let contentType: MediaType?
 
@@ -35,4 +35,7 @@ public struct GenresRequest: Endpoint {
   }
 
   public var forceSendAsGetParams: Bool { false }
+
+  /// Reference data — disk, 24h. Personalized shelves stay on `ContentStore`.
+  public var cachePolicy: CachePolicy { .disk(ttl: 86_400) }
 }

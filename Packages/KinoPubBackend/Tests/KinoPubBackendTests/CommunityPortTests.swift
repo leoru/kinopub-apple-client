@@ -126,6 +126,14 @@ final class CommunityPortTests: XCTestCase {
     XCTAssertEqual(RemoveDeviceRequest(id: 42).path, "/v1/device/42/remove")
   }
 
+  func testClearHistoryForSeasonPath() {
+    let request = ClearHistoryForSeasonRequest(id: 99)
+    XCTAssertEqual(request.path, "/v1/history/clear-for-season")
+    XCTAssertEqual(request.method, "POST")
+    XCTAssertTrue(request.forceSendAsGetParams)
+    XCTAssertEqual(request.parameters?["id"] as? Int, 99)
+  }
+
   // MARK: - Client-side filter facets
 
   func testClientSideFacetsMatchQualityAndRatings() {

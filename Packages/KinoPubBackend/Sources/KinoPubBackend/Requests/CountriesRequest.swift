@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct CountriesRequest: Endpoint {
+public struct CountriesRequest: Endpoint, CacheableRequest {
 
   public init() {}
 
@@ -28,4 +28,7 @@ public struct CountriesRequest: Endpoint {
   }
 
   public var forceSendAsGetParams: Bool { false }
+
+  /// Reference data — disk, 24h. Personalized shelves stay on `ContentStore`.
+  public var cachePolicy: CachePolicy { .disk(ttl: 86_400) }
 }

@@ -45,6 +45,9 @@ final class AuthorizationServiceImpl: AuthorizationService {
   
   func logout() {
     accessTokenService.clear()
+    // Genres/countries ResponseCache is shared — drop it so the next account
+    // never inherits another user's warm reference data (harmless today, correct forever).
+    apiClient.clearCache()
   }
 
 }

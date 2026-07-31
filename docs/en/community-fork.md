@@ -86,20 +86,23 @@ List/remove are on `DeviceService` — Profile chrome is `// DESIGN:` stub only.
 - [x] `WatchProgress` + `LocalWatchProgressStore` + player/Home wiring
 - [x] `StreamQuality` + Settings picker
 - [x] `ToggleWatchlistRequest` + folder create/remove **service** APIs
+- [x] `CatalogPeriod` / `period` on `/v1/items` (`LibraryFilter` + `ItemsRequest`)
+- [x] `ResponseCache` for genres/countries + clear on logout
+- [x] `clear-for-season` history API
 
 ## System still to port (no UI inventing)
 
 Prefer these next. Land Backend/`*Service` + `// DESIGN:` comments where chrome will sit.
 
-| Priority | Slice | Community path | Notes |
+| Priority | Slice | Status | Notes |
 | --- | --- | --- | --- |
-| HIGH | `period` on `/v1/items` | `FilterItemsRequest.period` | Server-side hot/popular window (`day`/`week`/`month`/`year`). Add to `LibraryFilter` + `ItemsRequest`. Chip chrome = DESIGN. |
-| HIGH | `ResponseCache` | `Client/ResponseCache.swift` + APIClient hook | Opt-in TTL for genres/countries (disk) — **not** personalized shelves (`ContentStore` stays). |
-| MEDIUM | `clear-for-season` | `ClearHistoryRequest.Scope.season` | We have item/media clear; season scope missing. Service only until season-rail action is designed. |
-| MEDIUM | `NetworkMonitor` | `KinoPubKit/Network/NetworkMonitor.swift` | Debounced `NWPathMonitor`. Banner chrome = DESIGN; don’t copy their tab-lock. |
-| MEDIUM | Raise marktimes interval | Player `PlayerTimeObserver` period | Still 10s (same as community). Local store covers resume — can raise once we measure. |
-| LOW | Device settings UI | their `Views/Profile/Device/*` | Service ready; Settings list/remove = DESIGN. |
-| LOW | Collections Home rows | Collections service already here | Row chrome = DESIGN. |
+| HIGH | `period` on `/v1/items` | **done** | `CatalogPeriod` on `LibraryFilter` → `ItemsRequest`. Chip = DESIGN in `LibraryFiltersBar`. |
+| HIGH | `ResponseCache` | **done** | Genres/countries disk 24h; cleared on logout. Not catalog pages. |
+| HIGH | `clear-for-season` | **done** | `ClearHistoryForSeasonRequest` + `UserActionsService.clearHistoryForSeason`. Rail chrome = DESIGN. |
+| MEDIUM | `NetworkMonitor` | next | Debounced `NWPathMonitor`. Banner chrome = DESIGN; don’t copy their tab-lock. |
+| MEDIUM | Raise marktimes interval | next | Still 10s (same as community). Local store covers resume — can raise once we measure. |
+| LOW | Device settings UI | service ready | Settings list/remove = DESIGN. |
+| LOW | Collections Home rows | service ready | Row chrome = DESIGN. |
 | SKIP | EPG / Sport UI, Comments, `FilterDataService`, `SectionVisibilityStore`, `WidthThresholdReader`, `WatchingSerial`, wholesale `MediaLibraryStore` | — | Leave alone. |
 
 ## DESIGN stubs (do not ship chrome from community)
@@ -110,7 +113,8 @@ Agents: add a `// DESIGN:` comment at the call site; **do not** invent buttons.
 - [ ] Series watchlist distinct from bookmark folders / Mark as Watched  
       (`actionsService.toggleWatchlist` ready — **not** a checkmark)
 - [ ] Collections tab / Home rows
-- [ ] Library filter chips (rating/quality already filtered client-side; `period` when ported)
+- [ ] Library filter chips (rating/quality client-side; `CatalogPeriod` ready to send)
+- [ ] Season-rail clear progress (`clearHistoryForSeason` ready)
 - [ ] Sport / channels + optional XMLTV EPG
 - [ ] Downloads list polish (HLS interrupted rows, storage footer)
 - [ ] Offline / reachability banner (`NetworkMonitor` when ported)

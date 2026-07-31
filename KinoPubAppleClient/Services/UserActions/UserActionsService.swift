@@ -23,6 +23,8 @@ protocol UserActionsService {
   func clearHistoryForItem(id: Int) async throws
   /// Removes one episode/video from history.
   func clearHistoryForMedia(id: Int) async throws
+  /// Removes one season's history. DESIGN: season-rail action chrome TBD.
+  func clearHistoryForSeason(id: Int) async throws
   /// Casts a thumbs vote (`like=1` up, `like=0` down). One-shot — `voted: false` means already voted.
   @discardableResult
   func vote(id: Int, like: Int) async throws -> VoteData
@@ -58,6 +60,9 @@ struct UserActionsServiceMock: UserActionsService {
   }
 
   func clearHistoryForMedia(id: Int) async throws {
+  }
+
+  func clearHistoryForSeason(id: Int) async throws {
   }
 
   func vote(id: Int, like: Int) async throws -> VoteData {

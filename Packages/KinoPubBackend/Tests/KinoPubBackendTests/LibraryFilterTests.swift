@@ -46,7 +46,8 @@ final class LibraryFilterTests: XCTestCase {
                                sort: .views,
                                genreID: 25,
                                countryID: 10,
-                               years: YearRange(from: 1990, to: 1999))
+                               years: YearRange(from: 1990, to: 1999),
+                               period: .month)
 
     XCTAssertEqual(params(filter, page: 3), [
       "sort": "-views",
@@ -54,8 +55,14 @@ final class LibraryFilterTests: XCTestCase {
       "genre": "25",
       "country": "10",
       "year": "1990-1999",
+      "period": "month",
       "page": "3"
     ])
+  }
+
+  func testPeriodIsSentServerSide() {
+    XCTAssertEqual(params(LibraryFilter(period: .week))["period"], "week")
+    XCTAssertNil(params(LibraryFilter())["period"])
   }
 
   /// "Any" must drop the parameter, not send an empty one.
@@ -107,8 +114,16 @@ final class LibraryFilterTests: XCTestCase {
     XCTAssertTrue(LibraryFilter(genreID: 1).hasActiveFilters)
     XCTAssertTrue(LibraryFilter(countryID: 1).hasActiveFilters)
     XCTAssertTrue(LibraryFilter(years: YearRange(from: 2000, to: 2009)).hasActiveFilters)
+    XCTAssertTrue(LibraryFilter(period: .day).hasActiveFilters)
     XCTAssertTrue(LibraryFilter(want4K: true).hasActiveFilters)
     XCTAssertTrue(LibraryFilter(kinopoiskMin: 7).hasActiveFilters)
+  }
+
+  func testGenresAndCountriesOptIntoDiskCache() {
+    XCTAssertEqual(GenresRequest().cachePolicy.ttl, 86_400)
+    XCTAssertTrue(GenresRequest().cachePolicy.persistsToDisk)
+    XCTAssertEqual(CountriesRequest().cachePolicy.ttl, 86_400)
+    XCTAssertTrue(CountriesRequest().cachePolicy.persistsToDisk)
   }
 
   // MARK: - Genre decoding
