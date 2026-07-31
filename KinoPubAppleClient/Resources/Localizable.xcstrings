@@ -3210,6 +3210,9 @@
         }
       }
     },
+    "Auto" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Auto"}}, "ru": {"stringUnit": {"state": "translated", "value": "Авто"}}}},
+    "Stream quality" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Stream quality"}}, "ru": {"stringUnit": {"state": "translated", "value": "Качество потока"}}}},
+    "Settings_Tip_StreamQuality" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Caps adaptive HLS quality. Auto leaves AVPlayer’s bitrate logic alone."}}, "ru": {"stringUnit": {"state": "translated", "value": "Ограничивает адаптивное HLS-качество. «Авто» не трогает выбор битрейта у AVPlayer."}}}},
     "Playback" : {
       "comment" : "A section of the user's profile where they can configure playback preferences.",
       "extractionState" : "manual",

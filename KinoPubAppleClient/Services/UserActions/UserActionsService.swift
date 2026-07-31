@@ -14,6 +14,10 @@ protocol UserActionsService {
   /// Returns the new watched flag when the service sends one.
   @discardableResult
   func toggleWatching(id: Int, video: Int?, season: Int?) async throws -> Int?
+  /// Subscribe / unsubscribe a series on the watchlist (`GET /v1/watching/togglewatchlist`).
+  func toggleWatchlist(id: Int) async throws
+  func createBookmarkFolder(title: String) async throws -> Int
+  func removeBookmarkFolder(id: Int) async throws
   func fetchWatchMark(id: Int, video: Int?, season: Int?) async throws -> WatchData
   /// Removes a title from history / Continue Watching.
   func clearHistoryForItem(id: Int) async throws
@@ -34,6 +38,16 @@ struct UserActionsServiceMock: UserActionsService {
 
   func toggleWatching(id: Int, video: Int?, season: Int?) async throws -> Int? {
     nil
+  }
+
+  func toggleWatchlist(id: Int) async throws {
+  }
+
+  func createBookmarkFolder(title: String) async throws -> Int {
+    0
+  }
+
+  func removeBookmarkFolder(id: Int) async throws {
   }
 
   func fetchWatchMark(id: Int, video: Int?, season: Int?) async throws -> WatchData {

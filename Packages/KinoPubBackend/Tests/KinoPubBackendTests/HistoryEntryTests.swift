@@ -35,10 +35,9 @@ final class HistoryEntryTests: XCTestCase {
                    accuracy: 0.001)
   }
 
-  func testProgressClampsToOne() {
-    XCTAssertEqual(entry(snumber: 1, number: 1, time: 3000, duration: 2400).progress ?? 0,
-                   1.0,
-                   accuracy: 0.001)
+  func testProgressIsNilWhenFinished() {
+    // Past duration → finished → not resumable, so Continue Watching gets no bar.
+    XCTAssertNil(entry(snumber: 1, number: 1, time: 3000, duration: 2400).progress)
   }
 
   func testProgressIsNilWithoutUsableNumbers() {

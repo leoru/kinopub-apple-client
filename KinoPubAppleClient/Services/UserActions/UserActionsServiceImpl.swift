@@ -34,6 +34,23 @@ final class UserActionsServiceImpl: UserActionsService {
     return response.watched
   }
 
+  func toggleWatchlist(id: Int) async throws {
+    let request = ToggleWatchlistRequest(id: id)
+    _ = try await apiClient.performRequest(with: request, decodingType: EmptyResponseData.self)
+  }
+
+  func createBookmarkFolder(title: String) async throws -> Int {
+    let request = CreateBookmarkFolderRequest(title: title)
+    let response = try await apiClient.performRequest(with: request,
+                                                      decodingType: CreateBookmarkFolderData.self)
+    return response.folder.id
+  }
+
+  func removeBookmarkFolder(id: Int) async throws {
+    let request = RemoveBookmarkFolderRequest(id: id)
+    _ = try await apiClient.performRequest(with: request, decodingType: EmptyResponseData.self)
+  }
+
   func clearHistoryForItem(id: Int) async throws {
     let request = ClearHistoryForItemRequest(id: id)
     _ = try await apiClient.performRequest(with: request, decodingType: EmptyResponseData.self)

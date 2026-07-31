@@ -226,14 +226,14 @@ public extension MediaItem {
     if isSeries {
       let episodes = (seasons ?? []).flatMap(\.episodes)
       guard !episodes.isEmpty else { return .play }
-      if episodes.allSatisfy({ $0.watched > 0 }) { return .playAgain }
-      if episodes.contains(where: { $0.watched > 0 || $0.watching.time > 0 }) { return .resume }
+      if episodes.allSatisfy(\.isWatched) { return .playAgain }
+      if episodes.contains(where: { $0.isWatched || $0.watchProgress.hasStarted }) { return .resume }
       return .play
     }
 
     guard let video = videos?.first else { return .play }
-    if video.watched > 0 { return .playAgain }
-    return video.watching.time > 0 ? .resume : .play
+    if video.isWatched { return .playAgain }
+    return video.watchProgress.hasStarted ? .resume : .play
   }
 }
 

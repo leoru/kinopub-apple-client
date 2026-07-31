@@ -158,6 +158,7 @@ class HomeCatalog: ObservableObject {
   /// bookkeeping is needed here anymore.
   func hide(_ card: MediaCard) {
     store.removeCard(id: card.id, from: .continueWatching)
+    AppContext.shared.localProgressStore.clear(id: card.itemID)
     assembleRows()
     Task {
       do {
@@ -175,6 +176,7 @@ class HomeCatalog: ObservableObject {
   func toggleWatched(_ card: MediaCard) {
     guard let video = card.video else { return }
     store.removeCard(id: card.id, from: .continueWatching)
+    AppContext.shared.localProgressStore.clear(id: card.itemID)
     assembleRows()
     Task {
       do {
@@ -214,21 +216,36 @@ class HomeCatalog: ObservableObject {
     let history = historyResult ?? []
 
     let watchlistIDs = Set(watchlist.map(\.id))
-    let lastSeen = ContinueWatchingOrder.lastSeenByItemID(history)
+    var lastSeen = ContinueWatchingOrder.lastSeenByItemID(history)
     let newestEntry = Self.newestEntryByItemID(history)
     let historyIDs = Set(history.map(\.item.id))
+    let localEntries = AppContext.shared.localProgressStore.allEntries()
+    let localByID = Dictionary(uniqueKeysWithValues: localEntries.map { ($0.id, $0) })
 
     var pool = ContinueWatchingOrder.mergePool(movies: movies, serials: serials, watchlist: watchlist)
 
     // Titles only present in recent history still belong in "recently started".
+    // Drop finished rows (watched to credits) so they don't invite a resume.
     let now = Date()
     for entry in history {
+      if let watch = entry.watchProgress, watch.isFinished { continue }
       guard let date = entry.lastSeenDate,
             now.timeIntervalSince(date) <= ContinueWatchingOrder.recentWindow,
             !pool.contains(where: { $0.id == entry.item.id }),
             let item = WatchingItem(historyEntry: entry) else { continue }
       pool.append(item)
     }
+
+    // Locally-started titles (> 10s) the backend doesn't list yet.
+    for entry in localEntries where !entry.watch.isFinished {
+      lastSeen[entry.id] = Date(timeIntervalSince1970: entry.updatedAt)
+      if !pool.contains(where: { $0.id == entry.id }) {
+        pool.append(WatchingItem(mediaItem: entry.item))
+      }
+    }
+
+    // Drop server-listed titles that local progress already considers finished.
+    pool.removeAll { localByID[$0.id]?.watch.isFinished == true }
 
     let ordered = ContinueWatchingOrder.ordered(items: pool,
                                                 watchlistIDs: watchlistIDs,
@@ -237,7 +254,8 @@ class HomeCatalog: ObservableObject {
     return ordered.map {
       Self.card(for: $0,
                 history: newestEntry[$0.id],
-                isInHistory: historyIDs.contains($0.id),
+                local: localByID[$0.id],
+                isInHistory: historyIDs.contains($0.id) || localByID[$0.id] != nil,
                 isInWatchlist: watchlistIDs.contains($0.id))
     }
   }
@@ -252,35 +270,42 @@ class HomeCatalog: ObservableObject {
 
   /// Continue-watching cards are landscape wide covers — episode stills are too
   /// anonymous to recognise a title from across the room. History still supplies the
-  /// S/E label and resume bar.
+  /// S/E label and resume bar; local progress fills gaps before the server catches up.
   private static func card(for item: WatchingItem,
                            history: HistoryEntry?,
+                           local: LocalWatchEntry?,
                            isInHistory: Bool,
                            isInWatchlist: Bool) -> MediaCard {
     let isSeries = item.type.contains("serial")
     let video: Int?
     let season: Int?
-    if let history, history.isEpisode {
+    if let local, let localSeason = local.season, let localEpisode = local.episode {
+      video = localEpisode
+      season = localSeason
+    } else if let history, history.isEpisode {
       video = history.media?.number
       season = history.media?.snumber
     } else if !isSeries {
-      video = history?.media?.number ?? 1
+      video = history?.media?.number ?? local?.episode ?? 1
       season = nil
     } else {
-      video = history?.media?.number
-      season = history?.media?.snumber
+      video = history?.media?.number ?? local?.episode
+      season = history?.media?.snumber ?? local?.season
     }
+
+    let localFraction = local?.watch.isResumable == true ? local?.watch.fraction : nil
+    let progress = [localFraction, history?.progress, item.progress].compactMap { $0 }.max()
 
     return MediaCard(id: item.id,
                      posterURL: item.posters.medium,
                      title: item.localizedTitle,
                      subtitle: item.originalTitle,
-                     progress: history?.progress ?? item.progress,
+                     progress: progress,
                      badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil,
-                     backdropURL: landscapeImageURL(for: item, history: history),
-                     metaLine: overlayLabel(for: history),
-                     landscapeImageURL: landscapeImageURL(for: item, history: history),
-                     overlayLabel: overlayLabel(for: history),
+                     backdropURL: landscapeImageURL(for: item, history: history, local: local),
+                     metaLine: overlayLabel(for: history, local: local),
+                     landscapeImageURL: landscapeImageURL(for: item, history: history, local: local),
+                     overlayLabel: overlayLabel(for: history, local: local),
                      itemID: item.id,
                      video: video,
                      season: season,
@@ -291,18 +316,27 @@ class HomeCatalog: ObservableObject {
                      isInWatchlist: isInWatchlist)
   }
 
-  private static func landscapeImageURL(for item: WatchingItem, history: HistoryEntry?) -> String {
-    history?.item.posters?.wideURL ?? item.posters.wideURL ?? item.posters.big
+  private static func landscapeImageURL(for item: WatchingItem,
+                                        history: HistoryEntry?,
+                                        local: LocalWatchEntry?) -> String {
+    history?.item.posters?.wideURL
+      ?? local?.item.posters.wideURL
+      ?? item.posters.wideURL
+      ?? item.posters.big
   }
 
-  private static func overlayLabel(for history: HistoryEntry?) -> String? {
-    guard let history else { return nil }
+  private static func overlayLabel(for history: HistoryEntry?, local: LocalWatchEntry?) -> String? {
     var parts: [String] = []
-    if history.isEpisode, let season = history.media?.snumber, let episode = history.media?.number {
+    if let history, history.isEpisode,
+       let season = history.media?.snumber, let episode = history.media?.number {
+      parts.append("S\(season), E\(episode)")
+    } else if let season = local?.season, let episode = local?.episode {
       parts.append("S\(season), E\(episode)")
     }
-    if let duration = history.media?.duration, duration >= 60 {
+    if let duration = history?.media?.duration, duration >= 60 {
       parts.append(Duration.hoursMinutes(seconds: duration))
+    } else if let duration = local?.duration, duration >= 60 {
+      parts.append(Duration.hoursMinutes(seconds: Int(duration)))
     }
     return parts.isEmpty ? nil : parts.joined(separator: " · ")
   }

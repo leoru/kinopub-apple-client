@@ -22,6 +22,7 @@ struct TVProfileSettingsView: View {
   @Binding var preferNonCCSubtitles: Bool
   @Binding var dualSubtitlesEnabled: Bool
   @Binding var secondSubtitleLanguage: String
+  @Binding var streamQualityRaw: String
   var onLogout: () -> Void
   var onLanguageChange: (String) -> Void
 
@@ -86,6 +87,16 @@ struct TVProfileSettingsView: View {
         },
         selection: $secondSubtitleLanguage
       )
+    case .streamQuality:
+      SettingsChoiceView(
+        title: "Stream quality",
+        pageSymbol: "gauge.with.dots.needle.33percent",
+        tipKey: "Settings_Tip_StreamQuality",
+        options: StreamQuality.allCases.map { quality in
+          SettingsChoiceOption(id: quality.rawValue, title: quality.title)
+        },
+        selection: $streamQualityRaw
+      )
     case .kinopoisk:
       TVKinopoiskKeyView(keyProvider: kinopoiskKeyProvider)
 #if DEBUG
@@ -131,6 +142,18 @@ struct TVProfileSettingsView: View {
 
   private var playbackSection: some View {
     SettingsSection("Playback") {
+      Button {
+        path.append(SettingsRoute.streamQuality)
+      } label: {
+        SettingsPillLabel(
+          title: "Stream quality",
+          value: (StreamQuality(rawValue: streamQualityRaw) ?? .auto).title,
+          showsChevron: true
+        )
+      }
+      .buttonStyle(SettingsPillButtonStyle())
+      .focused($focusedItem, equals: .streamQuality)
+
       toggleRow(
         title: "Default English subtitles",
         isOn: $preferEnglishSubtitles,
@@ -338,6 +361,7 @@ private struct SettingsSection<Content: View>: View {
 private enum SettingsRoute: Hashable {
   case language
   case secondSubtitleLanguage
+  case streamQuality
   case kinopoisk
 #if DEBUG
   case streamSurvey
@@ -346,6 +370,7 @@ private enum SettingsRoute: Hashable {
 
 private enum SettingsFocusItem: Hashable {
   case language
+  case streamQuality
   case englishSubs
   case nonCC
   case dual
@@ -363,6 +388,8 @@ private struct SettingsTip {
     switch item {
     case .language:
       return SettingsTip(messageKey: "Settings_Tip_Language")
+    case .streamQuality:
+      return SettingsTip(messageKey: "Settings_Tip_StreamQuality")
     case .englishSubs:
       return SettingsTip(messageKey: "Settings_Tip_EnglishSubtitles")
     case .nonCC:

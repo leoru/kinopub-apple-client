@@ -71,6 +71,7 @@ class MediaItemModel: ObservableObject {
     self.contentStore = contentStore
     if let knownItem {
       self.mediaItem = knownItem
+      AppContext.shared.localProgressStore.cacheItem(knownItem)
     }
   }
 
@@ -81,6 +82,7 @@ class MediaItemModel: ObservableObject {
         mediaItem = try await itemsService.fetchDetails(for: "\(mediaItemId)").item
         let mediaId = mediaItem.id
         mediaItem.seasons = mediaItem.seasons?.map({ $0.mediaId = mediaId; return $0 })
+        AppContext.shared.localProgressStore.cacheItem(mediaItem)
         isWatched = mediaItem.playbackAction == .playAgain
         itemLoaded = true
         identity = MediaIdentity(mediaItem: mediaItem)

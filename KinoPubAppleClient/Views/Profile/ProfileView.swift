@@ -19,6 +19,7 @@ struct ProfileView: View {
   @AppStorage(SubtitlePreferences.preferNonCCKey) private var preferNonCCSubtitles: Bool = true
   @AppStorage(SubtitlePreferences.dualSubtitlesKey) private var dualSubtitlesEnabled: Bool = false
   @AppStorage(SubtitlePreferences.secondSubtitleLanguageKey) private var secondSubtitleLanguage: String = "ru"
+  @AppStorage(StreamQuality.userDefaultsKey) private var streamQualityRaw: String = StreamQuality.auto.rawValue
 
   @State private var showLogoutAlert: Bool = false
 
@@ -36,6 +37,7 @@ struct ProfileView: View {
       preferNonCCSubtitles: $preferNonCCSubtitles,
       dualSubtitlesEnabled: $dualSubtitlesEnabled,
       secondSubtitleLanguage: $secondSubtitleLanguage,
+      streamQualityRaw: $streamQualityRaw,
       onLogout: { showLogoutAlert = true },
       onLanguageChange: { model.changeLanguage(to: $0) }
     )
@@ -141,6 +143,12 @@ struct ProfileView: View {
   private var playbackSection: some View {
     Section(header: Text("Playback"),
             footer: Text("A track picked in the player wins over these, and is remembered for the next episode.")) {
+      Picker("Stream quality", selection: $streamQualityRaw) {
+        ForEach(StreamQuality.allCases) { quality in
+          Text(quality.title).tag(quality.rawValue)
+        }
+      }
+      .pickerStyle(MenuPickerStyle())
       Toggle("Default English subtitles", isOn: $preferEnglishSubtitles)
       Toggle("Prefer non-CC / non-SDH", isOn: $preferNonCCSubtitles)
         .disabled(!preferEnglishSubtitles)

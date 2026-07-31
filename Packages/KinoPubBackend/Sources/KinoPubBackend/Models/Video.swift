@@ -21,3 +21,14 @@ public struct Video: Codable, Hashable {
   public let subtitles: [Subtitle]
   public let files: [FileInfo]
 }
+
+public extension Video {
+  /// Resume progress for this movie video (single source of truth for "watched / in progress").
+  var watchProgress: WatchProgress {
+    WatchProgress(position: Double(watching.time), duration: Double(duration))
+  }
+  /// "Finished" (watched to the credits).
+  var isWatchedToEnd: Bool { watchProgress.isFinished }
+  /// Single "watched" verdict: the explicit server flag OR watched-to-the-credits.
+  var isWatched: Bool { watched > 0 || isWatchedToEnd }
+}

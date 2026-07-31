@@ -83,10 +83,17 @@ public extension HistoryEntry {
     return Date(timeIntervalSince1970: TimeInterval(lastSeen))
   }
 
-  /// How far into this video the user got, or nil when it can't be worked out.
+  /// How far into this video the user got, or nil when it can't be worked out / is finished.
   var progress: Double? {
-    guard let time, time > 0, let duration = media?.duration, duration > 0 else { return nil }
-    return min(time / Double(duration), 1.0)
+    guard let time, let duration = media?.duration else { return nil }
+    let watch = WatchProgress(position: time, duration: Double(duration))
+    return watch.isResumable ? watch.fraction : nil
+  }
+
+  /// Shared classifier for this history row (live / trailer / unfinished / finished).
+  var watchProgress: WatchProgress? {
+    guard let time, let duration = media?.duration else { return nil }
+    return WatchProgress(position: time, duration: Double(duration))
   }
 
   /// True when the entry refers to an episode rather than a film. Films come back

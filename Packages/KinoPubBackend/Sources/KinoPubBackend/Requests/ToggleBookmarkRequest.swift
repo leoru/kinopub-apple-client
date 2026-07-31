@@ -32,7 +32,7 @@ public struct ToggleBookmarkRequest: Endpoint {
     nil
   }
 
-  /// The service reads these from the query string even on POST, as it does for the
-  /// other action endpoints.
-  public var forceSendAsGetParams: Bool { true }
+  /// The server reads `item`/`folder` from the form BODY only — sent as query it returns
+  /// 404 "item not found" and the toggle silently no-ops (verified live on community fork).
+  public var forceSendAsGetParams: Bool { false }
 }

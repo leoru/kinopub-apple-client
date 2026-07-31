@@ -41,6 +41,7 @@ typealias AppContextProtocol = AuthorizationServiceProvider
 & ContentStoreProvider
 & CollectionsServiceProvider
 & DeviceServiceProvider
+& LocalWatchProgressProvider
 
 protocol MetadataServiceProvider {
   var metadataService: MetadataService { get }
@@ -77,6 +78,7 @@ struct AppContext: AppContextProtocol {
   var contentStore: ContentStore
   var collectionsService: CollectionsService
   var deviceService: DeviceService
+  var localProgressStore: LocalWatchProgressStore
 
   static let shared: AppContext = {
     let configuration = BundleConfiguration()
@@ -98,7 +100,10 @@ struct AppContext: AppContextProtocol {
       notifications: downloadNotificationManager
     )
     let hlsDownloadsStore = HLSDownloadsStore()
-    let hlsDownloadManager = HLSAssetDownloadManager(store: hlsDownloadsStore)
+    let hlsDownloadManager = HLSAssetDownloadManager(
+      store: hlsDownloadsStore,
+      maxResolutionProvider: { StreamQuality.current.maxHeight }
+    )
     hlsDownloadManager.onDownloadFinished = { [weak downloadNotificationManager] meta in
       downloadNotificationManager?.notifyFinished(title: meta.notificationTitle, identifier: "\(meta.id)")
     }
@@ -135,6 +140,7 @@ struct AppContext: AppContextProtocol {
     ])
 
     let contentStore = MainActor.assumeIsolated { ContentStore() }
+    let localProgressStore = LocalWatchProgressStore()
 
     return AppContext(
       configuration: configuration,
@@ -155,7 +161,8 @@ struct AppContext: AppContextProtocol {
       kinopoiskKeyProvider: kinopoiskKeyProvider,
       contentStore: contentStore,
       collectionsService: CollectionsServiceImpl(apiClient: apiClient),
-      deviceService: DeviceServiceImpl(apiClient: apiClient)
+      deviceService: DeviceServiceImpl(apiClient: apiClient),
+      localProgressStore: localProgressStore
     )
   }()
 

@@ -62,6 +62,17 @@ public class Episode: Codable, Hashable, Identifiable {
   }
 }
 
+public extension Episode {
+  /// Resume progress for this episode (single source of truth for "watched / in progress").
+  var watchProgress: WatchProgress {
+    WatchProgress(position: Double(watching.time), duration: Double(duration))
+  }
+  /// "Finished" (watched to the credits) — so Continue offers the next episode, not this one's tail.
+  var isWatchedToEnd: Bool { watchProgress.isFinished }
+  /// Single "watched" verdict: the explicit server flag OR watched-to-the-credits.
+  var isWatched: Bool { watched > 0 || isWatchedToEnd }
+}
+
 extension Episode: PlayableItem {
   public var trailer: Trailer? { nil }
   public var metadata: WatchingMetadata {

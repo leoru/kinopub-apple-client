@@ -36,6 +36,9 @@ target — we never push our UI there. Use it to read, cherry-pick isolated back
 - Keyless Kinopoisk extras via `https://kpapp.link/kpapi/films/<id>/{facts,reviews,staff,images}`
 - Actor CDN portraits `https://m.pushbr.com/actors/<md5(ru name)>.jpg`
 - Player failure diagnostics / resume thresholds when they beat ours
+- Local watch-progress store + shared `WatchProgress` classifier
+- Stream quality cap via `AVPlayerItem.preferredMaximumResolution`
+- Bookmark/watchlist mutation quirks (body POST vs query)
 - Downloads / Sport / TV channels later, as backend slices only
 
 **Leave (their UI / product choices):**
@@ -43,6 +46,9 @@ target — we never push our UI there. Use it to read, cherry-pick isolated back
 - Their SwiftUI chrome, skeletons, filter sheets, Sport tab layout
 - Their “related” shelf (same type + first genre) — we already use real `GET /v1/items/similar`
 - Their removal of TMDB — we keep TMDB via our worker for logos / schedules / cast
+- Their `MediaLibraryStore` as a ContentStore replacement — cherry-pick ideas only
+- Their `WatchingSerial` model / Comments / FilterDataService / SectionVisibilityStore /
+  WidthThresholdReader
 
 ### How metadata works without keys (why their Mac build “just worked”)
 
@@ -66,7 +72,7 @@ When pulling something new from `community/main`:
 4. Note the steal in this file or README API notes.
 5. Tick the matching roadmap checkbox when the UI lands.
 
-Already ported into this tree (backend + services; UI mostly still ours to build):
+#### Already ported
 
 - [x] `VoteRequest` / `VoteData` + `UserActionsService.vote`
 - [x] Collections requests/models/responses + `CollectionsService`
@@ -80,6 +86,16 @@ Already ported into this tree (backend + services; UI mostly still ours to build
 - [x] iOS HLS offline (`HLSAssetDownloadManager` / `HLSDownloadsStore`) + season mp4 queue
 - [x] Player prefers local HLS/mp4 when the file exists (identity + episode match)
 - [x] TV channels service — `GET /v1/tv` via `VideoContentService.fetchTVChannels` (no Sport UI/EPG yet)
+- [x] Bookmark toggle as body POST (`forceSendAsGetParams = false`) — query silently no-ops
+- [x] `EmptyResponseData` null / empty / non-object tolerant decode
+- [x] `WatchProgress` classifier (+ unit tests) wired into Episode/Video/History/playback helpers
+- [x] `LocalWatchProgressStore` + PlayerManager record/clear/resume-on-ready + Home CW merge
+- [x] `StreamQuality` + `preferredMaximumResolution` + Settings picker
+- [x] `ToggleWatchlistRequest` + `UserActionsService.toggleWatchlist`
+- [x] Bookmark folder create/remove + `CreateBookmarkFolderData` (service layer)
+
+#### UI still ours to build / polish
+
 - [ ] Vote UI on the detail page (counts already decode via `communityVotes`)
 - [ ] Collections tab / Home rows
 - [ ] Filter UI chips for rating/quality
@@ -87,3 +103,45 @@ Already ported into this tree (backend + services; UI mostly still ours to build
 - [ ] Prefer `ActorImageProvider` when TMDB photo is missing
 - [ ] Sport / channels UI + optional external XMLTV EPG (`Services/EPG/*` in community)
 - [ ] Downloads list polish (HLS interrupted rows, storage footer) — Kit is ready; keep our chrome
+- [ ] Watchlist toggle / create-folder chrome on detail & Library (APIs ready)
+- [ ] Raise marktimes interval once local store covers resume (community still ticks every 10s;
+      local store alone is not anti-DDoS)
+
+#### Remaining inventory (priority)
+
+**MUST (done or landing with this pass)**
+
+| Slice | Community path | Notes |
+| --- | --- | --- |
+| Bookmark toggle body POST | `ToggleBookmarkFolderRequest` | Query → 404 / silent no-op |
+| Null-tolerant `EmptyResponseData` | `Responses/EmptyResponseData.swift` | history clear returns literal `null` |
+| `WatchProgress` | `Models/WatchProgress.swift` + tests | Single finished / resumable thresholds |
+| `LocalWatchProgressStore` | `Services/LocalWatchProgress/*` | Instant CW; seek wait for `readyToPlay` |
+
+**HIGH**
+
+| Slice | Status | Notes |
+| --- | --- | --- |
+| `StreamQuality` + Settings | landing | Cap ABR via `preferredMaximumResolution` |
+| `ToggleWatchlistRequest` | landing | Service first; UI later |
+| Bookmark folder create/remove | landing | Body POST; `CreateBookmarkFolderData` |
+| `MediaLibraryStore` ideas | skip wholesale | Do **not** replace `ContentStore`; cherry-pick later |
+
+**MEDIUM (next)**
+
+| Slice | Community path | Notes |
+| --- | --- | --- |
+| `ResponseCache` | their Kit / services | TTL HTTP cache |
+| `period` on `/v1/items` | library filter | Hot/popular windows |
+| Device notify / list / remove | device API | Multi-device management |
+| `NetworkMonitor` | reachability UX | Offline banner |
+| Clear history for season | `clear-for-season` | Already partial on our side |
+
+**SKIP for now**
+
+- EPG / Sport UI
+- Comments
+- `FilterDataService`
+- `SectionVisibilityStore`
+- `WidthThresholdReader`
+- Their `WatchingSerial` model

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		359B8BE15FCC4D9983B859BF /* StreamQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CF41D6D63054F0F92A507B1 /* StreamQuality.swift */; };
+		C746BAF04ACC4B519A6D7046 /* LocalWatchProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */; };
 		AA967A14831E15AEAAEED74F /* HLSAssetDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C70AA7F1483953DE245D765 /* HLSAssetDownloadManager.swift */; };
 		F08E8EEFDA71BBFFA2322126 /* HLSDownloadsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC78C38545E52587CFE1639 /* HLSDownloadsStore.swift */; };
 		DA5FF86605A41E11AE2AC428 /* SeasonDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6061CC9A771DBC1648BCA1F0 /* SeasonDownloadManager.swift */; };
@@ -125,6 +127,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		3CF41D6D63054F0F92A507B1 /* StreamQuality.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamQuality.swift; sourceTree = "<group>"; };
+		C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalWatchProgressStore.swift; sourceTree = "<group>"; };
 		3C70AA7F1483953DE245D765 /* HLSAssetDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSAssetDownloadManager.swift; sourceTree = "<group>"; };
 		5CC78C38545E52587CFE1639 /* HLSDownloadsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSDownloadsStore.swift; sourceTree = "<group>"; };
 		6061CC9A771DBC1648BCA1F0 /* SeasonDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonDownloadManager.swift; sourceTree = "<group>"; };
@@ -445,6 +449,7 @@
 			isa = PBXGroup;
 			children = (
 				13B122808656F8D05B7D97DC /* DeviceCapabilities.swift */,
+				3CF41D6D63054F0F92A507B1 /* StreamQuality.swift */,
 				CCA100012D0002 /* HLSManifest.swift */,
 				CCA100012D0020 /* HLSAudioLabeler.swift */,
 				CCA100012D0004 /* StreamSurvey.swift */,
@@ -673,6 +678,14 @@
 			path = Player;
 			sourceTree = "<group>";
 		};
+		3F62C34DB1BD4457BD04AAF8 /* LocalWatchProgress */ = {
+			isa = PBXGroup;
+			children = (
+				C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */,
+			);
+			path = LocalWatchProgress;
+			sourceTree = "<group>";
+		};
 		CCF388172A7187F900242581 /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -682,6 +695,7 @@
 				CC44462F2A828B2F0017F499 /* Download */,
 				CC1E21272A966D3700070F7C /* Filtering */,
 				CCF388362A71C86900242581 /* KeychainStorage */,
+				3F62C34DB1BD4457BD04AAF8 /* LocalWatchProgress */,
 				CCF1FF302A83CBF2004DCED9 /* User */,
 				A1C011EC710C511EC710C501 /* Collections */,
 				D3D1CE5E001CE5E001CE5E01 /* Device */,
@@ -947,6 +961,8 @@
 				F545EAE1AFF5BFE43A86788A /* DeviceService.swift in Sources */,
 				E00AE1C02A30DF43F42BBB0D /* DeviceServiceImpl.swift in Sources */,
 				9181898AA7F0D28971B9EAB2 /* DeviceCapabilities.swift in Sources */,
+				359B8BE15FCC4D9983B859BF /* StreamQuality.swift in Sources */,
+				C746BAF04ACC4B519A6D7046 /* LocalWatchProgressStore.swift in Sources */,
 				A33EDB761E32D7E524DDAB0F /* ActorImageProvider.swift in Sources */,
 				5CDA790E2BD84471ADAD5D9D /* ContentStore.swift in Sources */,
 			);
