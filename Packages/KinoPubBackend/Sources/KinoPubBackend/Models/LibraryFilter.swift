@@ -77,6 +77,12 @@ public struct YearRange: Identifiable, Hashable {
 }
 
 /// Everything the library listing filters on. `nil` means "any".
+///
+/// Rating / quality / AC3 facets are applied **client-side**. The mobile `/v1/items`
+/// API only honors type/genre/country/year/sort/actor/director — `imdb` / `kinopoisk` /
+/// `quality` / `conditions` query params are silently ignored (verified by the
+/// dungeon-master-xx fork against the live API). Each `MediaItem` already carries
+/// `imdbRating` / `kinopoiskRating` / `quality` / `ac3`, so we filter the page locally.
 public struct LibraryFilter: Equatable, Hashable {
   public var contentType: MediaType?
   public var sort: MediaSortOrder
@@ -86,22 +92,74 @@ public struct LibraryFilter: Equatable, Hashable {
   /// Set for a person's credits, which are the same listing narrowed to one name.
   public var person: MediaPerson?
 
-  public init(contentType: MediaType? = nil,
-              sort: MediaSortOrder = .recentlyAdded,
-              genreID: Int? = nil,
-              countryID: Int? = nil,
-              years: YearRange? = nil,
-              person: MediaPerson? = nil) {
+  /// Minimum Kinopoisk rating (0…10). Applied client-side.
+  public var kinopoiskMin: Double?
+  /// Minimum IMDb rating (0…10). Applied client-side.
+  public var imdbMin: Double?
+  /// Keep items whose advertised height is ≥ 720. Applied client-side.
+  public var wantHD: Bool
+  /// Keep items whose advertised height is ≥ 2160. Applied client-side.
+  public var want4K: Bool
+  /// Drop items whose advertised height is ≥ 720. Applied client-side.
+  public var withoutHD: Bool
+  /// Keep items with `ac3 == 1`. Applied client-side.
+  public var wantAC3: Bool
+
+  public init(
+    contentType: MediaType? = nil,
+    sort: MediaSortOrder = .recentlyAdded,
+    genreID: Int? = nil,
+    countryID: Int? = nil,
+    years: YearRange? = nil,
+    person: MediaPerson? = nil,
+    kinopoiskMin: Double? = nil,
+    imdbMin: Double? = nil,
+    wantHD: Bool = false,
+    want4K: Bool = false,
+    withoutHD: Bool = false,
+    wantAC3: Bool = false
+  ) {
     self.contentType = contentType
     self.sort = sort
     self.genreID = genreID
     self.countryID = countryID
     self.years = years
     self.person = person
+    self.kinopoiskMin = kinopoiskMin
+    self.imdbMin = imdbMin
+    self.wantHD = wantHD
+    self.want4K = want4K
+    self.withoutHD = withoutHD
+    self.wantAC3 = wantAC3
   }
 
   /// True when anything other than the default sort is in play.
   public var hasActiveFilters: Bool {
-    contentType != nil || genreID != nil || countryID != nil || years != nil
+    contentType != nil
+      || genreID != nil
+      || countryID != nil
+      || years != nil
+      || hasClientSideFacets
+  }
+
+  /// Facets the server ignores — applied to each fetched page locally.
+  public var hasClientSideFacets: Bool {
+    (imdbMin ?? 0) > 0
+      || (kinopoiskMin ?? 0) > 0
+      || wantHD
+      || withoutHD
+      || want4K
+      || wantAC3
+  }
+
+  /// Applies the client-side-only facets to a fetched item.
+  public func clientSideMatches(_ item: MediaItem) -> Bool {
+    if let imdbMin, imdbMin > 0, (item.imdbRating ?? 0) < imdbMin { return false }
+    if let kinopoiskMin, kinopoiskMin > 0, (item.kinopoiskRating ?? 0) < kinopoiskMin { return false }
+    if wantAC3, (item.ac3 ?? 0) != 1 { return false }
+    if want4K, item.quality < 2160 { return false }
+    if wantHD, item.quality < 720 { return false }
+    if withoutHD, item.quality >= 720 { return false }
+    return true
   }
 }

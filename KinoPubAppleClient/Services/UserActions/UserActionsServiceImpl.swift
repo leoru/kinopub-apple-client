@@ -44,4 +44,10 @@ final class UserActionsServiceImpl: UserActionsService {
     _ = try await apiClient.performRequest(with: request, decodingType: EmptyResponseData.self)
   }
 
+  @discardableResult
+  func vote(id: Int, like: Int) async throws -> VoteData {
+    let request = VoteRequest(id: id, like: like)
+    return try await apiClient.performRequest(with: request, decodingType: VoteData.self)
+  }
+
 }

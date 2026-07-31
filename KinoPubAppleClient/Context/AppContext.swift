@@ -39,6 +39,8 @@ typealias AppContextProtocol = AuthorizationServiceProvider
 & MetadataServiceProvider
 & KinopoiskKeyProviderProvider
 & ContentStoreProvider
+& CollectionsServiceProvider
+& DeviceServiceProvider
 
 protocol MetadataServiceProvider {
   var metadataService: MetadataService { get }
@@ -69,6 +71,8 @@ struct AppContext: AppContextProtocol {
   var metadataService: MetadataService
   var kinopoiskKeyProvider: KinopoiskKeyProvider
   var contentStore: ContentStore
+  var collectionsService: CollectionsService
+  var deviceService: DeviceService
 
   static let shared: AppContext = {
     let configuration = BundleConfiguration()
@@ -91,9 +95,12 @@ struct AppContext: AppContextProtocol {
       proxyBaseURL: configuration.tmdbProxyBaseURL.flatMap(URL.init(string:))
     )
     let kinopoiskKeyProvider = KinopoiskKeyProvider()
+    // Keyed Kinopoisk Unofficial first (awards + richer when the user pasted a key);
+    // keyless kpapp.link proxy always-on so facts/stills/reviews work without Settings.
     let metadataService = MetadataService(sources: [
       TMDBSource(configuration: metadataConfig),
-      KinopoiskSource(keyProvider: kinopoiskKeyProvider)
+      KinopoiskSource(keyProvider: kinopoiskKeyProvider),
+      KinopoiskProxySource()
     ])
 
     // `AppContext.shared` is only ever first-accessed from the main thread (app
@@ -113,7 +120,9 @@ struct AppContext: AppContextProtocol {
                       actionsService: UserActionsServiceImpl(apiClient: apiClient),
                       metadataService: metadataService,
                       kinopoiskKeyProvider: kinopoiskKeyProvider,
-                      contentStore: contentStore)
+                      contentStore: contentStore,
+                      collectionsService: CollectionsServiceImpl(apiClient: apiClient),
+                      deviceService: DeviceServiceImpl(apiClient: apiClient))
   }()
   
   // MARK: - API Client building

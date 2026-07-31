@@ -1,11 +1,8 @@
 import SwiftUI
 
-/// Required TMDB attribution (API Terms). Official logo asset can replace the
-/// wordmark later; the mandatory disclaimer ships either way. The Kinopoisk
-/// block only shows once the user has their own validated key configured —
-/// unlike TMDB (always on via the shared proxy), Kinopoisk is per-user opt-in,
-/// so there's nothing to disclose until they've turned it on. Exact required
-/// wording from kinopoiskapiunofficial.tech's own terms hasn't been checked —
+/// Required TMDB attribution (API Terms). Kinopoisk extras always have a keyless
+/// third-party path (kpapp.link); the keyed unofficial API is optional enrichment.
+/// Exact required wording from those services' terms hasn't been checked —
 /// this is a conservative placeholder, not confirmed language.
 struct DataSourcesAttributionView: View {
   var body: some View {
@@ -24,13 +21,18 @@ struct DataSourcesAttributionView: View {
           .font(.footnote)
       }
 
-      if KinopoiskKeyValidation.isValidated {
-        Text("Kinopoisk")
-          .font(.title2.weight(.bold))
-          .foregroundStyle(Color.KinoPub.text)
-          .padding(.top, 4)
+      Text("Kinopoisk")
+        .font(.title2.weight(.bold))
+        .foregroundStyle(Color.KinoPub.text)
+        .padding(.top, 4)
 
-        Text("Photos, facts and awards are fetched using your own Kinopoisk Unofficial API key — a third-party service, not an official Kinopoisk product.")
+      Text("Facts, stills, reviews and some cast details come from a third-party Kinopoisk data proxy (kpapp.link), not an official Kinopoisk product.")
+        .font(.footnote)
+        .foregroundStyle(Color.KinoPub.subtitle)
+        .fixedSize(horizontal: false, vertical: true)
+
+      if KinopoiskKeyValidation.isValidated {
+        Text("Awards and richer metadata also use your own Kinopoisk Unofficial API key (kinopoiskapiunofficial.tech).")
           .font(.footnote)
           .foregroundStyle(Color.KinoPub.subtitle)
           .fixedSize(horizontal: false, vertical: true)

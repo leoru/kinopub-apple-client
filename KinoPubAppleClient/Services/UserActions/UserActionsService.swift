@@ -19,6 +19,9 @@ protocol UserActionsService {
   func clearHistoryForItem(id: Int) async throws
   /// Removes one episode/video from history.
   func clearHistoryForMedia(id: Int) async throws
+  /// Casts a thumbs vote (`like=1` up, `like=0` down). One-shot — `voted: false` means already voted.
+  @discardableResult
+  func vote(id: Int, like: Int) async throws -> VoteData
 }
 
 protocol UserActionsServiceProvider {
@@ -41,5 +44,9 @@ struct UserActionsServiceMock: UserActionsService {
   }
 
   func clearHistoryForMedia(id: Int) async throws {
+  }
+
+  func vote(id: Int, like: Int) async throws -> VoteData {
+    VoteData(voted: true, total: "1", positive: like == 1 ? "1" : "0", negative: like == 0 ? "1" : "0", rating: like == 1 ? 1 : -1)
   }
 }

@@ -107,6 +107,8 @@ final class LibraryFilterTests: XCTestCase {
     XCTAssertTrue(LibraryFilter(genreID: 1).hasActiveFilters)
     XCTAssertTrue(LibraryFilter(countryID: 1).hasActiveFilters)
     XCTAssertTrue(LibraryFilter(years: YearRange(from: 2000, to: 2009)).hasActiveFilters)
+    XCTAssertTrue(LibraryFilter(want4K: true).hasActiveFilters)
+    XCTAssertTrue(LibraryFilter(kinopoiskMin: 7).hasActiveFilters)
   }
 
   // MARK: - Genre decoding
