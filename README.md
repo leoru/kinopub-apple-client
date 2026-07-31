@@ -5,6 +5,13 @@ A native SwiftUI client for the [kino.pub](https://kino.pub) service, **built tv
 This is a fork of [leoru/kinopub-apple-client](https://github.com/leoru/kinopub-apple-client), which targets
 iOS/iPadOS/macOS. The goal of this fork is different: make a proper **Apple TV** app.
 
+A second, actively maintained fork of the same original —
+[dungeon-master-xx/kinopub-apple-client](https://github.com/dungeon-master-xx/kinopub-apple-client) —
+is tracked as a **read-only remote** (`community`) for technical steals (API models, device
+profile, vote/collections, keyless Kinopoisk proxy). We do **not** rebase onto them: histories
+diverged (~100 of our commits vs ~200 of theirs) and we own the UI. See
+[docs/en/community-fork.md](docs/en/community-fork.md).
+
 Two reference points guide the work:
 
 - **Look & feel** — the stock Apple TV app. Horizontal rows of artwork, generous focus effects, native
@@ -69,7 +76,9 @@ open KinoPubAppleClient.xcodeproj
   file-URL master whose media is remote, so every film spun forever while trailers, which skip the
   rewrite, played fine. A failed fetch now fails the item instead of hanging, and the player always shows
   a spinner with Cancel, or the error with Close (`PlayerManager.playbackState`)
-- Downloads and offline playback (iOS/iPadOS/macOS only)
+- Downloads and offline playback (iOS/iPadOS/macOS only) — mp4 with resume-across-relaunch,
+  reject of tiny HTTP error bodies, iOS HLS `.movpkg` (all dubs/subs), season queue, player
+  prefers a present local file over streaming. No download UI on tvOS.
 - **Subtitles are the system's off tvOS.** The master playlist carries every kino.pub subtitle as a real
   HLS rendition, so the system player lists and draws them; we add nothing. On tvOS only, sidecar SRT is
   parsed into synced cues and drawn as an overlay, picked from the transport-bar menu — **English by
@@ -310,10 +319,11 @@ microiptv leaves a lot on the table. We shouldn't.
       the frame with no transport chrome, dropping back to the artwork when it ends
 - [ ] Trailers on the detail page as a proper section, not only the hero takeover
 - [x] Awards — via Kinopoisk Unofficial (see Phase C½), not kino.pub's own payload
-- [ ] Collections (`GET /v1/collections`, `/v1/collections/view?id=`)
+- [ ] Collections UI — backend is ready (`CollectionsService`, `GET /v1/collections` + `/view`)
 - [x] **Every production country**, not just the first — microiptv shows one
 - [x] Ratings section: IMDb and Kinopoisk with vote counts. kino.pub's own thumbs up/down tally is
       commented out in `MediaItemRatingsSection` — it reads empty on everything we have looked at
+- [ ] Cast a kino.pub thumbs vote (`GET /v1/items/vote`, `UserActionsService.vote`) + show own vote state
 - [x] Cast and crew as round portraits, each opening that person's credits (`/v1/items?actor=`,
       `?director=` — the web client's `mode=actor` search). Person page: null-tolerant listing
       decode, LoadFailed/empty/retry, cast photo + TMDB person bio in a scrollable hero
@@ -321,9 +331,12 @@ microiptv leaves a lot on the table. We shouldn't.
 - [x] Synopsis as a focusable panel that opens the full text, rather than expanding in place
 - [x] Cast photos and character names — via TMDB (`KinoPubMetadata`), matched by `MediaItem.imdb`.
       Kinopoisk Unofficial still planned for Russian character names / awards
-- [ ] Sweep the rest of the payload (quality, AC3, age rating)
+- [ ] Sweep the rest of the payload (quality, AC3, age rating) — `quality`/`ac3` decode already;
+      filter facets for 4K/HD/AC3/KP/IMDb min are client-side on `LibraryFilter` (server ignores those
+      query params); UI chips still to wire
 - [x] **Similar items** — horizontal "More like this" rail on the detail page
-      (`GET /v1/items/similar?id=`), before Information so tvOS focus can reach it
+      (`GET /v1/items/similar?id=`), before Information so tvOS focus can reach it. Prefer this over
+      the community fork's "same genre" approximation.
 
 ### Phase C — Remember playback choices
 
@@ -358,6 +371,14 @@ backend of ours is involved, no data leaves the device. Free tier caps at 500 re
 (confirmed live via the API's own error message) — plenty for a single user browsing normally, not
 enough for any kind of bulk pull on one key.
 
+**Keyless fallback (from the community fork):** `KinopoiskProxySource` always talks to
+`https://kpapp.link/kpapi/films/<kinopoiskId>/{facts,reviews,staff,images}` with **no API key**.
+That's why the dungeon-master-xx Mac build shows facts/reviews/stills without any Settings —
+verified live (HTTP 200, no auth). We keep the keyed source for awards + richer data when the user
+has a key; the proxy fills gaps otherwise. Actor portraits without TMDB can use
+`ActorImageProvider` (`m.pushbr.com/actors/<md5(ru name)>.jpg`). Third-party proxies can die;
+sections stay empty when they do.
+
 - [x] TMDB package + proxy + cast photos / character names / title logos
 - [x] TMDB person details on the credits page (`/3/person/{id}` — bio, birthday, place of birth)
 - [x] Episode air dates + upcoming unplayable (Phase F via TMDB)
@@ -369,6 +390,8 @@ enough for any kind of bulk pull on one key.
 - [x] Kinopoisk Unofficial: awards, photo/stills gallery, "facts" section, Russian character names
       merged into the existing cast rail — all as new detail-page sections, hidden when empty
 - [x] Confirmed keyed, not keyless — `X-API-KEY` header, free tier 500 requests/day
+- [x] Keyless kpapp.link proxy (`KinopoiskProxySource`) for facts/stills/staff/reviews without a key
+- [ ] Reviews UI section on the detail page (`TitleMetadata.reviews` is ready from the proxy)
 - [ ] Kinopoisk Unofficial: premiere dates — not implemented
 - [ ] Kinopoisk Unofficial: box office — the API exposes it (`/films/{id}/box_office`), not wired
       into the live per-user source yet (TMDB's own budget/revenue shipped instead, see above)
@@ -378,7 +401,8 @@ enough for any kind of bulk pull on one key.
 - [ ] Surface TMDB's tagline / box office / production company logo somewhere on the detail page
       (data is ready, no UI yet)
 - [ ] "Donate" fetched Kinopoisk data back to a shared backend so it isn't gated by each user's own
-      500/day — explicitly postponed, no backend exists for this yet
+      500/day — explicitly postponed, no backend exists for this yet; keyless proxy already removes
+      the hard gate for facts/stills/reviews
 
 See `tools/kinopub-snapshot/` and `tools/kinopoisk-metadata/` for the offline side of this: a local
 snapshot of kino.pub's own catalog plus a separate bulk Kinopoisk-metadata puller (own API key, own
@@ -437,7 +461,8 @@ Two tiers, and the cheap one is worth shipping first:
 - [x] Source: TMDB by IMDb id via `KinoPubMetadata` (kino.pub still has no air dates)
 
 ### Later
-- [ ] TV channels tab (`GET /v1/tv/index`)
+- [ ] TV channels / Sport UI — backend ready (`GET /v1/tv` → `fetchTVChannels`); EPG is external
+      XMLTV in the community fork, not kino.pub — port only when we surface Sport
 - [x] **Viewing history screen** — reachable from Continue Watching's context menu (not a tab yet)
 - [ ] Top Shelf extension
 
@@ -468,20 +493,22 @@ Where a payload shape matters, a decoding test pins the real JSON (see `HistoryE
 upstream change fails loudly instead of silently emptying a row.
 
 **Already wired** (`Packages/KinoPubBackend/Sources/KinoPubBackend/Requests/`):
-`/v1/items/{hot,fresh,popular}`, `/v1/items/search`, `/v1/items/{id}`, `/v1/user`, `/v1/bookmarks`,
-`/v1/bookmarks/{id}`, `/v1/watching`, `/v1/watching/movies`, `/v1/watching/serials`,
-`/v1/watching/marktime`, `/v1/watching/toggle`, `/v1/history`, `/v1/history/clear-for-item`,
-`/v1/history/clear-for-media`, `/v1/genres`, `/v1/countries`, `/v1/items` (library filters plus
-`actor`/`director`), device-code auth.
+`/v1/items/{hot,fresh,popular}`, `/v1/items/search`, `/v1/items/{id}`, `/v1/items/similar`,
+`/v1/items/vote`, `/v1/user`, `/v1/bookmarks`, `/v1/bookmarks/{id}`, `/v1/watching`,
+`/v1/watching/movies`, `/v1/watching/serials`, `/v1/watching/marktime`, `/v1/watching/toggle`,
+`/v1/history`, `/v1/history/clear-for-item`, `/v1/history/clear-for-media`, `/v1/genres`,
+`/v1/countries`, `/v1/items` (library filters plus `actor`/`director`; rating/quality facets are
+**client-side** — see `LibraryFilter.clientSideMatches`), `/v1/collections`,
+`/v1/collections/view`, `/v1/tv` (channels service; no Sport UI yet), `/v1/device/info`,
+`/v1/device/{id}/settings` (HEVC/4K/HDR/mixedPlaylist auto-synced on authorize), device-code auth.
 
 **Available, not yet wired:**
 
 | Endpoint | Use |
 | --- | --- |
-| `GET /v1/items` | Still unused there: `finished`, `letter`, `quality`, `conditions` |
-| `GET /v1/tv/index` | TV channels tab |
-| `GET /v1/collections`, `/v1/collections/view?id=` | Curated rows |
+| `GET /v1/items` | Still unused there: `finished`, `letter` (and server-side `quality`/`conditions` are no-ops) |
 | `GET /v1/types` | Content-type reference for filters |
+| `GET /v1/items/comments` | Title comments (community has it; not ported yet) |
 
 ## App structure
 

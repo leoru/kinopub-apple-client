@@ -23,6 +23,8 @@ protocol VideoContentService {
   func fetchCountries() async throws -> ArrayData<Country>
   func fetchItemFolders(itemId: Int) async throws -> ArrayData<Bookmark>
   func toggleBookmark(itemId: Int, folderId: Int) async throws
+  /// Live sport / event channels — `GET /v1/tv`.
+  func fetchTVChannels() async throws -> [TVChannel]
 }
 
 protocol VideoContentServiceProvider {
@@ -89,5 +91,9 @@ struct VideoContentServiceMock: VideoContentService {
   }
 
   func toggleBookmark(itemId: Int, folderId: Int) async throws { }
+
+  func fetchTVChannels() async throws -> [TVChannel] {
+    []
+  }
 
 }

@@ -60,10 +60,18 @@ class PlayerManager: ObservableObject {
   private var secondaryCues: [SubtitleCue] = []
   private var cueLoadTasks: [Task<Void, Never>] = []
   private var didPreparePlayback = false
+  /// Playback position of the last successful `/v1/watching/marktime` tick.
+  private var lastServerMarkPosition: TimeInterval = 0
+  /// Server marktime cadence — local resume stays on the observer's 10s period.
+  private static let serverMarkInterval: TimeInterval = 30
   /// Held strongly: `AVAssetResourceLoader` only keeps a weak reference to its delegate.
   private var masterLoader: HLSMasterResourceLoader?
   private var statusObservation: NSKeyValueObservation?
+  private var seekObservation: NSKeyValueObservation?
   private var playbackFailureObserver: NSObjectProtocol?
+  private var endOfPlaybackObserver: NSObjectProtocol?
+  /// Resume point waiting for the item to become `readyToPlay` (fetch often races prepare).
+  private var pendingResumeTime: TimeInterval?
   private static let loaderQueue = DispatchQueue(label: "com.soda.kinopub.hls-master-loader")
 
 #if os(tvOS)
@@ -89,11 +97,30 @@ class PlayerManager: ObservableObject {
   private var fileURL: URL? {
     switch watchMode {
     case .media:
-      let downloadedFiles = downloadedFilesDatabase.readData()
-      if let file = downloadedFiles?.filter({ $0.metadata.id == playItem.id }).first {
-        return file.localFileURL
+      // DownloadMeta.id is the series/content id; Episode.id is the episode id while
+      // metadata.id is the series. Match either so a downloaded item opened from detail
+      // plays locally instead of streaming.
+      let contentIds: Set<Int> = [playItem.id, playItem.metadata.id]
+      for contentId in contentIds {
+        if let hls = AppContext.shared.hlsDownloadsStore.asset(
+          forId: contentId,
+          video: playItem.metadata.video,
+          season: playItem.metadata.season
+        ) {
+          return hls.localFileURL
+        }
       }
-      return URL(string: BestVideoQualityFinder.findBestURL(for: playItem.files))
+      let downloadedFiles = downloadedFilesDatabase.readData() ?? []
+      let sameItem = downloadedFiles.filter { contentIds.contains($0.metadata.id) }
+      let playURLs = Set(playItem.files.map(\.url.http))
+      let chosen = sameItem.first(where: { playURLs.contains($0.originalURL.absoluteString) })
+        ?? sameItem.first
+      if let chosen, FileManager.default.fileExists(atPath: chosen.localFileURL.path) {
+        return chosen.localFileURL
+      }
+      let urlString = BestVideoQualityFinder.findBestURL(for: playItem.files)
+      guard !urlString.isEmpty else { return nil }
+      return URL(string: urlString)
     case .trailer:
       return playItem.trailerURL
     }
@@ -113,6 +140,7 @@ class PlayerManager: ObservableObject {
       }
     }
 
+    // Local resume every ~10s; server marktime every ~30s (see `saveWatchMark`).
     playerTimeObserver = PlayerTimeObserver(player: player, period: 10.0, timeUpdateHandler: { [weak self] time in
       self?.saveWatchMark(time: time)
 #if os(tvOS)
@@ -139,7 +167,12 @@ class PlayerManager: ObservableObject {
     }
 
     let item = AVPlayerItem(asset: playbackAsset(for: source))
+    // Cap adaptive HLS to the user's chosen quality. Harmless for local/trailer playback.
+    if watchMode == .media, let maxResolution = StreamQuality.current.maxResolution {
+      item.preferredMaximumResolution = maxResolution
+    }
     observePlaybackState(of: item)
+    observeEndOfPlayback(of: item)
     player.replaceCurrentItem(with: item)
 #if os(tvOS)
     audibleGroup = nil
@@ -178,6 +211,7 @@ class PlayerManager: ObservableObject {
         switch item.status {
         case .readyToPlay:
           self.playbackState = .ready
+          self.applyPendingSeekIfPossible()
         case .failed:
           self.playbackState = .failed(Self.failureMessage(for: item))
         default:
@@ -211,9 +245,25 @@ class PlayerManager: ObservableObject {
     if let playbackFailureObserver {
       NotificationCenter.default.removeObserver(playbackFailureObserver)
     }
+    if let endOfPlaybackObserver {
+      NotificationCenter.default.removeObserver(endOfPlaybackObserver)
+    }
 #if os(tvOS)
     audioReadyObservation?.invalidate()
 #endif
+  }
+
+  /// Playing to the very end marks the title watched (see `markFinished`).
+  private func observeEndOfPlayback(of item: AVPlayerItem) {
+    guard watchMode == .media else { return }
+    if let endOfPlaybackObserver {
+      NotificationCenter.default.removeObserver(endOfPlaybackObserver)
+    }
+    endOfPlaybackObserver = NotificationCenter.default.addObserver(
+      forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main
+    ) { [weak self] _ in
+      self?.markFinished()
+    }
   }
 
   // MARK: - Subtitles
@@ -381,7 +431,26 @@ class PlayerManager: ObservableObject {
 
   // MARK: - Watch marks
 
+  /// Local resume on every observer tick (~10s); server `marktime` every ~30s of progress.
   func saveWatchMark(time: TimeInterval) {
+    guard watchMode == .media else { return }
+
+    let duration = player.currentItem?.duration.seconds ?? 0
+    AppContext.shared.localProgressStore.recordProgress(
+      mediaId: playItem.metadata.id,
+      position: time,
+      duration: duration,
+      season: playItem.metadata.season,
+      episode: playItem.metadata.video
+    )
+
+    // Position-based cadence so a scrub still re-marks after ~30s of movement.
+    let due = lastServerMarkPosition == 0
+      ? time >= Self.serverMarkInterval
+      : abs(time - lastServerMarkPosition) >= Self.serverMarkInterval
+    guard due else { return }
+    lastServerMarkPosition = time
+
     Task.detached(priority: .utility) { [unowned self] in
       do {
         try await self.actionsService.markWatch(id: playItem.metadata.id,
@@ -393,27 +462,82 @@ class PlayerManager: ObservableObject {
     }
   }
 
+  /// Reaching the end marks the title watched. kino.pub derives watched status from the position
+  /// reported via `marktime`, so we send one final marktime at the full duration and clear the
+  /// local resume point so Continue Watching drops it immediately.
+  private func markFinished() {
+    guard watchMode == .media else { return }
+    let duration = player.currentItem?.duration.seconds ?? 0
+    guard duration.isFinite, duration > 0 else { return }
+    AppContext.shared.localProgressStore.clear(id: playItem.metadata.id)
+    Task.detached(priority: .utility) { [weak self] in
+      guard let self else { return }
+      do {
+        try await self.actionsService.markWatch(id: self.playItem.metadata.id,
+                                                time: Int(duration),
+                                                video: self.playItem.metadata.video,
+                                                season: self.playItem.metadata.season)
+      } catch {
+        Logger.app.error("Failed to mark finished: \(error)")
+      }
+    }
+  }
+
   /// Pick up where the title was left off. There is no prompt any more: the remembered
   /// time is where playback resumes, and the transport bar's own scrubber is right there
   /// for anyone who meant to start over.
   @MainActor
   func fetchWatchMark() async {
+    guard watchMode == .media else { return }
+
+    var remoteContinueTime: TimeInterval = 0
     do {
-      watchMark = try await actionsService.fetchWatchMark(id: playItem.metadata.id, video: playItem.metadata.video, season: playItem.metadata.season)
+      watchMark = try await actionsService.fetchWatchMark(id: playItem.metadata.id,
+                                                          video: playItem.metadata.video,
+                                                          season: playItem.metadata.season)
       if let watchMark {
-        let remoteContinueTime = watchMark.item.videos?.first?.time ?? watchMark.item.seasons?.first?.episodes.first?.time
-        if let resume = remoteContinueTime, resume > 0 {
-          seek(to: resume)
-        }
+        remoteContinueTime = watchMark.item.videos?.first?.time
+          ?? watchMark.item.seasons?.first?.episodes.first?.time
+          ?? 0
       }
     } catch {
       Logger.app.error("Failed to fetch watch mark: \(error)")
     }
+
+    let localContinueTime = AppContext.shared.localProgressStore
+      .entry(forId: playItem.metadata.id,
+             season: playItem.metadata.season,
+             episode: playItem.metadata.video)?
+      .position ?? 0
+
+    let best = max(remoteContinueTime, localContinueTime)
+    if best > 0 {
+      seek(to: best)
+    }
   }
 
+  /// Seek now if the item is ready; otherwise remember the time until `readyToPlay`.
+  /// Seeking a not-yet-ready (or not-yet-set) item is silently dropped.
   private func seek(to time: TimeInterval) {
+    pendingResumeTime = time
+    applyPendingSeekIfPossible()
+  }
+
+  private func applyPendingSeekIfPossible() {
+    guard let time = pendingResumeTime else { return }
     let seekTime = CMTime(seconds: time, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-    player.seek(to: seekTime)
+    if player.currentItem?.status == .readyToPlay {
+      player.seek(to: seekTime, toleranceBefore: .zero, toleranceAfter: .zero)
+      pendingResumeTime = nil
+      seekObservation?.invalidate()
+      seekObservation = nil
+      return
+    }
+    guard player.currentItem != nil, seekObservation == nil else { return }
+    seekObservation = player.currentItem?.observe(\.status, options: [.new]) { [weak self] item, _ in
+      guard item.status == .readyToPlay else { return }
+      self?.applyPendingSeekIfPossible()
+    }
   }
 
   // MARK: - Title / subtitle

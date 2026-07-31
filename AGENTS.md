@@ -71,3 +71,10 @@ Focus bugs do not show up in previews, so anything focusable gets driven this wa
 - Tick the roadmap checkboxes in `README.md` as phases land, and move items out of "Known issues" when
   they're fixed.
 - If you find a new defect and aren't fixing it now, add it to "Known issues" with the file path.
+
+## Community fork (technical steals only)
+
+[dungeon-master-xx/kinopub-apple-client](https://github.com/dungeon-master-xx/kinopub-apple-client) is
+a sibling fork of the same leoru original. Track it as remote `community` — **never rebase** our UI
+onto theirs. Steal Request/Model/Service slices; keep our screens. Details:
+[docs/en/community-fork.md](docs/en/community-fork.md).

@@ -4,6 +4,8 @@ public enum MetadataSourceID: String, Sendable, Hashable, Codable {
   case tmdb
   case trakt
   case kinopoisk
+  /// Keyless kpapp.link proxy (same unofficial Kinopoisk payload the community fork uses).
+  case kinopoiskProxy
   case introdb
 }
 

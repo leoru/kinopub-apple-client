@@ -351,6 +351,7 @@ struct MediaItemHeroView: View {
   var folderIDsContainingItem: Set<Int>
   var onWatchedToggle: () -> Void
   var onFolderToggle: (Bookmark) -> Void
+  var onCreateFolder: ((String) -> Void)? = nil
   var onClearFromContinueWatching: () -> Void = {}
   /// Opens the Saved / watchlist tab — same destination as the CW long-press action.
   var onBrowseWatchlist: (() -> Void)? = nil
@@ -360,6 +361,8 @@ struct MediaItemHeroView: View {
   /// tvOS only: the Up gesture lifts the muted inline preview into a real full-screen
   /// player. Kept here so the same view that owns the preview owns its promotion.
   @State private var isTrailerFullScreen = false
+  @State private var showNewFolderAlert = false
+  @State private var newFolderName = ""
 
   private var isSeries: Bool {
     !(mediaItem.seasons?.isEmpty ?? true)
@@ -683,10 +686,19 @@ struct MediaItemHeroView: View {
     .mediaActionCircleStyle()
     .focused($focus, equals: .heroOther)
     .accessibilityLabel("Bookmarks")
+    .alert("New Folder", isPresented: $showNewFolderAlert) {
+      TextField("Folder name", text: $newFolderName)
+      Button("Create") {
+        onCreateFolder?(newFolderName)
+        newFolderName = ""
+      }
+      Button("Cancel", role: .cancel) { newFolderName = "" }
+    }
   }
 
-  /// Labeled add control — same folder menu as the bookmark circle, but with a title
-  /// so it reads as the primary "save this" affordance at ten feet.
+  /// Labeled save control — same bookmark-folder menu as the circle (not
+  /// `/v1/watching/togglewatchlist`: a checkmark here would collide with Mark as Watched).
+  /// // DESIGN: separate series-watchlist chrome TBD — API is `UserActionsService.toggleWatchlist`.
   @ViewBuilder
   private var watchlistPill: some View {
     folderMenuLabel {
@@ -753,30 +765,33 @@ struct MediaItemHeroView: View {
     .accessibilityLabel("More")
   }
 
-  /// kino.pub bookmarks are folders, so both the bookmark circle and the Watchlist
-  /// pill offer the list rather than a single on/off.
+  /// kino.pub bookmarks are folders — the circle opens the list (plus create).
   @ViewBuilder
   private func folderMenuLabel<Content: View>(@ViewBuilder label: () -> Content) -> some View {
-    if folders.isEmpty {
-      Button(action: {}) { label() }
-        .disabled(true)
-    } else {
-      Menu {
-        ForEach(folders, id: \.id) { folder in
-          Button {
-            onFolderToggle(folder)
-          } label: {
-            SwiftUI.Label(folder.title,
-                          systemImage: folderIDsContainingItem.contains(folder.id) ? "checkmark" : "")
-          }
+    Menu {
+      ForEach(folders, id: \.id) { folder in
+        Button {
+          onFolderToggle(folder)
+        } label: {
+          SwiftUI.Label(folder.title,
+                        systemImage: folderIDsContainingItem.contains(folder.id) ? "checkmark" : "")
         }
-      } label: {
-        label()
       }
-      // Folder membership arrives after first paint; rebuild the menu when it flips
-      // so `bookmark` → `bookmark.fill` actually reaches the screen.
-      .id(isBookmarked)
+      if onCreateFolder != nil {
+        if !folders.isEmpty { Divider() }
+        Button {
+          newFolderName = ""
+          showNewFolderAlert = true
+        } label: {
+          SwiftUI.Label("New Folder", systemImage: "folder.badge.plus")
+        }
+      }
+    } label: {
+      label()
     }
+    // Folder membership arrives after first paint; rebuild the menu when it flips
+    // so `bookmark` → `bookmark.fill` actually reaches the screen.
+    .id("\(isBookmarked)-\(folders.count)")
   }
 
   @ViewBuilder

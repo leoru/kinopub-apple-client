@@ -12,6 +12,39 @@ import KinoPubLogging
 import KinoPubKit
 import KinoPubMetadata
 
+/// The viewer's own kino.pub thumbs vote for a title. Votes are one-shot server-side.
+enum MediaItemUserVote: Equatable {
+  case none
+  case up
+  case down
+}
+
+/// Remembers a cast vote across launches so the thumbs stay highlighted on revisit.
+private enum UserVoteMemory {
+  private static let key = "mediaItemUserVotes"
+
+  static func vote(for id: Int) -> MediaItemUserVote {
+    guard let raw = UserDefaults.standard.dictionary(forKey: key)?["\(id)"] as? String else {
+      return .none
+    }
+    switch raw {
+    case "up": return .up
+    case "down": return .down
+    default: return .none
+    }
+  }
+
+  static func set(id: Int, vote: MediaItemUserVote) {
+    var map = UserDefaults.standard.dictionary(forKey: key) ?? [:]
+    switch vote {
+    case .none: map.removeValue(forKey: "\(id)")
+    case .up: map["\(id)"] = "up"
+    case .down: map["\(id)"] = "down"
+    }
+    UserDefaults.standard.set(map, forKey: key)
+  }
+}
+
 @MainActor
 class MediaItemModel: ObservableObject {
 
@@ -35,6 +68,9 @@ class MediaItemModel: ObservableObject {
   @Published public var folders: [Bookmark] = []
   @Published public var folderIDsContainingItem: Set<Int> = []
   @Published public var isWatched: Bool = false
+  @Published public var myVote: MediaItemUserVote = .none
+  @Published public var likeCount: Int = 0
+  @Published public var dislikeCount: Int = 0
 
   /// TMDB (and later other sources) overlay. Empty when the proxy is unset or the
   /// title has no IMDb id — the page then draws exactly as before.
@@ -71,6 +107,7 @@ class MediaItemModel: ObservableObject {
     self.contentStore = contentStore
     if let knownItem {
       self.mediaItem = knownItem
+      AppContext.shared.localProgressStore.cacheItem(knownItem)
     }
   }
 
@@ -81,7 +118,9 @@ class MediaItemModel: ObservableObject {
         mediaItem = try await itemsService.fetchDetails(for: "\(mediaItemId)").item
         let mediaId = mediaItem.id
         mediaItem.seasons = mediaItem.seasons?.map({ $0.mediaId = mediaId; return $0 })
+        AppContext.shared.localProgressStore.cacheItem(mediaItem)
         isWatched = mediaItem.playbackAction == .playAgain
+        seedVoteCounts()
         itemLoaded = true
         identity = MediaIdentity(mediaItem: mediaItem)
         await loadExternalMetadata()
@@ -268,9 +307,100 @@ class MediaItemModel: ObservableObject {
       }
     }
   }
+
+  // DESIGN: series `/v1/watching/togglewatchlist` is available via
+  // `actionsService.toggleWatchlist` — do not wire it to a checkmark control here;
+  // checkmark already means Mark as Watched. Needs its own chrome when designed.
+
+  /// Create a bookmark folder and put this item in it.
+  func createFolderAndAdd(named name: String) {
+    let title = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !title.isEmpty else { return }
+    Task {
+      do {
+        let folderId = try await actionsService.createBookmarkFolder(title: title)
+        try await itemsService.toggleBookmark(itemId: mediaItemId, folderId: folderId)
+        folderIDsContainingItem.insert(folderId)
+        folders = try await itemsService.fetchBookmarks().items
+        contentStore.invalidate(family: .bookmarks)
+      } catch {
+        errorHandler.setError(error)
+      }
+    }
+  }
+
+  /// kino.pub exposes aggregate as `rating` + `rating_votes` (+ percentage); derive like/dislike
+  /// for the initial display. A real vote refreshes them from `VoteData`.
+  private func seedVoteCounts() {
+    myVote = UserVoteMemory.vote(for: mediaItemId)
+    if let votes = mediaItem.communityVotes {
+      likeCount = votes.likes
+      dislikeCount = votes.dislikes
+    } else {
+      likeCount = 0
+      dislikeCount = 0
+    }
+  }
+
+  /// Cast a like (`up: true` → `like=1`) or dislike. One-shot — can't switch or re-cast.
+  func vote(up: Bool) {
+    let target: MediaItemUserVote = up ? .up : .down
+    if myVote == target { return }
+    if myVote != .none { return }
+
+    myVote = target
+    UserVoteMemory.set(id: mediaItemId, vote: target)
+    if up { likeCount += 1 } else { dislikeCount += 1 }
+    Task {
+      do {
+        let result = try await actionsService.vote(id: mediaItemId, like: up ? 1 : 0)
+        if result.voted {
+          if let p = result.positiveCount { likeCount = p }
+          if let n = result.negativeCount { dislikeCount = n }
+        } else {
+          // Already voted on another device — keep highlight, undo optimistic bump.
+          if up { likeCount = max(0, likeCount - 1) } else { dislikeCount = max(0, dislikeCount - 1) }
+        }
+      } catch {
+        myVote = .none
+        UserVoteMemory.set(id: mediaItemId, vote: .none)
+        if up { likeCount = max(0, likeCount - 1) } else { dislikeCount = max(0, dislikeCount - 1) }
+        errorHandler.setError(error)
+      }
+    }
+  }
   
   func startDownload(item: DownloadableMediaItem, file: FileInfo) {
-    _ = downloadManager.startDownload(url: URL(string: file.url.http)!, withMetadata: DownloadMeta.make(from: item))
+    let meta = DownloadMeta.make(from: item, quality: file.quality)
+#if os(iOS)
+    // Prefer offline HLS (.movpkg) — full quality + all dubs/subs. Fall back to mp4.
+    if let hls = URL(string: file.url.hls4), !file.url.hls4.isEmpty {
+      let result = AppContext.shared.hlsDownloadManager.startDownload(meta: meta, hlsURL: hls)
+      switch result {
+      case .started, .alreadyDownloading, .alreadyDownloaded:
+        return
+      case .failed:
+        break
+      }
+    }
+#endif
+    guard let url = URL(string: file.url.http), !file.url.http.isEmpty else { return }
+    _ = downloadManager.startDownload(url: url, withMetadata: meta)
+  }
+
+  /// Enqueues every episode of a season at `quality` (mp4 path). Non-TV only.
+  @discardableResult
+  func startSeasonDownload(mediaId: Int, seriesTitle: String, season: Season, quality: String?) -> Int {
+#if os(tvOS)
+    return 0
+#else
+    AppContext.shared.seasonDownloadManager.downloadSeason(
+      mediaId: mediaId,
+      seriesTitle: seriesTitle,
+      season: season,
+      quality: quality
+    )
+#endif
   }
 
 }

@@ -76,7 +76,34 @@ public struct YearRange: Identifiable, Hashable {
   }
 }
 
+/// Hot/popular window for `/v1/items?period=`. Server-side (unlike rating/HD facets).
+/// DESIGN: chip chrome in `LibraryFiltersBar` TBD — values are ready to send.
+public enum CatalogPeriod: String, CaseIterable, Identifiable, Hashable {
+  case day
+  case week
+  case month
+  case year
+
+  public var id: Self { self }
+
+  /// Localization key for when the filter chrome lands.
+  public var titleKey: String {
+    switch self {
+    case .day: return "Period_Day"
+    case .week: return "Period_Week"
+    case .month: return "Period_Month"
+    case .year: return "Period_Year"
+    }
+  }
+}
+
 /// Everything the library listing filters on. `nil` means "any".
+///
+/// Rating / quality / AC3 facets are applied **client-side**. The mobile `/v1/items`
+/// API only honors type/genre/country/year/sort/actor/director/`period` — `imdb` /
+/// `kinopoisk` / `quality` / `conditions` query params are silently ignored (verified
+/// by the dungeon-master-xx fork against the live API). Each `MediaItem` already carries
+/// `imdbRating` / `kinopoiskRating` / `quality` / `ac3`, so we filter the page locally.
 public struct LibraryFilter: Equatable, Hashable {
   public var contentType: MediaType?
   public var sort: MediaSortOrder
@@ -85,23 +112,80 @@ public struct LibraryFilter: Equatable, Hashable {
   public var years: YearRange?
   /// Set for a person's credits, which are the same listing narrowed to one name.
   public var person: MediaPerson?
+  /// Popularity window (`day`/`week`/`month`/`year`) — sent server-side.
+  public var period: CatalogPeriod?
 
-  public init(contentType: MediaType? = nil,
-              sort: MediaSortOrder = .recentlyAdded,
-              genreID: Int? = nil,
-              countryID: Int? = nil,
-              years: YearRange? = nil,
-              person: MediaPerson? = nil) {
+  /// Minimum Kinopoisk rating (0…10). Applied client-side.
+  public var kinopoiskMin: Double?
+  /// Minimum IMDb rating (0…10). Applied client-side.
+  public var imdbMin: Double?
+  /// Keep items whose advertised height is ≥ 720. Applied client-side.
+  public var wantHD: Bool
+  /// Keep items whose advertised height is ≥ 2160. Applied client-side.
+  public var want4K: Bool
+  /// Drop items whose advertised height is ≥ 720. Applied client-side.
+  public var withoutHD: Bool
+  /// Keep items with `ac3 == 1`. Applied client-side.
+  public var wantAC3: Bool
+
+  public init(
+    contentType: MediaType? = nil,
+    sort: MediaSortOrder = .recentlyAdded,
+    genreID: Int? = nil,
+    countryID: Int? = nil,
+    years: YearRange? = nil,
+    person: MediaPerson? = nil,
+    period: CatalogPeriod? = nil,
+    kinopoiskMin: Double? = nil,
+    imdbMin: Double? = nil,
+    wantHD: Bool = false,
+    want4K: Bool = false,
+    withoutHD: Bool = false,
+    wantAC3: Bool = false
+  ) {
     self.contentType = contentType
     self.sort = sort
     self.genreID = genreID
     self.countryID = countryID
     self.years = years
     self.person = person
+    self.period = period
+    self.kinopoiskMin = kinopoiskMin
+    self.imdbMin = imdbMin
+    self.wantHD = wantHD
+    self.want4K = want4K
+    self.withoutHD = withoutHD
+    self.wantAC3 = wantAC3
   }
 
   /// True when anything other than the default sort is in play.
   public var hasActiveFilters: Bool {
-    contentType != nil || genreID != nil || countryID != nil || years != nil
+    contentType != nil
+      || genreID != nil
+      || countryID != nil
+      || years != nil
+      || period != nil
+      || hasClientSideFacets
+  }
+
+  /// Facets the server ignores — applied to each fetched page locally.
+  public var hasClientSideFacets: Bool {
+    (imdbMin ?? 0) > 0
+      || (kinopoiskMin ?? 0) > 0
+      || wantHD
+      || withoutHD
+      || want4K
+      || wantAC3
+  }
+
+  /// Applies the client-side-only facets to a fetched item.
+  public func clientSideMatches(_ item: MediaItem) -> Bool {
+    if let imdbMin, imdbMin > 0, (item.imdbRating ?? 0) < imdbMin { return false }
+    if let kinopoiskMin, kinopoiskMin > 0, (item.kinopoiskRating ?? 0) < kinopoiskMin { return false }
+    if wantAC3, (item.ac3 ?? 0) != 1 { return false }
+    if want4K, item.quality < 2160 { return false }
+    if wantHD, item.quality < 720 { return false }
+    if withoutHD, item.quality >= 720 { return false }
+    return true
   }
 }

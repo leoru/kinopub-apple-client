@@ -81,4 +81,14 @@ public extension WatchingItem {
               title: entry.item.title ?? "",
               posters: posters)
   }
+
+  /// Local resume point whose `MediaItem` snapshot is enough to draw a Continue Watching card
+  /// before/without the backend listing the title.
+  init(mediaItem: MediaItem) {
+    self.init(id: mediaItem.id,
+              type: mediaItem.type,
+              subtype: mediaItem.subtype,
+              title: mediaItem.title,
+              posters: mediaItem.posters)
+  }
 }

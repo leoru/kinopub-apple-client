@@ -83,7 +83,12 @@ struct PersonItemsView: View {
 
   private var hero: some View {
     HStack(alignment: .top, spacing: Self.heroSpacing) {
-      CastAvatarView(name: person.name, photoURL: personMetadata.photo ?? person.photoURL)
+      CastAvatarView(
+        name: person.name,
+        photoURL: personMetadata.photo
+          ?? person.photoURL
+          ?? ActorImageProvider.photoURL(for: person.name)
+      )
 
       VStack(alignment: .leading, spacing: 8) {
         Text(person.name)

@@ -81,8 +81,15 @@ final class VideoContentServiceImpl: VideoContentService {
 
   func fetchItems(filter: LibraryFilter, page: Int?) async throws -> PaginatedData<MediaItem> {
     let request = ItemsRequest(filter: filter, page: page)
-    return try await apiClient.performRequest(with: request,
-                                              decodingType: PaginatedData<MediaItem>.self)
+    var response = try await apiClient.performRequest(
+      with: request,
+      decodingType: PaginatedData<MediaItem>.self
+    )
+    // Rating / quality / AC3 query params are silently ignored by /v1/items — filter locally.
+    if filter.hasClientSideFacets {
+      response.items = response.items.filter { filter.clientSideMatches($0) }
+    }
+    return response
   }
 
   func fetchGenres(for type: MediaType?) async throws -> ArrayData<MediaGenre> {
@@ -107,6 +114,15 @@ final class VideoContentServiceImpl: VideoContentService {
   func toggleBookmark(itemId: Int, folderId: Int) async throws {
     let request = ToggleBookmarkRequest(itemId: itemId, folderId: folderId)
     _ = try await apiClient.performRequest(with: request, decodingType: EmptyResponseData.self)
+  }
+
+  func fetchTVChannels() async throws -> [TVChannel] {
+    let request = TVChannelsRequest()
+    let response = try await apiClient.performRequest(
+      with: request,
+      decodingType: TVChannelsData.self
+    )
+    return response.channels
   }
 
 }

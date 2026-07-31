@@ -23,6 +23,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
   func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
     return AppDelegate.orientationLock
   }
+
+  /// Relaunched in the background to finish events for a background URLSession.
+  func application(_ application: UIApplication,
+                   handleEventsForBackgroundURLSession identifier: String,
+                   completionHandler: @escaping () -> Void) {
+    AppContext.shared.downloadManager.backgroundCompletionHandler = completionHandler
+  }
 }
 #endif
 

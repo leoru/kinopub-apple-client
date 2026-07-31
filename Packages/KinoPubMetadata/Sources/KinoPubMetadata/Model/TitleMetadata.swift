@@ -167,6 +167,30 @@ public struct Fact: Sendable, Hashable, Identifiable {
   }
 }
 
+/// A Kinopoisk user review (via keyed unofficial API or the keyless kpapp.link proxy).
+public struct Review: Sendable, Hashable, Identifiable {
+  public var id: String { "\(author)-\(title)-\(date ?? "")" }
+  public let author: String
+  public let title: String
+  public let body: String
+  public let sentiment: String?
+  public let date: String?
+
+  public init(
+    author: String,
+    title: String,
+    body: String,
+    sentiment: String? = nil,
+    date: String? = nil
+  ) {
+    self.author = author
+    self.title = title
+    self.body = body
+    self.sentiment = sentiment
+    self.date = date
+  }
+}
+
 public struct TrailerRef: Sendable, Hashable {
   public let site: String
   public let key: String
@@ -222,6 +246,7 @@ public struct TitleMetadata: Sendable {
   public var awards: [Award] = []
   public var stills: [StillImage] = []
   public var facts: [Fact] = []
+  public var reviews: [Review] = []
   public var nextEpisode: EpisodeRef?
   public var lastEpisode: EpisodeRef?
   public var status: String?
@@ -258,6 +283,7 @@ public struct TitleMetadata: Sendable {
     if awards.isEmpty { awards = other.awards }
     if stills.isEmpty { stills = other.stills }
     if facts.isEmpty { facts = other.facts }
+    if reviews.isEmpty { reviews = other.reviews }
     if nextEpisode == nil { nextEpisode = other.nextEpisode }
     if lastEpisode == nil { lastEpisode = other.lastEpisode }
     if status == nil { status = other.status }

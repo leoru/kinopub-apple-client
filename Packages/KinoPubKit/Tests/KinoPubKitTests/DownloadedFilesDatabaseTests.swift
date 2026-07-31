@@ -91,6 +91,6 @@ class DownloadedFilesDatabaseTests: XCTestCase {
 
     XCTAssertEqual(database.readData()?.map(\.localFilename), ["kept.txt"])
     XCTAssertTrue(fileSaverMock.didRemoveFileCalled)
-    XCTAssertEqual(fileSaverMock.removedFileURL, removed.originalURL)
+    XCTAssertEqual(fileSaverMock.removedFileURL, removed.localFileURL)
   }
 }

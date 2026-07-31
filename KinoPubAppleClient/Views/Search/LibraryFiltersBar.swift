@@ -9,6 +9,9 @@ import KinoPubBackend
 
 /// Sort and filter dropdowns across the top of the library, as microiptv has them.
 /// Menus rather than sheets: one click to open, one to choose, no modal to dismiss.
+///
+/// DESIGN: `CatalogPeriod` (`LibraryFilter.period`) is wired into `/v1/items` — add a
+/// Period menu here when the filter chrome is designed (day/week/month/year).
 struct LibraryFiltersBar: View {
 
   @ObservedObject var catalog: LibraryCatalog

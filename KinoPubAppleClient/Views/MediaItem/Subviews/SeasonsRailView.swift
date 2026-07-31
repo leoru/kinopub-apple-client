@@ -21,6 +21,8 @@ import KinoPubMetadata
 /// Section chrome (season tabs) stays hidden while the hero owns the page, so the
 /// trailer/wide art isn't captioned by "Season 1" peeking under it; it fades in once
 /// focus drops onto the rail and the backdrop blurs.
+/// DESIGN: season-level "clear progress" → `UserActionsService.clearHistoryForSeason`
+/// (`POST /v1/history/clear-for-season`). Episode hide/toggle-watched stay as they are.
 struct SeasonsRailView: View {
 
   let seasons: [Season]
