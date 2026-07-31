@@ -28,9 +28,10 @@ class PlayerTimeObserver {
     let time = CMTime(seconds: period, preferredTimescale: timeScale)
     
     timeObserverToken = player.addPeriodicTimeObserver(forInterval: time, queue: .global(qos: .userInteractive)) { [weak self] time in
-      if time.seconds > 60.0 {
-        self?.timeUpdateHandler?(time.seconds)
-      }
+      // Fire from the first period onwards — callers decide how often to hit the network.
+      // (Previously gated at >60s, which delayed both local resume and server marktime.)
+      guard time.seconds.isFinite, time.seconds > 0 else { return }
+      self?.timeUpdateHandler?(time.seconds)
     }
   }
   

@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import KinoPubUI
 import KinoPubBackend
+import KinoPubKit
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
@@ -30,6 +31,8 @@ struct TabsNavigationView: View {
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var errorHandler: ErrorHandler
   @EnvironmentObject var authState: AuthState
+  /// Wired at app root. Banner chrome TBD — do not invent community tab-lock UI here.
+  @EnvironmentObject var networkMonitor: NetworkMonitor
 
   /// Sidebar folder tabs — snapshotted so the tab set does not mutate while
   /// Settings is open (same wedge Rivulet guards against on tvOS).
@@ -59,6 +62,8 @@ struct TabsNavigationView: View {
         guard !showSettings else { return }
         Task { await syncSidebarFolders() }
       }
+      // DESIGN: offline / reachability banner when `networkMonitor.isOnline` flips false.
+      .onChange(of: networkMonitor.isOnline) { _, _ in }
   }
 
   /// Re-selecting the current tab pops that tab's stack to root (Apple Music /
@@ -573,5 +578,6 @@ private extension String {
 struct TabsNavigationView_Previews: PreviewProvider {
   static var previews: some View {
     TabsNavigationView()
+      .environmentObject(NetworkMonitor())
   }
 }

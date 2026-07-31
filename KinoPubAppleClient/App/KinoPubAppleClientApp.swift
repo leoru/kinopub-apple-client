@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import KinoPubKit
 
 enum WindowSize {
   static let macos = CGSize(width: 1280, height: 720)
@@ -16,6 +17,7 @@ struct KinoPubAppleClientApp: App {
   
   @StateObject var navigationState = NavigationState()
   @StateObject var errorHandler = ErrorHandler()
+  @StateObject var networkMonitor = NetworkMonitor()
   @StateObject var authState = AuthState(authService: AppContext.shared.authService,
                                          accessTokenService: AppContext.shared.accessTokenService)
   
@@ -42,6 +44,7 @@ struct KinoPubAppleClientApp: App {
         .environmentObject(navigationState)
         .environmentObject(authState)
         .environmentObject(errorHandler)
+        .environmentObject(networkMonitor)
         // Dark-only until light is a deliberate pass (modernization Phase 0).
         // Info.plist UIUserInterfaceStyle=Dark covers system chrome; this covers SwiftUI.
         .preferredColorScheme(.dark)
@@ -78,6 +81,7 @@ struct KinoPubAppleClientApp: App {
         .environmentObject(navigationState)
         .environmentObject(authState)
         .environmentObject(errorHandler)
+        .environmentObject(networkMonitor)
         .preferredColorScheme(.dark)
     }
     // Off the Window menu: the only way in is pressing Play. A menu item opens the scene

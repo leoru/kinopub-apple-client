@@ -29,6 +29,7 @@ public struct CountriesRequest: Endpoint, CacheableRequest {
 
   public var forceSendAsGetParams: Bool { false }
 
-  /// Reference data — disk, 24h. Personalized shelves stay on `ContentStore`.
-  public var cachePolicy: CachePolicy { .disk(ttl: 86_400) }
+  /// Iron list on kino.pub — effectively static. Long disk TTL; never cleared on logout.
+  /// Personalized shelves stay on `ContentStore`.
+  public var cachePolicy: CachePolicy { .disk(ttl: 365 * 86_400) }
 }

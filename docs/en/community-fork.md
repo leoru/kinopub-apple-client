@@ -87,8 +87,10 @@ List/remove are on `DeviceService` — Profile chrome is `// DESIGN:` stub only.
 - [x] `StreamQuality` + Settings picker
 - [x] `ToggleWatchlistRequest` + folder create/remove **service** APIs
 - [x] `CatalogPeriod` / `period` on `/v1/items` (`LibraryFilter` + `ItemsRequest`)
-- [x] `ResponseCache` for genres/countries + clear on logout
+- [x] `ResponseCache` for genres/countries (year TTL; **not** cleared on logout)
 - [x] `clear-for-season` history API
+- [x] `NetworkMonitor` (`KinoPubKit`) + app `environmentObject` (banner = DESIGN)
+- [x] Raise marktimes — local resume ~10s, server `marktime` ~30s (was gated at >60s)
 
 ## System still to port (no UI inventing)
 
@@ -97,10 +99,10 @@ Prefer these next. Land Backend/`*Service` + `// DESIGN:` comments where chrome 
 | Priority | Slice | Status | Notes |
 | --- | --- | --- | --- |
 | HIGH | `period` on `/v1/items` | **done** | `CatalogPeriod` on `LibraryFilter` → `ItemsRequest`. Chip = DESIGN in `LibraryFiltersBar`. |
-| HIGH | `ResponseCache` | **done** | Genres/countries disk 24h; cleared on logout. Not catalog pages. |
+| HIGH | `ResponseCache` | **done** | Genres/countries disk **365d**; keep across logout (iron lists). Not catalog pages. Optional: bake into client later. |
 | HIGH | `clear-for-season` | **done** | `ClearHistoryForSeasonRequest` + `UserActionsService.clearHistoryForSeason`. Rail chrome = DESIGN. |
-| MEDIUM | `NetworkMonitor` | next | Debounced `NWPathMonitor`. Banner chrome = DESIGN; don’t copy their tab-lock. |
-| MEDIUM | Raise marktimes interval | next | Still 10s (same as community). Local store covers resume — can raise once we measure. |
+| MEDIUM | `NetworkMonitor` | **done** | Debounced `NWPathMonitor` in Kit; injected at app root. Banner = DESIGN in `TabsNavigationView`. |
+| MEDIUM | Raise marktimes interval | **done** | Local `LocalWatchProgressStore` every ~10s; server every ~30s; end-of-play still final mark. |
 | LOW | Device settings UI | service ready | Settings list/remove = DESIGN. |
 | LOW | Collections Home rows | service ready | Row chrome = DESIGN. |
 | SKIP | EPG / Sport UI, Comments, `FilterDataService`, `SectionVisibilityStore`, `WidthThresholdReader`, `WatchingSerial`, wholesale `MediaLibraryStore` | — | Leave alone. |
@@ -117,6 +119,6 @@ Agents: add a `// DESIGN:` comment at the call site; **do not** invent buttons.
 - [ ] Season-rail clear progress (`clearHistoryForSeason` ready)
 - [ ] Sport / channels + optional XMLTV EPG
 - [ ] Downloads list polish (HLS interrupted rows, storage footer)
-- [ ] Offline / reachability banner (`NetworkMonitor` when ported)
+- [ ] Offline / reachability banner (`NetworkMonitor` wired; chrome TBD)
 
 Detail vote / reviews / actor CDN fallback already landed earlier — leave until a design pass says otherwise; no further UI invention from the community fork.

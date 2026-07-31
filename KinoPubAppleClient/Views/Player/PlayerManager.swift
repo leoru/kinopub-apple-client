@@ -60,6 +60,10 @@ class PlayerManager: ObservableObject {
   private var secondaryCues: [SubtitleCue] = []
   private var cueLoadTasks: [Task<Void, Never>] = []
   private var didPreparePlayback = false
+  /// Playback position of the last successful `/v1/watching/marktime` tick.
+  private var lastServerMarkPosition: TimeInterval = 0
+  /// Server marktime cadence — local resume stays on the observer's 10s period.
+  private static let serverMarkInterval: TimeInterval = 30
   /// Held strongly: `AVAssetResourceLoader` only keeps a weak reference to its delegate.
   private var masterLoader: HLSMasterResourceLoader?
   private var statusObservation: NSKeyValueObservation?
@@ -136,6 +140,7 @@ class PlayerManager: ObservableObject {
       }
     }
 
+    // Local resume every ~10s; server marktime every ~30s (see `saveWatchMark`).
     playerTimeObserver = PlayerTimeObserver(player: player, period: 10.0, timeUpdateHandler: { [weak self] time in
       self?.saveWatchMark(time: time)
 #if os(tvOS)
@@ -426,19 +431,25 @@ class PlayerManager: ObservableObject {
 
   // MARK: - Watch marks
 
+  /// Local resume on every observer tick (~10s); server `marktime` every ~30s of progress.
   func saveWatchMark(time: TimeInterval) {
-    // Persist a local resume point so Continue Watching reflects what the user actually
-    // started, independent of the backend (skips live/trailers via non-finite duration).
-    if watchMode == .media {
-      let duration = player.currentItem?.duration.seconds ?? 0
-      AppContext.shared.localProgressStore.recordProgress(
-        mediaId: playItem.metadata.id,
-        position: time,
-        duration: duration,
-        season: playItem.metadata.season,
-        episode: playItem.metadata.video
-      )
-    }
+    guard watchMode == .media else { return }
+
+    let duration = player.currentItem?.duration.seconds ?? 0
+    AppContext.shared.localProgressStore.recordProgress(
+      mediaId: playItem.metadata.id,
+      position: time,
+      duration: duration,
+      season: playItem.metadata.season,
+      episode: playItem.metadata.video
+    )
+
+    // Position-based cadence so a scrub still re-marks after ~30s of movement.
+    let due = lastServerMarkPosition == 0
+      ? time >= Self.serverMarkInterval
+      : abs(time - lastServerMarkPosition) >= Self.serverMarkInterval
+    guard due else { return }
+    lastServerMarkPosition = time
 
     Task.detached(priority: .utility) { [unowned self] in
       do {

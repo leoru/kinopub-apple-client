@@ -120,9 +120,9 @@ final class LibraryFilterTests: XCTestCase {
   }
 
   func testGenresAndCountriesOptIntoDiskCache() {
-    XCTAssertEqual(GenresRequest().cachePolicy.ttl, 86_400)
+    XCTAssertEqual(GenresRequest().cachePolicy.ttl, 365 * 86_400)
     XCTAssertTrue(GenresRequest().cachePolicy.persistsToDisk)
-    XCTAssertEqual(CountriesRequest().cachePolicy.ttl, 86_400)
+    XCTAssertEqual(CountriesRequest().cachePolicy.ttl, 365 * 86_400)
     XCTAssertTrue(CountriesRequest().cachePolicy.persistsToDisk)
   }
 

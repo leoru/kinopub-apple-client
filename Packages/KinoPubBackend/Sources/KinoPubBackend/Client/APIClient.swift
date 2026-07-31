@@ -56,7 +56,8 @@ public class APIClient {
     return result
   }
 
-  /// Drops all cached responses. Call on logout so the next user never sees stale reference data.
+  /// Drops all cached responses. Not used on logout — we only cache immutable
+  /// genres/countries lists that are shared across accounts.
   public func clearCache() {
     cache?.clear()
   }
