@@ -18,15 +18,15 @@ struct PendingSearch: Equatable {
 class NavigationState: ObservableObject {
   @Published var columnVisibility = NavigationSplitViewVisibility.automatic
   @Published var selectedTab: NavigationTabs = .home
-  @Published var mainRoutes: [MainRoutes] = []
-  @Published var searchRoutes: [SearchRoutes] = []
-  @Published var moviesRoutes: [CatalogRoutes] = []
-  @Published var seriesRoutes: [CatalogRoutes] = []
-  @Published var libraryRoutes: [BookmarksRoutes] = []
-  @Published var watchlistRoutes: [BookmarksRoutes] = []
-  @Published var recentlyWatchedRoutes: [MainRoutes] = []
-  @Published var bookmarksRoutes: [BookmarksRoutes] = []
-  @Published var downloadsRoutes: [DownloadsRoutes] = []
+  @Published var mainRoutes: [Route] = []
+  @Published var searchRoutes: [Route] = []
+  @Published var moviesRoutes: [Route] = []
+  @Published var seriesRoutes: [Route] = []
+  @Published var libraryRoutes: [Route] = []
+  @Published var watchlistRoutes: [Route] = []
+  @Published var recentlyWatchedRoutes: [Route] = []
+  @Published var bookmarksRoutes: [Route] = []
+  @Published var downloadsRoutes: [Route] = []
   /// Applied once when Search becomes active — genre / country / year from the
   /// item page land here so Search opens already filtered, titled, and labeled.
   @Published var pendingSearch: PendingSearch?

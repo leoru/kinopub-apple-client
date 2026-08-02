@@ -21,7 +21,7 @@ struct RootView: View {
       // unauthorized, would raise error toasts on top of a screen you cannot leave.
       if authState.shouldShowAuthentication {
         AuthView(model: AuthModel(authService: appContext.authService, authState: authState))
-          .transition(.opacity)
+              .transition(.blurReplace)
       } else {
         TabsNavigationView()
       }

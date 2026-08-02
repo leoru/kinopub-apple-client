@@ -8,16 +8,17 @@
 import Foundation
 import KinoPubBackend
 
-enum MainRoutes: Hashable {
+/// Single destination vocabulary for every tab stack. Stacks stay per-tab; the
+/// cases and `Equatable`/`Hashable` rules are shared so deep links and Back titles
+/// do not need five parallel mappings.
+enum Route: Hashable {
   case details(MediaItem)
-  /// The watching endpoints return only an id and artwork, so rows built from them
-  /// route by id — `MediaItemView` fetches the full item anyway.
+  /// Watching endpoints / cards often carry only an id and artwork.
   case detailsById(Int)
-  /// Full viewing history, opened from a Continue Watching context menu.
   case history
+  case bookmark(Bookmark)
   case seasons([Season])
   case season(Season)
-  /// A person's credits, listed from `/v1/items` by name.
   case person(MediaPerson)
   case player(any PlayableItem)
   case trailerPlayer(any PlayableItem)
@@ -25,146 +26,63 @@ enum MainRoutes: Hashable {
   func hash(into hasher: inout Hasher) {
     switch self {
     case .details(let item):
+      hasher.combine(0)
       hasher.combine(item)
     case .detailsById(let id):
-      hasher.combine("detailsById")
+      hasher.combine(1)
       hasher.combine(id)
     case .history:
-      hasher.combine("history")
-    case .season(let season):
-      hasher.combine(season)
-    case .person(let person):
-      hasher.combine(person)
-    case .seasons(let seasons):
-      hasher.combine(seasons)
-    case .player(let item):
-      hasher.combine(item.id)
-    case .trailerPlayer(let item):
-      hasher.combine(item.id)
-    }
-  }
-  
-  static func == (lhs: MainRoutes, rhs: MainRoutes) -> Bool {
-    rhs.hashValue == lhs.hashValue
-  }
-}
-
-enum CatalogRoutes: Hashable {
-  case details(MediaItem)
-  case seasons([Season])
-  case season(Season)
-  /// A person's credits, listed from `/v1/items` by name.
-  case person(MediaPerson)
-  case player(any PlayableItem)
-  case trailerPlayer(any PlayableItem)
-
-  func hash(into hasher: inout Hasher) {
-    switch self {
-    case .details(let item):
-      hasher.combine(item)
-    case .season(let season):
-      hasher.combine(season)
-    case .person(let person):
-      hasher.combine(person)
-    case .seasons(let seasons):
-      hasher.combine(seasons)
-    case .player(let item):
-      hasher.combine(item.id)
-    case .trailerPlayer(let item):
-      hasher.combine(item.id)
-    }
-  }
-
-  static func == (lhs: CatalogRoutes, rhs: CatalogRoutes) -> Bool {
-    rhs.hashValue == lhs.hashValue
-  }
-}
-
-enum SearchRoutes: Hashable {
-  case details(MediaItem)
-  case seasons([Season])
-  case season(Season)
-  /// A person's credits, listed from `/v1/items` by name.
-  case person(MediaPerson)
-  case player(any PlayableItem)
-  case trailerPlayer(any PlayableItem)
-
-  func hash(into hasher: inout Hasher) {
-    switch self {
-    case .details(let item):
-      hasher.combine(item)
-    case .season(let season):
-      hasher.combine(season)
-    case .person(let person):
-      hasher.combine(person)
-    case .seasons(let seasons):
-      hasher.combine(seasons)
-    case .player(let item):
-      hasher.combine(item.id)
-    case .trailerPlayer(let item):
-      hasher.combine(item.id)
-    }
-  }
-
-  static func == (lhs: SearchRoutes, rhs: SearchRoutes) -> Bool {
-    rhs.hashValue == lhs.hashValue
-  }
-}
-
-enum BookmarksRoutes: Hashable {
-  case bookmark(Bookmark)
-  case details(MediaItem)
-  /// The folder rows are built from cards, which carry an id and artwork only, so they
-  /// route by id — `MediaItemView` fetches the full item anyway.
-  case detailsById(Int)
-  case seasons([Season])
-  case season(Season)
-  /// A person's credits, listed from `/v1/items` by name.
-  case person(MediaPerson)
-  case player(any PlayableItem)
-  case trailerPlayer(any PlayableItem)
-
-  func hash(into hasher: inout Hasher) {
-    switch self {
+      hasher.combine(2)
     case .bookmark(let bookmark):
+      hasher.combine(3)
       hasher.combine(bookmark)
-    case .details(let item):
-      hasher.combine(item)
-    case .detailsById(let id):
-      hasher.combine("detailsById")
-      hasher.combine(id)
+    case .seasons(let seasons):
+      hasher.combine(4)
+      hasher.combine(seasons)
     case .season(let season):
+      hasher.combine(5)
       hasher.combine(season)
     case .person(let person):
+      hasher.combine(6)
       hasher.combine(person)
-    case .seasons(let seasons):
-      hasher.combine(seasons)
     case .player(let item):
+      hasher.combine(7)
       hasher.combine(item.id)
     case .trailerPlayer(let item):
+      hasher.combine(8)
       hasher.combine(item.id)
     }
   }
-  
-  static func == (lhs: BookmarksRoutes, rhs: BookmarksRoutes) -> Bool {
-    rhs.hashValue == lhs.hashValue
+
+  static func == (lhs: Route, rhs: Route) -> Bool {
+    switch (lhs, rhs) {
+    case (.details(let a), .details(let b)):
+      return a == b
+    case (.detailsById(let a), .detailsById(let b)):
+      return a == b
+    case (.history, .history):
+      return true
+    case (.bookmark(let a), .bookmark(let b)):
+      return a == b
+    case (.seasons(let a), .seasons(let b)):
+      return a == b
+    case (.season(let a), .season(let b)):
+      return a == b
+    case (.person(let a), .person(let b)):
+      return a == b
+    case (.player(let a), .player(let b)):
+      return a.id == b.id
+    case (.trailerPlayer(let a), .trailerPlayer(let b)):
+      return a.id == b.id
+    default:
+      return false
+    }
   }
 }
 
-enum DownloadsRoutes: Hashable {
-  case player(any PlayableItem)
-  case trailerPlayer(any PlayableItem)
-  
-  func hash(into hasher: inout Hasher) {
-    switch self {
-    case .player(let item):
-      hasher.combine(item.id)
-    case .trailerPlayer(let item):
-      hasher.combine(item.id)
-    }
-  }
-  
-  static func == (lhs: DownloadsRoutes, rhs: DownloadsRoutes) -> Bool {
-    rhs.hashValue == lhs.hashValue
-  }
-}
+/// Legacy names kept as aliases so call sites migrate without five duplicate enums.
+typealias MainRoutes = Route
+typealias CatalogRoutes = Route
+typealias SearchRoutes = Route
+typealias BookmarksRoutes = Route
+typealias DownloadsRoutes = Route

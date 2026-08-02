@@ -18,46 +18,11 @@ struct RecentlyWatchedView: View {
   var body: some View {
     NavigationStack(path: $navigationState.recentlyWatchedRoutes) {
       HistoryView()
-        .navigationDestination(for: MainRoutes.self) { route in
-          switch route {
-          case .details(let item):
-            detailsView(for: item.id, knownItem: item)
-          case .detailsById(let id):
-            detailsView(for: id)
-          case .history:
-            EmptyView()
-          case .player(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .media,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .trailerPlayer(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .trailer,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .seasons(let seasons):
-            SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: MainRoutesLinkProvider()))
-          case .season(let season):
-            SeasonView(model: SeasonModel(season: season, linkProvider: MainRoutesLinkProvider()))
-          case .person(let person):
-            PersonItemsView.make(person: person,
-                                 linkProvider: MainRoutesLinkProvider(),
-                                 context: appContext,
-                                 authState: authState,
-                                 errorHandler: errorHandler)
-          }
+        .navigationDestination(for: Route.self) { route in
+          RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
         }
     }
     .navigationStackActive(for: .recentlyWatched, selected: navigationState.selectedTab)
   }
 
-  private func detailsView(for id: Int, knownItem: MediaItem? = nil) -> some View {
-    MediaItemView(model: MediaItemModel(mediaItemId: id,
-                                        knownItem: knownItem,
-                                        itemsService: appContext.contentService,
-                                        downloadManager: appContext.downloadManager,
-                                        linkProvider: MainRoutesLinkProvider(),
-                                        errorHandler: errorHandler))
-  }
 }
