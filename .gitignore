@@ -1,6 +1,10 @@
 ## macOS
 .DS_Store
 
+## Editor-local settings
+.cursor/
+.vscode/
+
 ## Xcode
 build/
 DerivedData/
