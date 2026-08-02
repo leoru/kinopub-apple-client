@@ -67,6 +67,15 @@ struct TMDBTitleDetails: Codable, Sendable {
   let contentRatings: TMDBContentRatings?
   let nextEpisodeToAir: TMDBEpisodeAir?
   let lastEpisodeToAir: TMDBEpisodeAir?
+  /// TV-only: every season incl. specials (season 0), with counts and air dates.
+  let seasons: [TMDBSeasonRef]?
+  let numberOfSeasons: Int?
+  let numberOfEpisodes: Int?
+  /// TV-only.
+  let firstAirDate: String?
+  let lastAirDate: String?
+  /// Movie-only: the world premiere date TMDB knows.
+  let releaseDate: String?
 
   enum CodingKeys: String, CodingKey {
     case id, overview, tagline, homepage, status, genres, budget, revenue, networks
@@ -79,6 +88,29 @@ struct TMDBTitleDetails: Codable, Sendable {
     case contentRatings = "content_ratings"
     case nextEpisodeToAir = "next_episode_to_air"
     case lastEpisodeToAir = "last_episode_to_air"
+    case seasons
+    case numberOfSeasons = "number_of_seasons"
+    case numberOfEpisodes = "number_of_episodes"
+    case firstAirDate = "first_air_date"
+    case lastAirDate = "last_air_date"
+    case releaseDate = "release_date"
+  }
+}
+
+/// One entry of the TV details `seasons` list (summary, not the per-season endpoint).
+struct TMDBSeasonRef: Codable, Sendable {
+  let seasonNumber: Int?
+  let name: String?
+  let episodeCount: Int?
+  let airDate: String?
+  let posterPath: String?
+
+  enum CodingKeys: String, CodingKey {
+    case seasonNumber = "season_number"
+    case name
+    case episodeCount = "episode_count"
+    case airDate = "air_date"
+    case posterPath = "poster_path"
   }
 }
 

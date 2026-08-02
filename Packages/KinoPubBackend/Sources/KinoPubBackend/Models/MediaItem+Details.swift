@@ -5,6 +5,16 @@
 
 import Foundation
 
+public extension Season {
+  /// The real season number parsed from the title ("Сезон 14" / "Season 14" / "14
+  /// сезон"), for when kino.pub re-numbers its blocks from 1. Nil when the title
+  /// carries no digits (specials and oddly-named blocks).
+  var titleSeasonNumber: Int? {
+    guard let range = title.range(of: #"\d+"#, options: .regularExpression) else { return nil }
+    return Int(title[range])
+  }
+}
+
 public extension MediaItem {
 
   /// kino.pub's own vote is a thumbs up/down tally, not a score, so it is reported

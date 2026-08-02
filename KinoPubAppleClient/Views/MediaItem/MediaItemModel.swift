@@ -132,8 +132,11 @@ class MediaItemModel: ObservableObject {
         itemLoaded = true
         identity = MediaIdentity(mediaItem: mediaItem)
         await loadExternalMetadata()
-        if let firstSeason = mediaItem.seasons?.first?.number {
-          await ensureSeasonSchedule(firstSeason)
+        // The "what's next" data lives on the latest season, not the first one —
+        // and a long-running show should not fan out schedule fetches for every
+        // published season (the rest load lazily when their tab is selected).
+        if let lastSeason = mediaItem.seasons?.last?.number {
+          await ensureSeasonSchedule(lastSeason)
         }
       } catch {
         Logger.app.error("Failed to load item \(self.mediaItemId): \(error)")
@@ -150,34 +153,61 @@ class MediaItemModel: ObservableObject {
     }
   }
 
-  func ensureSeasonSchedule(_ seasonNumber: Int) async {
-    guard seasonSchedules[seasonNumber] == nil,
+  func ensureSeasonSchedule(_ kinoSeasonNumber: Int) async {
+    guard seasonSchedules[kinoSeasonNumber] == nil,
           let identity,
           identity.imdb != nil else {
       Logger.metadata.debug(
-        "TMDB schedule skip s\(seasonNumber): alreadyLoaded=\(self.seasonSchedules[seasonNumber] != nil) imdb=\(self.identity?.imdb ?? "nil")"
+        "TMDB schedule skip s\(kinoSeasonNumber): alreadyLoaded=\(self.seasonSchedules[kinoSeasonNumber] != nil) imdb=\(self.identity?.imdb ?? "nil")"
       )
       return
     }
-    let kinoCount = mediaItem.seasons?
-      .first(where: { $0.number == seasonNumber })?
-      .episodes.count ?? 0
+
+    guard let tmdbSeason = tmdbSeasonNumber(forKinoSeason: kinoSeasonNumber) else {
+      // No sensible TMDB counterpart (renumbered/special block) — mark loaded so we
+      // don't refetch on every tab visit, and simply show kino.pub episodes alone.
+      Logger.metadata.info(
+        "TMDB schedule skip s\(kinoSeasonNumber): no TMDB match (title=\(self.kinoSeason(for: kinoSeasonNumber)?.title ?? "nil"))"
+      )
+      seasonSchedules[kinoSeasonNumber] = []
+      return
+    }
+
+    let kinoCount = kinoSeason(for: kinoSeasonNumber)?.episodes.count ?? 0
     Logger.metadata.info(
-      "TMDB schedule fetch kinopub=\(self.mediaItemId) imdb=\(identity.imdb ?? "?") season=\(seasonNumber) kinoEpisodes=\(kinoCount)"
+      "TMDB schedule fetch kinopub=\(self.mediaItemId) imdb=\(identity.imdb ?? "?") season=\(kinoSeasonNumber)→tmdb=\(tmdbSeason) kinoEpisodes=\(kinoCount)"
     )
-    let episodes = await metadataService.schedule(for: identity, season: seasonNumber)
-    seasonSchedules[seasonNumber] = episodes
+    let episodes = await metadataService.schedule(for: identity, season: tmdbSeason)
+    seasonSchedules[kinoSeasonNumber] = episodes
     let tmdbNums = episodes.map(\.episodeNumber).sorted()
-    let kinoNums = Set(
-      mediaItem.seasons?
-        .first(where: { $0.number == seasonNumber })?
-        .episodes.map(\.number) ?? []
-    )
+    let kinoNums = Set(kinoSeason(for: kinoSeasonNumber)?.episodes.map(\.number) ?? [])
     let missingOnKino = tmdbNums.filter { !kinoNums.contains($0) }
     let upcoming = episodes.filter(\.isUpcoming).map(\.episodeNumber)
     Logger.metadata.info(
-      "TMDB schedule result season=\(seasonNumber) tmdb=\(episodes.count) [\(tmdbNums.map(String.init).joined(separator: ","))] missingOnKino=\(missingOnKino) upcoming=\(upcoming) sampleStill=\(episodes.first?.still?.absoluteString ?? "nil")"
+      "TMDB schedule result season=\(kinoSeasonNumber) tmdb=\(episodes.count) [\(tmdbNums.map(String.init).joined(separator: ","))] missingOnKino=\(missingOnKino) upcoming=\(upcoming) sampleStill=\(episodes.first?.still?.absoluteString ?? "nil")"
     )
+  }
+
+  private func kinoSeason(for number: Int) -> Season? {
+    mediaItem.seasons?.first(where: { $0.number == number })
+  }
+
+  /// kino.pub sometimes re-numbers its season blocks from 1 while titling them
+  /// "Сезон N" — TMDB numbers by the real season. Map by the title's digits first
+  /// (validated against TMDB's season list), then by kino number, else give up:
+  /// asking TMDB for "season 1" of a block that is really season 14 produced
+  /// decade-old "missing episodes" on a current show.
+  private func tmdbSeasonNumber(forKinoSeason kinoNumber: Int) -> Int? {
+    guard let kinoSeason = kinoSeason(for: kinoNumber) else { return nil }
+    let tmdbNumbers = Set(externalMetadata.seasonSummaries.map(\.seasonNumber))
+    if let titleNumber = kinoSeason.titleSeasonNumber,
+       tmdbNumbers.contains(titleNumber) {
+      return titleNumber
+    }
+    if tmdbNumbers.isEmpty || tmdbNumbers.contains(kinoNumber) {
+      return kinoNumber
+    }
+    return nil
   }
 
   func schedule(for episode: Episode, in season: Season) -> EpisodeSchedule? {

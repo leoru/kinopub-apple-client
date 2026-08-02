@@ -109,6 +109,24 @@ public struct EpisodeRef: Sendable, Hashable {
   }
 }
 
+/// One season of a TV title as the source lists it (summary, not the full schedule).
+/// Season 0 is specials — kept out of season counts, surfaced separately.
+public struct SeasonSummary: Sendable, Hashable {
+  public let seasonNumber: Int
+  public var name: String?
+  public var episodeCount: Int?
+  public var airDate: Date?
+  public var poster: URL?
+
+  public init(seasonNumber: Int, name: String? = nil, episodeCount: Int? = nil, airDate: Date? = nil, poster: URL? = nil) {
+    self.seasonNumber = seasonNumber
+    self.name = name
+    self.episodeCount = episodeCount
+    self.airDate = airDate
+    self.poster = poster
+  }
+}
+
 public struct Award: Sendable, Hashable {
   public let name: String
   public let nominationName: String?
@@ -251,6 +269,16 @@ public struct TitleMetadata: Sendable {
   public var lastEpisode: EpisodeRef?
   public var status: String?
   public var inProduction: Bool?
+  /// TV: every season incl. specials (season 0), with counts and air dates.
+  public var seasonSummaries: [SeasonSummary] = []
+  /// TV totals as the source reports them (specials not included).
+  public var numberOfSeasons: Int?
+  public var numberOfEpisodes: Int?
+  /// TV air span; the movie world premiere sits in `releaseDate` instead.
+  public var firstAirDate: Date?
+  public var lastAirDate: Date?
+  /// Movie-only: the world premiere date the source knows.
+  public var releaseDate: Date?
   public var ageRating: String?
   public var keywords: [String] = []
   public var trailers: [TrailerRef] = []
@@ -288,6 +316,12 @@ public struct TitleMetadata: Sendable {
     if lastEpisode == nil { lastEpisode = other.lastEpisode }
     if status == nil { status = other.status }
     if inProduction == nil { inProduction = other.inProduction }
+    if seasonSummaries.isEmpty { seasonSummaries = other.seasonSummaries }
+    if numberOfSeasons == nil { numberOfSeasons = other.numberOfSeasons }
+    if numberOfEpisodes == nil { numberOfEpisodes = other.numberOfEpisodes }
+    if firstAirDate == nil { firstAirDate = other.firstAirDate }
+    if lastAirDate == nil { lastAirDate = other.lastAirDate }
+    if releaseDate == nil { releaseDate = other.releaseDate }
     if ageRating == nil { ageRating = other.ageRating }
     if keywords.isEmpty { keywords = other.keywords }
     if trailers.isEmpty { trailers = other.trailers }

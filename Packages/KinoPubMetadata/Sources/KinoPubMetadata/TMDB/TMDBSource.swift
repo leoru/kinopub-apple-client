@@ -314,6 +314,22 @@ public final class TMDBSource: MetadataSource, @unchecked Sendable {
       )
     }
 
+    meta.seasonSummaries = (details.seasons ?? []).compactMap { ref in
+      guard let number = ref.seasonNumber else { return nil }
+      return SeasonSummary(
+        seasonNumber: number,
+        name: ref.name,
+        episodeCount: ref.episodeCount,
+        airDate: Self.parseDate(ref.airDate),
+        poster: imageURL(path: ref.posterPath, size: .posterW780)
+      )
+    }
+    meta.numberOfSeasons = details.numberOfSeasons
+    meta.numberOfEpisodes = details.numberOfEpisodes
+    meta.firstAirDate = Self.parseDate(details.firstAirDate)
+    meta.lastAirDate = Self.parseDate(details.lastAirDate)
+    meta.releaseDate = Self.parseDate(details.releaseDate)
+
     return meta
   }
 

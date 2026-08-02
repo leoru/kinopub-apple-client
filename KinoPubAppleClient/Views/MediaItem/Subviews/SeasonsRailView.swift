@@ -45,6 +45,8 @@ struct SeasonsRailView: View {
   /// Full TMDB season schedules keyed by season number — used to date kino episodes
   /// and to inject episodes that exist on TMDB but not yet on kino.pub.
   var seasonSchedules: [Int: [EpisodeSchedule]] = [:]
+  /// Title-level metadata: drives the trailing missing/upcoming-season cards.
+  var externalMetadata: TitleMetadata = TitleMetadata()
   /// Ask the model to fetch schedule for a season number (kino.pub season.number).
   var onSeasonVisible: ((Int) -> Void)? = nil
 
@@ -60,6 +62,11 @@ struct SeasonsRailView: View {
     case playable(season: Season, episode: Episode, schedule: EpisodeSchedule?)
     /// On TMDB but not uploaded to kino.pub yet (or future air date).
     case unavailable(season: Season, schedule: EpisodeSchedule)
+    /// Whole seasons between kino.pub's last and the next announced one — one dark
+    /// info card instead of a row of untappable tabs.
+    case missingSeasons(from: Int, to: Int, episodes: Int?, firstAir: Date?, lastAir: Date?)
+    /// The next season with a known premiere date, ahead of everything kino.pub has.
+    case upcomingSeason(number: Int, date: Date, poster: URL?)
 
     var id: Int {
       switch self {
@@ -68,13 +75,19 @@ struct SeasonsRailView: View {
       case .unavailable(let season, let schedule):
         // Negative synthetic id — outside kino.pub's positive media ids.
         return -(season.number * 1_000_000 + schedule.episodeNumber)
+      case .missingSeasons(let from, let to, _, _, _):
+        return -(2_000_000_000 + from * 1_000 + to)
+      case .upcomingSeason(let number, _, _):
+        return -(2_100_000_000 + number)
       }
     }
 
-    var season: Season {
+    var season: Season? {
       switch self {
       case .playable(let season, _, _), .unavailable(let season, _):
         return season
+      case .missingSeasons, .upcomingSeason:
+        return nil
       }
     }
 
@@ -82,6 +95,7 @@ struct SeasonsRailView: View {
       switch self {
       case .playable(_, let episode, _): return episode.number
       case .unavailable(_, let schedule): return schedule.episodeNumber
+      case .missingSeasons, .upcomingSeason: return .max
       }
     }
 
@@ -89,6 +103,7 @@ struct SeasonsRailView: View {
       switch self {
       case .playable(_, _, let schedule): return schedule
       case .unavailable(_, let schedule): return schedule
+      case .missingSeasons, .upcomingSeason: return nil
       }
     }
 
@@ -99,7 +114,7 @@ struct SeasonsRailView: View {
   }
 
   private var entries: [RailEntry] {
-    seasons.flatMap { season -> [RailEntry] in
+    let episodeEntries = seasons.flatMap { season -> [RailEntry] in
       let tmdb = seasonSchedules[season.number] ?? []
       let byNumber = Dictionary(uniqueKeysWithValues: tmdb.map { ($0.episodeNumber, $0) })
       let kinoNumbers = Set(season.episodes.map(\.number))
@@ -118,6 +133,36 @@ struct SeasonsRailView: View {
       result.sort { $0.episodeNumber < $1.episodeNumber }
       return result
     }
+    return episodeEntries + trailingCards
+  }
+
+  /// What sits past kino.pub's last season: skipped seasons as one dark card, then
+  /// the announced season with its premiere date — never as dead season tabs.
+  private var trailingCards: [RailEntry] {
+    guard let lastKino = seasons.last,
+          let next = externalMetadata.nextEpisode,
+          let date = next.airDate, date > Date(),
+          next.seasonNumber > (lastKino.titleSeasonNumber ?? lastKino.number)
+    else { return [] }
+
+    let lastKinoNumber = lastKino.titleSeasonNumber ?? lastKino.number
+    var cards: [RailEntry] = []
+
+    let gap = externalMetadata.seasonSummaries
+      .filter { $0.seasonNumber > lastKinoNumber && $0.seasonNumber < next.seasonNumber }
+    if let first = gap.first, let last = gap.last {
+      let episodes = gap.reduce(0) { $0 + ($1.episodeCount ?? 0) }
+      cards.append(.missingSeasons(from: first.seasonNumber,
+                                   to: last.seasonNumber,
+                                   episodes: episodes > 0 ? episodes : nil,
+                                   firstAir: first.airDate,
+                                   lastAir: last.airDate))
+    }
+
+    let poster = externalMetadata.seasonSummaries
+      .first { $0.seasonNumber == next.seasonNumber }?.poster
+    cards.append(.upcomingSeason(number: next.seasonNumber, date: date, poster: poster))
+    return cards
   }
 
   private var selectedSeason: Season? {
@@ -135,7 +180,7 @@ struct SeasonsRailView: View {
   /// Episode to land on when Down crosses from the season tabs into the rail.
   private var firstEpisodeInSelectedSeason: Int? {
     if let selectedSeasonID,
-       let first = entries.first(where: { $0.season.id == selectedSeasonID }) {
+       let first = entries.first(where: { $0.season?.id == selectedSeasonID }) {
       return first.id
     }
     return entries.first?.id
@@ -154,7 +199,7 @@ struct SeasonsRailView: View {
       .animation(.easeOut(duration: 0.25), value: showsChrome)
       .onAppear {
         if selectedSeasonID == nil {
-          selectedSeasonID = firstUnseen?.season.id ?? seasons.first?.id
+          selectedSeasonID = firstUnseen?.season?.id ?? seasons.first?.id
         }
       }
       .task {
@@ -172,8 +217,9 @@ struct SeasonsRailView: View {
         if episodeID != nil { onSectionFocused?() }
         guard !isScrollingFromTab,
               let episodeID,
-              let entry = entries.first(where: { $0.id == episodeID }) else { return }
-        selectedSeasonID = entry.season.id
+              let entry = entries.first(where: { $0.id == episodeID }),
+              let season = entry.season else { return }
+        selectedSeasonID = season.id
       }
       .onChange(of: pageEntryToken) { _, _ in
         focusedSeasonID = selectedSeasonID ?? seasons.first?.id
@@ -287,6 +333,12 @@ struct SeasonsRailView: View {
       .buttonStyle(EpisodeCardButtonStyle())
       .disabled(true)
       .opacity(0.55)
+
+    case .missingSeasons(let from, let to, let episodes, let firstAir, let lastAir):
+      MissingSeasonsCard(from: from, to: to, episodes: episodes, firstAir: firstAir, lastAir: lastAir)
+
+    case .upcomingSeason(let number, let date, let poster):
+      UpcomingSeasonCard(number: number, date: date, poster: poster)
     }
   }
 
@@ -294,7 +346,7 @@ struct SeasonsRailView: View {
   /// focus, tab activation, and the initial jump to the first unfinished episode.
   private func selectSeason(_ seasonID: Int, proxy: ScrollViewProxy, animated: Bool) {
     guard let season = seasons.first(where: { $0.id == seasonID }),
-          let first = entries.first(where: { $0.season.id == seasonID }) else { return }
+          let first = entries.first(where: { $0.season?.id == seasonID }) else { return }
     selectedSeasonID = seasonID
     onSeasonVisible?(season.number)
     let anchor = Self.episodeAnchor(first.id)
@@ -313,11 +365,11 @@ struct SeasonsRailView: View {
   }
 
   private func scrollToFirstUnseen(proxy: ScrollViewProxy) async {
-    guard !didScrollToUnseen, let target = firstUnseen else { return }
+    guard !didScrollToUnseen, let target = firstUnseen, let season = target.season else { return }
     didScrollToUnseen = true
     try? await Task.sleep(for: .milliseconds(120))
     guard !Task.isCancelled else { return }
-    selectSeason(target.season.id, proxy: proxy, animated: false)
+    selectSeason(season.id, proxy: proxy, animated: false)
   }
 
   private func contextActions(for episode: Episode, season: Season) -> [MediaCardContextAction] {
@@ -607,9 +659,112 @@ private struct SeasonTabButtonStyle: ButtonStyle {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(isFocused ? Color.secondary.opacity(0.4) : Color.clear)
           )
-    
+
 //        .scaleEffect(isFocused ? 1.06 : 1.0)
         .animation(.easeOut(duration: 0.15), value: isFocused)
     }
+  }
+}
+
+// MARK: - Trailing cards (missing / upcoming seasons)
+
+/// One dark slot for whole seasons between kino.pub's last and the next announced
+/// one — "Сезоны 6–13 · 2013–2021 · 120 эп." — instead of a strip of dead tabs.
+private struct MissingSeasonsCard: View {
+  let from: Int
+  let to: Int
+  let episodes: Int?
+  let firstAir: Date?
+  let lastAir: Date?
+
+  private var yearsText: String? {
+    guard let firstAir else { return nil }
+    let firstYear = Calendar.current.component(.year, from: firstAir)
+    let lastYear = lastAir.map { Calendar.current.component(.year, from: $0) }
+    return lastYear != nil && lastYear != firstYear ? "\(firstYear)–\(lastYear!)" : "\(firstYear)"
+  }
+
+  private var subtitle: String? {
+    var parts: [String] = []
+    if let yearsText { parts.append(yearsText) }
+    if let episodes { parts.append("\(episodes) \("MediaItem_EpisodesShort".localized)") }
+    return parts.isEmpty ? nil : parts.joined(separator: " · ")
+  }
+
+  var body: some View {
+    VStack(spacing: 10) {
+      Text(String(format: "MediaItem_SeasonsRange".localized, from, to))
+        .font(EpisodeRailCard.titleFont)
+        .foregroundStyle(Color.KinoPub.text)
+        .multilineTextAlignment(.center)
+
+      if let subtitle {
+        Text(subtitle)
+          .font(EpisodeRailCard.numberFont)
+          .foregroundStyle(Color.secondary)
+          .multilineTextAlignment(.center)
+      }
+    }
+    .padding(.horizontal, 24)
+    .frame(width: EpisodeRailCard.cardWidth,
+           height: EpisodeRailCard.stillHeight + 80)
+    .background(
+      RoundedRectangle(cornerRadius: EpisodeRailCard.cornerRadius, style: .continuous)
+        .fill(Color.secondary.opacity(0.18))
+    )
+  }
+}
+
+/// The announced season ahead of everything kino.pub has: poster, "Сезон 19",
+/// premiere date and countdown. Inert — there is nothing to play yet.
+private struct UpcomingSeasonCard: View {
+  let number: Int
+  let date: Date
+  let poster: URL?
+
+  private static let dateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.setLocalizedDateFormatFromTemplate("d MMMM yyyy")
+    return formatter
+  }()
+
+  private var countdown: String {
+    let formatter = RelativeDateTimeFormatter()
+    formatter.unitsStyle = .full
+    return formatter.localizedString(for: date, relativeTo: Date())
+  }
+
+  var body: some View {
+    VStack(alignment: .center, spacing: 6) {
+      AsyncImage(url: poster) { phase in
+        Group {
+          if let image = phase.image {
+            image.resizable().aspectRatio(contentMode: .fill)
+          } else {
+            Color.KinoPub.placeholder
+          }
+        }
+        .frame(width: EpisodeRailCard.cardWidth, height: EpisodeRailCard.stillHeight)
+        .clipped()
+        .clipShape(RoundedRectangle(cornerRadius: EpisodeRailCard.cornerRadius, style: .continuous))
+      }
+
+      Text(String(format: "MediaItem_SeasonSingle".localized, number))
+        .font(EpisodeRailCard.titleFont)
+        .foregroundStyle(Color.KinoPub.text)
+        .lineLimit(1)
+
+      Text(String(format: "MediaItem_PremiereOn".localized, Self.dateFormatter.string(from: date)))
+        .font(EpisodeRailCard.numberFont)
+        .foregroundStyle(Color.secondary)
+        .lineLimit(2)
+        .multilineTextAlignment(.center)
+
+      Text(countdown)
+        .font(EpisodeRailCard.numberFont)
+        .foregroundStyle(Color.secondary.opacity(0.7))
+        .lineLimit(1)
+    }
+    .frame(width: EpisodeRailCard.cardWidth, alignment: .topLeading)
   }
 }

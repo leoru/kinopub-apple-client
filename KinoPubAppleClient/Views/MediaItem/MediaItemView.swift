@@ -157,6 +157,7 @@ struct MediaItemView: View {
                           itemModel.toggleWatched(episode: episode, season: season)
                         },
                         seasonSchedules: itemModel.seasonSchedules,
+                        externalMetadata: itemModel.externalMetadata,
                         onSeasonVisible: { seasonNumber in
                           Task { await itemModel.ensureSeasonSchedule(seasonNumber) }
                         })
