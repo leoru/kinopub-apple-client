@@ -1,5 +1,19 @@
 import Foundation
 
+extension String {
+  /// Kinopoisk serves .gif placeholders (no-poster.gif, no_actor.gif and friends)
+  /// for people/titles with no photo — treat those as "no photo" so a TMDB photo
+  /// or the initials avatar wins instead of the stock grey dummy.
+  var isKinopoiskPlaceholderImage: Bool {
+    contains("no-poster") || contains("no_actor") || contains("noposter") || hasSuffix(".gif")
+  }
+
+  /// URL unless it points at a Kinopoisk placeholder dummy.
+  var nonPlaceholderImageURL: URL? {
+    isKinopoiskPlaceholderImage ? nil : URL(string: self)
+  }
+}
+
 /// Response shapes for kinopoiskapiunofficial.tech. Field names/shapes verified
 /// against live responses this session (details, staff, awards, images, facts) —
 /// the published docs are thin, so these are pinned to what the service actually

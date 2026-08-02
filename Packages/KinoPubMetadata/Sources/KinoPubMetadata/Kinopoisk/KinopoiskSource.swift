@@ -112,7 +112,7 @@ public final class KinopoiskSource: MetadataSource, @unchecked Sendable {
       let credit = CastMember(
         name: name,
         character: character,
-        photo: member.posterUrl.flatMap(URL.init(string:)),
+        photo: member.posterUrl.flatMap(\.nonPlaceholderImageURL),
         department: member.professionText
       )
       if isActor { cast.append(credit) } else { crew.append(credit) }

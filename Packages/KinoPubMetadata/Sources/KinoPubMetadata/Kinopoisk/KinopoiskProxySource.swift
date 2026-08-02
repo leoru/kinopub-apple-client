@@ -83,7 +83,7 @@ public final class KinopoiskProxySource: MetadataSource, @unchecked Sendable {
         name: name,
         localizedName: member.nameRu,
         character: member.description,
-        photo: member.posterUrl.flatMap(URL.init(string:)),
+        photo: member.posterUrl.flatMap(\.nonPlaceholderImageURL),
         department: "Acting"
       )
     }

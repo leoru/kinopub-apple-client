@@ -345,7 +345,7 @@ struct MediaItemCastSection: View {
   var body: some View {
     if !people.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
-        MediaItemSectionHeader("Cast and crew")
+        MediaItemSectionHeader("Cast and crew", count: "\(people.count)")
 
         ScrollView(.horizontal, showsIndicators: false) {
           LazyHStack(alignment: .top, spacing: Self.spacing) {
@@ -526,6 +526,14 @@ struct CastPortraitView: View {
           .lineLimit(2)
           .multilineTextAlignment(.center)
           .frame(maxWidth: .infinity, alignment: .center)
+
+        if let episodeCount = member.episodeCount, episodeCount > 0 {
+          Text("\(episodeCount) \("MediaItem_EpisodesShort".localized)")
+            .font(Self.roleFont)
+            .foregroundStyle(Color.KinoPub.subtitle.opacity(0.7))
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .center)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -1007,17 +1015,6 @@ struct MediaItemInfoColumns: View {
                                   values: [InfoValue(id: "aka", title: aka)]))
     }
 
-    let genres = mediaItem.genres.compactMap { genre -> InfoValue? in
-      guard let title = genre.title, !title.isEmpty else { return nil }
-      return InfoValue(id: "genre-\(genre.id)",
-                       title: title,
-                       filter: LibraryFilter(genreID: genre.id))
-    }
-    if !genres.isEmpty {
-      let caption = genres.count == 1 ? "MediaItem_Genre" : "MediaItem_Genres"
-      sections.append(InfoSection(id: "genre", caption: caption, values: genres))
-    }
-
     let countries = mediaItem.countries
       .filter { !$0.title.isEmpty }
       .map {
@@ -1032,23 +1029,18 @@ struct MediaItemInfoColumns: View {
       sections.append(InfoSection(id: "country", caption: caption, values: countries))
     }
 
-    if mediaItem.year > 0 {
-      let year = mediaItem.year
-      sections.append(InfoSection(
-        id: "year",
-        caption: "MediaItem_ReleaseYear",
-        values: [InfoValue(id: "year-\(year)",
-                           title: "\(year)",
-                           filter: LibraryFilter(years: YearRange(from: year, to: year)))]
-      ))
+    let genres = mediaItem.genres.compactMap { genre -> InfoValue? in
+      guard let title = genre.title, !title.isEmpty else { return nil }
+      return InfoValue(id: "genre-\(genre.id)",
+                       title: title,
+                       filter: LibraryFilter(genreID: genre.id))
+    }
+    if !genres.isEmpty {
+      let caption = genres.count == 1 ? "MediaItem_Genre" : "MediaItem_Genres"
+      sections.append(InfoSection(id: "genre", caption: caption, values: genres))
     }
 
-    if let volume = mediaItem.volumeCounts {
-      sections.append(InfoSection(id: "volume",
-                                  caption: "MediaItem_Volume",
-                                  values: [InfoValue(id: "volume",
-                                                     title: Self.volumeLabel(volume))]))
-    }
+    sections.append(contentsOf: releaseSections)
 
     let duration = mediaItem.displayDuration
     if !duration.isEmpty {
@@ -1073,12 +1065,6 @@ struct MediaItemInfoColumns: View {
                                   values: totalValues))
     }
 
-    if let statusKey = mediaItem.seriesStatusKey {
-      sections.append(InfoSection(id: "status",
-                                  caption: "MediaItem_Status",
-                                  values: [InfoValue(id: "status", title: statusKey.localized)]))
-    }
-
     var flagValues: [InfoValue] = []
     if mediaItem.advert {
       flagValues.append(InfoValue(id: "advert", title: "MediaItem_ContainsAds".localized))
@@ -1093,6 +1079,215 @@ struct MediaItemInfoColumns: View {
     }
 
     return sections
+  }
+
+  /// Release / expected release / season premiere / status / totals — the date-driven
+  /// block fed by TMDB air dates, with kino.pub's year as the final fallback.
+  private var releaseSections: [InfoSection] {
+    var sections: [InfoSection] = []
+    let meta = externalMetadata
+
+    if !mediaItem.isSeries {
+      if let date = meta.releaseDate {
+        sections.append(InfoSection(id: "release", caption: "MediaItem_Release",
+                                    values: [InfoValue(id: "release", title: Self.longDate(date))]))
+      } else if mediaItem.year > 0 {
+        sections.append(InfoSection(id: "release", caption: "MediaItem_Release",
+                                    values: [InfoValue(id: "release", title: "\(mediaItem.year)")]))
+      }
+      return sections
+    }
+
+    let kinoEpisodes = mediaItem.volumeCounts?.episodes ?? 0
+    if let announced = announcedReleaseDate, kinoEpisodes == 0 {
+      sections.append(InfoSection(id: "expected", caption: "MediaItem_ExpectedRelease",
+                                  values: [InfoValue(id: "expected", title: Self.longDate(announced))]))
+    } else if let release = seriesReleaseText {
+      sections.append(InfoSection(id: "release", caption: "MediaItem_Release",
+                                  values: [InfoValue(id: "release", title: release)]))
+    }
+
+    if let upcoming = upcomingEpisodeSection {
+      sections.append(upcoming)
+    }
+
+    if let statusKey = seriesStatusKey {
+      sections.append(InfoSection(id: "status", caption: "MediaItem_Status",
+                                  values: [InfoValue(id: "status", title: statusKey.localized)]))
+    }
+
+    if let totals = totalExistsText {
+      sections.append(InfoSection(id: "total-exists", caption: "MediaItem_TotalExists",
+                                  values: [InfoValue(id: "total-exists", title: totals)]))
+    }
+
+    if let available = availableText {
+      sections.append(InfoSection(id: "available", caption: "MediaItem_Available",
+                                  values: [InfoValue(id: "available", title: available)]))
+    }
+
+    return sections
+  }
+
+  /// A series announced but with nothing aired yet — the first known future date.
+  private var announcedReleaseDate: Date? {
+    if let first = externalMetadata.firstAirDate, first > Date() { return first }
+    if let next = externalMetadata.nextEpisode?.airDate, next > Date() { return next }
+    return nil
+  }
+
+  private var isFinished: Bool {
+    switch externalMetadata.status?.lowercased() {
+    case "ended", "canceled": return true
+    case "returning series", "in production", "pilot", "planned": return false
+    default: return mediaItem.finished
+    }
+  }
+
+  private var seriesStatusKey: String? {
+    guard mediaItem.isSeries else { return nil }
+    switch externalMetadata.status?.lowercased() {
+    case "ended": return "MediaItem_StatusEnded"
+    case "canceled": return "MediaItem_StatusCanceled"
+    case "returning series", "in production", "pilot", "planned":
+      return "MediaItem_StatusInProduction"
+    default: return mediaItem.seriesStatusKey
+    }
+  }
+
+  /// "21 сентября 2020 – 30 июля 2026" when the run is complete, "с 21 сентября 2020"
+  /// while it is still airing, bare years when only they are known.
+  private var seriesReleaseText: String? {
+    switch (externalMetadata.firstAirDate, externalMetadata.lastAirDate) {
+    case let (first?, last?):
+      if isFinished { return "\(Self.longDate(first)) – \(Self.longDate(last))" }
+      return String(format: "MediaItem_SinceDate".localized, Self.longDate(first))
+    case let (first?, nil):
+      if isFinished { return Self.longDate(first) }
+      return String(format: "MediaItem_SinceDate".localized, Self.longDate(first))
+    default:
+      guard mediaItem.year > 0 else { return nil }
+      return isFinished ? "\(mediaItem.year)" : "\(mediaItem.year)–"
+    }
+  }
+
+  /// "Премьера 19 сезона" when the next episode opens a new season, "Следующая серия"
+  /// when it continues the current one — date primary, countdown secondary.
+  private var upcomingEpisodeSection: InfoSection? {
+    guard mediaItem.isSeries,
+          let next = externalMetadata.nextEpisode,
+          let date = next.airDate, date > Date() else { return nil }
+
+    let lastAiredSeason = externalMetadata.lastEpisode?.seasonNumber
+      ?? externalMetadata.seasonSummaries
+        .filter { ($0.airDate ?? .distantFuture) <= Date() }
+        .map(\.seasonNumber)
+        .max()
+    let isSeasonPremiere = lastAiredSeason.map { next.seasonNumber > $0 } ?? false
+    let caption = isSeasonPremiere
+      ? String(format: "MediaItem_SeasonPremiere".localized, next.seasonNumber)
+      : "MediaItem_NextEpisode".localized
+
+    var values = [InfoValue(id: "next", title: Self.longDate(date))]
+    let countdown = Self.relativeCountdown(to: date)
+    if !countdown.isEmpty {
+      values.append(InfoValue(id: "next-in", title: countdown, style: .note))
+    }
+    return InfoSection(id: isSeasonPremiere ? "season-premiere" : "next-episode",
+                       caption: caption,
+                       values: values)
+  }
+
+  /// "18 сезонов, 386 серий" — TMDB totals (specials excluded), with a specials note
+  /// when season 0 exists and kino.pub doesn't carry everything.
+  private var totalExistsText: String? {
+    guard mediaItem.isSeries,
+          let seasonsTotal = externalMetadata.numberOfSeasons, seasonsTotal > 0 else { return nil }
+    var text = "\(seasonsTotal) \(Self.unit(seasonsTotal, .season))"
+    guard let episodesTotal = externalMetadata.numberOfEpisodes, episodesTotal > 0 else { return text }
+    text += ", \(episodesTotal) \(Self.unit(episodesTotal, .episode))"
+
+    let specials = externalMetadata.seasonSummaries
+      .filter { $0.seasonNumber == 0 }
+      .reduce(0) { $0 + ($1.episodeCount ?? 0) }
+    let kinoEpisodes = mediaItem.volumeCounts?.episodes ?? 0
+    if specials > 0, kinoEpisodes < episodesTotal {
+      text += ", \(specials) \(Self.unit(specials, .special))"
+    }
+    return text
+  }
+
+  /// "Сезоны 14–18, 100 серий" — what kino.pub actually offers, real season numbers
+  /// (title-parsed) rather than its internal re-numbering.
+  private var availableText: String? {
+    guard mediaItem.isSeries,
+          let seasons = mediaItem.seasons, !seasons.isEmpty else { return nil }
+    let numbers = seasons.map { $0.titleSeasonNumber ?? $0.number }.sorted()
+    let episodes = seasons.reduce(0) { $0 + $1.episodes.count }
+    let episodesText = episodes > 0 ? ", \(episodes) \(Self.unit(episodes, .episode))" : ""
+
+    guard let first = numbers.first, let last = numbers.last, first != last else {
+      return String(format: "MediaItem_SeasonSingle".localized, numbers.first ?? 1) + episodesText
+    }
+    if last - first + 1 == numbers.count {
+      return String(format: "MediaItem_SeasonsRange".localized, first, last) + episodesText
+    }
+    return "\(numbers.count) \(Self.unit(numbers.count, .season))" + episodesText
+  }
+
+  private static let longDateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.setLocalizedDateFormatFromTemplate("d MMMM yyyy")
+    return formatter
+  }()
+
+  private static func longDate(_ date: Date) -> String {
+    longDateFormatter.string(from: date)
+  }
+
+  /// "через 12 дней" / "in 12 days" — localized by the system, plural rules included.
+  private static func relativeCountdown(to date: Date) -> String {
+    let formatter = RelativeDateTimeFormatter()
+    formatter.unitsStyle = .full
+    return formatter.localizedString(for: date, relativeTo: Date())
+  }
+
+  private enum UnitKind { case season, episode, special }
+
+  /// Grammatically correct unit for the running locale: RU/UK/BE and LT have three
+  /// plural forms, English two.
+  private static func unit(_ count: Int, _ kind: UnitKind) -> String {
+    let lang = Locale.current.language.languageCode?.identifier ?? "en"
+    let mod100 = count % 100
+    let mod10 = count % 10
+    let form: Int  // 0 = one, 1 = few, 2 = many
+    if ["ru", "uk", "be"].contains(lang) {
+      if (11...14).contains(mod100) { form = 2 }
+      else if mod10 == 1 { form = 0 }
+      else if (2...4).contains(mod10) { form = 1 }
+      else { form = 2 }
+    } else if lang == "lt" {
+      if mod10 == 1 && mod100 != 11 { form = 0 }
+      else if (2...9).contains(mod10) && !(10...19).contains(mod100) { form = 1 }
+      else { form = 2 }
+    } else {
+      form = count == 1 ? 0 : 2
+    }
+
+    let key: String
+    switch (kind, form) {
+    case (.season, 0): key = "MediaItem_UnitSeasonOne"
+    case (.season, 1): key = "MediaItem_UnitSeasonFew"
+    case (.season, 2): key = "MediaItem_UnitSeasonMany"
+    case (.episode, 0): key = "MediaItem_UnitEpisodeOne"
+    case (.episode, 1): key = "MediaItem_UnitEpisodeFew"
+    case (.episode, 2): key = "MediaItem_UnitEpisodeMany"
+    case (.special, 0): key = "MediaItem_UnitSpecialOne"
+    case (.special, 1): key = "MediaItem_UnitSpecialFew"
+    case (.special, 2): key = "MediaItem_UnitSpecialMany"
+    default: key = "MediaItem_UnitSeasonMany"
+    }
+    return key.localized
   }
 
   private var technicalSections: [InfoSection] {
@@ -1204,20 +1399,6 @@ struct MediaItemInfoColumns: View {
     let values: [InfoValue]
   }
 
-  private static func volumeLabel(_ counts: (seasons: Int, episodes: Int)) -> String {
-    let seasonUnit = (counts.seasons == 1
-      ? "MediaItem_SeasonUnit"
-      : "MediaItem_SeasonsUnit").localized
-    var text = "\(counts.seasons) \(seasonUnit)"
-    if counts.episodes > 0 {
-      let episodeUnit = (counts.episodes == 1
-        ? "MediaItem_EpisodeUnit"
-        : "MediaItem_EpisodesUnit").localized
-      text += ", \(counts.episodes) \(episodeUnit)"
-    }
-    return text
-  }
-
   // MARK: Information / Technical
 
   private struct InformationColumn: View {
@@ -1237,7 +1418,9 @@ struct MediaItemInfoColumns: View {
           sectionBlock(section)
         }
       }
-      .frame(width: MediaItemInfoColumns.columnWidth, alignment: .leading)
+      // Equal share of the row — the columns fill the page width instead of
+      // stacking to the left at a fixed width.
+      .frame(maxWidth: .infinity, alignment: .leading)
 #if os(tvOS)
       .reportMediaItemSectionFocus(onSectionFocused)
 #endif
@@ -1377,7 +1560,7 @@ struct MediaItemInfoColumns: View {
               .padding(.top, MediaItemInfoColumns.subtitleExtraTop)
           }
         }
-        .frame(width: MediaItemInfoColumns.columnWidth, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
       }
       .buttonStyle(ExpandableButtonStyle(showsPointerHighlight: false))
 #if os(tvOS)
@@ -1743,7 +1926,6 @@ struct MediaItemInfoColumns: View {
 
 #if os(tvOS)
   static let columnSpacing: CGFloat = 60
-  static let columnWidth: CGFloat = 480
   static let sectionSpacing: CGFloat = 22
   static let languageGroupSpacing: CGFloat = 12
   static let languageNameToKindSpacing: CGFloat = 3
@@ -1757,7 +1939,6 @@ struct MediaItemInfoColumns: View {
   static let detailFont: Font = .system(size: 22, weight: .regular)
 #else
   static let columnSpacing: CGFloat = 28
-  static let columnWidth: CGFloat = 260
   static let sectionSpacing: CGFloat = 16
   static let languageGroupSpacing: CGFloat = 8
   static let languageNameToKindSpacing: CGFloat = 1
@@ -1808,13 +1989,15 @@ private struct SourceChipButtonStyle: ButtonStyle {
 
 struct MediaItemSectionHeader: View {
   private let title: LocalizedStringKey
+  private let count: String?
 
-  init(_ title: LocalizedStringKey) {
+  init(_ title: LocalizedStringKey, count: String? = nil) {
     self.title = title
+    self.count = count
   }
 
   var body: some View {
-    SectionHeader(title, leadingInset: MediaItemLayout.horizontalInset)
+    SectionHeader(title, count: count, leadingInset: MediaItemLayout.horizontalInset)
   }
 }
 
