@@ -12,7 +12,7 @@ public struct HistoryRequest: Endpoint {
   private var page: Int?
   private var perPage: Int
 
-  public init(page: Int? = nil, perPage: Int = 50) {
+  public init(page: Int? = nil, perPage: Int = 20) {
     self.page = page
     self.perPage = perPage
   }

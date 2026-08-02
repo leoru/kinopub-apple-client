@@ -19,11 +19,11 @@ public class ResponseLoggingPlugin: APIClientPlugin {
 
   public func willSend(_ request: URLRequest) {}
 
+  /// One line per response: status, URL, size. Bodies are not dumped — a single
+  /// history page would flood the console with megabytes of JSON.
   public func didReceive(_ response: URLResponse, data: Data?) {
-    Logger.backend.debug("Response: \(response)")
-    if let data = data {
-      let str = String(data: data, encoding: .utf8)
-      Logger.backend.debug("Data: \(str ?? "")")
-    }
+    guard let http = response as? HTTPURLResponse else { return }
+    let size = data?.count ?? 0
+    Logger.backend.debug("Response \(http.statusCode) \(http.url?.absoluteString ?? "?") \(size)b")
   }
 }

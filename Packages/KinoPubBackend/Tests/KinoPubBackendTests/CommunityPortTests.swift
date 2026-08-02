@@ -137,8 +137,20 @@ final class CommunityPortTests: XCTestCase {
   // MARK: - Client-side filter facets
 
   func testClientSideFacetsMatchQualityAndRatings() {
-    var low = MediaItem.mock()
-    // mock quality is 0; rebuild via JSON for a high-quality item
+    // mock() carries kinopoiskRating 8.3, so it would pass a rating facet — the
+    // intended "low" item (quality 0, no decent ratings) is built from JSON like
+    // the high one.
+    let lowJSON = """
+    {
+      "id":2,"type":"movie","subtype":"","title":"Lo","year":2020,"cast":"","director":"",
+      "genres":[],"countries":[],"duration":{"total":1,"average":1},
+      "langs":1,"quality":0,"plot":"","imdb_rating":5.0,"kinopoisk_rating":5.0,"rating":0,
+      "rating_votes":0,"rating_percentage":0,"views":1,"comments":0,
+      "posters":{"small":"","medium":"","big":"","wide":""},
+      "finished":false,"advert":false,"poor_quality":false,"created_at":0,"updated_at":0,"ac3":0
+    }
+    """.data(using: .utf8)!
+    let low = try! JSONDecoder().decode(MediaItem.self, from: lowJSON)
     let highJSON = """
     {
       "id":1,"type":"movie","subtype":"","title":"Hi","year":2020,"cast":"","director":"",
