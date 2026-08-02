@@ -168,7 +168,7 @@ final class StreamSurveyModel: ObservableObject {
           tally.manifestVideoCodecs[family, default: 0] += 1
         }
       }
-      tally.videoRanges[variant.videoRange ?? "(absent — SDR)", default: 0] += 1
+      tally.videoRanges[variant.videoRange  ?? "(absent — SDR)", default: 0] += 1
       if let rate = variant.frameRate { tally.frameRates[rate, default: 0] += 1 }
       if let resolution = variant.resolution { tally.resolutions[resolution, default: 0] += 1 }
     }

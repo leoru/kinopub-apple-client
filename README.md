@@ -87,30 +87,38 @@ open KinoPubAppleClient.xcodeproj
 - Tap-a-word translation on pause is **parked**, not shipped: `SubtitleTranslatePanel.swift` and
   `SubtitleTrackPickerView.swift` build but nothing presents them (see the note at the top of each)
 - **Home opens with a contained 16:9 banner shelf** (up to six cards sampled from the
-  catalog rows below): wide backdrop, inset vertical poster, titles + IMDb/Kinopoisk
-  scores, private `variableBlur` over static art — **no CTAs for v1**, **no Netflix-style
-  focus preview**. Phone fills width; tvOS / macOS / iPad landscape keep ~2 columns so
-  cards stay padded, not full-bleed. The old `showsFeaturedPreview` path is deleted. See
+  catalog rows below): wide backdrop, inset vertical poster with rating badge, titles +
+  IMDb/Kinopoisk scores, private `variableBlur` over static art — **no CTAs for v1**,
+  **no Netflix-style focus preview**. Banner shelf snaps two-up via `scrollTargetBehavior(.viewAligned)`.
+  Phone fills width; tvOS / macOS / iPad landscape keep ~2 columns so cards stay padded,
+  not full-bleed. Home uses system material + `backgroundExtensionEffect` under the sidebar.
+  The old `showsFeaturedPreview` path is deleted. See
   [modernization plan D1](docs/en/plans/modernization.md).
 - **Backgrounds and type are the system's** (`Color.KinoPub.background` / `.text` / `.subtitle`): black
   and true white on a TV in dark appearance, instead of the old hand-picked #1C202B grey and #B0B1B5
   "white".
 - **Loading is Apple-TV-shaped, not skeleton-shaped**: a screen stays empty and shows a plain spinner
   once the wait is noticeable (300 ms on listings, 700 ms on an item page), then fades the content in.
-  If an item page's details request fails (TLS / VPN / offline), `LoadFailedView` replaces the spinner
+  If an item page's details request fails (TLS / VPN / offline), `UnavailableView` replaces the spinner
   with a short message and a focusable Try Again button.
   Artwork fades up out of a dark tile. `LoadingIndicatorView` in `KinoPubUI` is the one spinner.
   **Search is the exception**: the query field, filter chips and a grid of empty poster tiles are on
   screen from the first frame (filters scroll with the grid, not pinned above it), so the remote
   always has somewhere to land; real cards replace the tiles when the page arrives.
 - **Navigation chrome is a shared system `TabView` + `.sidebarAdaptable`** (`TabsNavigationView`):
-  sidebar on Mac/TV, bottom tabs on iPhone.
-  - **tvOS:** flat tabs (no sections) — profile at the top, then Search, For You, Movies, Series,
-    Library (watchlist + history + bookmarks). Circular icon underlays; focus lands on content,
-    not the sidebar. Re-selecting a tab pops that tab's stack to root.
-  - **iOS / iPad:** same Library merge; Downloads stays its own tab.
+  sidebar on Mac/TV, bottom tabs on iPhone. Destinations use a single `Route` enum +
+  `RouteDestination` registry; zoom transitions (`matchedTransitionSource` /
+  `navigationTransition(.zoom)`) on iOS/tvOS from poster/banner/cast sources.
+  - **tvOS:** flat tabs — profile at the top (header on tvOS 27+, first tab on 26), then
+    Search (`Tab(role: .search)`), For You, Movies, Series, Library. System tab icons; focus
+    lands on content, not the sidebar. Re-selecting a tab pops that tab's stack to root.
+  - **iOS / iPad:** Search role + Library merge; Downloads stays its own tab.
   - **macOS:** sidebar sections (Browse / Library / Folders) with `TabViewCustomization`, profile
-    in the sidebar footer.
+    pinned via `tabViewSidebarBottomBar`.
+- **Detail pages use one vertical `ScrollView`** (hero + content) with layout-driven focus —
+  the old tvOS offset slideshow / focus bridges are gone.
+- **Playback is a single app-scoped `PlaybackSession`** — one `PlayerManager` / stream at a time;
+  tab destinations and the macOS player window host the same session.
 
 ## Known issues / half-finished
 

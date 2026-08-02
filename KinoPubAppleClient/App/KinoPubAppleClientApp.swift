@@ -9,7 +9,7 @@ import SwiftUI
 import KinoPubKit
 
 enum WindowSize {
-  static let macos = CGSize(width: 1280, height: 720)
+  static let macos = CGSize(width: 960, height: 580) // minimum size, default must be read from this value (to 1280/880 kinda ratio)
 }
 
 @main

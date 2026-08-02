@@ -19,11 +19,11 @@ Read this before changing code. The product direction, current state and roadmap
 - **Everything must be focus-navigable on tvOS.** Any `Button`, `NavigationLink` or interactive chip you
   add has to be reachable and visibly focusable with the remote. `.buttonStyle(.plain)` usually breaks
   this — check before shipping.
-- **Focus drives the page on TV.** Rows screens describe the focused card in the preview at the top of
-  `MediaRowsView` — artwork, title, plot — and hand the remote the first card rather than the tab bar.
-  Anything new built out of rows should inherit that by using `MediaRowsView`, not a hand-rolled stack.
-  Whatever fills reserved space above a row **must be focusable**: 560 points of inert space swallows
-  every press of Up and strands the user with the tab bar out of reach.
+- **Focus drives the page on TV.** Rows screens (`MediaRowsView`) hand the remote the first banner or
+  shelf card rather than the tab bar. Anything new built out of rows should inherit that by using
+  `MediaRowsView`, not a hand-rolled stack. Do not put inert reserved space above a row — it swallows
+  Up and strands the user with the tab bar out of reach. Home’s featured band is the focusable banner
+  shelf, not a separate non-interactive preview.
 - **Colours come from the system.** `Color.KinoPub.background`, `.text` and `.subtitle` resolve to the
   platform's own background and label colours. Don't reintroduce hand-picked greys; accents stay in the
   asset catalogue. **Dark appearance only for now** (scene-root `.preferredColorScheme(.dark)` +
