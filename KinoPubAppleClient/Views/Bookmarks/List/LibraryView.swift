@@ -26,42 +26,10 @@ struct LibraryView: View {
         .platformNavigationTitle("Library")
         .background(Color.KinoPub.background)
         .task { await catalog.fetch() }
-        .navigationDestination(for: BookmarksRoutes.self) { route in
-          switch route {
-          case .details(let item):
-            detailsView(for: item.id, knownItem: item)
-          case .detailsById(let id):
-            detailsView(for: id)
-          case .bookmark(let bookmark):
-            BookmarkView(model: BookmarkModel(bookmark: bookmark,
-                                              itemsService: appContext.contentService,
-                                              errorHandler: errorHandler))
-          case .player(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .media,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .trailerPlayer(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .trailer,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .seasons(let seasons):
-            SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: BookmarksRoutesLinkProvider()))
-          case .season(let season):
-            SeasonView(model: SeasonModel(season: season, linkProvider: BookmarksRoutesLinkProvider()))
-          case .person(let person):
-            PersonItemsView.make(person: person,
-                                 linkProvider: BookmarksRoutesLinkProvider(),
-                                 context: appContext,
-                                 authState: authState,
-                                 errorHandler: errorHandler)
-          }
+        .navigationDestination(for: Route.self) { route in
+          RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
         }
         .handleError(state: $errorHandler.state)
-#if !os(tvOS)
-        .refreshable { await catalog.refresh() }
-#endif
     }
     .navigationStackActive(for: .library, selected: navigationState.selectedTab)
   }
@@ -70,10 +38,16 @@ struct LibraryView: View {
   private var content: some View {
     if catalog.rows.isEmpty && !catalog.isLoaded {
       LoadingIndicatorView()
+    } else if catalog.rows.isEmpty && catalog.loadFailed {
+      UnavailableView(title: "Couldn't Load",
+                      systemImage: "wifi.exclamationmark",
+                      message: catalog.loadError?.userFacingMessage ?? "Check your connection and try again.".localized,
+                      retryTitle: "Try Again",
+                      onRetry: {
+        Task { await catalog.refresh() }
+      })
     } else if catalog.rows.isEmpty {
-      Text("No Results".localized)
-        .foregroundStyle(Color.KinoPub.subtitle)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+      UnavailableView(title: "No Results", systemImage: "bookmark")
     } else {
       MediaRowsView(
         rows: catalog.rows,
@@ -82,12 +56,4 @@ struct LibraryView: View {
     }
   }
 
-  private func detailsView(for id: Int, knownItem: MediaItem? = nil) -> some View {
-    MediaItemView(model: MediaItemModel(mediaItemId: id,
-                                        knownItem: knownItem,
-                                        itemsService: appContext.contentService,
-                                        downloadManager: appContext.downloadManager,
-                                        linkProvider: BookmarksRoutesLinkProvider(),
-                                        errorHandler: errorHandler))
-  }
 }

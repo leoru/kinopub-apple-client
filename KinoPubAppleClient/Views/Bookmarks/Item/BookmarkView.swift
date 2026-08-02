@@ -45,8 +45,6 @@ struct BookmarkView: View {
   private var grid: some View {
     ContentItemsListView(items: $model.items, onLoadMoreContent: { item in
 
-    }, onRefresh: {
-      await model.refresh()
     }, navigationLinkProvider: { item in
       BookmarksRoutesLinkProvider().link(for: item)
     })

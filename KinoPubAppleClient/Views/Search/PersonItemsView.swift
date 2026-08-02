@@ -38,9 +38,10 @@ struct PersonItemsView: View {
     ContentItemsListView(
       items: $catalog.items,
       onLoadMoreContent: { catalog.loadMoreContent(after: $0) },
-      onRefresh: { await catalog.refresh() },
       navigationLinkProvider: { linkProvider.link(for: $0) },
-      emptyMessage: showsEmptyMessage ? "No Results" : nil
+      emptyMessage: showsEmptyMessage ? "No Results" : nil,
+      paginationError: catalog.paginationFailed,
+      onRetryPagination: { catalog.retryPagination() }
     ) {
       hero
       creditsHeader
@@ -49,9 +50,10 @@ struct PersonItemsView: View {
     .platformNavigationTitle(person.name)
     .overlay {
       if catalog.loadFailed {
-        LoadFailedView(
+        UnavailableView(
           title: "Couldn't Load",
-          message: "Check your connection and try again.",
+          systemImage: "wifi.exclamationmark",
+          message: catalog.loadError?.userFacingMessage ?? "Check your connection and try again.".localized,
           retryTitle: "Try Again",
           onRetry: {
             Task { await catalog.refresh() }
@@ -59,7 +61,6 @@ struct PersonItemsView: View {
           secondaryTitle: "Back",
           onSecondary: { dismiss() }
         )
-        .background(Color.KinoPub.background)
       } else if catalog.isLoading && catalog.items.isEmpty {
         LoadingIndicatorView(delay: .milliseconds(700))
       }
@@ -85,8 +86,10 @@ struct PersonItemsView: View {
     HStack(alignment: .top, spacing: Self.heroSpacing) {
       CastAvatarView(
         name: person.name,
-        photoURL: personMetadata.photo
-          ?? person.photoURL
+        // Prefer the rail URL already on screen — upgrading w185 → w342 only
+        // swaps the cache key and blinks the avatar for a sharper copy.
+        photoURL: person.photoURL
+          ?? personMetadata.photo
           ?? ActorImageProvider.photoURL(for: person.name)
       )
 
@@ -155,16 +158,10 @@ struct PersonItemsView: View {
 
   private var creditsHeader: some View {
     HStack(alignment: .firstTextBaseline, spacing: Self.heroSpacing) {
-      HStack(alignment: .firstTextBaseline, spacing: 8) {
-        Text("Credits")
-          .font(Self.sectionFont)
-          .foregroundStyle(Color.KinoPub.text)
-        if !catalog.items.isEmpty {
-          Text("\(catalog.items.count)")
-            .font(Self.sectionFont)
-            .foregroundStyle(Color.KinoPub.subtitle)
-        }
-      }
+      SectionHeader(
+        "Credits",
+        count: catalog.items.isEmpty ? nil : "\(catalog.items.count)"
+      )
 
       Spacer(minLength: Self.heroSpacing)
 

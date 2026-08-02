@@ -20,11 +20,11 @@ import AppKit
 /// `.sidebarAdaptable` (sidebar on Mac/TV, tab bar on iPhone, adaptable on iPad).
 ///
 /// Platform IA:
-/// - **tvOS:** flat tabs (no `TabSection`), profile at the top, Search next,
-///   Library merges watchlist / history / bookmarks; circular icon underlays.
+/// - **tvOS:** flat tabs (no `TabSection`), profile at the top, Search with `.search` role,
+///   Library merges watchlist / history / bookmarks.
 /// - **iOS / iPad:** Library likewise merges those three; Downloads stays its own tab.
 /// - **macOS:** sidebar sections (Browse / Library / Folders), profile in
-///   `tabViewSidebarFooter`, `TabViewCustomization` for show/hide + folders.
+///   `tabViewSidebarBottomBar`, `TabViewCustomization` for show/hide + folders.
 struct TabsNavigationView: View {
 
   @Environment(\.appContext) var appContext
@@ -37,7 +37,9 @@ struct TabsNavigationView: View {
   /// Sidebar folder tabs — snapshotted so the tab set does not mutate while
   /// Settings is open (same wedge Rivulet guards against on tvOS).
   @State private var sidebarFolders: [Bookmark] = []
-  @State private var userData: UserData?
+  /// Seeded from disk so the profile row is never blank on a cold/offline start;
+  /// refreshed from the network, and a failed refresh keeps the cached value.
+  @State private var userData: UserData? = UserProfileCache.shared.loadUser()
   /// Rasterized avatar — `AsyncImage` inside a `Tab`/`Label` is stripped by the
   /// system sidebar, which is why the profile row used to show title-only "Settings".
   @State private var avatarImage: Image?
@@ -153,34 +155,34 @@ struct TabsNavigationView: View {
 
   @TabContentBuilder<NavigationTabs>
   private var tvBrowseTabs: some TabContent<NavigationTabs> {
-    Tab(value: NavigationTabs.search) {
+    Tab(value: NavigationTabs.search, role: .search) {
       searchContent
     } label: {
-      tvTabLabel("Search", systemImage: "magnifyingglass")
+      Label("Search", systemImage: "magnifyingglass")
     }
 
     Tab(value: NavigationTabs.home) {
       homeContent
     } label: {
-      tvTabLabel("For You", systemImage: "play.fill")
+      Label("For You", systemImage: "play.fill")
     }
 
     Tab(value: NavigationTabs.movies) {
       moviesContent
     } label: {
-      tvTabLabel("Movies", systemImage: "movieclapper")
+      Label("Movies", systemImage: "movieclapper")
     }
 
     Tab(value: NavigationTabs.series) {
       seriesContent
     } label: {
-      tvTabLabel("Series", systemImage: "rectangle.stack")
+      Label("Series", systemImage: "rectangle.stack")
     }
 
     Tab(value: NavigationTabs.library) {
       libraryContent
     } label: {
-      tvTabLabel(libraryTabTitle, systemImage: "rectangle.stack.fill.badge.person.crop")
+      Label(libraryTabTitle, systemImage: "rectangle.stack.fill.badge.person.crop")
     }
   }
 
@@ -244,8 +246,10 @@ struct TabsNavigationView: View {
   private var macSidebarTabs: some View {
     TabView(selection: tabSelection) {
       TabSection("Browse") {
-        Tab("Search", systemImage: "magnifyingglass", value: NavigationTabs.search) {
+        Tab(value: NavigationTabs.search, role: .search) {
           searchContent
+        } label: {
+          Label("Search", systemImage: "magnifyingglass")
         }
         .customizationID("tab.search")
 
@@ -302,13 +306,13 @@ struct TabsNavigationView: View {
     }
     .tabViewStyle(.sidebarAdaptable)
     .tabViewCustomization($tabCustomization)
-    .tabViewSidebarFooter {
+    .tabViewSidebarBottomBar {
       Button {
         showSettings = true
       } label: {
         profileLabel(avatarSize: 20)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.borderless)
       .badge(subscriptionDaysBadge)
     }
     .sheet(isPresented: $showSettings) {
@@ -327,8 +331,10 @@ struct TabsNavigationView: View {
   @ViewBuilder
   private var phonePadTabs: some View {
     TabView(selection: tabSelection) {
-      Tab("Search", systemImage: "magnifyingglass", value: NavigationTabs.search) {
+      Tab(value: NavigationTabs.search, role: .search) {
         searchContent
+      } label: {
+        Label("Search", systemImage: "magnifyingglass")
       }
 
       Tab("For You", systemImage: "play.fill", value: NavigationTabs.home) {
@@ -370,10 +376,11 @@ struct TabsNavigationView: View {
 
   /// Prefer display name, then username — never "Settings", which made the row
   /// look like a gear-less settings button when the avatar failed to resolve.
+  /// With nothing loaded at all (offline cold start, no cache) it's "Profile".
   private var profileDisplayName: String {
     userData?.profile.name?.nilIfEmpty
       ?? userData?.username.nilIfEmpty
-      ?? " "
+      ?? "Profile".localized
   }
 
   /// Whole days left on the subscription — shown as a trailing sidebar badge.
@@ -494,6 +501,10 @@ struct TabsNavigationView: View {
   // MARK: - Sidebar data
 
   private func loadSidebarChrome() async {
+    if avatarImage == nil, let cachedAvatar = UserProfileCache.shared.loadAvatar() {
+      avatarImage = Self.platformImage(from: cachedAvatar)
+    }
+
     async let userTask: UserData? = {
       try? await appContext.userService.fetchUserData()
     }()
@@ -503,7 +514,11 @@ struct TabsNavigationView: View {
     let downloads = (appContext.downloadedFilesDatabase.readData() ?? []).count
 #endif
 
-    userData = await userTask
+    // A failed fetch must not wipe the cached profile the row is already showing.
+    if let freshUser = await userTask {
+      userData = freshUser
+      UserProfileCache.shared.save(user: freshUser)
+    }
     sidebarFolders = await foldersTask
     watchlistBadgeCount = await watchlistTask
 #if !os(tvOS)
@@ -545,27 +560,30 @@ struct TabsNavigationView: View {
 
   private func loadAvatarImage(from urlString: String?) async {
     guard let urlString, !urlString.isEmpty, let url = URL(string: urlString) else {
+      // The freshest profile says there is no avatar — drop the cached one too.
       avatarImage = nil
+      UserProfileCache.shared.clearAvatar()
       return
     }
     do {
       let (data, _) = try await URLSession.shared.data(from: url)
-#if canImport(UIKit)
-      guard let uiImage = UIImage(data: data) else {
-        avatarImage = nil
-        return
-      }
-      avatarImage = Image(uiImage: uiImage)
-#elseif canImport(AppKit)
-      guard let nsImage = NSImage(data: data) else {
-        avatarImage = nil
-        return
-      }
-      avatarImage = Image(nsImage: nsImage)
-#endif
+      guard let image = Self.platformImage(from: data) else { return }
+      avatarImage = image
+      UserProfileCache.shared.saveAvatar(data)
     } catch {
-      avatarImage = nil
+      // Keep whatever's on screen (possibly the disk-cached copy) — a failed
+      // avatar download is not a reason to blank the row.
     }
+  }
+
+  private static func platformImage(from data: Data) -> Image? {
+#if canImport(UIKit)
+    guard let uiImage = UIImage(data: data) else { return nil }
+    return Image(uiImage: uiImage)
+#elseif canImport(AppKit)
+    guard let nsImage = NSImage(data: data) else { return nil }
+    return Image(nsImage: nsImage)
+#endif
   }
 }
 

@@ -10,7 +10,8 @@ import KinoPubLogging
 import OSLog
 
 /// Serials the user is following for new episodes — its own sidebar tab, not a
-/// row on Bookmarks.
+/// row on Bookmarks. Reads through `ContentStore`, so a warm cache paints instantly
+/// and a failed refresh keeps the last known list instead of blanking the tab.
 struct WatchlistView: View {
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var errorHandler: ErrorHandler
@@ -19,6 +20,8 @@ struct WatchlistView: View {
 
   @State private var cards: [MediaCard] = []
   @State private var isLoaded = false
+  @State private var loadFailed = false
+  @State private var loadError: Error?
 
   var body: some View {
     NavigationStack(path: $navigationState.watchlistRoutes) {
@@ -26,40 +29,10 @@ struct WatchlistView: View {
         .platformNavigationTitle("Watchlist")
         .background(Color.KinoPub.background)
         .task { await load() }
-        .navigationDestination(for: BookmarksRoutes.self) { route in
-          switch route {
-          case .details(let item):
-            detailsView(for: item.id, knownItem: item)
-          case .detailsById(let id):
-            detailsView(for: id)
-          case .bookmark:
-            EmptyView()
-          case .player(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .media,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .trailerPlayer(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .trailer,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .seasons(let seasons):
-            SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: BookmarksRoutesLinkProvider()))
-          case .season(let season):
-            SeasonView(model: SeasonModel(season: season, linkProvider: BookmarksRoutesLinkProvider()))
-          case .person(let person):
-            PersonItemsView.make(person: person,
-                                 linkProvider: BookmarksRoutesLinkProvider(),
-                                 context: appContext,
-                                 authState: authState,
-                                 errorHandler: errorHandler)
-          }
+        .navigationDestination(for: Route.self) { route in
+          RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
         }
         .handleError(state: $errorHandler.state)
-#if !os(tvOS)
-        .refreshable { await load(force: true) }
-#endif
     }
     .navigationStackActive(for: .watchlist, selected: navigationState.selectedTab)
   }
@@ -68,10 +41,16 @@ struct WatchlistView: View {
   private var content: some View {
     if cards.isEmpty && !isLoaded {
       LoadingIndicatorView()
+    } else if cards.isEmpty && loadFailed {
+      UnavailableView(title: "Couldn't Load",
+                      systemImage: "wifi.exclamationmark",
+                      message: loadError?.userFacingMessage ?? "Check your connection and try again.".localized,
+                      retryTitle: "Try Again",
+                      onRetry: {
+        Task { await load(force: true) }
+      })
     } else if cards.isEmpty {
-      Text("No Results".localized)
-        .foregroundStyle(Color.KinoPub.subtitle)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+      UnavailableView(title: "No Results", systemImage: "text.append")
     } else {
       MediaRowsView(
         rows: [MediaRow(id: "watchlist", title: "Watchlist".localized, cards: cards)],
@@ -80,32 +59,38 @@ struct WatchlistView: View {
     }
   }
 
-  private func detailsView(for id: Int, knownItem: MediaItem? = nil) -> some View {
-    MediaItemView(model: MediaItemModel(mediaItemId: id,
-                                        knownItem: knownItem,
-                                        itemsService: appContext.contentService,
-                                        downloadManager: appContext.downloadManager,
-                                        linkProvider: BookmarksRoutesLinkProvider(),
-                                        errorHandler: errorHandler))
-  }
-
   private func load(force: Bool = false) async {
-    if force {
-      cards = []
-      isLoaded = false
+    let store = appContext.contentStore
+    cards = store.cards(.watchlist)
+    isLoaded = !cards.isEmpty
+    loadFailed = false
+    loadError = nil
+
+    // A toast only makes sense when this call actually hit the network — within the
+    // TTL no request fires, and an old error must not keep re-appearing per visit.
+    let willFetch = force || store.isStale(.watchlist)
+    let service = appContext.contentService
+    let fetch: @Sendable () async throws -> [MediaCard] = {
+      let items = try await service.fetchWatchingSerials(subscribedOnly: true).items
+      return items.map(Self.card(for:))
     }
-    do {
-      let items = try await appContext.contentService.fetchWatchingSerials(subscribedOnly: true).items
-      cards = items.map(Self.card(for:))
-      isLoaded = true
-    } catch {
-      Logger.app.error("Failed to load watchlist: \(error)")
+    if force {
+      await store.refresh(.watchlist, fetch: fetch)
+    } else {
+      await store.refreshIfStale(.watchlist, fetch: fetch)
+    }
+
+    cards = store.cards(.watchlist)
+    isLoaded = true
+    loadFailed = cards.isEmpty && store.lastError(.watchlist) != nil
+    loadError = cards.isEmpty ? store.lastError(.watchlist) : nil
+    if willFetch, !cards.isEmpty, let error = store.lastError(.watchlist) {
+      // Content stayed on screen; just say the refresh didn't land.
       errorHandler.setError(error)
-      isLoaded = true
     }
   }
 
-  private static func card(for item: WatchingItem) -> MediaCard {
+  private nonisolated static func card(for item: WatchingItem) -> MediaCard {
     MediaCard(id: item.id,
               posterURL: item.posters.medium,
               title: item.localizedTitle,

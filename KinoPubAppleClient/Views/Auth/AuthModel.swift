@@ -34,7 +34,11 @@ class AuthModel: ObservableObject {
   @Published var isRefreshing: Bool = true
 
   /// How long to wait before asking for a code again when the request itself failed.
+  /// Doubles on every consecutive failure (capped at 30s) so an offline device does
+  /// not hammer the API — and the log — every five seconds.
   private let retryInterval: TimeInterval = 5
+  private let maxRetryInterval: TimeInterval = 30
+  private var currentRetryInterval: TimeInterval = 5
 
   init(authService: AuthorizationService, authState: AuthState) {
     self.authService = authService
@@ -47,10 +51,12 @@ class AuthModel: ObservableObject {
       isRefreshing = true
 
       guard let response = await requestDeviceCode() else {
-        try? await Task.sleep(for: .seconds(retryInterval))
+        try? await Task.sleep(for: .seconds(currentRetryInterval))
+        currentRetryInterval = min(currentRetryInterval * 2, maxRetryInterval)
         continue
       }
 
+      currentRetryInterval = retryInterval
       deviceCode = response.userCode
       verificationURL = displayURL(from: response.verificationUri)
       isRefreshing = false

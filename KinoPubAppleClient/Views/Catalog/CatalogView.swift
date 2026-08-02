@@ -21,6 +21,7 @@ struct CatalogView: View {
 
   @StateObject private var catalog: MediaCatalog
   @State private var showShortCutPicker: Bool = false
+  @Namespace private var zoomNamespace
 
   init(title: LocalizedStringKey,
        tab: NavigationTabs,
@@ -58,42 +59,17 @@ struct CatalogView: View {
         .sheet(isPresented: $showShortCutPicker) {
           ShortcutSelectionView(shortcut: $catalog.shortcut, mediaType: $catalog.contentType)
         }
-        .navigationDestination(for: CatalogRoutes.self) { route in
-          switch route {
-          case .details(let item):
-            MediaItemView(model: MediaItemModel(mediaItemId: item.id,
-                                                knownItem: item,
-                                                itemsService: appContext.contentService,
-                                                downloadManager: appContext.downloadManager,
-                                                linkProvider: CatalogRoutesLinkProvider(),
-                                                errorHandler: errorHandler))
-          case .player(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .media,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .trailerPlayer(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .trailer,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .seasons(let seasons):
-            SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: CatalogRoutesLinkProvider()))
-          case .season(let season):
-            SeasonView(model: SeasonModel(season: season, linkProvider: CatalogRoutesLinkProvider()))
-          case .person(let person):
-            PersonItemsView.make(person: person,
-                                 linkProvider: CatalogRoutesLinkProvider(),
-                                 context: appContext,
-                                 authState: authState,
-                                 errorHandler: errorHandler)
-          }
+        .navigationDestination(for: Route.self) { route in
+          RouteDestination(route: route,
+                           linkProvider: AppRoutesLinkProvider(),
+                           transitionNamespace: zoomNamespace)
         }
         .handleError(state: $errorHandler.state)
         .task {
           await catalog.fetchItems()
         }
     }
+    .environment(\.zoomTransitionNamespace, zoomNamespace)
     .navigationStackActive(for: tab, selected: navigationState.selectedTab)
   }
 
@@ -101,6 +77,14 @@ struct CatalogView: View {
   var catalogView: some View {
     if catalog.items.isEmpty && catalog.isLoading {
       LoadingIndicatorView()
+    } else if catalog.items.isEmpty && catalog.loadFailed {
+      UnavailableView(title: "Couldn't Load",
+                      systemImage: "wifi.exclamationmark",
+                      message: catalog.loadError?.userFacingMessage ?? "Check your connection and try again.".localized,
+                      retryTitle: "Try Again",
+                      onRetry: {
+        catalog.refresh()
+      })
     } else {
       grid
     }
@@ -109,10 +93,10 @@ struct CatalogView: View {
   private var grid: some View {
     ContentItemsListView(items: $catalog.items, onLoadMoreContent: { item in
       catalog.loadMoreContent(after: item)
-    }, onRefresh: {
-      await catalog.refresh()
     }, navigationLinkProvider: { item in
       CatalogRoutesLinkProvider().link(for: item)
+    }, paginationError: catalog.paginationFailed, onRetryPagination: {
+      catalog.retryPagination()
     })
   }
 }

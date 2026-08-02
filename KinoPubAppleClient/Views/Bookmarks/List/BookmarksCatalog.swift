@@ -13,26 +13,42 @@ import KinoPubLogging
 import Combine
 
 /// Builds the Bookmarks overview: one row per folder with artwork. Watchlist lives
-/// on its own sidebar tab now.
+/// on its own sidebar tab now. Folder rows read through `ContentStore`, so a warm
+/// cache paints instantly and a failed refresh keeps the last known folders instead
+/// of blanking the tab.
 @MainActor
 class BookmarksCatalog: ObservableObject {
 
   private var authState: AuthState
   private var contentService: VideoContentService
   private var errorHandler: ErrorHandler
+  private var store: ContentStore
   private var bag = Set<AnyCancellable>()
 
   /// Empty until the first folder lands; the screen shows a spinner until then
   /// rather than stand-in artwork.
   @Published public private(set) var rows: [MediaRow] = []
   @Published public private(set) var isLoaded: Bool = false
+  /// True when the folder list failed and there's no cache to show — the view swaps
+  /// the blank screen for a retry state. Cached rows always win over this flag.
+  @Published public private(set) var loadFailed: Bool = false
+  /// The failure behind `loadFailed`, so the retry state can say what actually went wrong.
+  @Published public private(set) var loadError: Error?
 
-  private var folderRows: [MediaRow] = []
+  /// The folder list isn't row-cached — it's one cheap call, and we need it live to
+  /// know which folders even exist. On failure the previous list stays.
+  private var folders: [Bookmark] = []
+  private var foldersFetchFailed = false
+  private var foldersError: Error?
 
-  init(itemsService: VideoContentService, authState: AuthState, errorHandler: ErrorHandler) {
+  init(itemsService: VideoContentService,
+       authState: AuthState,
+       errorHandler: ErrorHandler,
+       store: ContentStore = AppContext.shared.contentStore) {
     self.contentService = itemsService
     self.authState = authState
     self.errorHandler = errorHandler
+    self.store = store
   }
 
   func fetchItems() async {
@@ -41,58 +57,62 @@ class BookmarksCatalog: ObservableObject {
       return
     }
 
-    let folders = await fetchFolders()
-    await fillRows(for: folders)
-    folderRows = folderRows.filter { !$0.cards.isEmpty }
-    rows = folderRows
+    await fetchFolders()
+
+    // Cached rows first — instant paint on a warm store, still empty on a cold one.
+    assembleRows()
+    isLoaded = !rows.isEmpty
+
+    await withTaskGroup(of: Void.self) { group in
+      for folder in folders {
+        group.addTask { [store, contentService] in
+          await store.refreshIfStale(.folder(folder.id)) {
+            let items = try await contentService.fetchBookmarkItems(id: "\(folder.id)").items
+            return items.map(MediaCard.init)
+          }
+          // Each folder's row appears as soon as its own fetch lands.
+          await self.assembleRows()
+        }
+      }
+    }
+
+    assembleRows()
     isLoaded = true
+    let firstError = folders.lazy.compactMap { self.store.lastError(.folder($0.id)) }.first
+    loadFailed = rows.isEmpty && (foldersFetchFailed || firstError != nil)
+    loadError = rows.isEmpty ? (firstError ?? foldersError) : nil
   }
 
-  private func fetchFolders() async -> [Bookmark] {
+  private func fetchFolders() async {
     do {
-      return try await contentService.fetchBookmarks().items
+      folders = try await contentService.fetchBookmarks().items
         .filter { $0.count != "0" }
         .recentlyUpdatedFirst()
+      foldersFetchFailed = false
+      foldersError = nil
     } catch {
       Logger.app.debug("fetch bookmarks error: \(error)")
-      errorHandler.setError(error)
-      return []
+      foldersFetchFailed = true
+      foldersError = error
     }
   }
 
-  /// Each folder appears as soon as its own request comes back, in folder order. A
-  /// folder the service still counts but returns nothing for never draws — a bare
+  /// A folder the service still counts but returns nothing for never draws — a bare
   /// title over empty space is worse than no row at all.
-  private func fillRows(for folders: [Bookmark]) async {
-    var built = [MediaRow?](repeating: nil, count: folders.count)
-
-    await withTaskGroup(of: (Int, [MediaItem]).self) { group in
-      for (index, folder) in folders.enumerated() {
-        group.addTask { [contentService] in
-          do {
-            let items = try await contentService.fetchBookmarkItems(id: "\(folder.id)").items
-            return (index, items)
-          } catch {
-            Logger.app.error("Failed to load bookmark folder \(folder.id): \(error)")
-            return (index, [])
-          }
-        }
-      }
-
-      for await (index, items) in group {
-        guard !items.isEmpty else { continue }
-        built[index] = Self.row(for: folders[index], items: items)
-        folderRows = built.compactMap { $0 }
-        rows = folderRows
-      }
+  private func assembleRows() {
+    rows = folders.compactMap { folder in
+      let cards = store.cards(.folder(folder.id))
+      guard !cards.isEmpty else { return nil }
+      return Self.row(for: folder, cards: cards)
     }
   }
 
   @Sendable @MainActor
   func refresh() async {
-    folderRows = []
-    rows = []
-    isLoaded = false
+    errorHandler.reset()
+    loadFailed = false
+    loadError = nil
+    store.invalidate(family: .bookmarks)
     Logger.app.debug("refetch bookmarks")
     await fetchItems()
   }
@@ -101,11 +121,11 @@ class BookmarksCatalog: ObservableObject {
 
   private static func rowID(for bookmark: Bookmark) -> String { "bookmark-\(bookmark.id)" }
 
-  private static func row(for bookmark: Bookmark, items: [MediaItem]) -> MediaRow {
+  private static func row(for bookmark: Bookmark, cards: [MediaCard]) -> MediaRow {
     MediaRow(id: rowID(for: bookmark),
              title: bookmark.title,
              count: bookmark.count,
-             cards: items.map(MediaCard.init),
+             cards: cards,
              destination: BookmarksRoutes.bookmark(bookmark))
   }
 

@@ -41,6 +41,12 @@ class HomeCatalog: ObservableObject {
   /// Up to six contained banner cards sampled from the catalog shelves below.
   @Published public private(set) var bannerCards: [MediaCard] = []
   @Published public private(set) var isLoaded: Bool = false
+  /// True when every shelf failed and there is nothing cached to show — the view
+  /// swaps the blank screen for a retry state. Cached rows always win over this flag.
+  @Published public private(set) var loadFailed: Bool = false
+  /// The failure behind `loadFailed`, so the retry state can say what actually went
+  /// wrong (an expired session is not a connection problem).
+  @Published public private(set) var loadError: Error?
 
   private var authState: AuthState
   private var errorHandler: ErrorHandler
@@ -93,11 +99,20 @@ class HomeCatalog: ObservableObject {
 
     assembleRows()
     isLoaded = true
+    // Catalog shelves always have content when the network cooperates, so an empty
+    // screen with at least one failed shelf means an outage, not an empty account.
+    let firstError = Self.shortcuts.lazy
+      .compactMap { self.store.lastError(.shortcut($0.shortcut, $0.contentType)) }
+      .first
+    loadFailed = rows.isEmpty && firstError != nil
+    loadError = rows.isEmpty ? firstError : nil
   }
 
   /// Pull-to-refresh: forces every row to refetch regardless of TTL.
   func refresh() async {
     errorHandler.reset()
+    loadFailed = false
+    loadError = nil
     store.invalidate(family: .watch)
     store.invalidate(family: .catalog)
     await fetch()

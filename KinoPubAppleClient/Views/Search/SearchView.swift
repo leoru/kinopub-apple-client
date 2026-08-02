@@ -33,29 +33,44 @@ struct SearchView: View {
 
   var body: some View {
     NavigationStack(path: $navigationState.searchRoutes) {
-      ContentItemsListView(
-        items: $catalog.items,
-        onLoadMoreContent: { item in
-          catalog.loadMoreContent(after: item)
-        },
-        onRefresh: {
-          await catalog.refresh()
-        },
-        navigationLinkProvider: { item in
-          SearchRoutesLinkProvider().link(for: item)
-        },
-        placeholderCount: showsPlaceholders ? Self.placeholderCount : 0,
-        emptyMessage: showsEmptyMessage ? "No Results" : nil
-      ) {
+      Group {
+        if catalog.loadFailed && catalog.items.isEmpty {
+          // First page failed — full-screen retry. A failed page further down keeps
+          // the grid and only adds an inline retry at its bottom.
+          UnavailableView(title: "Couldn't Load",
+                          systemImage: "wifi.exclamationmark",
+                          message: catalog.loadError?.userFacingMessage ?? "Check your connection and try again.".localized,
+                          retryTitle: "Try Again",
+                          onRetry: {
+            Task { await catalog.refresh() }
+          })
+        } else {
+          ContentItemsListView(
+            items: $catalog.items,
+            onLoadMoreContent: { item in
+              catalog.loadMoreContent(after: item)
+            },
+            navigationLinkProvider: { item in
+              SearchRoutesLinkProvider().link(for: item)
+            },
+            placeholderCount: showsPlaceholders ? Self.placeholderCount : 0,
+            emptyMessage: showsEmptyMessage ? "No Results" : nil,
+            paginationError: catalog.paginationFailed,
+            onRetryPagination: {
+              catalog.retryPagination()
+            }
+          ) {
 #if os(tvOS)
-        if navigationState.canReturnFromSearch {
-          tvBackRow
-        }
+            if navigationState.canReturnFromSearch {
+              tvBackRow
+            }
 #endif
-        // Filters scroll away with the grid — pinning them above a remnant
-        // GeometryReader was eating half the screen and delaying `.searchable`.
-        if !catalog.isSearching {
-          LibraryFiltersBar(catalog: catalog)
+            // Filters scroll away with the grid — pinning them above a remnant
+            // GeometryReader was eating half the screen and delaying `.searchable`.
+            if !catalog.isSearching {
+              LibraryFiltersBar(catalog: catalog)
+            }
+          }
         }
       }
       .searchable(text: $searchFieldText, placement: .automatic)
@@ -74,36 +89,8 @@ struct SearchView: View {
         }
       }
 #endif
-      .navigationDestination(for: SearchRoutes.self) { route in
-        switch route {
-        case .details(let item):
-          MediaItemView(model: MediaItemModel(mediaItemId: item.id,
-                                              knownItem: item,
-                                              itemsService: appContext.contentService,
-                                              downloadManager: appContext.downloadManager,
-                                              linkProvider: SearchRoutesLinkProvider(),
-                                              errorHandler: errorHandler))
-        case .player(let item):
-          PlayerView(manager: PlayerManager(playItem: item,
-                                            watchMode: .media,
-                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                            actionsService: appContext.actionsService))
-        case .trailerPlayer(let item):
-          PlayerView(manager: PlayerManager(playItem: item,
-                                            watchMode: .trailer,
-                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                            actionsService: appContext.actionsService))
-        case .seasons(let seasons):
-          SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: SearchRoutesLinkProvider()))
-        case .season(let season):
-          SeasonView(model: SeasonModel(season: season, linkProvider: SearchRoutesLinkProvider()))
-        case .person(let person):
-          PersonItemsView.make(person: person,
-                               linkProvider: SearchRoutesLinkProvider(),
-                               context: appContext,
-                               authState: authState,
-                               errorHandler: errorHandler)
-        }
+      .navigationDestination(for: Route.self) { route in
+        RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
       }
       .handleError(state: $errorHandler.state)
       .task {

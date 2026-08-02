@@ -18,11 +18,20 @@ class MediaCatalog: ObservableObject {
   private var errorHandler: ErrorHandler
   private var itemsService: VideoContentService
   private var bag = Set<AnyCancellable>()
+  private var isFetching = false
 
   @Published public var items: [MediaItem] = []
   /// Drives the spinner: only true while the first page is on its way, so paging
   /// further down never blanks the grid.
   @Published public private(set) var isLoading: Bool = false
+  /// True when the first page failed — the grid has nothing to show, so the view
+  /// swaps to a retry state.
+  @Published public private(set) var loadFailed: Bool = false
+  /// The failure behind `loadFailed`, so the retry state can say what actually went wrong.
+  @Published public private(set) var loadError: Error?
+  /// True when a page past the first failed — loaded items stay on screen and the
+  /// grid offers an inline retry at the bottom instead of swapping to an error screen.
+  @Published public private(set) var paginationFailed: Bool = false
   @Published public var pagination: Pagination?
   @Published public var contentType: MediaType = .movie
   @Published public var shortcut: MediaShortcut = .hot
@@ -50,6 +59,14 @@ class MediaCatalog: ObservableObject {
     }
 
     let isFirstPage = pagination == nil
+    // Pagination triggers fire per visible cell — drop duplicates while a page is
+    // already on its way. First-page loads (refresh, shortcut change) always run.
+    if !isFirstPage {
+      guard !isFetching else { return }
+    }
+    isFetching = true
+    defer { isFetching = false }
+
     if isFirstPage { isLoading = true }
     defer { isLoading = false }
 
@@ -62,10 +79,26 @@ class MediaCatalog: ObservableObject {
         let data = try await itemsService.fetch(shortcut: shortcut, contentType: contentType, page: page)
         handleData(data, isFirstPage: isFirstPage)
       }
+      loadFailed = false
+      loadError = nil
+      paginationFailed = false
     } catch {
-      Logger.app.debug("fetch items error: \(error)")
-      errorHandler.setError(error)
+      if isFirstPage {
+        loadFailed = true
+        loadError = error
+        Logger.app.error("Catalog first page fetch failed: \(error)")
+      } else {
+        paginationFailed = true
+        Logger.app.debug("Catalog page fetch failed, keeping loaded items: \(error)")
+        errorHandler.setError(error)
+      }
     }
+  }
+
+  /// Retries the page that failed — the grid and its scroll position stay as they are.
+  func retryPagination() {
+    paginationFailed = false
+    Task { await fetchItems() }
   }
 
   private func handleData(_ data: PaginatedData<MediaItem>, isFirstPage: Bool) {
@@ -95,6 +128,9 @@ class MediaCatalog: ObservableObject {
   func refresh() {
     items = []
     pagination = nil
+    loadFailed = false
+    loadError = nil
+    paginationFailed = false
     errorHandler.reset()
     Task {
       Logger.app.debug("refetch items")

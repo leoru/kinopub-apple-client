@@ -13,6 +13,7 @@ struct MainView: View {
   @EnvironmentObject var errorHandler: ErrorHandler
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
+  @Namespace private var zoomNamespace
 
   @StateObject private var catalog: HomeCatalog
 
@@ -24,66 +25,42 @@ struct MainView: View {
     NavigationStack(path: $navigationState.mainRoutes) {
       rowsView
         .platformNavigationTitle("Home")
-
-#if os(tvOS)
+#if os(iOS) || os(tvOS)
         .background(.ultraThickMaterial)
-#else
-        .background(Color.KinoPub.background)
+        .backgroundExtensionEffect()
 #endif
-
-        .navigationDestination(for: MainRoutes.self) { route in
-          switch route {
-          case .details(let item):
-            detailsView(for: item.id, knownItem: item)
-          case .detailsById(let id):
-            detailsView(for: id)
-          case .history:
-            HistoryView()
-          case .player(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .media,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .trailerPlayer(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .trailer,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .seasons(let seasons):
-            SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: MainRoutesLinkProvider()))
-          case .season(let season):
-            SeasonView(model: SeasonModel(season: season, linkProvider: MainRoutesLinkProvider()))
-          case .person(let person):
-            PersonItemsView.make(person: person,
-                                 linkProvider: MainRoutesLinkProvider(),
-                                 context: appContext,
-                                 authState: authState,
-                                 errorHandler: errorHandler)
-          }
+#if os(iOS)
+        .containerBackground(.ultraThickMaterial, for: .navigation)
+#endif
+        .navigationDestination(for: Route.self) { route in
+          RouteDestination(route: route,
+                           linkProvider: AppRoutesLinkProvider(),
+                           transitionNamespace: zoomNamespace)
         }
         .handleError(state: $errorHandler.state)
         .task {
           await catalog.fetch()
         }
     }
+    .environment(\.zoomTransitionNamespace, zoomNamespace)
     .navigationStackActive(for: .home, selected: navigationState.selectedTab)
   }
 
-  private func detailsView(for id: Int, knownItem: MediaItem? = nil) -> some View {
-    MediaItemView(model: MediaItemModel(mediaItemId: id,
-                                        knownItem: knownItem,
-                                        itemsService: appContext.contentService,
-                                        downloadManager: appContext.downloadManager,
-                                        linkProvider: MainRoutesLinkProvider(),
-                                        errorHandler: errorHandler))
-  }
-
   /// Nothing on screen until the rows arrive, then a spinner if the wait drags on —
-  /// the Apple TV app's own loading behaviour.
+  /// the Apple TV app's own loading behaviour. A failed cold start (nothing cached,
+  /// every shelf errored) gets a retry state instead of a blank page.
   @ViewBuilder
   var rowsView: some View {
     if catalog.rows.isEmpty && !catalog.isLoaded {
       LoadingIndicatorView()
+    } else if catalog.rows.isEmpty && catalog.loadFailed {
+      UnavailableView(title: "Couldn't Load",
+                      systemImage: "wifi.exclamationmark",
+                      message: catalog.loadError?.userFacingMessage ?? "Check your connection and try again.".localized,
+                      retryTitle: "Try Again",
+                      onRetry: {
+        Task { await catalog.refresh() }
+      })
     } else {
       rows
     }
@@ -94,7 +71,7 @@ struct MainView: View {
       rows: catalog.rows,
       bannerCards: catalog.bannerCards,
       navigationLinkProvider: { card in
-        MainRoutes.detailsById(card.id)
+        Route.detailsById(card.id)
       },
       contextMenuProvider: { card in
         // Continue Watching is the only home row whose long-press can hide or mark a
@@ -117,11 +94,6 @@ struct MainView: View {
         )
       }
     )
-#if !os(tvOS)
-    .refreshable {
-      await catalog.refresh()
-    }
-#endif
   }
 }
 

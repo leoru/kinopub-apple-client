@@ -18,8 +18,14 @@ class LibraryCatalog: ObservableObject {
   /// True while the first page is on its way. Starts `true` so Search can paint
   /// its placeholder grid on the first frame; paging further down never sets it.
   @Published public private(set) var isLoading: Bool = true
-  /// True after the first page fails — person (and similar) screens show retry UI.
+  /// True after the first page fails — the grid has nothing to show, so the view
+  /// swaps to a retry state.
   @Published public private(set) var loadFailed: Bool = false
+  /// The failure behind `loadFailed`, so the retry state can say what actually went wrong.
+  @Published public private(set) var loadError: Error?
+  /// True when a page past the first failed — loaded items stay on screen and the
+  /// grid offers an inline retry at the bottom instead of swapping to an error screen.
+  @Published public private(set) var paginationFailed: Bool = false
   @Published public var query: String = ""
   @Published public var filter: LibraryFilter = LibraryFilter()
 
@@ -31,6 +37,7 @@ class LibraryCatalog: ObservableObject {
   private var errorHandler: ErrorHandler
   private var itemsService: VideoContentService
   private var bag = Set<AnyCancellable>()
+  private var isFetching = false
 
   var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -54,13 +61,21 @@ class LibraryCatalog: ObservableObject {
       return
     }
 
+    let isFirstPage = pagination == nil
+    // Pagination triggers fire per visible cell — drop duplicates while a page is
+    // already on its way. First-page loads (refresh, filter change) always run.
+    if !isFirstPage {
+      guard !isFetching else { return }
+    }
+    isFetching = true
+    defer { isFetching = false }
+
     // A person's credits show a sort control and nothing else, so their pickers would
     // be two requests for lists nobody can open.
     if filter.person == nil, genres.isEmpty || countries.isEmpty {
       await loadPickerData()
     }
 
-    let isFirstPage = pagination == nil
     if isFirstPage { isLoading = true }
     defer { isLoading = false }
 
@@ -74,14 +89,26 @@ class LibraryCatalog: ObservableObject {
       }
       handle(data, isFirstPage: isFirstPage)
       loadFailed = false
+      loadError = nil
+      paginationFailed = false
     } catch {
-      Logger.app.error("Library fetch failed: \(error)")
-      errorHandler.setError(error)
       if isFirstPage {
         items = []
         loadFailed = true
+        loadError = error
+        Logger.app.error("Library first page fetch failed: \(error)")
+      } else {
+        paginationFailed = true
+        Logger.app.debug("Library page fetch failed, keeping loaded items: \(error)")
+        errorHandler.setError(error)
       }
     }
+  }
+
+  /// Retries the page that failed — the grid and its scroll position stay as they are.
+  func retryPagination() {
+    paginationFailed = false
+    Task { await load() }
   }
 
   /// Pickers are chrome: if they fail the listing still works, so this never raises.
@@ -112,6 +139,8 @@ class LibraryCatalog: ObservableObject {
   func refresh() async {
     isLoading = true
     loadFailed = false
+    loadError = nil
+    paginationFailed = false
     items = []
     pagination = nil
     errorHandler.reset()

@@ -8,6 +8,7 @@
 import SwiftUI
 import KinoPubBackend
 import KinoPubKit
+import KinoPubUI
 
 struct DownloadsView: View {
   
@@ -31,19 +32,8 @@ struct DownloadsView: View {
       }
       .platformNavigationTitle("Downloads")
       .background(Color.KinoPub.background)
-      .navigationDestination(for: DownloadsRoutes.self) { route in
-        switch route {
-        case .player(let item):
-          PlayerView(manager: PlayerManager(playItem: item,
-                                            watchMode: .media,
-                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                            actionsService: appContext.actionsService))
-        case .trailerPlayer(let item):
-          PlayerView(manager: PlayerManager(playItem: item,
-                                            watchMode: .trailer,
-                                            downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                            actionsService: appContext.actionsService))
-        }
+      .navigationDestination(for: Route.self) { route in
+        RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
       }
       .onAppear(perform: {
         catalog.refresh()
@@ -92,14 +82,17 @@ struct DownloadsView: View {
     .listRowBackground(Color.KinoPub.background)
   }
   
+  /// Downloads is a local-only feature — nothing here can fail to "load", so this
+  /// is always an empty state, never an error one. Same `UnavailableView` as
+  /// everywhere else, with a way back to something to watch.
   var emptyView: some View {
-    VStack {
-      Text("You don't have any downloads yet")
-        .font(Font.KinoPub.subheader)
-        .foregroundStyle(Color.KinoPub.text)
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(Color.KinoPub.background)
+    UnavailableView(title: "You don't have any downloads yet",
+                    systemImage: "arrow.down.circle",
+                    message: "Movies and shows you download will appear here.".localized,
+                    retryTitle: "Continue Watching",
+                    onRetry: {
+      navigationState.selectedTab = .home
+    })
   }
 }
 

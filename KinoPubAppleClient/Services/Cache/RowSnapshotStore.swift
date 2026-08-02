@@ -4,7 +4,9 @@
 //
 
 import Foundation
+import KinoPubLogging
 import KinoPubUI
+import OSLog
 
 /// One cached row: its cards and when they were last fetched. No pagination here —
 /// these are the fixed-size summary rows on Home/Library, not the paginated grids.
@@ -51,7 +53,11 @@ final class RowSnapshotStore {
 
   func saveAll(_ rows: [RowKey: RowState]) {
     let stored = rows.map { StoredRow(key: $0.key, state: $0.value) }
-    guard let data = try? encoder.encode(stored) else { return }
-    try? data.write(to: fileURL, options: [.atomic])
+    do {
+      let data = try encoder.encode(stored)
+      try data.write(to: fileURL, options: [.atomic])
+    } catch {
+      Logger.app.error("RowSnapshotStore: save failed: \(error.localizedDescription)")
+    }
   }
 }

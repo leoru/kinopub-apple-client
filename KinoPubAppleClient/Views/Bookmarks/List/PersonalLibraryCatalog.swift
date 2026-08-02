@@ -23,11 +23,18 @@ class PersonalLibraryCatalog: ObservableObject {
 
   @Published public private(set) var rows: [MediaRow] = []
   @Published public private(set) var isLoaded: Bool = false
+  /// True when nothing could be loaded and there's no cache to show — the view swaps
+  /// the blank screen for a retry state. Cached rows always win over this flag.
+  @Published public private(set) var loadFailed: Bool = false
+  /// The failure behind `loadFailed`, so the retry state can say what actually went wrong.
+  @Published public private(set) var loadError: Error?
 
   /// The folder *list* itself (ids, titles, counts) isn't row-cached — it's one
   /// cheap call, and we need it live to know which folders even exist. Only the
   /// per-folder item fetch (the N-per-folder fanout) goes through the store.
   private var folders: [Bookmark] = []
+  private var foldersFetchFailed = false
+  private var foldersError: Error?
 
   init(itemsService: VideoContentService,
        authState: AuthState,
@@ -74,12 +81,19 @@ class PersonalLibraryCatalog: ObservableObject {
 
     assembleRows()
     isLoaded = true
+    let firstError = [self.store.lastError(.watchlist), self.store.lastError(.history)].lazy
+      .compactMap { $0 }
+      .first
+    loadFailed = rows.isEmpty && (foldersFetchFailed || firstError != nil)
+    loadError = rows.isEmpty ? (firstError ?? foldersError) : nil
   }
 
   /// Pull-to-refresh: forces every row to refetch regardless of TTL.
   @Sendable @MainActor
   func refresh() async {
     errorHandler.reset()
+    loadFailed = false
+    loadError = nil
     store.invalidate(family: .watch)
     store.invalidate(family: .bookmarks)
     await fetch()
@@ -136,12 +150,16 @@ class PersonalLibraryCatalog: ObservableObject {
 
   private func fetchFolders() async -> [Bookmark] {
     do {
-      return try await contentService.fetchBookmarks().items
+      let fetched = try await contentService.fetchBookmarks().items
         .filter { $0.count != "0" }
         .recentlyUpdatedFirst()
+      foldersFetchFailed = false
+      foldersError = nil
+      return fetched
     } catch {
       Logger.app.debug("Library bookmarks failed: \(error)")
-      errorHandler.setError(error)
+      foldersFetchFailed = true
+      foldersError = error
       return folders  // keep whatever we already knew rather than emptying the tab
     }
   }

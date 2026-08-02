@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import KinoPubBackend
 import KinoPubUI
 import OSLog
 import KinoPubLogging
@@ -18,6 +19,10 @@ import KinoPubLogging
 @MainActor
 final class ContentStore {
   private(set) var rows: [RowKey: RowState] = [:]
+  /// Last refresh failure per key, in memory only. Lets a caller with nothing cached
+  /// tell "empty because the fetch failed" apart from "empty because there's genuinely
+  /// nothing" — the store itself never surfaces errors, it keeps the stale row.
+  private(set) var lastErrors: [RowKey: Error] = [:]
   private var inFlight: [RowKey: Task<Void, Never>] = [:]
   private let disk: RowSnapshotStore
 
@@ -30,6 +35,10 @@ final class ContentStore {
 
   func cards(_ key: RowKey) -> [MediaCard] {
     rows[key]?.cards ?? []
+  }
+
+  func lastError(_ key: RowKey) -> Error? {
+    lastErrors[key]
   }
 
   func isStale(_ key: RowKey) -> Bool {
@@ -67,11 +76,15 @@ final class ContentStore {
     do {
       let cards = try await fetch()
       rows[key] = RowState(cards: cards, fetchedAt: Date())
+      lastErrors[key] = nil
       disk.saveAll(rows)
     } catch {
-      // Leave whatever's cached alone: a stale row beats a blank one. Only a caller
-      // with nothing at all to draw needs to hear about this — that's `errorHandler`'s
-      // job at the call site, not the store's.
+      // Leave whatever's cached alone: a stale row beats a blank one. Cancellations
+      // (superseded by a newer request) don't count as failures.
+      let cancelled = (error as? APIClientError)?.isCancellation == true || error is CancellationError
+      if !cancelled {
+        lastErrors[key] = error
+      }
       Logger.app.debug("ContentStore: refresh failed for \(String(describing: key)), keeping cached value: \(error)")
     }
   }

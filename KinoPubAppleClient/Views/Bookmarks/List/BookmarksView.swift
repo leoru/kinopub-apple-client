@@ -28,51 +28,14 @@ struct BookmarksView: View {
         .task {
           await catalog.fetchItems()
         }
-        .navigationDestination(for: BookmarksRoutes.self) { route in
-          switch route {
-          case .details(let item):
-            detailsView(for: item.id, knownItem: item)
-          case .detailsById(let id):
-            detailsView(for: id)
-          case .bookmark(let bookmark):
-            BookmarkView(model: BookmarkModel(bookmark: bookmark,
-                                              itemsService: appContext.contentService,
-                                              errorHandler: errorHandler))
-          case .player(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .media,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .trailerPlayer(let item):
-            PlayerView(manager: PlayerManager(playItem: item,
-                                              watchMode: .trailer,
-                                              downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                              actionsService: appContext.actionsService))
-          case .seasons(let seasons):
-            SeasonsView(model: SeasonsModel(seasons: seasons, linkProvider: BookmarksRoutesLinkProvider()))
-          case .season(let season):
-            SeasonView(model: SeasonModel(season: season, linkProvider: BookmarksRoutesLinkProvider()))
-          case .person(let person):
-            PersonItemsView.make(person: person,
-                                 linkProvider: BookmarksRoutesLinkProvider(),
-                                 context: appContext,
-                                 authState: authState,
-                                 errorHandler: errorHandler)
-          }
+        .navigationDestination(for: Route.self) { route in
+          RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
         }
         .handleError(state: $errorHandler.state)
     }
     .navigationStackActive(for: .bookmarks, selected: navigationState.selectedTab)
   }
   
-  private func detailsView(for id: Int, knownItem: MediaItem? = nil) -> some View {
-    MediaItemView(model: MediaItemModel(mediaItemId: id,
-                                        knownItem: knownItem,
-                                        itemsService: appContext.contentService,
-                                        downloadManager: appContext.downloadManager,
-                                        linkProvider: BookmarksRoutesLinkProvider(),
-                                        errorHandler: errorHandler))
-  }
 
   /// One row per folder, titles leading to the folder's own screen — the same shape as
   /// Home, so Saved does not make you open a folder before seeing anything.
@@ -80,6 +43,16 @@ struct BookmarksView: View {
   var bookmarksRows: some View {
     if catalog.rows.isEmpty && !catalog.isLoaded {
       LoadingIndicatorView()
+    } else if catalog.rows.isEmpty && catalog.loadFailed {
+      UnavailableView(title: "Couldn't Load",
+                      systemImage: "wifi.exclamationmark",
+                      message: catalog.loadError?.userFacingMessage ?? "Check your connection and try again.".localized,
+                      retryTitle: "Try Again",
+                      onRetry: {
+        Task { await catalog.refresh() }
+      })
+    } else if catalog.rows.isEmpty {
+      UnavailableView(title: "No Bookmarks", systemImage: "bookmark")
     } else {
       rows
     }
@@ -89,11 +62,6 @@ struct BookmarksView: View {
     MediaRowsView(rows: catalog.rows, navigationLinkProvider: { card in
       BookmarksRoutes.detailsById(card.id)
     })
-#if !os(tvOS)
-    .refreshable {
-      await catalog.refresh()
-    }
-#endif
   }
 }
 

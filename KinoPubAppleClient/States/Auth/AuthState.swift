@@ -25,7 +25,9 @@ final class AuthState: ObservableObject {
   
   private var authService: AuthorizationService
   private var accessTokenService: AccessTokenService
-  
+  private var refreshRetryTask: Task<Void, Never>?
+  private var refreshRetryAttempt = 0
+
   /// Initializes the `AuthState` with the provided services.
   /// - Parameters:
   ///   - authService: The authorization service used for authentication.
@@ -34,7 +36,7 @@ final class AuthState: ObservableObject {
     self.authService = authService
     self.accessTokenService = accessTokenService
   }
-  
+
   /// Checks the authentication state of the user.
   func check() async {
     Logger.app.debug("Start auth state checking...")
@@ -44,28 +46,54 @@ final class AuthState: ObservableObject {
       Logger.app.debug("Auth state: unauthorized")
       return
     }
-    
+
     await refreshToken()
   }
-  
+
   private func refreshToken() async {
     Logger.app.debug("Refreshing token...")
     do {
       try await authService.refreshToken()
+      refreshRetryAttempt = 0
       userState = .authorized
       shouldShowAuthentication = false
       Logger.app.debug("Auth state: authorized")
+    } catch let error as APIClientError where error.isFatalAuthError {
+      // The backend explicitly rejected the refresh token — only now is the session
+      // really over.
+      refreshRetryTask?.cancel()
+      refreshRetryTask = nil
+      userState = .unauthorized
+      shouldShowAuthentication = true
+      Logger.app.info("Refresh token rejected, auth state: unauthorized")
     } catch {
-      await MainActor.run {
-        userState = .unauthorized
-        shouldShowAuthentication = true
-        Logger.app.debug("Failed to refresh token, auth state: unauthorized")
-      }
+      // Timeout / offline / unreachable host: keep the session. The Keychain token
+      // may still be valid and every screen has its own error state — logging out
+      // over a network hiccup just throws the user at the activation code screen.
+      userState = .authorized
+      shouldShowAuthentication = false
+      Logger.app.warning("Token refresh failed transiently, keeping the session: \(error)")
+      scheduleRefreshRetry()
     }
   }
-  
+
+  /// Retries a failed refresh with backoff (5s → 10s → 20s → … capped at 2 min) so a
+  /// network blip at launch resolves itself once connectivity returns.
+  private func scheduleRefreshRetry() {
+    refreshRetryTask?.cancel()
+    let delay = min(5 * pow(2.0, Double(refreshRetryAttempt)), 120)
+    refreshRetryAttempt += 1
+    refreshRetryTask = Task { [weak self] in
+      try? await Task.sleep(for: .seconds(delay))
+      guard !Task.isCancelled, let self else { return }
+      await self.refreshToken()
+    }
+  }
+
   /// Logs out the user.
   func logout() {
+    refreshRetryTask?.cancel()
+    refreshRetryTask = nil
     authService.logout()
     userState = .unauthorized
     shouldShowAuthentication = true

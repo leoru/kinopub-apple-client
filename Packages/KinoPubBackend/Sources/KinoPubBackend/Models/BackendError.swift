@@ -10,6 +10,8 @@ import Foundation
 public enum BackendErrorCode: String, Codable {
   case authorizationPending = "authorization_pending"
   case invalidClient = "invalid_client"
+  case invalidGrant = "invalid_grant"
+  case slowDown = "slow_down"
   case unauthorized = "unauthorized"
 }
 
