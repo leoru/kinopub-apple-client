@@ -13,14 +13,14 @@ import KinoPubUI
 
 struct PlayerView: View {
 
-  @StateObject private var playerManager: PlayerManager
+  @ObservedObject private var playerManager: PlayerManager
   @Environment(\.dismiss) private var dismiss
 #if os(macOS)
   @Environment(\.dismissWindow) private var dismissWindow
 #endif
 
-  init(manager: @autoclosure @escaping () -> PlayerManager) {
-    _playerManager = StateObject(wrappedValue: manager())
+  init(manager: PlayerManager) {
+    _playerManager = ObservedObject(wrappedValue: manager)
   }
 
   var body: some View {
@@ -383,11 +383,13 @@ struct PlayerWindowContent: View {
 
   var body: some View {
     if let request = playback.request {
-      PlayerView(manager: PlayerManager(playItem: request.item,
-                                        watchMode: request.mode,
-                                        downloadedFilesDatabase: appContext.downloadedFilesDatabase,
-                                        actionsService: appContext.actionsService))
-        .id(request.id)
+      PlayerView(manager: PlaybackSession.shared.play(
+        item: request.item,
+        mode: request.mode,
+        downloadedFilesDatabase: appContext.downloadedFilesDatabase,
+        actionsService: appContext.actionsService
+      ))
+      .id("\(request.item.id)-\(String(describing: request.mode))")
     } else {
       // Reachable by reopening the window from the Window menu after it was closed.
       Text("Nothing is playing")

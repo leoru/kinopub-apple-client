@@ -18,7 +18,7 @@ import AVKit
 import UIKit
 #endif
 
-enum WatchMode {
+enum WatchMode: Equatable {
   case media
   case trailer
 }
@@ -251,6 +251,33 @@ class PlayerManager: ObservableObject {
 #if os(tvOS)
     audioReadyObservation?.invalidate()
 #endif
+  }
+
+  /// Stops the current stream so a new `PlaybackSession` request can take over the
+  /// single shared player without two AVPlayers competing.
+  func tearDownForReplacement() {
+    player.pause()
+    player.replaceCurrentItem(with: nil)
+    cueLoadTasks.forEach { $0.cancel() }
+    cueLoadTasks = []
+    if let cueObserverToken {
+      player.removeTimeObserver(cueObserverToken)
+      self.cueObserverToken = nil
+    }
+    if let playbackFailureObserver {
+      NotificationCenter.default.removeObserver(playbackFailureObserver)
+      self.playbackFailureObserver = nil
+    }
+    if let endOfPlaybackObserver {
+      NotificationCenter.default.removeObserver(endOfPlaybackObserver)
+      self.endOfPlaybackObserver = nil
+    }
+#if os(tvOS)
+    audioReadyObservation?.invalidate()
+    audioReadyObservation = nil
+#endif
+    isPlaying = false
+    playbackState = .preparing
   }
 
   /// Playing to the very end marks the title watched (see `markFinished`).
