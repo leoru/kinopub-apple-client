@@ -238,9 +238,9 @@ struct MediaItemHeroBackdrop: View {
       heroMedia
         .opacity(isHeroOnScreen ? 1 : 0)
 
-      topGradient
-        .opacity(isHeroOnScreen ? 1 : 0)
-      bottomScrim
+      // topGradient
+      //   .opacity(isHeroOnScreen ? 1 : 0)
+      // bottomScrim
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .clipped()
@@ -396,7 +396,10 @@ struct MediaItemHeroView: View {
       content
         .environment(\.colorScheme, .dark)
     }
-    .frame(maxWidth: .infinity, minHeight: Self.heroHeight, alignment: .bottomLeading)
+    // True 16:9 band sized to the content column (not intrinsic image height, not a
+    // fixed pt that ignores window width). Keeps Mac detail from going planet-sized.
+    .aspectRatio(16 / 9, contentMode: .fit)
+    .frame(maxWidth: .infinity, alignment: .bottomLeading)
     .clipped()
     .background(visibilityProbe)
 #endif
@@ -435,24 +438,28 @@ struct MediaItemHeroView: View {
     }
   }
 
-  private var backdropURL: String {
-    mediaItem.posters.wideURL ?? mediaItem.posters.big
+  /// wide → big → medium. Same chain as Home banners — list/detail payloads differ
+  /// and AsyncImage often never leaves `.empty` on a 404'd `/wide/`.
+  private var backdropCandidates: [URL] {
+    var seen = Set<String>()
+    var urls: [URL] = []
+    for raw in [mediaItem.posters.wideURL, mediaItem.posters.big, mediaItem.posters.medium]
+      .compactMap({ $0 }) where !raw.isEmpty && seen.insert(raw).inserted {
+      if let url = URL(string: raw) { urls.append(url) }
+    }
+    return urls
   }
 
   @ViewBuilder
   private var scrollingBackdrop: some View {
     ZStack {
-      AsyncImage(url: URL(string: backdropURL),
-                 transaction: Transaction(animation: .easeIn(duration: 0.3))) { phase in
-        if let image = phase.image {
-          image
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .transition(.opacity)
-        } else {
-          Color.KinoPub.placeholder
+      FallbackRemoteImage(urls: backdropCandidates, contentMode: .fill)
+        .onAppear {
+#if DEBUG
+          let list = backdropCandidates.map(\.absoluteString).joined(separator: " | ")
+          print("[Artwork] hero id=\(mediaItem.id) candidates=\(list)")
+#endif
         }
-      }
 
       if let player = trailer.player, trailer.isReady {
         TrailerVideoLayer(player: player)
@@ -461,6 +468,7 @@ struct MediaItemHeroView: View {
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .clipped()
     .animation(.easeInOut(duration: 0.6), value: trailer.isReady)
   }
 
@@ -573,15 +581,22 @@ struct MediaItemHeroView: View {
     }
   }
 
-  /// Year, runtime, country, then the scores. One font and one colour across the
-  /// whole line — the scores used to be primary next to a secondary run of text, and
-  /// the row read as two different things bolted together.
+  /// Year, runtime, country, then the scores and capability chips. One font and one
+  /// colour across the text run — chips sit beside as truthful item-level badges.
   private var metadata: some View {
     HStack(spacing: Self.metaSpacing) {
       Text(mediaItem.runtimeLine)
         .lineLimit(1)
 
       MediaScoresView(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating)
+
+      let badges = MediaCapabilityBadges.from(
+        item: mediaItem,
+        ageRating: /* filled when external metadata is wired into hero */ nil
+      )
+      if !badges.isEmpty {
+        MediaCapabilityBadgesView(badges: badges, mode: .detail)
+      }
     }
     .font(Self.secondaryFont)
     .foregroundStyle(Self.metaStyle)
@@ -662,15 +677,10 @@ struct MediaItemHeroView: View {
       moreButton
     }
 #if os(tvOS)
-    // The focus engine only forwards a move it can't act on, so this fires exactly when
-    // a hero button is focused and there is nowhere above to go — the hero is the top of
-    // the page. Left/right reach the plot column; dead-end Up opens the trailer; Down
-    // hands off to the content slide when spatial focus won't leave the row.
+    // Dead-end Up opens the trailer; Down scrolls naturally into content below.
     .onMoveCommand { direction in
       if direction == .up, trailer.player != nil, trailer.isReady {
         isTrailerFullScreen = true
-      } else if direction == .down {
-        focus = .exitToContent
       }
     }
 #endif
@@ -773,8 +783,14 @@ struct MediaItemHeroView: View {
         Button {
           onFolderToggle(folder)
         } label: {
-          SwiftUI.Label(folder.title,
-                        systemImage: folderIDsContainingItem.contains(folder.id) ? "checkmark" : "")
+          Label {
+            Text(folder.title)
+          } icon: {
+            // Invisible checkmark keeps the column aligned; an empty symbol name
+            // here logged "No symbol named ''" per folder per render.
+            Image(systemName: "checkmark")
+              .opacity(folderIDsContainingItem.contains(folder.id) ? 1 : 0)
+          }
         }
       }
       if onCreateFolder != nil {
@@ -802,6 +818,21 @@ struct MediaItemHeroView: View {
     }
     .mediaActionPlayPillStyle()
     .focused($focus, equals: .play)
+    .accessibilityLabel(Text(playAccessibilityLabel(for: content)))
+    .accessibilityHint(Text("Starts playback"))
+  }
+
+  private func playAccessibilityLabel(for content: PlaybackButtonContent) -> String {
+    switch content {
+    case .resume(_, let episodeLabel, _):
+      if let episodeLabel { return "Resume \(episodeLabel)" }
+      return "Resume"
+    case .play(let episodeLabel):
+      if let episodeLabel { return "Play \(episodeLabel)" }
+      return "Play"
+    case .playAgain:
+      return "Play Again"
+    }
   }
 
   /// Play glyph, optional mini resume bar (only when playback has started), then the title.
@@ -898,13 +929,14 @@ struct MediaItemHeroView: View {
   static let plotMaxWidth: CGFloat = 560
   static let logoMaxWidth: CGFloat = 640
   static let logoMaxHeight: CGFloat = 160
-  static let titleFont: Font = .system(size: 62, weight: .bold)
+  static let titleFont: Font = TypeScale.heroTitle
   static let metaSpacing: CGFloat = 20
   static let actionsGap: CGFloat = 20
   static let creditsMaxWidth: CGFloat = 360
   static let columnGutter: CGFloat = 48
 #elseif os(macOS)
-  static let heroHeight: CGFloat = 460
+  /// Preview / fallback only — live layout uses `.aspectRatio(16/9)`.
+  static let heroHeight: CGFloat = 420
   static let horizontalInset: CGFloat = 32
   static let bottomInset: CGFloat = 28
   static let contentSpacing: CGFloat = 8
@@ -912,12 +944,13 @@ struct MediaItemHeroView: View {
   static let plotMaxWidth: CGFloat = 420
   static let logoMaxWidth: CGFloat = 420
   static let logoMaxHeight: CGFloat = 110
-  static let titleFont: Font = .system(size: 36, weight: .bold)
+  static let titleFont: Font = TypeScale.heroTitle
   static let metaSpacing: CGFloat = 12
   static let actionsGap: CGFloat = 12
   static let creditsMaxWidth: CGFloat = 280
   static let columnGutter: CGFloat = 28
 #else
+  /// Preview / fallback only — live layout uses `.aspectRatio(16/9)`.
   static let heroHeight: CGFloat = 380
   static let horizontalInset: CGFloat = 20
   static let bottomInset: CGFloat = 20
@@ -926,7 +959,7 @@ struct MediaItemHeroView: View {
   static let plotMaxWidth: CGFloat = 560
   static let logoMaxWidth: CGFloat = 360
   static let logoMaxHeight: CGFloat = 96
-  static let titleFont: Font = .system(size: 28, weight: .bold)
+  static let titleFont: Font = TypeScale.heroTitle
   static let metaSpacing: CGFloat = 10
   static let actionsGap: CGFloat = 10
   static let creditsMaxWidth: CGFloat = 240
@@ -942,3 +975,36 @@ private extension View {
     shadow(color: .black.opacity(0.8), radius: 22, y: 6)
   }
 }
+
+#if DEBUG
+private struct MediaItemHeroPreview: View {
+  @FocusState private var focus: MediaItemFocusTarget?
+  @StateObject private var trailer = TrailerPreviewModel()
+  @State private var isHeroOnScreen = true
+
+  var body: some View {
+    MediaItemHeroView(
+      mediaItem: MediaItem.mock(),
+      focus: $focus,
+      trailer: trailer,
+      isHeroOnScreen: $isHeroOnScreen,
+      linkProvider: AppRoutesLinkProvider(),
+      isWatched: false,
+      isBookmarked: true,
+      folders: [],
+      folderIDsContainingItem: [],
+      onWatchedToggle: {},
+      onFolderToggle: { _ in },
+      titleLogoURL: nil
+    )
+    .aspectRatio(16 / 9, contentMode: .fit)
+    .frame(maxWidth: 960)
+    .background(Color.black)
+    .preferredColorScheme(.dark)
+  }
+}
+
+#Preview("Hero + capability badges") {
+  MediaItemHeroPreview()
+}
+#endif

@@ -7,7 +7,9 @@ import SwiftUI
 import KinoPubUI
 import KinoPubBackend
 import KinoPubMetadata
-#if canImport(AppKit)
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
 import AppKit
 #endif
 
@@ -283,17 +285,13 @@ private struct RatingTileButtonStyle: ButtonStyle {
 }
 
 #if os(tvOS)
-/// Applies `.focused(..., equals: .content)` when the page hands us the entry binding.
+/// Kept for call-site compatibility; single-scroll detail no longer parks a
+/// dedicated `.content` focus target after a slide flip.
 private struct OptionalPageEntryFocus: ViewModifier {
   var binding: FocusState<MediaItemFocusTarget?>.Binding?
 
-  @ViewBuilder
   func body(content: Content) -> some View {
-    if let binding {
-      content.focused(binding, equals: .content)
-    } else {
-      content
-    }
+    content
   }
 }
 #endif
@@ -311,7 +309,16 @@ struct MediaItemCastSection: View {
   let mediaItem: MediaItem
   let linkProvider: NavigationLinkProvider
   var externalMetadata: TitleMetadata = TitleMetadata()
+  /// When false and the title has an IMDb id, skip the pushbr CDN fallback so we
+  /// don't paint one URL and then swap it for TMDB (AsyncImage flash / initials blink).
+  var externalMetadataLoaded: Bool = true
   var onSectionFocused: (() -> Void)? = nil
+
+  /// Pushbr is a last resort after TMDB has had a chance — or immediately when
+  /// there is no IMDb id and metadata will never arrive.
+  private var allowPushbrFallback: Bool {
+    externalMetadataLoaded || mediaItem.imdb == nil
+  }
 
   private var people: [(person: MediaPerson, member: CastMember)] {
     let directors = TitleMetadata.enrich(
@@ -319,7 +326,8 @@ struct MediaItemCastSection: View {
       roleDepartment: "Directing",
       from: externalMetadata
     ).map {
-      let photo = $0.photo ?? ActorImageProvider.photoURL(for: $0.name)
+      let photo = $0.photo
+        ?? (allowPushbrFallback ? ActorImageProvider.photoURL(for: $0.name) : nil)
       return (MediaPerson(name: $0.name, role: .director, photoURL: photo, tmdbPersonId: $0.tmdbPersonId), $0)
     }
     let actors = TitleMetadata.enrich(
@@ -327,7 +335,8 @@ struct MediaItemCastSection: View {
       roleDepartment: "Acting",
       from: externalMetadata
     ).map {
-      let photo = $0.photo ?? ActorImageProvider.photoURL(for: $0.name)
+      let photo = $0.photo
+        ?? (allowPushbrFallback ? ActorImageProvider.photoURL(for: $0.name) : nil)
       return (MediaPerson(name: $0.name, role: .actor, photoURL: photo, tmdbPersonId: $0.tmdbPersonId), $0)
     }
     return directors + actors
@@ -344,6 +353,7 @@ struct MediaItemCastSection: View {
               NavigationLink(value: linkProvider.person(for: entry.person)) {
                 CastPortraitView(person: entry.person, member: entry.member)
               }
+              .mediaZoomSource(id: "person-\(entry.person.id)")
               .buttonStyle(PortraitButtonStyle())
 #if os(tvOS)
               .reportMediaItemSectionFocus(onSectionFocused)
@@ -367,10 +377,17 @@ struct MediaItemCastSection: View {
 }
 
 /// Poster-shaped portrait art shared by the cast rail and the person page hero.
+///
+/// Keeps the last successful decode across URL changes (pushbr → TMDB, size
+/// upgrades) so `AsyncImage`'s `.empty` phase never flashes initials over a
+/// face that was already on screen. Same sticky approach as the sidebar profile.
 struct CastAvatarView: View {
   let name: String
   var photoURL: URL? = nil
   @Environment(\.colorScheme) private var colorScheme
+  @State private var image: Image?
+  @State private var loadedName: String?
+  @State private var loadedURL: URL?
 
   var body: some View {
     ZStack {
@@ -378,17 +395,11 @@ struct CastAvatarView: View {
       Self.posterShape
         .fill(colorScheme == .dark ? Color.black : Color.white)
 
-      if let photoURL {
-        AsyncImage(url: photoURL) { phase in
-          switch phase {
-          case .success(let image):
-            image
-              .resizable()
-              .scaledToFill()
-          default:
-            placeholder
-          }
-        }
+      if let image {
+        image
+          .resizable()
+          .scaledToFill()
+          .transition(.opacity)
       } else {
         placeholder
       }
@@ -396,6 +407,45 @@ struct CastAvatarView: View {
     .frame(width: Self.avatarWidth, height: Self.avatarHeight)
     .clipShape(Self.posterShape)
     .overlay { rimOverlay }
+    .animation(.easeOut(duration: 0.2), value: image == nil)
+    .task(id: loadKey) {
+      await loadPhoto()
+    }
+  }
+
+  private var loadKey: String {
+    "\(name)|\(photoURL?.absoluteString ?? "")"
+  }
+
+  @MainActor
+  private func loadPhoto() async {
+    if loadedName != name {
+      image = nil
+      loadedURL = nil
+      loadedName = name
+    }
+
+    guard let photoURL else { return }
+    if loadedURL == photoURL, image != nil { return }
+
+    do {
+      let (data, response) = try await URLSession.shared.data(from: photoURL)
+      guard !Task.isCancelled else { return }
+      if let http = response as? HTTPURLResponse,
+         !(200..<300).contains(http.statusCode) {
+        return
+      }
+#if canImport(UIKit)
+      guard let uiImage = UIImage(data: data) else { return }
+      image = Image(uiImage: uiImage)
+#elseif canImport(AppKit)
+      guard let nsImage = NSImage(data: data) else { return }
+      image = Image(nsImage: nsImage)
+#endif
+      loadedURL = photoURL
+    } catch {
+      // Keep any sticky image; initials stay if nothing loaded yet.
+    }
   }
 
   private var placeholder: some View {
@@ -443,11 +493,11 @@ struct CastAvatarView: View {
   }
 
   static let posterShape = RoundedRectangle(cornerRadius: 12, style: .continuous)
-  static let avatarWidth: CGFloat = 120
-  static let avatarHeight: CGFloat = 180
+  static let avatarWidth: CGFloat = 100
+  static let avatarHeight: CGFloat = 152
 
 #if os(tvOS)
-  static let initialsFont: Font = .system(size: 42, weight: .semibold, design: .rounded)
+  static let initialsFont: Font = .system(size: 36, weight: .semibold, design: .rounded)
 #else
   static let initialsFont: Font = .system(size: 36, weight: .semibold, design: .rounded)
 #endif
@@ -459,9 +509,8 @@ struct CastPortraitView: View {
   let member: CastMember
 
   var body: some View {
-    VStack(spacing: 6) {
-      CastAvatarView(name: person.name,
-                     photoURL: member.photo ?? ActorImageProvider.photoURL(for: person.name))
+    VStack(spacing: 8) {
+      CastAvatarView(name: person.name, photoURL: person.photoURL)
 
       VStack(spacing: 4) {
         Text(person.name)
@@ -469,15 +518,18 @@ struct CastPortraitView: View {
           .foregroundStyle(Color.KinoPub.text)
           .lineLimit(2)
           .multilineTextAlignment(.center)
+          .frame(maxWidth: .infinity, alignment: .center)
 
         subtitleLabel
           .font(Self.roleFont)
           .foregroundStyle(Color.KinoPub.subtitle)
           .lineLimit(2)
           .multilineTextAlignment(.center)
+          .frame(maxWidth: .infinity, alignment: .center)
       }
+      .frame(maxWidth: .infinity, alignment: .center)
     }
-    .frame(width: CastAvatarView.avatarWidth)
+    .frame(width: CastAvatarView.avatarWidth, alignment: .center)
   }
 
   /// Character when TMDB has one; otherwise the credit role (Actor / Director).
@@ -1758,13 +1810,11 @@ struct MediaItemSectionHeader: View {
   private let title: LocalizedStringKey
 
   init(_ title: LocalizedStringKey) {
-    self.title = title  }
+    self.title = title
+  }
 
   var body: some View {
-    Text(title)
-      .font(MediaItemInfoColumns.headerFont)
-      .foregroundStyle(Color.KinoPub.text)
-      .padding(.horizontal, MediaItemLayout.horizontalInset)
+    SectionHeader(title, leadingInset: MediaItemLayout.horizontalInset)
   }
 }
 
@@ -1846,8 +1896,8 @@ struct MediaItemPlotView: View {
       .frame(maxWidth: Self.maxWidth, alignment: .leading)
       // Measured whichever branch is showing, so the decision keeps up with the plot
       // changing and with the frame it is laid out in.
-      // .onPreferenceChange(PlotClampedHeightKey.self) { clampedHeight = $0 }
-      // .onPreferenceChange(PlotFullHeightKey.self) { fullHeight = $0 }
+      .onPreferenceChange(PlotClampedHeightKey.self) { clampedHeight = $0 }
+      .onPreferenceChange(PlotFullHeightKey.self) { fullHeight = $0 }
   }
 
   @ViewBuilder
@@ -1860,11 +1910,6 @@ struct MediaItemPlotView: View {
     }
     .buttonStyle(ExpandableButtonStyle())
     .focused($focus, equals: .plot)
-    .onMoveCommand { direction in
-      if direction == .down {
-        focus = .exitToContent
-      }
-    }
     .sheet(isPresented: $showsFullText) {
       plotSheet
     }
@@ -1907,37 +1952,38 @@ struct MediaItemPlotView: View {
         // unclamped in the same width beside it. Both are backgrounds of the visible
         // line, so both are proposed the width it actually got — the width already
         // narrowed by the "More" label when one is shown.
-        // .background {
-        //   GeometryReader { geometry in
-        //     Color.clear.preference(key: PlotClampedHeightKey.self, value: geometry.size.height)
-        //   }
-        // }
-        // .background {
-        //   Text(plot)
-        //     .font(Self.font)
-        //     .multilineTextAlignment(.leading)
-        //     .fixedSize(horizontal: false, vertical: true)
-        //     .frame(maxWidth: .infinity, alignment: .leading)
-        //     .background {
-        //       GeometryReader { geometry in
-        //         Color.clear.preference(key: PlotFullHeightKey.self, value: geometry.size.height)
-        //       }
-        //     }
-        //     .hidden()
-        // }
+        .background {
+          GeometryReader { geometry in
+            Color.clear.preference(key: PlotClampedHeightKey.self, value: geometry.size.height)
+          }
+        }
+        .background {
+          Text(plot)
+            .font(Self.font)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+              GeometryReader { geometry in
+                Color.clear.preference(key: PlotFullHeightKey.self, value: geometry.size.height)
+              }
+            }
+            .hidden()
+        }
 
       // Only laid out when shown: with the plot fitting there is nothing more to read,
       // so the label is gone rather than reserved-and-invisible — its width no longer
-      // narrows a paragraph that has room to spare.
-      
-      // if showsMore {
-      //   Text("More")
-      //     .font(Self.moreFont.weight(.semibold))
-      //     .textCase(.uppercase)
-      //     .tracking(Self.moreTracking)
-      //     .opacity(Self.moreOpacity)
-      //     .fixedSize()
-      // }
+      // narrows a paragraph that has room to spare. The whole synopsis control opens
+      // the sheet; this label is a hint, not a second button.
+      if showsMore {
+        Text("More")
+          .font(Self.moreFont.weight(.semibold))
+          .textCase(.uppercase)
+          .tracking(Self.moreTracking)
+          .opacity(Self.moreOpacity)
+          .fixedSize()
+          .accessibilityHidden(true)
+      }
     }
   }
 
@@ -2016,7 +2062,7 @@ private struct ExpandableButtonStyle: ButtonStyle {
         .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
 #if !os(tvOS)
         .onHover { if showsPointerHighlight { isHovered = $0 } }
-        .modifier(ConditionalPointerHand(enabled: showsPointerHighlight))
+        .pointingHandCursorOnHover(enabled: showsPointerHighlight)
 #endif
     }
 
@@ -2030,18 +2076,6 @@ private struct ExpandableButtonStyle: ButtonStyle {
   }
 }
 
-#if !os(tvOS)
-private struct ConditionalPointerHand: ViewModifier {
-  let enabled: Bool
-  func body(content: Content) -> some View {
-    if enabled {
-      content.pointingHandCursorOnHover()
-    } else {
-      content
-    }
-  }
-}
-#endif
 
 /// Whatever was clipped on the page, presented over it in full: the synopsis, or a
 /// column with its lists unclamped.
@@ -2099,3 +2133,47 @@ private enum MediaItemSheetLayout {
   static let padding: CGFloat = 24
 #endif
 }
+
+#if DEBUG
+private struct PlotPreviewHost: View {
+  @FocusState private var focus: MediaItemFocusTarget?
+
+  var body: some View {
+    MediaItemPlotView(
+      title: "Стражи Галактики",
+      plot: MediaItem.mock().plot,
+      focus: $focus
+    )
+    .padding()
+    .frame(maxWidth: 560, alignment: .leading)
+    .background(Color.black)
+    .preferredColorScheme(.dark)
+  }
+}
+
+#Preview("Synopsis More") {
+  PlotPreviewHost()
+}
+
+#Preview("Hero badge strip") {
+  HStack(spacing: 16) {
+    Text("2023 · 2 h 30 min · США")
+    MediaScoresView(imdb: 8.1, kinopoisk: 8.3)
+    MediaCapabilityBadgesView(
+      badges: MediaCapabilityBadges(
+        is4K: true,
+        isHDR: true,
+        ageRating: "16+",
+        hasClosedCaptions: true,
+        audioChannelHint: "DD"
+      ),
+      mode: .detail
+    )
+  }
+  .font(.subheadline)
+  .foregroundStyle(.white.opacity(0.85))
+  .padding()
+  .background(Color.black)
+  .preferredColorScheme(.dark)
+}
+#endif

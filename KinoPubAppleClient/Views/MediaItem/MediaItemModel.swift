@@ -57,8 +57,10 @@ class MediaItemModel: ObservableObject {
   
   @Published public var mediaItem: MediaItem = MediaItem.mock()
   @Published public var itemLoaded: Bool = false
-  /// True after `fetchDetails` fails — the page shows `LoadFailedView` instead of a stuck spinner.
+  /// True after `fetchDetails` fails — the page shows `UnavailableView` instead of a stuck spinner.
   @Published public var loadFailed: Bool = false
+  /// The failure behind `loadFailed`, so the retry state can say what actually went wrong.
+  @Published public var loadError: Error?
 
   /// "More like this", loaded alongside the page. Empty until it arrives, and left
   /// empty when it fails — the section hides itself rather than erroring over the art.
@@ -75,6 +77,10 @@ class MediaItemModel: ObservableObject {
   /// TMDB (and later other sources) overlay. Empty when the proxy is unset or the
   /// title has no IMDb id — the page then draws exactly as before.
   @Published public var externalMetadata: TitleMetadata = TitleMetadata()
+
+  /// True once `loadExternalMetadata` finishes or is skipped. Cast photos wait on
+  /// this before falling back to the pushbr CDN so URLs don't swap mid-paint.
+  @Published public var externalMetadataLoaded: Bool = false
 
   /// Season number → episode schedules from TMDB. Loaded on demand per season.
   @Published public var seasonSchedules: [Int: [EpisodeSchedule]] = [:]
@@ -113,6 +119,8 @@ class MediaItemModel: ObservableObject {
 
   func fetchData() {
     loadFailed = false
+    loadError = nil
+    externalMetadataLoaded = false
     Task {
       do {
         mediaItem = try await itemsService.fetchDetails(for: "\(mediaItemId)").item
@@ -130,6 +138,8 @@ class MediaItemModel: ObservableObject {
       } catch {
         Logger.app.error("Failed to load item \(self.mediaItemId): \(error)")
         loadFailed = true
+        loadError = error
+        externalMetadataLoaded = true
       }
     }
     Task {
@@ -175,6 +185,7 @@ class MediaItemModel: ObservableObject {
   }
 
   private func loadExternalMetadata() async {
+    defer { externalMetadataLoaded = true }
     guard let identity else {
       Logger.metadata.info("TMDB skip kinopub=\(self.mediaItemId): no identity")
       return

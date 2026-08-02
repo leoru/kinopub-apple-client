@@ -231,8 +231,10 @@ struct SeasonsRailView: View {
       .padding(.vertical, Self.focusPadding)
     }
     .contentMargins(.horizontal, Self.horizontalInset, for: .scrollContent)
-    .scrollClipDisabled()
 #if os(tvOS)
+    // Focus scale needs to paint past the clip; on Mac it lets the first card
+    // draw under the translucent sidebar.
+    .scrollClipDisabled()
     .focusSection()
     .defaultFocus($focusedEpisodeID, firstEpisodeInSelectedSeason)
 #endif
@@ -463,27 +465,29 @@ private struct EpisodeRailCard: View {
 
   /// Same structure/fonts/line limits as a full caption, for the rail slot only.
   private var captionReserve: some View {
-    VStack(alignment: .leading, spacing: 6) {
+    VStack(alignment: .center, spacing: 6) {
       Text("\n\n")
         .font(Self.titleFont)
         .lineLimit(Self.titleLineLimit)
+        .multilineTextAlignment(.center)
       Text("EPISODE 99")
         .font(Self.numberFont)
         .textCase(.uppercase)
         .lineLimit(1)
+        .multilineTextAlignment(.center)
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .frame(maxWidth: .infinity, alignment: .center)
   }
 
   @ViewBuilder
   private var caption: some View {
-    VStack(alignment: .leading, spacing: 6) {
+    VStack(alignment: .center, spacing: 6) {
       if !episodeTitle.isEmpty {
         Text(episodeTitle)
           .font(Self.titleFont)
           .foregroundStyle(Color.KinoPub.text)
           .lineLimit(Self.titleLineLimit)
-          .multilineTextAlignment(.leading)
+          .multilineTextAlignment(.center)
           .fixedSize(horizontal: false, vertical: true)
 
         Text(episodeNumberLabel)
@@ -491,16 +495,17 @@ private struct EpisodeRailCard: View {
           .foregroundStyle(Color.secondary)
           .textCase(.uppercase)
           .lineLimit(1)
+          .multilineTextAlignment(.center)
       } else {
         Text(episodeNumberLabel)
           .font(Self.titleFont)
           .foregroundStyle(Color.KinoPub.text)
           .lineLimit(1)
-          .multilineTextAlignment(.leading)
+          .multilineTextAlignment(.center)
           .fixedSize(horizontal: false, vertical: true)
       }
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .frame(maxWidth: .infinity, alignment: .center)
   }
 
   private var still: some View {

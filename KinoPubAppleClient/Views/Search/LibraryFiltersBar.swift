@@ -15,6 +15,8 @@ import KinoPubBackend
 struct LibraryFiltersBar: View {
 
   @ObservedObject var catalog: LibraryCatalog
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+  @Environment(\.colorSchemeContrast) private var contrast
 
   private var years: [YearRange] {
     YearRange.decades(upTo: Calendar.current.component(.year, from: Date()))
@@ -37,9 +39,10 @@ struct LibraryFiltersBar: View {
           }
           .buttonStyle(.bordered)
           .buttonBorderShape(.capsule)
+          .controlSize(Self.controlSize)
         }
       }
-      .font(Self.font)
+      .controlSize(Self.controlSize)
       .padding(.horizontal, Self.horizontalInset)
       .padding(.vertical, Self.verticalPadding)
     }
@@ -48,9 +51,13 @@ struct LibraryFiltersBar: View {
   // MARK: - Menus
 
   private var typeMenu: some View {
-    Self.menu(label: catalog.filter.contentType.map { LocalizedStringKey($0.title) } ?? "Type",
-              icon: "square.grid.2x2",
-              isActive: catalog.filter.contentType != nil) {
+    Self.filterMenu(
+      label: catalog.filter.contentType.map { LocalizedStringKey($0.title) } ?? "Type",
+      icon: "square.grid.2x2",
+      isActive: catalog.filter.contentType != nil,
+      reduceTransparency: reduceTransparency,
+      highContrast: contrast == .increased
+    ) {
       Button {
         catalog.update { $0.contentType = nil }
       } label: {
@@ -68,9 +75,13 @@ struct LibraryFiltersBar: View {
 
   private var genreMenu: some View {
     let selected = catalog.genres.first { $0.id == catalog.filter.genreID }
-    return Self.menu(label: selected.map { LocalizedStringKey($0.title) } ?? "Genre",
-                     icon: "theatermasks",
-                     isActive: catalog.filter.genreID != nil) {
+    return Self.filterMenu(
+      label: selected.map { LocalizedStringKey($0.title) } ?? "Genre",
+      icon: "theatermasks",
+      isActive: catalog.filter.genreID != nil,
+      reduceTransparency: reduceTransparency,
+      highContrast: contrast == .increased
+    ) {
       Button {
         catalog.update { $0.genreID = nil }
       } label: {
@@ -88,9 +99,13 @@ struct LibraryFiltersBar: View {
 
   private var countryMenu: some View {
     let selected = catalog.countries.first { $0.id == catalog.filter.countryID }
-    return Self.menu(label: selected.map { LocalizedStringKey($0.title) } ?? "Country",
-                     icon: "globe",
-                     isActive: catalog.filter.countryID != nil) {
+    return Self.filterMenu(
+      label: selected.map { LocalizedStringKey($0.title) } ?? "Country",
+      icon: "globe",
+      isActive: catalog.filter.countryID != nil,
+      reduceTransparency: reduceTransparency,
+      highContrast: contrast == .increased
+    ) {
       Button {
         catalog.update { $0.countryID = nil }
       } label: {
@@ -107,9 +122,13 @@ struct LibraryFiltersBar: View {
   }
 
   private var yearMenu: some View {
-    Self.menu(label: catalog.filter.years.map { LocalizedStringKey($0.title) } ?? "Years",
-              icon: "calendar",
-              isActive: catalog.filter.years != nil) {
+    Self.filterMenu(
+      label: catalog.filter.years.map { LocalizedStringKey($0.title) } ?? "Years",
+      icon: "calendar",
+      isActive: catalog.filter.years != nil,
+      reduceTransparency: reduceTransparency,
+      highContrast: contrast == .increased
+    ) {
       Button {
         catalog.update { $0.years = nil }
       } label: {
@@ -127,14 +146,18 @@ struct LibraryFiltersBar: View {
 
   // MARK: - Building blocks
 
+  /// Shared Menu chrome — native bordered styles, with Reduce Transparency /
+  /// increased-contrast falling back to a solid prominent plate when active.
   @ViewBuilder
-  static func menu<Content: View>(label: LocalizedStringKey,
-                                  icon: String,
-                                  isActive: Bool,
-                                  @ViewBuilder content: () -> Content) -> some View {
-    // Branching on the style rather than erasing it: a wrapper that can hold either
-    // concrete style has to conform to the protocol itself, which is more machinery
-    // than two short branches.
+  static func filterMenu<Content: View>(
+    label: LocalizedStringKey,
+    icon: String,
+    isActive: Bool,
+    reduceTransparency: Bool = false,
+    highContrast: Bool = false,
+    @ViewBuilder content: () -> Content
+  ) -> some View {
+    let solidActive = isActive && (reduceTransparency || highContrast)
     if isActive {
       Menu {
         content()
@@ -143,7 +166,8 @@ struct LibraryFiltersBar: View {
       }
       .buttonStyle(.borderedProminent)
       .buttonBorderShape(.capsule)
-      .tint(Color.KinoPub.accent)
+      .tint(solidActive ? Color.KinoPub.accent : Color.KinoPub.accent)
+      .controlSize(controlSize)
     } else {
       Menu {
         content()
@@ -152,7 +176,17 @@ struct LibraryFiltersBar: View {
       }
       .buttonStyle(.bordered)
       .buttonBorderShape(.capsule)
+      .controlSize(controlSize)
     }
+  }
+
+  /// Back-compat for `LibrarySortMenu` and person credits.
+  @ViewBuilder
+  static func menu<Content: View>(label: LocalizedStringKey,
+                                  icon: String,
+                                  isActive: Bool,
+                                  @ViewBuilder content: () -> Content) -> some View {
+    filterMenu(label: label, icon: icon, isActive: isActive, content: content)
   }
 
   /// Menus on tvOS don't mark the selected row themselves.
@@ -164,12 +198,15 @@ struct LibraryFiltersBar: View {
   static let spacing: CGFloat = 16
   static let horizontalInset: CGFloat = 80
   static let verticalPadding: CGFloat = 16
-  static let font: Font = .system(size: 24, weight: .semibold)
+  static let controlSize: ControlSize = .large
+  /// Kept for call sites that still pass `.font(LibraryFiltersBar.font)`.
+  static let font: Font = TypeScale.filterControl
 #else
   static let spacing: CGFloat = 10
   static let horizontalInset: CGFloat = 16
   static let verticalPadding: CGFloat = 8
-  static let font: Font = .system(size: 14, weight: .semibold)
+  static let controlSize: ControlSize = .regular
+  static let font: Font = TypeScale.filterControl
 #endif
 }
 
@@ -194,3 +231,20 @@ struct LibrarySortMenu: View {
     }
   }
 }
+
+#if DEBUG
+#Preview("Library filters") {
+  LibraryFiltersBar(
+    catalog: LibraryCatalog(
+      itemsService: VideoContentServiceMock(),
+      authState: AuthState(
+        authService: AuthorizationServiceMock(),
+        accessTokenService: AccessTokenServiceMock()
+      ),
+      errorHandler: ErrorHandler()
+    )
+  )
+  .background(Color.KinoPub.background)
+  .preferredColorScheme(.dark)
+}
+#endif
