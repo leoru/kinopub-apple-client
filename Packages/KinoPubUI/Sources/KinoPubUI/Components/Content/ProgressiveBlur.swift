@@ -133,8 +133,10 @@ private struct VariableBlurRepresentable: NSViewRepresentable {
 private final class VariableBlurPlatformView: NSVisualEffectView {
   init(maxBlurRadius: CGFloat, startOffset: CGFloat, direction: ProgressiveBlurDirection) {
     super.init(frame: .zero)
+    // Must sample the artwork under this view. `.behindWindow` blurs the desktop
+    // instead — Home banners rendered as empty gray glass plates on Mac.
     material = .fullScreenUI
-    blendingMode = .behindWindow
+    blendingMode = .withinWindow
     state = .active
     applyVariableBlur(maxBlurRadius: maxBlurRadius, startOffset: startOffset, direction: direction)
   }

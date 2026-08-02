@@ -19,7 +19,7 @@ public enum MediaActionMetrics {
   public static let buttonHeight: CGFloat = 66
   public static let iconPointSize: CGFloat = 26
   public static let circleIconPointSize: CGFloat = 24
-  public static let labelFont = Font.system(size: 22, weight: .semibold)
+  public static let labelFont = TypeScale.actionLabel
   public static let progressWidth: CGFloat = 60
   public static let progressHeight: CGFloat = 5
   public static let contentSpacing: CGFloat = 12
@@ -31,7 +31,7 @@ public enum MediaActionMetrics {
   public static let buttonHeight: CGFloat = 44
   public static let iconPointSize: CGFloat = 15
   public static let circleIconPointSize: CGFloat = 16
-  public static let labelFont = Font.system(size: 15, weight: .semibold)
+  public static let labelFont = TypeScale.actionLabel
   public static let progressWidth: CGFloat = 40
   public static let progressHeight: CGFloat = 3
   public static let contentSpacing: CGFloat = 8
@@ -318,4 +318,40 @@ public extension View {
   func mediaActionGhostStyle() -> some View {
     buttonStyle(MediaActionGhostStyle())
   }
+}
+
+#Preview("Action chrome") {
+  HStack(spacing: MediaActionMetrics.rowSpacing) {
+    Button {} label: {
+      HStack(spacing: MediaActionMetrics.contentSpacing) {
+        Image(systemName: "play.fill")
+          .font(.system(size: MediaActionMetrics.iconPointSize, weight: .semibold))
+        Text("Play")
+          .font(MediaActionMetrics.labelFont)
+      }
+    }
+    .mediaActionPlayPillStyle()
+
+    Button {} label: {
+      Text("Watchlist")
+        .font(MediaActionMetrics.labelFont)
+    }
+    .mediaActionPillStyle()
+
+    Button {} label: {
+      Image(systemName: "bookmark.fill")
+        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
+    }
+    .mediaActionCircleStyle()
+
+    Button {} label: {
+      Image(systemName: "ellipsis")
+        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .bold))
+    }
+    .mediaActionGhostStyle()
+  }
+  .padding(32)
+  .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  .background(Color.black)
+  .preferredColorScheme(.dark)
 }

@@ -57,6 +57,9 @@ public struct MediaCard: Identifiable, Hashable, Codable {
   public let isInHistory: Bool
   /// Title is on the user's watchlist — context menu can offer Browse Watchlist.
   public let isInWatchlist: Bool
+  /// Item-level 4K / HDR when known from the catalogue payload (not device caps).
+  public let is4K: Bool
+  public let isHDR: Bool
 
   public var isLandscape: Bool { landscapeImageURL != nil }
 
@@ -66,7 +69,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     backdropURL ?? landscapeImageURL ?? posterURL
   }
 
-  /// Whether a long-press can toggle watched for this card (needs a video target).
+  /// Whether a long-press  can toggle watched for this card (needs a video target).
   public var canToggleWatched: Bool { video != nil }
 
   public init(id: Int,
@@ -89,7 +92,9 @@ public struct MediaCard: Identifiable, Hashable, Codable {
               isWatched: Bool = false,
               isSeries: Bool = false,
               isInHistory: Bool = false,
-              isInWatchlist: Bool = false) {
+              isInWatchlist: Bool = false,
+              is4K: Bool = false,
+              isHDR: Bool = false) {
     self.id = id
     self.posterURL = posterURL
     self.title = title
@@ -111,22 +116,31 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     self.isSeries = isSeries
     self.isInHistory = isInHistory
     self.isInWatchlist = isInWatchlist
+    self.is4K = is4K
+    self.isHDR = isHDR
   }
 }
 
 public extension MediaCard {
   /// The standard mapping from a catalog item, so grids and rows draw the same card.
   init(_ item: MediaItem) {
+    let badges = MediaCapabilityBadges.from(item: item)
+    // Prefer a real API `wide`, else the derived `/wide/` path. Do not fold `big` into
+    // backdropURL — HomeBanner tries wide → big → medium so a 404'd derivation still
+    // paints (detail payloads often have a working `wide`; catalogue lists often don't).
+    let wide = item.posters.wide.flatMap { $0.isEmpty ? nil : $0 }
     self.init(id: item.id,
               posterURL: item.posters.medium,
               title: item.localizedTitle,
               subtitle: item.originalTitle,
               imdbRating: item.imdbRating,
               kinopoiskRating: item.kinopoiskRating,
-              backdropURL: item.posters.wideURL ?? item.posters.big,
+              backdropURL: wide ?? item.posters.wideURL,
               metaLine: item.metadataLine,
               overview: item.plot,
-              isSeries: item.isSeries)
+              isSeries: item.isSeries,
+              is4K: badges.is4K,
+              isHDR: badges.isHDR)
   }
 }
 
@@ -176,6 +190,31 @@ public struct MediaCardView: View {
         captionBlock
       }
     }
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel(Text(accessibilityTitle))
+    .accessibilityValue(Text(accessibilityValue))
+    .accessibilityHint(Text("Opens the title"))
+  }
+
+  private var accessibilityTitle: String {
+    if let subtitle = card.subtitle, !subtitle.isEmpty, subtitle != card.title {
+      return "\(card.title), \(subtitle)"
+    }
+    return card.title
+  }
+
+  private var accessibilityValue: String {
+    var parts: [String] = []
+    if let rating = card.rating {
+      parts.append("Rating \(rating.formatted)")
+    }
+    if let progress = card.progress {
+      parts.append("\(Int((progress * 100).rounded())) percent watched")
+    }
+    if card.is4K { parts.append("4K") }
+    if card.isHDR { parts.append("HDR") }
+    if card.isWatched { parts.append("Watched") }
+    return parts.joined(separator: ", ")
   }
 
   // MARK: - Artwork
@@ -188,40 +227,55 @@ public struct MediaCardView: View {
       if card.isLandscape {
         landscapeOverlays
       } else if let progress = card.progress {
-#if !os(tvOS)
         progressBar(progress)
-#endif
+      }
+
+      if !card.isLandscape {
+        posterOverlays
       }
     }
-#if !os(tvOS)
-    .overlay(alignment: .topLeading) {
-      if !card.isLandscape, let rating = card.rating {
-        RatingBadgeView(rating: rating)
-          .padding(3)
-      }
-    }
-    .overlay(alignment: .topTrailing) {
-      if !card.isLandscape, let badge = card.badge {
-        Text(badge)
-          .font(.caption.weight(.bold))
-          .padding(.horizontal, 6)
-          .padding(.vertical, 3)
-          .background(Color.KinoPub.accent, in: Capsule())
-          .foregroundStyle(.black)
-          .shadow(radius: 4)
-          .padding(3)
-      }
-    }
-#endif
     .aspectRatio(aspect.ratio, contentMode: .fit)
     .frame(maxWidth: .infinity)
+    .opacity(card.isWatched && !card.isLandscape ? 0.72 : 1)
 #if os(tvOS)
-    // `.borderless` owns corners + focus lift. Landscape overlays are shapes /
-    // symbols (not extra images) so the highlight stays one unit.
+    // One composited lockup so `.borderless` lift/specular stays a single unit —
+    // rating/status chips sit inside the hover group rather than as sibling images.
     .hoverEffect(.highlight)
 #else
     .clipShape(RoundedRectangle(cornerRadius: Metrics.cardCornerRadius, style: .continuous))
 #endif
+  }
+
+  @ViewBuilder
+  private var posterOverlays: some View {
+    ZStack(alignment: .topLeading) {
+      Color.clear
+      if let rating = card.rating {
+        RatingBadgeView(rating: rating)
+          .padding(3)
+          .accessibilityLabel(Text("Rating \(rating.formatted)"))
+      }
+    }
+    .overlay(alignment: .topTrailing) {
+      VStack(alignment: .trailing, spacing: 4) {
+        if let badge = card.badge {
+          Text(badge)
+            .font(.caption.weight(.bold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(Color.KinoPub.accent, in: Capsule())
+            .foregroundStyle(.black)
+            .shadow(radius: 4)
+        }
+        if card.is4K || card.isHDR {
+          MediaCapabilityBadgesView(
+            badges: MediaCapabilityBadges(is4K: card.is4K, isHDR: card.isHDR),
+            mode: .poster
+          )
+        }
+      }
+      .padding(3)
+    }
   }
 
   private var stillImage: some View {
@@ -278,13 +332,13 @@ public struct MediaCardView: View {
   /// Hidden rather than absent while unfocused, so neighbouring cards keep their
   /// baselines and the row does not jump as focus travels along it.
   private var captionBlock: some View {
-    VStack(alignment: .leading, spacing: 4) {
-      Text(card.title)
-        .lineLimit(card.isLandscape ? 2 : 1)
-        .font(TypeScale.cardTitle)
-        .foregroundStyle(Color.KinoPub.text)
-        .multilineTextAlignment(.leading)
-        .frame(maxWidth: .infinity, alignment: .leading)
+    VStack(alignment: .center, spacing: 4) {
+      MarqueeText(
+        card.title,
+        font: TypeScale.cardTitle,
+        foreground: Color.KinoPub.text,
+        alignment: .center
+      )
 
       if card.isLandscape, let label = card.overlayLabel, !label.isEmpty {
         Text(label)
@@ -292,9 +346,11 @@ public struct MediaCardView: View {
           .foregroundStyle(Color.KinoPub.subtitle)
           .textCase(.uppercase)
           .lineLimit(1)
-          .frame(maxWidth: .infinity, alignment: .leading)
+          .multilineTextAlignment(.center)
+          .frame(maxWidth: .infinity, alignment: .center)
       }
     }
+    .frame(maxWidth: .infinity, alignment: .center)
     .opacity(caption == .always || cardFocused ? 1 : 0)
     .animation(.easeOut(duration: 0.12), value: cardFocused)
   }
@@ -329,14 +385,62 @@ public struct MediaCardView: View {
   }
 }
 
-#Preview {
-  MediaCardView(card: MediaCard(id: 1,
-                                posterURL: "https://m.staticpop.net/poster/item/big/581.jpg",
-                                title: "Стражи Галактики",
-                                subtitle: "Guardians of the Galaxy",
-                                imdbRating: 8.1,
-                                kinopoiskRating: 8.3,
-                                progress: 0.4,
-                                badge: "2"))
+#Preview("Poster with 4K/HDR") {
+  MediaCardView(
+    card: MediaCard(
+      id: 1,
+      posterURL: "https://m.staticpop.net/poster/item/big/581.jpg",
+      title: "Стражи Галактики",
+      subtitle: "Guardians of the Galaxy",
+      imdbRating: 8.1,
+      kinopoiskRating: 8.3,
+      progress: 0.4,
+//      badge: "+2",
+      is4K: true,
+      isHDR: true
+    ),
+    caption: .always
+  )
   .frame(width: 260)
+  .padding()
+  .background(Color.black)
+  .preferredColorScheme(.dark)
+}
+
+#Preview("Poster watched") {
+  MediaCardView(
+    card: MediaCard(
+      id: 2,
+      posterURL: "https://m.staticpop.net/poster/item/big/581.jpg",
+      title: "Просмотрено",
+      imdbRating: 7.2,
+      kinopoiskRating: 7.0,
+      isWatched: true,
+      is4K: true
+    ),
+    caption: .always
+  )
+  .frame(width: 260)
+  .padding()
+  .background(Color.black)
+  .preferredColorScheme(.dark)
+}
+
+#Preview("Landscape episode") {
+  MediaCardView(
+    card: MediaCard(
+      id: 3,
+      posterURL: "https://m.staticpop.net/poster/item/big/581.jpg",
+      title: "Название эпизода подлиннее обычного",
+      progress: 0.55,
+      landscapeImageURL: "https://m.staticpop.net/poster/item/wide/581.jpg",
+      overlayLabel: "S1, E3 · 48 min",
+      isSeries: true
+    ),
+    caption: .always
+  )
+  .frame(width: 360)
+  .padding()
+  .background(Color.black)
+  .preferredColorScheme(.dark)
 }

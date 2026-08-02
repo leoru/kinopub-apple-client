@@ -13,12 +13,16 @@ public struct ContentItemsListView<Header: View>: View {
 
   @Binding public var items: [MediaItem]
   public var onLoadMoreContent: (MediaItem) -> Void
-  public var onRefresh: @Sendable () async -> Void
   public var navigationLinkProvider: (MediaItem) -> any Hashable
   /// Poster tiles drawn while the first page is still unknown, so the grid's
   /// shape is on screen before the response arrives.
   private let placeholderCount: Int
   private let emptyMessage: LocalizedStringKey?
+  /// A page past the first failed to load: the grid keeps its items and shows an
+  /// inline retry where the missing page would have appeared — never a full-screen
+  /// error in place of loaded content.
+  private let paginationError: Bool
+  private let onRetryPagination: (() -> Void)?
   private let header: Header
 
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -48,17 +52,19 @@ public struct ContentItemsListView<Header: View>: View {
 
   public init(items: Binding<[MediaItem]>,
               onLoadMoreContent: @escaping (MediaItem) -> Void,
-              onRefresh: @escaping @Sendable () async -> Void,
               navigationLinkProvider: @escaping (MediaItem) -> any Hashable,
               placeholderCount: Int = 0,
               emptyMessage: LocalizedStringKey? = nil,
+              paginationError: Bool = false,
+              onRetryPagination: (() -> Void)? = nil,
               @ViewBuilder header: () -> Header) {
     self._items = items
-    self.onRefresh = onRefresh
     self.onLoadMoreContent = onLoadMoreContent
     self.navigationLinkProvider = navigationLinkProvider
     self.placeholderCount = placeholderCount
     self.emptyMessage = emptyMessage
+    self.paginationError = paginationError
+    self.onRetryPagination = onRetryPagination
     self.header = header()
   }
 
@@ -70,10 +76,7 @@ public struct ContentItemsListView<Header: View>: View {
         header
 
         if items.isEmpty, placeholderCount == 0, let emptyMessage {
-          Text(emptyMessage)
-            .foregroundStyle(Color.KinoPub.text)
-            .font(Font.KinoPub.subheader)
-            .frame(maxWidth: .infinity)
+          UnavailableView(title: emptyMessage, systemImage: "magnifyingglass")
             .padding(.top, 40)
         } else {
           LazyVGrid(columns: gridColumns, spacing: metrics.gutter) {
@@ -100,10 +103,24 @@ public struct ContentItemsListView<Header: View>: View {
           }
           .safeAreaPadding(.horizontal, metrics.inset)
           .padding(.vertical, Metrics.focusPadding)
+
+          if paginationError, let onRetryPagination {
+            VStack(spacing: 12) {
+              Text("Couldn't Load More")
+                .font(Font.KinoPub.subheader)
+                .foregroundStyle(Color.KinoPub.subtitle)
+              Button("Try Again", action: onRetryPagination)
+#if !os(tvOS)
+                .buttonStyle(.glass)
+                .controlSize(.large)
+#endif
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
+          }
         }
       }
     }
-    .refreshable(action: onRefresh)
     .onGeometryChange(for: CGFloat.self) { proxy in
       proxy.size.width
     } action: { width in
@@ -138,16 +155,18 @@ public struct ContentItemsListView<Header: View>: View {
 public extension ContentItemsListView where Header == EmptyView {
   init(items: Binding<[MediaItem]>,
        onLoadMoreContent: @escaping (MediaItem) -> Void,
-       onRefresh: @escaping @Sendable () async -> Void,
        navigationLinkProvider: @escaping (MediaItem) -> any Hashable,
        placeholderCount: Int = 0,
-       emptyMessage: LocalizedStringKey? = nil) {
+       emptyMessage: LocalizedStringKey? = nil,
+       paginationError: Bool = false,
+       onRetryPagination: (() -> Void)? = nil) {
     self.init(items: items,
               onLoadMoreContent: onLoadMoreContent,
-              onRefresh: onRefresh,
               navigationLinkProvider: navigationLinkProvider,
               placeholderCount: placeholderCount,
               emptyMessage: emptyMessage,
+              paginationError: paginationError,
+              onRetryPagination: onRetryPagination,
               header: { EmptyView() })
   }
 }
@@ -159,8 +178,6 @@ struct ContentItemsListView_Previews: PreviewProvider {
 
     var body: some View {
       ContentItemsListView(items: $items, onLoadMoreContent: { _ in
-
-      }, onRefresh: {
 
       }, navigationLinkProvider: { _ in
         return ""

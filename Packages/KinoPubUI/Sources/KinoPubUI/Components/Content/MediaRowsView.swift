@@ -73,7 +73,6 @@ public struct MediaRowsView: View {
     // otherwise the sidebar keeps focus on launch. Default priority (not
     // `.userInitiated`): returning from a detail page must not yank focus back.
     scroll
-      .background(Color.KinoPub.background)
       .defaultFocus($focusedCard, firstCardKey)
       .onGeometryChange(for: CGFloat.self) { proxy in
         proxy.size.width
@@ -126,6 +125,7 @@ public struct MediaRowsView: View {
           NavigationLink(value: navigationLinkProvider(card)) {
             HomeBannerCardView(card: card)
           }
+          .mediaZoomSource(id: "media-\(card.id)")
           .containerRelativeFrame(.horizontal,
                                   count: metrics.columns,
                                   span: 1,
@@ -136,9 +136,11 @@ public struct MediaRowsView: View {
           .focused($focusedCard, equals: CardKey(row: Self.bannerRowID, card: card.id))
         }
       }
+      .scrollTargetLayout()
       .safeAreaPadding(.horizontal, metrics.inset)
       .padding(.vertical, Metrics.focusPadding)
     }
+    .scrollTargetBehavior(.viewAligned)
 #if os(tvOS)
     .buttonStyle(.borderless)
     .scrollClipDisabled()
@@ -161,6 +163,7 @@ public struct MediaRowsView: View {
             NavigationLink(value: navigationLinkProvider(card)) {
               MediaCardView(card: card, caption: Self.cardCaption)
             }
+            .mediaZoomSource(id: "media-\(card.id)")
             .containerRelativeFrame(.horizontal,
                                     count: metrics.columns,
                                     span: 1,
@@ -236,41 +239,12 @@ private struct RowHeader: View {
   let row: MediaRow
   let isLink: Bool
 
-  @Environment(\.cardFocused) private var focused
-
   var body: some View {
-    HStack(alignment: .firstTextBaseline, spacing: 8) {
-      Text(row.title)
-        .font(MediaRowsView.headerFont)
-        .foregroundStyle(Color.KinoPub.text)
-
-      if let count = row.count, !count.isEmpty {
-        Text(count)
-          .font(MediaRowsView.countFont)
-          .foregroundStyle(Color.KinoPub.subtitle)
-      }
-
-      if isLink {
-        Image(systemName: "chevron.forward")
-          .font(MediaRowsView.chevronFont)
-          .foregroundStyle(Color.KinoPub.subtitle)
-          .opacity(chevronOpacity)
-      }
-    }
-    // The title is short, but the focus engine only moves up into what sits directly
-    // above the focused card — anything narrower is unreachable from most of the row.
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .contentShape(Rectangle())
-  }
-
-  /// On TV the chevron is focus feedback, the way the Apple TV app only shows "See All"
-  /// under the remote. Elsewhere there is no focus to wait for, so it always shows.
-  private var chevronOpacity: Double {
-#if os(tvOS)
-    focused ? 1 : 0
-#else
-    1
-#endif
+    SectionHeader(
+      title: row.title,
+      count: row.count,
+      showsChevron: isLink
+    )
   }
 }
 
@@ -331,4 +305,54 @@ public struct MediaCardContextMenuModifier: ViewModifier {
       }
     }
   }
+}
+
+#Preview("Home rows + banner") {
+  NavigationStack {
+    MediaRowsView(
+      rows: [
+        MediaRow(
+          id: "hot",
+          title: "Hot Films",
+          count: "12",
+          cards: [
+            MediaCard(
+              id: 1,
+              posterURL: "https://m.staticpop.net/poster/item/big/581.jpg",
+              title: "Стражи",
+              imdbRating: 8.1,
+              kinopoiskRating: 8.3,
+              is4K: true,
+              isHDR: true
+            ),
+            MediaCard(
+              id: 2,
+              posterURL: "https://m.staticpop.net/poster/item/big/581.jpg",
+              title: "Другой фильм",
+              imdbRating: 7.2,
+              kinopoiskRating: 7.0,
+              badge: "+3",
+              is4K: true
+            )
+          ],
+          destination: "hot"
+        )
+      ],
+      bannerCards: [
+        MediaCard(
+          id: 10,
+          posterURL: "https://m.staticpop.net/poster/item/big/581.jpg",
+          title: "Баннер",
+          subtitle: "Featured",
+          imdbRating: 7.8,
+          kinopoiskRating: 7.5,
+          backdropURL: "https://m.staticpop.net/poster/item/wide/581.jpg",
+          is4K: true,
+          isHDR: true
+        )
+      ],
+      navigationLinkProvider: { card in card.id }
+    )
+  }
+  .preferredColorScheme(.dark)
 }

@@ -26,10 +26,8 @@ extension Color {
 #if os(macOS)
       Color(nsColor: .windowBackgroundColor)
 #elseif os(tvOS)
-      // tvOS has no `systemBackground`. Liquid Glass samples what is behind the view;
-      // a clear page background samples the system window instead of a real page.
-      // Dark-locked for now — light returns as its own pass (modernization Phase 0).
-      Color.black
+        Color(uiColor: .clear)
+//      Material.black
 #else
       Color(uiColor: .systemBackground)
 #endif
@@ -42,6 +40,6 @@ extension Color {
     public static let placeholder = Color.primary.opacity(0.08)
 
     public static let text = Color.primary
-      public static let subtitle = Color.secondary.opacity(0.87)
+      public static let subtitle = Color.secondary
   }
 }
