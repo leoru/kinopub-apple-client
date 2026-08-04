@@ -56,11 +56,14 @@ struct DownloadsView: View {
   
   var activeDownloadsList: some View {
     ForEach(catalog.activeDownloads, id: \.url) { download in
-      NavigationLink(value: DownloadsRoutes.player(download.metadata)) {
+      PlayerLink(route: DownloadsRoutes.player(download.metadata), item: download.metadata, mode: .media) {
         DownloadedItemView(mediaItem: download.metadata, progress: download.progress) { paused in
           catalog.toggle(download: download)
         }
       }
+#if os(macOS)
+      .buttonStyle(.plain)
+#endif
     }
     .onDelete(perform: { indexSet in
       catalog.deleteActiveDownload(at: indexSet)
@@ -70,11 +73,14 @@ struct DownloadsView: View {
   
   var downloadedFilesList: some View {
     ForEach(catalog.downloadedItems, id: \.originalURL) { fileInfo in
-      NavigationLink(value: DownloadsRoutes.player(fileInfo.metadata)) {
+      PlayerLink(route: DownloadsRoutes.player(fileInfo.metadata), item: fileInfo.metadata, mode: .media) {
         DownloadedItemView(mediaItem: fileInfo.metadata, progress: nil) { paused in
-          
+
         }
       }
+#if os(macOS)
+      .buttonStyle(.plain)
+#endif
     }
     .onDelete(perform: { indexSet in
       catalog.deleteDownloadedItem(at: indexSet)

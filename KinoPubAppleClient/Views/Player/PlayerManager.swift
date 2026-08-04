@@ -174,10 +174,15 @@ class PlayerManager: ObservableObject {
     observePlaybackState(of: item)
     observeEndOfPlayback(of: item)
     player.replaceCurrentItem(with: item)
+#if os(iOS) || os(tvOS)
+    // AVPlayerItem.externalMetadata is absent on macOS (AVPlayerView / the window title
+    // bar carry the name there instead) — see the customization-surface table in
+    // player-and-media.md.
+    configureExternalMetadata()
+#endif
 #if os(tvOS)
     audibleGroup = nil
     didChooseDefaultAudio = false
-    configureExternalMetadata()
     configureDefaultAudioWhenReady()
     rebuildTransportBarMenus()
 #endif
@@ -613,38 +618,17 @@ class PlayerManager: ObservableObject {
 
 }
 
-#if os(tvOS)
+#if os(iOS) || os(tvOS)
 
-// MARK: - tvOS transport bar
+// MARK: - Now Playing metadata
 
+/// `AVPlayerItem.externalMetadata` feeds the system player's info panel (tvOS), the
+/// iOS 12.2+ system player / Control Center / lock screen, and AirPlay — everywhere but
+/// macOS, which has no `externalMetadata` and carries the title on the window title bar
+/// instead (see the customization-surface table in player-and-media.md).
 extension PlayerManager {
 
-  /// Hand the system player screen everything it needs: the title/subtitle for the info
-  /// panel, and the Subtitles menu for the transport bar. Called from the
-  /// `UIViewControllerRepresentable` once AVKit has made the controller.
-  func attach(to controller: AVPlayerViewController) {
-    playerViewController = controller
-    configureExternalMetadata()
-    hideSystemSubtitlePicker(on: controller)
-    if player.currentItem != nil {
-      configureDefaultAudioWhenReady()
-    }
-    rebuildTransportBarMenus()
-  }
-
-  /// The HLS legible group makes AVKit draw its own Subtitles control, so without this the
-  /// transport bar shows two — ours (dual tracks + sidecar SRT) and the system's. Emptying
-  /// the allowed-languages list removes the system one.
-  ///
-  /// Safe to drop here because kino.pub ships every subtitle as a sidecar SRT and the HLS
-  /// subtitle renditions are just its own WebVTT copies of those same files (Stream survey:
-  /// srt × 189, embed × 0, CC × 0) — so nothing the system picker could reach is missing
-  /// from ours. This only hides the picker UI.
-  private func hideSystemSubtitlePicker(on controller: AVPlayerViewController) {
-    controller.allowedSubtitleOptionLanguages = []
-  }
-
-  private func configureExternalMetadata() {
+  func configureExternalMetadata() {
     guard let item = player.currentItem else { return }
     var metadata: [AVMetadataItem] = []
     if let title = displayTitle {
@@ -698,6 +682,41 @@ extension PlayerManager {
     item.value = value as NSString
     item.extendedLanguageTag = "und"
     return item
+  }
+
+}
+
+#endif
+
+#if os(tvOS)
+
+// MARK: - tvOS transport bar
+
+extension PlayerManager {
+
+  /// Hand the system player screen everything it needs: the title/subtitle for the info
+  /// panel, and the Subtitles menu for the transport bar. Called from the
+  /// `UIViewControllerRepresentable` once AVKit has made the controller.
+  func attach(to controller: AVPlayerViewController) {
+    playerViewController = controller
+    configureExternalMetadata()
+    hideSystemSubtitlePicker(on: controller)
+    if player.currentItem != nil {
+      configureDefaultAudioWhenReady()
+    }
+    rebuildTransportBarMenus()
+  }
+
+  /// The HLS legible group makes AVKit draw its own Subtitles control, so without this the
+  /// transport bar shows two — ours (dual tracks + sidecar SRT) and the system's. Emptying
+  /// the allowed-languages list removes the system one.
+  ///
+  /// Safe to drop here because kino.pub ships every subtitle as a sidecar SRT and the HLS
+  /// subtitle renditions are just its own WebVTT copies of those same files (Stream survey:
+  /// srt × 189, embed × 0, CC × 0) — so nothing the system picker could reach is missing
+  /// from ours. This only hides the picker UI.
+  private func hideSystemSubtitlePicker(on controller: AVPlayerViewController) {
+    controller.allowedSubtitleOptionLanguages = []
   }
 
   // MARK: Audio

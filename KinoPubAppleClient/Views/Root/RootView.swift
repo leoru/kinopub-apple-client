@@ -13,6 +13,10 @@ struct RootView: View {
 
   @Environment(\.appContext) var appContext
   @EnvironmentObject var authState: AuthState
+  @EnvironmentObject var navigationState: NavigationState
+#if os(macOS)
+  @Environment(\.openWindow) private var openWindow
+#endif
 
   var body: some View {
     // Swap entirely (not overlay): a live catalog behind the code keeps loading artwork and
@@ -29,6 +33,15 @@ struct RootView: View {
     .task {
       await authState.check()
     }
+#if os(macOS)
+    // `NavigationState.push` redirects `.player` / `.trailerPlayer` routes into
+    // `PlaybackWindowState` instead of a stack; this is the one place holding the
+    // `openWindow` environment action needed to actually raise that window.
+    .onChange(of: navigationState.playerWindowRequestID) { _, requestID in
+      guard requestID != nil else { return }
+      openWindow(id: PlaybackWindowState.windowID)
+    }
+#endif
   }
 }
 

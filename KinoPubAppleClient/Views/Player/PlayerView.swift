@@ -15,6 +15,7 @@ struct PlayerView: View {
 
   @ObservedObject private var playerManager: PlayerManager
   @Environment(\.dismiss) private var dismiss
+  @State private var showsFailureAlert = false
 #if os(macOS)
   @Environment(\.dismissWindow) private var dismissWindow
 #endif
@@ -33,9 +34,20 @@ struct PlayerView: View {
 #if os(tvOS)
       subtitleLayers
 #endif
-      playbackStateOverlay
     }
     .ignoresSafeArea(.all)
+    // The system player draws its own chrome for everything else — a spinner while it
+    // buffers, Done/Menu/the window close button to get out. The one thing it can't
+    // show on its own is *why* a stream failed, so that alone gets a system alert, and
+    // we stay in the player rather than bouncing back to the page underneath it.
+    .alert("Couldn't Load", isPresented: $showsFailureAlert, presenting: failureMessage) { _ in
+      Button("OK", role: .cancel) {}
+    } message: { message in
+      Text(message)
+    }
+    .onChange(of: playerManager.playbackState) { _, state in
+      if case .failed = state { showsFailureAlert = true }
+    }
 #if os(macOS)
     // The player has its own window (see `PlayerLink`), so the title bar stays: it
     // carries the film's name and the close button. It used to be hidden while the
@@ -113,7 +125,10 @@ struct PlayerView: View {
         playerManager.player.play()
       }
 #else
-    VideoPlayer(player: playerManager.player)
+    // SwiftUI's `VideoPlayer` exposes none of `speeds` / `allowsPictureInPicturePlayback` /
+    // `controlsStyle` on macOS — `AVPlayerView` is the only surface that does (see the
+    // customization-surface table in player-and-media.md).
+    MacVideoPlayer(player: playerManager.player)
       .task {
         await playerManager.preparePlayback()
         playerManager.player.play()
@@ -138,62 +153,13 @@ struct PlayerView: View {
   }
 #endif
 
-  /// The player never sits on a silent black screen: while the stream is being prepared
-  /// there is a spinner and the title, when it fails there is the reason, and either way
-  /// there is a way out that doesn't involve killing the app.
-  ///
-  /// The way out differs by platform on purpose. Off-TV it's a button. On tvOS it's the
-  /// Menu button and a line saying so: a SwiftUI overlay sibling of
-  /// `AVPlayerViewController` can't take focus from the Siri Remote, so a `Button` here
-  /// would render and never be pressable. Menu already exits through
-  /// `playerViewControllerShouldDismiss`.
-  @ViewBuilder
-  private var playbackStateOverlay: some View {
-    VStack {
-      Spacer()
-      switch playerManager.playbackState {
-      case .ready:
-        EmptyView()
-      case .preparing:
-        VStack(spacing: 24) {
-          ProgressView()
-          if let title = playerManager.displayTitle {
-            Text(title)
-              .font(.headline)
-          }
-          exitAffordance(label: "Cancel")
-        }
-      case .failed(let message):
-        VStack(spacing: 24) {
-          Text("Couldn't Load")
-            .font(.headline)
-          Text(message)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: 600)
-          exitAffordance(label: "Close")
-        }
-      }
-      Spacer()
+  /// `nil` outside `.failed`, so the alert's `presenting:` item controls its own
+  /// visibility together with `showsFailureAlert`.
+  private var failureMessage: String? {
+    if case .failed(let message) = playerManager.playbackState {
+      return message
     }
-    .frame(maxWidth: .infinity)
-    .animation(.easeOut(duration: 0.2), value: playerManager.playbackState)
-  }
-
-  @ViewBuilder
-  private func exitAffordance(label: LocalizedStringKey) -> some View {
-#if os(tvOS)
-    Text("Press Menu to go back")
-      .font(.callout)
-      .foregroundStyle(.secondary)
-#elseif os(macOS)
-    // `dismiss()` is for presentations; closing the window it is the root of takes
-    // `dismissWindow`, which names the window explicitly.
-    Button(label) { dismissWindow(id: PlaybackWindowState.windowID) }
-#else
-    Button(label) { dismiss() }
-#endif
+    return nil
   }
 
   /// tvOS only. Sidecar SRT rendered by us, because the Siri Remote path still routes
@@ -319,6 +285,34 @@ private struct SystemVideoPlayer: UIViewControllerRepresentable {
         guard !context.isCancelled else { return }
         onExitFullScreen()
       }
+    }
+  }
+}
+
+#endif
+
+#if os(macOS)
+
+/// The AppKit surface with real chrome knobs — `speeds`, PiP, the full-screen toggle,
+/// sharing — none of which SwiftUI's `VideoPlayer` exposes on macOS (see the
+/// customization-surface table in player-and-media.md). Still no chrome of ours: every
+/// control here is `AVPlayerView`'s own.
+private struct MacVideoPlayer: NSViewRepresentable {
+  let player: AVPlayer
+
+  func makeNSView(context: Context) -> AVPlayerView {
+    let view = AVPlayerView()
+    view.player = player
+    view.allowsPictureInPicturePlayback = true
+    view.showsFullScreenToggleButton = true
+    view.showsSharingServiceButton = true
+    view.speeds = AVPlaybackSpeed.systemDefaultSpeeds
+    return view
+  }
+
+  func updateNSView(_ nsView: AVPlayerView, context: Context) {
+    if nsView.player !== player {
+      nsView.player = player
     }
   }
 }

@@ -32,6 +32,15 @@ struct MediaItemView: View {
   /// the pinned wide/trailer layer down to the blurred poster wash.
   @State private var isHeroOnScreen = true
   @FocusState private var focus: MediaItemFocusTarget?
+#if os(macOS)
+  /// The one-player rule (`PlaybackSession`) only covers the real film/trailer player.
+  /// It says nothing about this page's own *ambient* hero preview, which is a second,
+  /// independent `AVPlayer` (`TrailerPreviewModel`). Off macOS that preview stops for
+  /// free: pushing the system player onto the stack fires `onDisappear` below. macOS
+  /// opens a separate window instead — this page never disappears — so without this,
+  /// the hero preview keeps animating behind the new window for as long as it's open.
+  @ObservedObject private var playbackWindowState = PlaybackWindowState.shared
+#endif
 
   init(model: @autoclosure @escaping () -> MediaItemModel) {
     _itemModel = StateObject(wrappedValue: model())
@@ -91,6 +100,12 @@ struct MediaItemView: View {
       .onDisappear {
         trailer.stop()
       }
+#if os(macOS)
+      .onChange(of: playbackWindowState.request?.id) { _, requestID in
+        guard requestID != nil else { return }
+        trailer.stop()
+      }
+#endif
       .handleError(state: $errorHandler.state)
   }
 

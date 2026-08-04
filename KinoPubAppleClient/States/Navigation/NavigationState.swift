@@ -33,6 +33,16 @@ class NavigationState: ObservableObject {
   /// Tab to restore when the user backs out of a filter-driven Search jump.
   @Published private(set) var searchReturnTab: NavigationTabs?
 
+#if os(macOS)
+  /// Bumped instead of appending whenever `push` redirects a `.player` / `.trailerPlayer`
+  /// route to the dedicated window (see `push`). `RootView` holds the `openWindow`
+  /// environment action and observes this to actually open it — `NavigationState` is a
+  /// plain `ObservableObject`, not a view, so it cannot call `openWindow` itself. A fresh
+  /// UUID on every redirect makes a repeat request for the same item still fire the
+  /// observer.
+  @Published private(set) var playerWindowRequestID: UUID?
+#endif
+
   var canReturnFromSearch: Bool { searchReturnTab != nil }
 
   /// Switch to Search with a filter already selected (and the stack at root).
@@ -81,7 +91,28 @@ class NavigationState: ObservableObject {
   }
 
   /// Appends onto the selected tab's navigation stack (context-menu Play, etc.).
+  ///
+  /// `.player` / `.trailerPlayer` never join that stack on macOS — the player is always
+  /// its own window there (see `docs/en/features/07-playback-conveniences.md`, "macOS
+  /// presentation"). Every push-based Play entry point (card context menus, etc.) goes
+  /// through this one function, so redirecting here covers all of them without having to
+  /// track down each call site individually.
+  @MainActor
   func push(_ route: Route) {
+#if os(macOS)
+    switch route {
+    case .player(let item):
+      PlaybackWindowState.shared.request = PlaybackWindowState.Request(item: item, mode: .media)
+      playerWindowRequestID = UUID()
+      return
+    case .trailerPlayer(let item):
+      PlaybackWindowState.shared.request = PlaybackWindowState.Request(item: item, mode: .trailer)
+      playerWindowRequestID = UUID()
+      return
+    default:
+      break
+    }
+#endif
     switch selectedTab {
     case .search:
       searchRoutes.append(route)

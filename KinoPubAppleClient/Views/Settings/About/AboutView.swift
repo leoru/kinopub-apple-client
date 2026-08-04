@@ -17,7 +17,9 @@ struct AboutView: View {
 
       Text(Bundle.main.appVersionLong)
         .foregroundStyle(.secondary)
+#if !os(tvOS)
         .textSelection(.enabled)
+#endif
 
       Divider()
         .frame(maxWidth: 280)

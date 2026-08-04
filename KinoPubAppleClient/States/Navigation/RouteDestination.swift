@@ -50,19 +50,27 @@ struct RouteDestination: View {
                            authState: authState,
                            errorHandler: errorHandler)
     case .player(let item):
+#if os(macOS)
+      MacPlayerRouteGuard(item: item, mode: .media)
+#else
       PlayerView(manager: PlaybackSession.shared.play(
         item: item,
         mode: .media,
         downloadedFilesDatabase: appContext.downloadedFilesDatabase,
         actionsService: appContext.actionsService
       ))
+#endif
     case .trailerPlayer(let item):
+#if os(macOS)
+      MacPlayerRouteGuard(item: item, mode: .trailer)
+#else
       PlayerView(manager: PlaybackSession.shared.play(
         item: item,
         mode: .trailer,
         downloadedFilesDatabase: appContext.downloadedFilesDatabase,
         actionsService: appContext.actionsService
       ))
+#endif
     }
   }
 
@@ -93,6 +101,32 @@ private struct ZoomDestinationModifier: ViewModifier {
 #endif
   }
 }
+
+#if os(macOS)
+/// Safety net, not the fix: the player is never supposed to reach the main stack on
+/// macOS — every Play entry point either uses `PlayerLink` or routes through
+/// `NavigationState.push`, both of which open the dedicated window directly (see
+/// `docs/en/features/07-playback-conveniences.md`, "macOS presentation"). If a
+/// `.player` / `.trailerPlayer` route still lands here, open the window and pop this
+/// destination instead of showing the player inline next to the sidebar.
+private struct MacPlayerRouteGuard: View {
+  let item: any PlayableItem
+  let mode: WatchMode
+
+  @Environment(\.openWindow) private var openWindow
+  @Environment(\.dismiss) private var dismiss
+
+  var body: some View {
+    Color.clear
+      .onAppear {
+        assertionFailure("'.player'/'.trailerPlayer' reached the main stack on macOS — route through PlayerLink instead")
+        PlaybackWindowState.shared.request = PlaybackWindowState.Request(item: item, mode: mode)
+        openWindow(id: PlaybackWindowState.windowID)
+        dismiss()
+      }
+  }
+}
+#endif
 
 extension Route {
   /// Stable zoom source id shared with `matchedTransitionSource` on cards.

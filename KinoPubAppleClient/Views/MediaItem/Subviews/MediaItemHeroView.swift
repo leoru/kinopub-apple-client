@@ -845,7 +845,7 @@ struct MediaItemHeroView: View {
   private var moreButton: some View {
     Menu {
       if mediaItem.trailerURL != nil {
-        NavigationLink(value: linkProvider.trailerPlayer(for: mediaItem)) {
+        PlayerLink(route: linkProvider.trailerPlayer(for: mediaItem), item: mediaItem, mode: .trailer) {
           Label("Trailer", systemImage: "film")
         }
       }
@@ -916,7 +916,8 @@ struct MediaItemHeroView: View {
   @ViewBuilder
   private var primaryAction: some View {
     let content = mediaItem.playbackButtonContent
-    NavigationLink(value: linkProvider.player(for: playTarget)) {
+    let target = playTarget
+    PlayerLink(route: linkProvider.player(for: target), item: target, mode: .media) {
       primaryActionLabel(for: content)
     }
     .mediaActionPlayPillStyle()
