@@ -42,12 +42,21 @@ public class APIClient {
       throw APIClientError.invalidUrlParams
     }
 
-    let preparedRequest = plugins.reduce(request) { $1.prepare(request) }
+    let preparedRequest = plugins.reduce(request) { $1.prepare($0) }
     plugins.forEach { $0.willSend(preparedRequest) }
 
     let (data, response) = try await session.data(for: preparedRequest)
 
     plugins.forEach { $0.didReceive(response, data: data) }
+
+    if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+      // Keep structured kino.pub / OAuth envelopes as BackendError so auth
+      // call sites (invalid_grant → logout) keep working.
+      if let backendError = try? JSONDecoder().decode(BackendError.self, from: data) {
+        throw APIClientError.networkError(backendError)
+      }
+      throw APIClientError.httpStatus(http.statusCode, data: data)
+    }
 
     let result = try decode(T.self, from: data, throwDecodingErrorImmediately: false)
     if let cacheable, let ttl = policy.ttl {

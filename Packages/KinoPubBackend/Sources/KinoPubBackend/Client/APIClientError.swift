@@ -12,4 +12,6 @@ public enum APIClientError: Error {
   case invalidUrlParams
   case networkError(Error)
   case decodingError(Error)
+  /// Non-2xx HTTP response whose body was not a structured `BackendError` envelope.
+  case httpStatus(Int, data: Data?)
 }

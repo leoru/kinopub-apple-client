@@ -22,6 +22,8 @@ extension APIClientError: CustomStringConvertible {
         return error.errorDescription ?? error.localizedDescription
       }
       return "Networking issue: \(error)"
+    case .httpStatus(let code, _):
+      return "HTTP \(code)"
     }
   }
 
@@ -76,6 +78,8 @@ extension APIClientError: CustomStringConvertible {
         return "Check your connection and try again.".localized
       }
       return error.localizedDescription
+    case .httpStatus(let code, _):
+      return "Request failed (\(code))"
     case .urlError, .invalidUrlParams, .decodingError:
       return description
     }

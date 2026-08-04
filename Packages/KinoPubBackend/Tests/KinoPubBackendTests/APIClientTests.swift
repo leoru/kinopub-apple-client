@@ -136,4 +136,130 @@ class APIClientTests: XCTestCase {
       XCTFail("Expected BackendError.invalidGrant but got \(error)")
     }
   }
+
+  func testPerformRequest_ChainsPluginPrepareResults() async throws {
+    // Given — two plugins each add a distinct header; both must survive the chain.
+    let json = """
+        {
+            "code": "testCode",
+            "user_code": "ABCD-1234",
+            "verification_uri": "https://example.com/activate",
+            "expires_in": 12345,
+            "interval": 5
+        }
+        """
+    sessionMock.data = json.data(using: .utf8, allowLossyConversion: true)
+    apiClient = APIClient(
+      baseUrl: "https://api.example.com",
+      plugins: [
+        HeaderPlugin(field: "X-Plugin-A", value: "alpha"),
+        HeaderPlugin(field: "X-Plugin-B", value: "beta")
+      ],
+      session: sessionMock
+    )
+
+    // When
+    let _: VerificationResponse = try await apiClient.performRequest(
+      with: RequestData(path: "/token", method: "GET"),
+      decodingType: VerificationResponse.self
+    )
+
+    // Then
+    let prepared = try XCTUnwrap(sessionMock.lastRequest)
+    XCTAssertEqual(prepared.value(forHTTPHeaderField: "X-Plugin-A"), "alpha")
+    XCTAssertEqual(prepared.value(forHTTPHeaderField: "X-Plugin-B"), "beta")
+  }
+
+  func testPerformRequest_WhenHTTP404_ThrowsHttpStatusNotDecodingError() async {
+    let body = Data(#"{"message":"gone"}"#.utf8)
+    sessionMock.data = body
+    sessionMock.response = HTTPURLResponse(
+      url: URL(string: "https://api.example.com/missing")!,
+      statusCode: 404,
+      httpVersion: nil,
+      headerFields: nil
+    )
+
+    do {
+      let _: VerificationResponse = try await apiClient.performRequest(
+        with: RequestData(path: "/missing", method: "GET"),
+        decodingType: VerificationResponse.self
+      )
+      XCTFail("Expected httpStatus error")
+    } catch APIClientError.httpStatus(let code, let data) {
+      XCTAssertEqual(code, 404)
+      XCTAssertEqual(data, body)
+    } catch {
+      XCTFail("Expected httpStatus(404) but got \(error)")
+    }
+  }
+
+  func testPerformRequest_WhenHTTP401_ThrowsHttpStatusNotDecodingError() async {
+    sessionMock.data = Data()
+    sessionMock.response = HTTPURLResponse(
+      url: URL(string: "https://api.example.com/secure")!,
+      statusCode: 401,
+      httpVersion: nil,
+      headerFields: ["WWW-Authenticate": "Bearer"]
+    )
+
+    do {
+      let _: VerificationResponse = try await apiClient.performRequest(
+        with: RequestData(path: "/secure", method: "GET"),
+        decodingType: VerificationResponse.self
+      )
+      XCTFail("Expected httpStatus error")
+    } catch APIClientError.httpStatus(let code, let data) {
+      XCTAssertEqual(code, 401)
+      XCTAssertEqual(data, Data())
+    } catch {
+      XCTFail("Expected httpStatus(401) but got \(error)")
+    }
+  }
+
+  func testPerformRequest_WhenHTTP400WithBackendErrorBody_StillThrowsBackendError() async {
+    // Non-2xx must not erase structured kino.pub / OAuth envelopes — auth
+    // logout depends on invalid_grant remaining a BackendError.
+    let json = """
+        {
+            "error": "invalid_grant",
+            "error_description": "Invalid refresh token"
+        }
+        """
+    sessionMock.data = json.data(using: .utf8)
+    sessionMock.response = HTTPURLResponse(
+      url: URL(string: "https://api.example.com/oauth2/token")!,
+      statusCode: 400,
+      httpVersion: nil,
+      headerFields: nil
+    )
+
+    do {
+      let _: AccessToken = try await apiClient.performRequest(
+        with: RequestData(path: "/oauth2/token", method: "POST"),
+        decodingType: AccessToken.self
+      )
+      XCTFail("Expected invalid_grant network error")
+    } catch APIClientError.networkError(let error as BackendError) {
+      XCTAssertEqual(error.errorCode, .invalidGrant)
+      XCTAssertEqual(error.errorDescription, "Invalid refresh token")
+    } catch {
+      XCTFail("Expected BackendError.invalidGrant but got \(error)")
+    }
+  }
+}
+
+private struct HeaderPlugin: APIClientPlugin {
+  let field: String
+  let value: String
+
+  func prepare(_ request: URLRequest) -> URLRequest {
+    var request = request
+    request.addValue(value, forHTTPHeaderField: field)
+    return request
+  }
+
+  func willSend(_ request: URLRequest) {}
+
+  func didReceive(_ response: URLResponse, data: Data?) {}
 }

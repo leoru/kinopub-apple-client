@@ -12,8 +12,11 @@ public class URLSessionMock: URLSessionProtocol {
   var data: Data?
   var response: URLResponse?
   var error: Error?
+  var lastRequest: URLRequest?
 
   public func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+    lastRequest = request
+
     if let error = error {
       throw error
     }
