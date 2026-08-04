@@ -15,18 +15,17 @@ struct RootView: View {
   @EnvironmentObject var authState: AuthState
 
   var body: some View {
-    ZStack {
-      // The app is swapped out entirely, not covered: a live catalog behind the code keeps loading
-      // artwork and cycling the hero, which flickers through the material — and its requests, all
-      // unauthorized, would raise error toasts on top of a screen you cannot leave.
+    // Swap entirely (not overlay): a live catalog behind the code keeps loading artwork and
+    // cycling the hero through the material, and its unauthorized requests toast on a screen
+    // you cannot leave. No animated teardown — UIKit's TabView asserts when sidebarAdaptable
+    // tabs are removed mid-update ("No view controller matches the UITabBarItem").
+    Group {
       if authState.shouldShowAuthentication {
         AuthView(model: AuthModel(authService: appContext.authService, authState: authState))
-              .transition(.blurReplace)
       } else {
         TabsNavigationView()
       }
     }
-    .animation(.default, value: authState.shouldShowAuthentication)
     .task {
       await authState.check()
     }

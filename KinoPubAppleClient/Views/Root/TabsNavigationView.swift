@@ -16,18 +16,25 @@ import UIKit
 import AppKit
 #endif
 
-/// Primary chrome on iOS, tvOS and macOS — stock system `TabView` with
-/// `.sidebarAdaptable` (sidebar on Mac/TV, tab bar on iPhone, adaptable on iPad).
+/// Primary chrome on iOS, tvOS and macOS — stock system `TabView`.
 ///
 /// Platform IA:
-/// - **tvOS:** flat tabs (no `TabSection`), profile at the top, Search with `.search` role,
+/// - **tvOS:** `.sidebarAdaptable`, profile at the top, Search with `.search` role,
 ///   Library merges watchlist / history / bookmarks.
-/// - **iOS / iPad:** Library likewise merges those three; Downloads stays its own tab.
+/// - **iPhone (compact):** classic `.tabItem` tab bar — the iOS 18+ `Tab` API’s
+///   `UIKitTabBarController` asserts on Library selection on Phone.
+/// - **iPad (regular):** `Tab` + `.sidebarAdaptable`; Library merges the three personal rows.
 /// - **macOS:** sidebar sections (Browse / Library / Folders), profile in
 ///   `tabViewSidebarBottomBar`, `TabViewCustomization` for show/hide + folders.
 struct TabsNavigationView: View {
 
   @Environment(\.appContext) var appContext
+#if os(iOS)
+  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+  /// Int tags for the classic compact tab bar — avoids `NavigationTabs`’ associated-value
+  /// `Hashable` path, which has been implicated in SwiftUI tab identity mismatches.
+  @State private var compactTabTag: Int = CompactPhoneTab.home.rawValue
+#endif
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var errorHandler: ErrorHandler
   @EnvironmentObject var authState: AuthState
@@ -60,7 +67,12 @@ struct TabsNavigationView: View {
       .environmentObject(navigationState)
       .environmentObject(errorHandler)
       .task { await loadSidebarChrome() }
-      .onChange(of: navigationState.selectedTab) { _, _ in
+      .onChange(of: navigationState.selectedTab) { _, newTab in
+#if os(iOS)
+        if horizontalSizeClass != .regular, let tag = CompactPhoneTab(newTab)?.rawValue {
+          compactTabTag = tag
+        }
+#endif
         guard !showSettings else { return }
         Task { await syncSidebarFolders() }
       }
@@ -70,6 +82,8 @@ struct TabsNavigationView: View {
 
   /// Re-selecting the current tab pops that tab's stack to root (Apple Music /
   /// Apple TV). `TabView` still calls the setter with the same value.
+  /// Selection must update synchronously — deferring leaves UIKit with a selected
+  /// `UITabBarItem` that has no matching VC yet and asserts on Library taps.
   private var tabSelection: Binding<NavigationTabs> {
     Binding(
       get: { navigationState.selectedTab },
@@ -77,8 +91,7 @@ struct TabsNavigationView: View {
         if newValue == navigationState.selectedTab {
           navigationState.popToRoot(for: newValue)
         } else {
-          navigationState.selectedTab = newValue /// Publishing changes from within view updates is not allowed, this will cause undefined behavior.
-
+          navigationState.selectedTab = newValue
         }
       }
     )
@@ -330,6 +343,15 @@ struct TabsNavigationView: View {
 #if os(iOS)
   @ViewBuilder
   private var phonePadTabs: some View {
+    if horizontalSizeClass == .regular {
+      phonePadSidebarTabs
+    } else {
+      phoneCompactTabBar
+    }
+  }
+
+  /// iPad — new `Tab` API + sidebar. Badges / search role are fine here.
+  private var phonePadSidebarTabs: some View {
     TabView(selection: tabSelection) {
       Tab(value: NavigationTabs.search, role: .search) {
         searchContent
@@ -349,7 +371,7 @@ struct TabsNavigationView: View {
         seriesContent
       }
 
-      Tab("Library", systemImage: "rectangle.stack.fill.badge.person.crop", value: NavigationTabs.library) {
+      Tab("Library", systemImage: "rectangle.stack.badge.person.crop", value: NavigationTabs.library) {
         libraryContent
       }
       .badge(libraryBadgeCount)
@@ -357,18 +379,102 @@ struct TabsNavigationView: View {
       Tab("Downloads", systemImage: "laptopcomputer.and.arrow.down", value: NavigationTabs.downloads) {
         downloadsContent
       }
-      .defaultVisibility(.hidden, for: .tabBar)
       .badge(downloadsBadgeCount)
 
-      Tab(value: NavigationTabs.settings) {
+      Tab("Profile", systemImage: "person.crop.circle", value: NavigationTabs.settings) {
         settingsContent
-      } label: {
-        profileLabel(avatarSize: 20)
       }
-      .defaultVisibility(.hidden, for: .tabBar)
       .badge(subscriptionDaysBadge)
     }
     .tabViewStyle(.sidebarAdaptable)
+  }
+
+  /// iPhone — classic `tabItem`/`tag` tab bar. The iOS 18+ `Tab { }` path hosts
+  /// `SwiftUI.UIKitTabBarController`, which asserts on Phone when selecting Library
+  /// ("No view controller matches the UITabBarItem"). Overflow goes to system More.
+  private var phoneCompactTabBar: some View {
+    TabView(selection: compactTabSelection) {
+      searchContent
+        .tabItem { Label("Search", systemImage: "magnifyingglass") }
+        .tag(CompactPhoneTab.search.rawValue)
+
+      homeContent
+        .tabItem { Label("For You", systemImage: "play.fill") }
+        .tag(CompactPhoneTab.home.rawValue)
+
+      moviesContent
+        .tabItem { Label("Movies", systemImage: "movieclapper") }
+        .tag(CompactPhoneTab.movies.rawValue)
+
+      seriesContent
+        .tabItem { Label("Series", systemImage: "rectangle.stack") }
+        .tag(CompactPhoneTab.series.rawValue)
+
+      libraryContent
+        .tabItem { Label("Library", systemImage: "rectangle.stack.badge.person.crop") }
+        .tag(CompactPhoneTab.library.rawValue)
+
+      downloadsContent
+        .tabItem { Label("Downloads", systemImage: "laptopcomputer.and.arrow.down") }
+        .tag(CompactPhoneTab.downloads.rawValue)
+
+      settingsContent
+        .tabItem { Label("Profile", systemImage: "person.crop.circle") }
+        .tag(CompactPhoneTab.settings.rawValue)
+    }
+  }
+
+  private var compactTabSelection: Binding<Int> {
+    Binding(
+      get: { compactTabTag },
+      set: { newValue in
+        if newValue == compactTabTag {
+          if let tab = CompactPhoneTab(rawValue: newValue) {
+            navigationState.popToRoot(for: tab.navigationTab)
+          }
+        } else {
+          compactTabTag = newValue
+          if let tab = CompactPhoneTab(rawValue: newValue) {
+            navigationState.selectedTab = tab.navigationTab
+          }
+        }
+      }
+    )
+  }
+
+  /// Stable Int-backed tabs for the classic iPhone tab bar.
+  private enum CompactPhoneTab: Int {
+    case search = 0
+    case home = 1
+    case movies = 2
+    case series = 3
+    case library = 4
+    case downloads = 5
+    case settings = 6
+
+    var navigationTab: NavigationTabs {
+      switch self {
+      case .search: return .search
+      case .home: return .home
+      case .movies: return .movies
+      case .series: return .series
+      case .library: return .library
+      case .downloads: return .downloads
+      case .settings: return .settings
+      }
+    }
+
+    init?(_ tab: NavigationTabs) {
+      switch tab {
+      case .search: self = .search
+      case .home: self = .home
+      case .movies: self = .movies
+      case .series: self = .series
+      case .library, .watchlist, .recentlyWatched, .bookmarks, .bookmark: self = .library
+      case .downloads: self = .downloads
+      case .settings: self = .settings
+      }
+    }
   }
 #endif
 
@@ -532,10 +638,17 @@ struct TabsNavigationView: View {
     if let sidebarSyncedAt, Date().timeIntervalSince(sidebarSyncedAt) < Self.sidebarSyncTTL { return }
     async let foldersTask = fetchFolders()
     async let watchlistTask = fetchWatchlistCount()
-    sidebarFolders = await foldersTask
-    watchlistBadgeCount = await watchlistTask
+    let folders = await foldersTask
+    let watchlist = await watchlistTask
 #if !os(tvOS)
-    downloadsBadgeCount = (appContext.downloadedFilesDatabase.readData() ?? []).count
+    let downloads = (appContext.downloadedFilesDatabase.readData() ?? []).count
+#endif
+    // Only publish when values change — rewriting tab `.badge` during a tab switch
+    // recreates `UITabBarItem`s and can assert on iPhone.
+    if folders != sidebarFolders { sidebarFolders = folders }
+    if watchlist != watchlistBadgeCount { watchlistBadgeCount = watchlist }
+#if !os(tvOS)
+    if downloads != downloadsBadgeCount { downloadsBadgeCount = downloads }
 #endif
     sidebarSyncedAt = Date()
   }

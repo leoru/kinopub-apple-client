@@ -112,4 +112,28 @@ class APIClientTests: XCTestCase {
       XCTFail("Expected decoding error but got \(error)")
     }
   }
+
+  func testPerformRequest_WhenOAuthInvalidGrantWithoutStatus_ThrowsBackendError() async {
+    // Real oauth2/token 400 body — no `status` field.
+    let json = """
+        {
+            "error": "invalid_grant",
+            "error_description": "Invalid refresh token"
+        }
+        """
+    sessionMock.data = json.data(using: .utf8, allowLossyConversion: true)
+
+    do {
+      let _: AccessToken = try await apiClient.performRequest(
+        with: RequestData(path: "/oauth2/token", method: "POST"),
+        decodingType: AccessToken.self
+      )
+      XCTFail("Expected invalid_grant network error")
+    } catch APIClientError.networkError(let error as BackendError) {
+      XCTAssertEqual(error.errorCode, .invalidGrant)
+      XCTAssertEqual(error.errorDescription, "Invalid refresh token")
+    } catch {
+      XCTFail("Expected BackendError.invalidGrant but got \(error)")
+    }
+  }
 }

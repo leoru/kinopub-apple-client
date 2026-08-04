@@ -20,8 +20,8 @@ enum UserState {
 /// A class that manages the authentication state of the user.
 @MainActor
 final class AuthState: ObservableObject {
-  @Published var userState: UserState = .unauthorized
-  @Published var shouldShowAuthentication: Bool = false
+  @Published var userState: UserState
+  @Published var shouldShowAuthentication: Bool
   
   private var authService: AuthorizationService
   private var accessTokenService: AccessTokenService
@@ -35,6 +35,12 @@ final class AuthState: ObservableObject {
   init(authService: AuthorizationService, accessTokenService: AccessTokenService) {
     self.authService = authService
     self.accessTokenService = accessTokenService
+    // Keychain read is sync. Without a token, show auth immediately — otherwise
+    // `TabsNavigationView` mounts for one frame, fires 401s, then tears down under
+    // animation and UIKit TabView asserts ("No view controller matches UITabBarItem").
+    let hasToken = (accessTokenService.token() as AccessToken?) != nil
+    self.userState = hasToken ? .authorized : .unauthorized
+    self.shouldShowAuthentication = !hasToken
   }
 
   /// Checks the authentication state of the user.
@@ -60,9 +66,10 @@ final class AuthState: ObservableObject {
       Logger.app.debug("Auth state: authorized")
     } catch let error as APIClientError where error.isFatalAuthError {
       // The backend explicitly rejected the refresh token — only now is the session
-      // really over.
+      // really over. Clear Keychain so the next launch does not revive a dead token.
       refreshRetryTask?.cancel()
       refreshRetryTask = nil
+      authService.logout()
       userState = .unauthorized
       shouldShowAuthentication = true
       Logger.app.info("Refresh token rejected, auth state: unauthorized")
