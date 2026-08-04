@@ -350,8 +350,23 @@ class MediaItemModel: ObservableObject {
   }
 
   // DESIGN: series `/v1/watching/togglewatchlist` is available via
-  // `actionsService.toggleWatchlist` — do not wire it to a checkmark control here;
-  // checkmark already means Mark as Watched. Needs its own chrome when designed.
+  // `actionsService.toggleWatchlist` — the context menu uses this; the hero
+  // checkmark control stays Mark as Watched.
+  @Published public var isInWatchlist: Bool = false
+
+  func toggleWatchlist() {
+    let previous = isInWatchlist
+    isInWatchlist.toggle()
+    Task {
+      do {
+        try await actionsService.toggleWatchlist(id: mediaItemId)
+        contentStore.invalidate(family: .watch)
+      } catch {
+        isInWatchlist = previous
+        errorHandler.setError(error)
+      }
+    }
+  }
 
   /// Create a bookmark folder and put this item in it.
   func createFolderAndAdd(named name: String) {

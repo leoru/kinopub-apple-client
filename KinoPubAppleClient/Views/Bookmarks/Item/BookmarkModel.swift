@@ -15,10 +15,13 @@ class BookmarkModel: ObservableObject {
 
   private var contentService: VideoContentService
   private var errorHandler: ErrorHandler
+  private var isFetching = false
 
   public var bookmark: Bookmark
   @Published public var items: [MediaItem] = []
   @Published public private(set) var isLoading: Bool = false
+  @Published public private(set) var paginationFailed: Bool = false
+  @Published public private(set) var pagination: Pagination?
 
   init(bookmark: Bookmark, itemsService: VideoContentService, errorHandler: ErrorHandler) {
     self.contentService = itemsService
@@ -27,19 +30,60 @@ class BookmarkModel: ObservableObject {
   }
 
   func fetchItems() async {
-    isLoading = true
+    await fetchPage(reset: true)
+  }
+
+  func loadMoreContent(after item: MediaItem) {
+    guard let pagination,
+          CatalogLoadMore.isThresholdItem(item, in: items),
+          pagination.current < pagination.total else {
+      return
+    }
+    Task { await fetchPage(reset: false) }
+  }
+
+  func retryPagination() {
+    paginationFailed = false
+    Task { await fetchPage(reset: false) }
+  }
+
+  private func fetchPage(reset: Bool) async {
+    let isFirstPage = reset || pagination == nil
+    if !isFirstPage {
+      guard !isFetching else { return }
+    }
+    isFetching = true
+    defer { isFetching = false }
+
+    if isFirstPage { isLoading = true }
     defer { isLoading = false }
+
     do {
-      items = try await contentService.fetchBookmarkItems(id: "\(bookmark.id)").items
+      let page = isFirstPage ? nil : pagination.map { $0.current + 1 }
+      let data = try await contentService.fetchBookmarkItems(id: "\(bookmark.id)", page: page)
+      if isFirstPage {
+        items = data.items
+      } else {
+        items.append(contentsOf: data.items)
+      }
+      pagination = data.pagination
+      paginationFailed = false
     } catch {
       Logger.app.debug("fetch bookmark items error: \(error)")
-      errorHandler.setError(error)
+      if isFirstPage {
+        errorHandler.setError(error)
+      } else {
+        paginationFailed = true
+        errorHandler.setError(error)
+      }
     }
   }
 
   @MainActor
   func refresh() {
     items = []
+    pagination = nil
+    paginationFailed = false
     Task {
       Logger.app.debug("refetch bookmark items")
       await fetchItems()

@@ -39,7 +39,8 @@ public struct MediaRowsView: View {
   private let navigationLinkProvider: (MediaCard) -> any Hashable
   private let onRowAppear: ((MediaRow) -> Void)?
   /// Long-press menu for a card. Return an empty array to leave the card without one.
-  private let contextMenuProvider: ((MediaCard) -> [MediaCardContextAction])?
+  /// `surface` distinguishes shelf lockups from featured banners (artwork URL, etc.).
+  private let contextMenuProvider: ((MediaCard, MediaCardContextSurface) -> [MediaCardContextEntry])?
 
   /// Identifies one card in one row. The same item can sit in two rows — Continue
   /// Watching and Hot Series both — so the card's own id is not unique enough to
@@ -59,7 +60,7 @@ public struct MediaRowsView: View {
               bannerCards: [MediaCard] = [],
               navigationLinkProvider: @escaping (MediaCard) -> any Hashable,
               onRowAppear: ((MediaRow) -> Void)? = nil,
-              contextMenuProvider: ((MediaCard) -> [MediaCardContextAction])? = nil) {
+              contextMenuProvider: ((MediaCard, MediaCardContextSurface) -> [MediaCardContextEntry])? = nil) {
     self.rows = rows
     self.bannerCards = bannerCards
     self.navigationLinkProvider = navigationLinkProvider
@@ -134,6 +135,7 @@ public struct MediaRowsView: View {
           .buttonStyle(MediaCardButtonStyle())
 #endif
           .focused($focusedCard, equals: CardKey(row: Self.bannerRowID, card: card.id))
+          .modifier(MediaCardContextMenuModifier(entries: contextMenuProvider?(card, .banner) ?? []))
         }
       }
       .scrollTargetLayout()
@@ -172,7 +174,7 @@ public struct MediaRowsView: View {
             .buttonStyle(MediaCardButtonStyle())
 #endif
             .focused($focusedCard, equals: CardKey(row: row.id, card: card.id))
-            .modifier(MediaCardContextMenuModifier(actions: contextMenuProvider?(card) ?? []))
+            .modifier(MediaCardContextMenuModifier(entries: contextMenuProvider?(card, .shelf) ?? []))
           }
         }
         .safeAreaPadding(.horizontal, metrics.inset)
@@ -285,24 +287,66 @@ public struct MediaCardButtonStyle: ButtonStyle {
 /// Applies a long-press context menu when there is something to offer; a no-op otherwise
 /// so catalog posters without actions stay clean.
 public struct MediaCardContextMenuModifier: ViewModifier {
-  let actions: [MediaCardContextAction]
+  let entries: [MediaCardContextEntry]
 
-  public init(actions: [MediaCardContextAction]) {
-    self.actions = actions
+  public init(entries: [MediaCardContextEntry]) {
+    self.entries = entries
   }
 
   @ViewBuilder
   public func body(content: Content) -> some View {
-    if actions.isEmpty {
+    if entries.isEmpty {
       content
     } else {
       content.contextMenu {
-        ForEach(actions) { action in
-          Button(role: action.role, action: action.handler) {
-            Label(action.title, systemImage: action.systemImage)
+        ForEach(entries) { entry in
+          entryView(entry)
+        }
+        // macOS 26+/27 hide SF Symbol menu icons unless we ask for title+icon.
+        .labelStyle(.titleAndIcon)
+      }
+    }
+  }
+
+  @ViewBuilder
+  private func entryView(_ entry: MediaCardContextEntry) -> some View {
+    switch entry {
+    case .action(let action):
+      contextControl(action)
+    case .submenu(_, let title, let systemImage, let children, let footer):
+      Menu {
+        ForEach(children) { child in
+          contextControl(child)
+        }
+        if !footer.isEmpty {
+          Divider()
+          ForEach(footer) { item in
+            contextControl(item)
           }
         }
+      } label: {
+        Label(title, systemImage: systemImage)
       }
+      .labelStyle(.titleAndIcon)
+    case .divider:
+      Divider()
+    }
+  }
+
+  @ViewBuilder
+  private func contextControl(_ action: MediaCardContextAction) -> some View {
+    if action.isSelection {
+      Toggle(isOn: Binding(
+        get: { action.isOn },
+        set: { _ in action.handler() }
+      )) {
+        Text(action.title)
+      }
+    } else {
+      Button(role: action.role, action: action.handler) {
+        Label(action.title, systemImage: action.systemImage)
+      }
+      .labelStyle(.titleAndIcon)
     }
   }
 }

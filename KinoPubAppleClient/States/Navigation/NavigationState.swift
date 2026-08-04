@@ -79,6 +79,32 @@ class NavigationState: ObservableObject {
       break
     }
   }
+
+  /// Appends onto the selected tab's navigation stack (context-menu Play, etc.).
+  func push(_ route: Route) {
+    switch selectedTab {
+    case .search:
+      searchRoutes.append(route)
+    case .home:
+      mainRoutes.append(route)
+    case .movies:
+      moviesRoutes.append(route)
+    case .series:
+      seriesRoutes.append(route)
+    case .library:
+      libraryRoutes.append(route)
+    case .watchlist:
+      watchlistRoutes.append(route)
+    case .recentlyWatched:
+      recentlyWatchedRoutes.append(route)
+    case .bookmarks, .bookmark:
+      bookmarksRoutes.append(route)
+    case .downloads:
+      downloadsRoutes.append(route)
+    case .settings:
+      break
+    }
+  }
 }
 
 extension View {

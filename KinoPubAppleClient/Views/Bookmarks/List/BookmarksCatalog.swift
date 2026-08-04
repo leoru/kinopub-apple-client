@@ -67,7 +67,7 @@ class BookmarksCatalog: ObservableObject {
       for folder in folders {
         group.addTask { [store, contentService] in
           await store.refreshIfStale(.folder(folder.id)) {
-            let items = try await contentService.fetchBookmarkItems(id: "\(folder.id)").items
+            let items = try await contentService.fetchBookmarkItems(id: "\(folder.id)", page: nil).items
             return items.map(MediaCard.init)
           }
           // Each folder's row appears as soon as its own fetch lands.

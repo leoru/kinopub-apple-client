@@ -1,8 +1,5 @@
 //
-//  File.swift
-//  
-//
-//  Created by Kirill Kunst on 6.08.2023.
+//  BookmarkItemsRequest.swift
 //
 
 import Foundation
@@ -10,9 +7,11 @@ import Foundation
 public struct BookmarkItemsRequest: Endpoint {
 
   private var id: String
+  private var page: Int?
 
-  public init(id: String) {
+  public init(id: String, page: Int? = nil) {
     self.id = id
+    self.page = page
   }
 
   public var path: String {
@@ -24,7 +23,8 @@ public struct BookmarkItemsRequest: Endpoint {
   }
 
   public var parameters: [String: Any]? {
-    nil
+    guard let page else { return nil }
+    return ["page": "\(page)"]
   }
 
   public var headers: [String: String]? {

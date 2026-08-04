@@ -27,6 +27,7 @@ struct KinoPubAppleClientApp: App {
   
 #if os(macOS)
   @StateObject var windowSettings = WindowSettings()
+  @AppStorage(HistoryCardLayout.storageKey) private var historyCardLayout: String = HistoryCardLayout.landscape.rawValue
 #endif
   
 #if os(iOS) || os(tvOS)
@@ -80,6 +81,16 @@ struct KinoPubAppleClientApp: App {
     // command, the way the TV app's File menu has New Playlist).
     .commands {
       CommandGroup(replacing: .newItem) { }
+      // Into the system View menu — `CommandMenu("View")` would add a second View.
+      CommandGroup(after: .toolbar) {
+        Divider()
+        Picker("History Layout", selection: $historyCardLayout) {
+          ForEach(HistoryCardLayout.allCases) { layout in
+            Text(LocalizedStringKey(layout.titleKey)).tag(layout.rawValue)
+          }
+        }
+        .pickerStyle(.inline)
+      }
     }
 #endif
 

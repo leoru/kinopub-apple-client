@@ -144,7 +144,7 @@ class PersonalLibraryCatalog: ObservableObject {
   }
 
   private func fetchHistoryCards() async throws -> [MediaCard] {
-    let history = try await contentService.fetchHistory().history
+    let history = try await contentService.fetchHistory(page: nil).history
     return HistoryView.cards(from: history)
   }
 
@@ -165,7 +165,7 @@ class PersonalLibraryCatalog: ObservableObject {
   }
 
   private func fetchFolderCards(_ folder: Bookmark) async throws -> [MediaCard] {
-    try await contentService.fetchBookmarkItems(id: "\(folder.id)").items.map(MediaCard.init)
+    try await contentService.fetchBookmarkItems(id: "\(folder.id)", page: nil).items.map(MediaCard.init)
   }
 
   private func subscribeForAuth() {

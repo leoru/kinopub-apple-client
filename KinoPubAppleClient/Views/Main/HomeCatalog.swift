@@ -217,7 +217,7 @@ class HomeCatalog: ObservableObject {
     async let moviesTask = try? itemsService.fetchWatchingMovies().items
     async let allSerialsTask = try? itemsService.fetchWatchingSerials(subscribedOnly: false).items
     async let watchlistTask = try? itemsService.fetchWatchingSerials(subscribedOnly: true).items
-    async let historyTask = try? itemsService.fetchHistory().history
+    async let historyTask = try? itemsService.fetchHistory(page: nil).history
 
     let moviesResult = await moviesTask
     let serialsResult = await allSerialsTask

@@ -13,9 +13,11 @@ struct MainView: View {
   @EnvironmentObject var errorHandler: ErrorHandler
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
+  @Environment(\.openURL) private var openURL
   @Namespace private var zoomNamespace
 
   @StateObject private var catalog: HomeCatalog
+  @StateObject private var cardMenu = MediaCardMenuCoordinator()
 
   init(catalog: @autoclosure @escaping () -> HomeCatalog) {
     _catalog = StateObject(wrappedValue: catalog())
@@ -45,8 +47,13 @@ struct MainView: View {
         }
         .handleError(state: $errorHandler.state)
         .task {
+          cardMenu.bind(errorHandler: errorHandler)
           await catalog.fetch()
         }
+        .task {
+          await cardMenu.refreshFolders()
+        }
+        .mediaCardNewFolderAlert(cardMenu)
     }
     .environment(\.zoomTransitionNamespace, zoomNamespace)
     .navigationStackActive(for: .home, selected: navigationState.selectedTab)
@@ -81,26 +88,49 @@ struct MainView: View {
       navigationLinkProvider: { card in
         Route.detailsById(card.id)
       },
-      contextMenuProvider: { card in
-        // Continue Watching is the only home row whose long-press can hide or mark a
-        // specific resume point. Catalog posters stay tap-to-open.
-        guard card.isLandscape else { return [] }
-        return MediaCardContextMenus.actions(
-          for: card,
-          includeGoToTitle: true,
-          onHide: { catalog.hide(card) },
-          onToggleWatched: { catalog.toggleWatched(card) },
-          onGoToTitle: { navigationState.mainRoutes.append(.detailsById(card.itemID)) },
-          onBrowseHistory: { navigationState.mainRoutes.append(.history) },
-          onBrowseWatchlist: {
-#if os(macOS)
-            navigationState.selectedTab = .watchlist
-#else
-            navigationState.selectedTab = .library
-#endif
-          }
-        )
+      contextMenuProvider: { card, surface in
+        menuEntries(for: card, surface: surface, isContinueWatching: card.isLandscape)
       }
+    )
+  }
+
+  private func menuEntries(for card: MediaCard,
+                           surface: MediaCardContextSurface,
+                           isContinueWatching: Bool) -> [MediaCardContextEntry] {
+    cardMenu.prefetchMembership(for: card.itemID)
+    let containing = cardMenu.membershipByItemID[card.itemID] ?? []
+    let folders = cardMenu.folders.map {
+      MediaCardContextMenus.BookmarkFolderOption(
+        id: $0.id,
+        title: $0.title,
+        isContaining: containing.contains($0.id)
+      )
+    }
+
+    let onToggleWatched: (() -> Void)? = {
+      if isContinueWatching {
+        return card.canToggleWatched ? { catalog.toggleWatched(card) } : nil
+      }
+      return card.isSeries ? nil : {
+        cardMenu.toggleWatched(card, removeFromContinueWatching: false)
+      }
+    }()
+
+    return MediaCardContextMenus.entries(
+      for: card,
+      surface: surface,
+      bookmarkFolders: folders,
+      onPlay: { cardMenu.play(card) { navigationState.push($0) } },
+      onGoToTitle: { navigationState.push(.detailsById(card.itemID)) },
+      onToggleWatchlist: card.isSeries ? { cardMenu.toggleWatchlist(card) } : nil,
+      onToggleBookmarkFolder: { folderID in
+        guard let folder = cardMenu.folders.first(where: { $0.id == folderID }) else { return }
+        cardMenu.toggleBookmark(itemID: card.itemID, folder: folder)
+      },
+      onCreateBookmarkFolder: { cardMenu.promptNewFolder(for: card.itemID) },
+      onToggleWatched: onToggleWatched,
+      onHide: isContinueWatching ? { catalog.hide(card) } : nil,
+      onOpenImageURL: { openURL($0) }
     )
   }
 }

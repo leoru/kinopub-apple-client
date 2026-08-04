@@ -123,7 +123,9 @@ struct MediaItemView: View {
                           onCreateFolder: { itemModel.createFolderAndAdd(named: $0) },
                           onClearFromContinueWatching: { itemModel.clearFromContinueWatching() },
                           onBrowseWatchlist: { Self.openWatchlist(navigationState) },
-          titleLogoURL: itemModel.externalMetadata.titleLogoURL)
+                          isInWatchlist: itemModel.isInWatchlist,
+                          onToggleWatchlist: { itemModel.toggleWatchlist() },
+                          titleLogoURL: itemModel.externalMetadata.titleLogoURL)
 #if os(tvOS)
           .containerRelativeFrame(.vertical) { length, _ in length }
           .focusSection()

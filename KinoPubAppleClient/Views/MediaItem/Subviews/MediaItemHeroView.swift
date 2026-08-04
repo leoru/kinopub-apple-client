@@ -355,6 +355,9 @@ struct MediaItemHeroView: View {
   var onClearFromContinueWatching: () -> Void = {}
   /// Opens the Saved / watchlist tab — same destination as the CW long-press action.
   var onBrowseWatchlist: (() -> Void)? = nil
+  /// Series watchlist toggle for the shared context menu (not the hero checkmark).
+  var isInWatchlist: Bool = false
+  var onToggleWatchlist: (() -> Void)? = nil
   /// TMDB title logo when available; otherwise the text title block is shown.
   var titleLogoURL: URL? = nil
 
@@ -363,6 +366,9 @@ struct MediaItemHeroView: View {
   @State private var isTrailerFullScreen = false
   @State private var showNewFolderAlert = false
   @State private var newFolderName = ""
+
+  @Environment(\.openURL) private var openURL
+  @EnvironmentObject private var navigationState: NavigationState
 
   private var isSeries: Bool {
     !(mediaItem.seasons?.isEmpty ?? true)
@@ -387,6 +393,7 @@ struct MediaItemHeroView: View {
       .fullScreenCover(isPresented: $isTrailerFullScreen, onDismiss: { trailer.setFullScreen(false) }) {
         fullScreenTrailer
       }
+      .modifier(MediaCardContextMenuModifier(entries: contextMenuEntries))
 #else
     // Backdrop stays in the ambient scheme so the bottom seam still blends into the
     // page colour; only the overlay chrome is forced dark.
@@ -402,7 +409,81 @@ struct MediaItemHeroView: View {
     .frame(maxWidth: .infinity, alignment: .bottomLeading)
     .clipped()
     .background(visibilityProbe)
+    .modifier(MediaCardContextMenuModifier(entries: contextMenuEntries))
 #endif
+  }
+
+  /// Same builder as Home / Library cards — Play, library, watched, hide, DEBUG art URLs.
+  private var contextMenuEntries: [MediaCardContextEntry] {
+    let card = MediaCard(
+      id: mediaItem.id,
+      posterURL: mediaItem.posters.medium,
+      title: mediaItem.localizedTitle,
+      subtitle: mediaItem.originalTitle,
+      imdbRating: mediaItem.imdbRating,
+      kinopoiskRating: mediaItem.kinopoiskRating,
+      backdropURL: mediaItem.posters.wideURL ?? mediaItem.posters.big,
+      metaLine: mediaItem.metadataLine,
+      overview: mediaItem.plot,
+      itemID: mediaItem.id,
+      video: isSeries ? nil : 1,
+      isWatched: isWatched,
+      isSeries: isSeries,
+      isInWatchlist: isInWatchlist
+    )
+    let folderOptions = folders.map {
+      MediaCardContextMenus.BookmarkFolderOption(
+        id: $0.id,
+        title: $0.title,
+        isContaining: folderIDsContainingItem.contains($0.id)
+      )
+    }
+    return MediaCardContextMenus.entries(
+      for: card,
+      surface: .banner,
+      bookmarkFolders: folderOptions,
+      onPlay: {
+        if let route = linkProvider.player(for: playTarget) as? Route {
+          navigationState.push(route)
+        }
+      },
+      onGoToTitle: nil,
+      onToggleWatchlist: isSeries ? onToggleWatchlist : nil,
+      onToggleBookmarkFolder: { folderID in
+        guard let folder = folders.first(where: { $0.id == folderID }) else { return }
+        onFolderToggle(folder)
+      },
+      onCreateBookmarkFolder: onCreateFolder == nil
+        ? nil
+        : {
+          newFolderName = ""
+          showNewFolderAlert = true
+        },
+      onToggleWatched: onWatchedToggle,
+      onHide: onClearFromContinueWatching,
+      onOpenImageURL: { openURL($0) },
+      debugImageURLs: debugArtworkURLs
+    )
+  }
+
+  /// Wide backdrop first, then title-logo art when TMDB supplied one.
+  private var debugArtworkURLs: [URL] {
+    var urls: [URL] = []
+    var seen = Set<String>()
+#if os(tvOS)
+    let wide = mediaItem.posters.wideURL ?? mediaItem.posters.big
+    if !wide.isEmpty, seen.insert(wide).inserted, let url = URL(string: wide) {
+      urls.append(url)
+    }
+#else
+    if let primary = backdropCandidates.first, seen.insert(primary.absoluteString).inserted {
+      urls.append(primary)
+    }
+#endif
+    if let titleLogoURL, seen.insert(titleLogoURL.absoluteString).inserted {
+      urls.append(titleLogoURL)
+    }
+    return urls
   }
 
 #if os(tvOS)
@@ -980,6 +1061,7 @@ private extension View {
 private struct MediaItemHeroPreview: View {
   @FocusState private var focus: MediaItemFocusTarget?
   @StateObject private var trailer = TrailerPreviewModel()
+  @StateObject private var navigationState = NavigationState()
   @State private var isHeroOnScreen = true
 
   var body: some View {
@@ -997,6 +1079,7 @@ private struct MediaItemHeroPreview: View {
       onFolderToggle: { _ in },
       titleLogoURL: nil
     )
+    .environmentObject(navigationState)
     .aspectRatio(16 / 9, contentMode: .fit)
     .frame(maxWidth: 960)
     .background(Color.black)

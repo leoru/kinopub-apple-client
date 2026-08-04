@@ -130,10 +130,12 @@ class LibraryCatalog: ObservableObject {
 
   func loadMoreContent(after item: MediaItem) {
     guard let pagination else { return }
-    let thresholdIndex = items.index(items.endIndex, offsetBy: -1)
-    if thresholdIndex == items.firstIndex(of: item), pagination.current < pagination.total {
-      Task { await load() }
+    // O(1) by id — never firstIndex(of:), which deep-compares MediaItem.
+    guard CatalogLoadMore.isThresholdItem(item, in: items),
+          pagination.current < pagination.total else {
+      return
     }
+    Task { await load() }
   }
 
   func refresh() async {

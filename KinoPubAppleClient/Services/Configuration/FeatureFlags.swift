@@ -17,5 +17,13 @@ enum FeatureFlags {
   /// Gates the Downloads tab, the item-detail download action, and any other
   /// downloads-facing UI. `KinoPubKit`'s `DownloadManager` / `DownloadedFilesDatabase`
   /// machinery stays compiled and available either way — this only hides entry points.
+  ///
+  /// TODO(downloads): when this flips on, add Download to `MediaCardContextMenus`
+  /// (single source — do not hand-roll per shelf / banner / rail).
   static let downloadsEnabled = false
+
+  /// "All Bookmarks" overview tab (folder shelves). Off while History / Watchlist /
+  /// per-folder tabs carry browsing; when false the tab is omitted and the overview
+  /// catalog is not fetched.
+  static let allBookmarksEnabled = false
 }

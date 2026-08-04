@@ -9,14 +9,16 @@ import KinoPubBackend
 import KinoPubLogging
 import OSLog
 
-/// Serials the user is following for new episodes — its own sidebar tab, not a
-/// row on Bookmarks. Reads through `ContentStore`, so a warm cache paints instantly
-/// and a failed refresh keeps the last known list instead of blanking the tab.
+/// Serials the user is following for new episodes — vertical poster grid.
+/// Reads through `ContentStore`, so a warm cache paints instantly and a failed
+/// refresh keeps the last known list instead of blanking the tab.
 struct WatchlistView: View {
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var errorHandler: ErrorHandler
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
+  @Environment(\.openURL) private var openURL
+  @StateObject private var cardMenu = MediaCardMenuCoordinator()
 
   @State private var cards: [MediaCard] = []
   @State private var isLoaded = false
@@ -28,7 +30,12 @@ struct WatchlistView: View {
       content
         .platformNavigationTitle("Watchlist")
         .background(Color.KinoPub.background)
-        .task { await load() }
+        .task {
+          cardMenu.bind(errorHandler: errorHandler)
+          await load()
+        }
+        .task { await cardMenu.refreshFolders() }
+        .mediaCardNewFolderAlert(cardMenu)
         .navigationDestination(for: Route.self) { route in
           RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
         }
@@ -52,9 +59,19 @@ struct WatchlistView: View {
     } else if cards.isEmpty {
       UnavailableView(title: "No Results", systemImage: "text.append")
     } else {
-      MediaRowsView(
-        rows: [MediaRow(id: "watchlist", title: "Watchlist".localized, cards: cards)],
-        navigationLinkProvider: { card in BookmarksRoutes.detailsById(card.id) }
+      MediaCardsListView(
+        cards: cards,
+        onLoadMoreContent: { _ in },
+        navigationLinkProvider: { card in BookmarksRoutes.detailsById(card.id) },
+        contextMenuProvider: { card in
+          MediaCardContextMenus.entries(
+            for: card,
+            surface: .shelf,
+            menu: cardMenu,
+            pushRoute: { navigationState.push($0) },
+            openURL: { openURL($0) }
+          )
+        }
       )
     }
   }
@@ -66,8 +83,6 @@ struct WatchlistView: View {
     loadFailed = false
     loadError = nil
 
-    // A toast only makes sense when this call actually hit the network — within the
-    // TTL no request fires, and an old error must not keep re-appearing per visit.
     let willFetch = force || store.isStale(.watchlist)
     let service = appContext.contentService
     let fetch: @Sendable () async throws -> [MediaCard] = {
@@ -85,7 +100,6 @@ struct WatchlistView: View {
     loadFailed = cards.isEmpty && store.lastError(.watchlist) != nil
     loadError = cards.isEmpty ? store.lastError(.watchlist) : nil
     if willFetch, !cards.isEmpty, let error = store.lastError(.watchlist) {
-      // Content stayed on screen; just say the refresh didn't land.
       errorHandler.setError(error)
     }
   }
@@ -96,6 +110,8 @@ struct WatchlistView: View {
               title: item.localizedTitle,
               subtitle: item.originalTitle,
               badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil,
-              backdropURL: item.posters.wideURL ?? item.posters.big)
+              backdropURL: item.posters.wideURL ?? item.posters.big,
+              isSeries: true,
+              isInWatchlist: true)
   }
 }

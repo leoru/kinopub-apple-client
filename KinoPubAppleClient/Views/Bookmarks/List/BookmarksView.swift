@@ -14,7 +14,9 @@ struct BookmarksView: View {
   @EnvironmentObject var authState: AuthState
   @EnvironmentObject var errorHandler: ErrorHandler
   @Environment(\.appContext) var appContext
+  @Environment(\.openURL) private var openURL
   @StateObject private var catalog: BookmarksCatalog
+  @StateObject private var cardMenu = MediaCardMenuCoordinator()
   
   init(catalog: @autoclosure @escaping () -> BookmarksCatalog) {
     _catalog = StateObject(wrappedValue: catalog())
@@ -26,8 +28,11 @@ struct BookmarksView: View {
         .platformNavigationTitle("Bookmarks")
         .background(Color.KinoPub.background)
         .task {
+          cardMenu.bind(errorHandler: errorHandler)
           await catalog.fetchItems()
         }
+        .task { await cardMenu.refreshFolders() }
+        .mediaCardNewFolderAlert(cardMenu)
         .navigationDestination(for: Route.self) { route in
           RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
         }
@@ -59,9 +64,21 @@ struct BookmarksView: View {
   }
 
   private var rows: some View {
-    MediaRowsView(rows: catalog.rows, navigationLinkProvider: { card in
-      BookmarksRoutes.detailsById(card.id)
-    })
+    MediaRowsView(
+      rows: catalog.rows,
+      navigationLinkProvider: { card in
+        BookmarksRoutes.detailsById(card.id)
+      },
+      contextMenuProvider: { card, surface in
+        MediaCardContextMenus.entries(
+          for: card,
+          surface: surface,
+          menu: cardMenu,
+          pushRoute: { navigationState.push($0) },
+          openURL: { openURL($0) }
+        )
+      }
+    )
   }
 }
 

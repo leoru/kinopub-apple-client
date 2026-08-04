@@ -13,7 +13,7 @@ import KinoPubBackend
 struct BookmarkView: View {
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var errorHandler: ErrorHandler
-  
+
   @StateObject private var model: BookmarkModel
   @Environment(\.appContext) var appContext
 
@@ -43,20 +43,18 @@ struct BookmarkView: View {
   }
 
   private var grid: some View {
-    ContentItemsListView(items: $model.items, onLoadMoreContent: { item in
-
-    }, navigationLinkProvider: { item in
-      BookmarksRoutesLinkProvider().link(for: item)
-    })
+    ContentItemsListView(
+      items: $model.items,
+      onLoadMoreContent: { item in
+        model.loadMoreContent(after: item)
+      },
+      navigationLinkProvider: { item in
+        BookmarksRoutesLinkProvider().link(for: item)
+      },
+      paginationError: model.paginationFailed,
+      onRetryPagination: {
+        model.retryPagination()
+      }
+    )
   }
 }
-//
-//struct BookmarkView_Previews: PreviewProvider {
-//  @StateObject static var navState = NavigationState()
-//
-//  static var previews: some View {
-//    MainView(catalog: MediaCatalog(itemsService: VideoContentServiceMock(), authState: AuthState(authService: AuthorizationServiceMock(), accessTokenService: AccessTokenServiceMock())))
-//      .environmentObject(navState)
-//  }
-//}
-//

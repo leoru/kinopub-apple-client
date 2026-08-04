@@ -51,11 +51,10 @@ final class VideoContentServiceImpl: VideoContentService {
     return response
   }
   
-  func fetchBookmarkItems(id: String) async throws -> ArrayData<MediaItem> {
-    let request = BookmarkItemsRequest(id: id)
-    let response = try await apiClient.performRequest(with: request,
-                                                      decodingType: ArrayData<MediaItem>.self)
-    return response
+  func fetchBookmarkItems(id: String, page: Int?) async throws -> BookmarkFolderItemsData {
+    let request = BookmarkItemsRequest(id: id, page: page)
+    return try await apiClient.performRequest(with: request,
+                                              decodingType: BookmarkFolderItemsData.self)
   }
 
   func fetchWatchingMovies() async throws -> ArrayData<WatchingItem> {
@@ -72,11 +71,10 @@ final class VideoContentServiceImpl: VideoContentService {
     return response
   }
 
-  func fetchHistory() async throws -> HistoryData {
-    let request = HistoryRequest()
-    let response = try await apiClient.performRequest(with: request,
-                                                      decodingType: HistoryData.self)
-    return response
+  func fetchHistory(page: Int?) async throws -> HistoryData {
+    let request = HistoryRequest(page: page)
+    return try await apiClient.performRequest(with: request,
+                                              decodingType: HistoryData.self)
   }
 
   func fetchItems(filter: LibraryFilter, page: Int?) async throws -> PaginatedData<MediaItem> {

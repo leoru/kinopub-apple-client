@@ -50,6 +50,10 @@ struct SeasonsRailView: View {
   /// Ask the model to fetch schedule for a season number (kino.pub season.number).
   var onSeasonVisible: ((Int) -> Void)? = nil
 
+  @EnvironmentObject private var errorHandler: ErrorHandler
+  @EnvironmentObject private var navigationState: NavigationState
+  @Environment(\.openURL) private var openURL
+  @StateObject private var cardMenu = MediaCardMenuCoordinator()
   @State private var selectedSeasonID: Int?
   @State private var didScrollToUnseen = false
   /// True while a tab-driven scroll is in flight, so a stray episode focus update
@@ -205,6 +209,11 @@ struct SeasonsRailView: View {
       .task {
         await scrollToFirstUnseen(proxy: proxy)
       }
+      .task {
+        cardMenu.bind(errorHandler: errorHandler)
+        await cardMenu.refreshFolders()
+      }
+      .mediaCardNewFolderAlert(cardMenu)
 #if os(tvOS)
       .onChange(of: focusedSeasonID) { _, seasonID in
         if seasonID != nil { onSectionFocused?() }
@@ -303,7 +312,7 @@ struct SeasonsRailView: View {
       }
       .buttonStyle(EpisodeCardButtonStyle())
       .modifier(MediaCardContextMenuModifier(
-        actions: contextActions(for: episode, season: season)
+        entries: contextEntries(for: episode, season: season)
       ))
 
     case .playable(_, let episode, let schedule):
@@ -372,14 +381,32 @@ struct SeasonsRailView: View {
     selectSeason(season.id, proxy: proxy, animated: false)
   }
 
-  private func contextActions(for episode: Episode, season: Season) -> [MediaCardContextAction] {
+  private func contextEntries(for episode: Episode, season: Season) -> [MediaCardContextEntry] {
     let card = Self.contextCard(for: episode, in: season)
-    return MediaCardContextMenus.actions(
+    cardMenu.prefetchMembership(for: card.itemID)
+    let containing = cardMenu.membershipByItemID[card.itemID] ?? []
+    let folders = cardMenu.folders.map {
+      MediaCardContextMenus.BookmarkFolderOption(
+        id: $0.id,
+        title: $0.title,
+        isContaining: containing.contains($0.id)
+      )
+    }
+    return MediaCardContextMenus.entries(
       for: card,
-      includeGoToTitle: false,
-      onHide: { onHide?(episode, season) },
+      surface: .shelf,
+      bookmarkFolders: folders,
+      onPlay: nil,
+      onGoToTitle: nil,
+      onToggleWatchlist: { cardMenu.toggleWatchlist(card) },
+      onToggleBookmarkFolder: { folderID in
+        guard let folder = cardMenu.folders.first(where: { $0.id == folderID }) else { return }
+        cardMenu.toggleBookmark(itemID: card.itemID, folder: folder)
+      },
+      onCreateBookmarkFolder: { cardMenu.promptNewFolder(for: card.itemID) },
       onToggleWatched: { onToggleWatched?(episode, season) },
-      onGoToTitle: {}
+      onHide: { onHide?(episode, season) },
+      onOpenImageURL: { openURL($0) }
     )
   }
 

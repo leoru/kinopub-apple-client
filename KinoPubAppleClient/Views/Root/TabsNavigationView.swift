@@ -294,11 +294,13 @@ struct TabsNavigationView: View {
         }
         .customizationID("tab.history")
 
-        Tab("All Bookmarks", systemImage: "bookmark", value: NavigationTabs.bookmarks) {
-          savedContent
+        if FeatureFlags.allBookmarksEnabled {
+          Tab("All Bookmarks", systemImage: "bookmark", value: NavigationTabs.bookmarks) {
+            savedContent
+          }
+          .customizationID("tab.bookmarks")
+          .badge(bookmarksBadgeCount)
         }
-        .customizationID("tab.bookmarks")
-        .badge(bookmarksBadgeCount)
 
         if FeatureFlags.downloadsEnabled {
           Tab("Downloads", systemImage: "laptopcomputer.and.arrow.down", value: NavigationTabs.downloads) {

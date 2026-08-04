@@ -115,12 +115,14 @@ class MediaCatalog: ObservableObject {
       return
     }
 
-    let thresholdIndex = self.items.index(self.items.endIndex, offsetBy: -1)
-    if thresholdIndex == self.items.firstIndex(of: item), pagination.current <= pagination.total {
-      Logger.app.debug("load more content after item: \(item.id)")
-      Task {
-        await fetchItems()
-      }
+    // O(1) by id — never firstIndex(of:), which deep-compares MediaItem.
+    guard CatalogLoadMore.isThresholdItem(item, in: items),
+          pagination.current <= pagination.total else {
+      return
+    }
+    Logger.app.debug("load more content after item: \(item.id)")
+    Task {
+      await fetchItems()
     }
   }
 

@@ -13,6 +13,8 @@ struct LibraryView: View {
   @EnvironmentObject var errorHandler: ErrorHandler
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
+  @Environment(\.openURL) private var openURL
+  @StateObject private var cardMenu = MediaCardMenuCoordinator()
 
   @StateObject private var catalog: PersonalLibraryCatalog
 
@@ -25,7 +27,12 @@ struct LibraryView: View {
       content
         .platformNavigationTitle("Library")
         .background(Color.KinoPub.background)
-        .task { await catalog.fetch() }
+        .task {
+          cardMenu.bind(errorHandler: errorHandler)
+          await catalog.fetch()
+        }
+        .task { await cardMenu.refreshFolders() }
+        .mediaCardNewFolderAlert(cardMenu)
         .navigationDestination(for: Route.self) { route in
           RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
         }
@@ -51,7 +58,16 @@ struct LibraryView: View {
     } else {
       MediaRowsView(
         rows: catalog.rows,
-        navigationLinkProvider: { card in BookmarksRoutes.detailsById(card.itemID) }
+        navigationLinkProvider: { card in BookmarksRoutes.detailsById(card.itemID) },
+        contextMenuProvider: { card, surface in
+          MediaCardContextMenus.entries(
+            for: card,
+            surface: surface,
+            menu: cardMenu,
+            pushRoute: { navigationState.push($0) },
+            openURL: { openURL($0) }
+          )
+        }
       )
     }
   }

@@ -86,6 +86,8 @@
 		CCA100012C6F000100000703 /* LibraryFiltersBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000704 /* LibraryFiltersBar.swift */; };
 		CCA100012C6F000100000901 /* PersonItemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000902 /* PersonItemsView.swift */; };
 		CCA100012C6F000100000A01 /* MediaCardContextMenus.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000A02 /* MediaCardContextMenus.swift */; };
+		CCA100012C6F000100000A03 /* MediaCardMenuCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000A04 /* MediaCardMenuCoordinator.swift */; };
+		CCA100012C6F000100000A05 /* MediaCardMenuAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000A06 /* MediaCardMenuAlerts.swift */; };
 		CCA100012C6F000100000B01 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000B02 /* HistoryView.swift */; };
 		CCA100012C6F000100000C01 /* WatchlistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C02 /* WatchlistView.swift */; };
 		CCA100012C6F000100000C03 /* RecentlyWatchedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C04 /* RecentlyWatchedView.swift */; };
@@ -215,6 +217,8 @@
 		CCA100012C6F000100000704 /* LibraryFiltersBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFiltersBar.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000902 /* PersonItemsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonItemsView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000A02 /* MediaCardContextMenus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCardContextMenus.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000A04 /* MediaCardMenuCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCardMenuCoordinator.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000A06 /* MediaCardMenuAlerts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCardMenuAlerts.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000B02 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C02 /* WatchlistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchlistView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C04 /* RecentlyWatchedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentlyWatchedView.swift; sourceTree = "<group>"; };
@@ -469,6 +473,8 @@
 				CC7FCE8B2A72D23600DFC0A9 /* APIClientError+Description.swift */,
 				CC2115202A7AA6F8001996BD /* String+Localization.swift */,
 				CCA100012C6F000100000A02 /* MediaCardContextMenus.swift */,
+				CCA100012C6F000100000A04 /* MediaCardMenuCoordinator.swift */,
+				CCA100012C6F000100000A06 /* MediaCardMenuAlerts.swift */,
 				CCF2ABB32AED39E0000448A8 /* WindowSettings.swift */,
 				CC87E6362B020F730096BDC3 /* PlayerTimeObserver.swift */,
 			);
@@ -944,6 +950,8 @@
 				CCA100012C6F000100000701 /* LibraryCatalog.swift in Sources */,
 				CCA100012C6F000100000901 /* PersonItemsView.swift in Sources */,
 				CCA100012C6F000100000A01 /* MediaCardContextMenus.swift in Sources */,
+				CCA100012C6F000100000A03 /* MediaCardMenuCoordinator.swift in Sources */,
+				CCA100012C6F000100000A05 /* MediaCardMenuAlerts.swift in Sources */,
 				CCA100012C6F000100000B01 /* HistoryView.swift in Sources */,
 				CCA100012C6F000100000C01 /* WatchlistView.swift in Sources */,
 				CCA100012C6F000100000C03 /* RecentlyWatchedView.swift in Sources */,

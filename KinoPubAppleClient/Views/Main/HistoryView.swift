@@ -6,19 +6,75 @@
 import SwiftUI
 import KinoPubBackend
 import KinoPubUI
+import OSLog
+import KinoPubLogging
 
-/// Viewing history as a single landscape row. Used as the Recently Watched tab
-/// content and still pushed from Continue Watching's "Browse History" menu.
-/// Reads through `ContentStore`, so a warm cache paints instantly and a failed
-/// refresh keeps the last known list instead of blanking the screen.
+/// macOS View-menu preference for the History grid. Default is landscape (episode
+/// stills when the history payload carries a thumbnail).
+enum HistoryCardLayout: String, CaseIterable, Identifiable {
+  case landscape
+  case posters
+
+  var id: String { rawValue }
+
+  static let storageKey = "historyCardLayout"
+
+  var titleKey: String {
+    switch self {
+    case .landscape: return "Landscape"
+    case .posters: return "Posters"
+    }
+  }
+}
+
+/// Viewing history as a vertical poster-column grid. Landscape tiles by default
+/// (episode still when the payload has one); macOS View menu can switch to posters.
 struct HistoryView: View {
   @EnvironmentObject var errorHandler: ErrorHandler
+  @EnvironmentObject var navigationState: NavigationState
   @Environment(\.appContext) var appContext
+  @Environment(\.openURL) private var openURL
+  @StateObject private var cardMenu = MediaCardMenuCoordinator()
+
+  @AppStorage(HistoryCardLayout.storageKey) private var layoutRaw: String = HistoryCardLayout.landscape.rawValue
 
   @State private var cards: [MediaCard] = []
+  @State private var pagination: Pagination?
   @State private var isLoaded = false
+  @State private var isFetching = false
   @State private var loadFailed = false
   @State private var loadError: Error?
+  @State private var paginationFailed = false
+
+  private var layout: HistoryCardLayout {
+    HistoryCardLayout(rawValue: layoutRaw) ?? .landscape
+  }
+
+  private var displayCards: [MediaCard] {
+    switch layout {
+    case .landscape:
+      return cards
+    case .posters:
+      return cards.map { card in
+        MediaCard(
+          id: card.id,
+          posterURL: card.posterURL,
+          title: card.title,
+          subtitle: card.subtitle,
+          progress: card.progress,
+          badge: card.badge,
+          backdropURL: card.backdropURL,
+          overlayLabel: card.overlayLabel,
+          itemID: card.itemID,
+          video: card.video,
+          season: card.season,
+          mediaID: card.mediaID,
+          isSeries: card.isSeries,
+          isInHistory: card.isInHistory
+        )
+      }
+    }
+  }
 
   var body: some View {
     Group {
@@ -30,49 +86,104 @@ struct HistoryView: View {
                         message: loadError?.userFacingMessage ?? "Check your connection and try again.".localized,
                         retryTitle: "Try Again",
                         onRetry: {
-          Task { await load(force: true) }
+          Task { await refresh() }
         })
       } else if cards.isEmpty {
         UnavailableView(title: "No History", systemImage: "clock")
       } else {
-        MediaRowsView(
-          rows: [MediaRow(id: "history", title: "Recently Watched".localized, cards: cards)],
-          navigationLinkProvider: { card in MainRoutes.detailsById(card.itemID) }
+        MediaCardsListView(
+          cards: displayCards,
+          onLoadMoreContent: { loadMoreContent(after: $0) },
+          navigationLinkProvider: { card in MainRoutes.detailsById(card.itemID) },
+          contextMenuProvider: { card in
+            MediaCardContextMenus.entries(
+              for: card,
+              surface: .shelf,
+              menu: cardMenu,
+              pushRoute: { navigationState.push($0) },
+              openURL: { openURL($0) }
+            )
+          },
+          paginationError: paginationFailed,
+          onRetryPagination: { retryPagination() }
         )
       }
     }
     .platformNavigationTitle("Recently Watched")
     .background(Color.KinoPub.background)
-    .task { await load() }
+    .task {
+      cardMenu.bind(errorHandler: errorHandler)
+      await loadInitial()
+    }
+    .task { await cardMenu.refreshFolders() }
+    .mediaCardNewFolderAlert(cardMenu)
     .handleError(state: $errorHandler.state)
   }
 
-  private func load(force: Bool = false) async {
-    let store = appContext.contentStore
-    cards = store.cards(.history)
-    isLoaded = !cards.isEmpty
+  private func loadInitial() async {
+    guard cards.isEmpty else { return }
+    await fetchPage(reset: true)
+  }
+
+  private func refresh() async {
+    errorHandler.reset()
+    pagination = nil
+    paginationFailed = false
     loadFailed = false
     loadError = nil
+    await fetchPage(reset: true)
+  }
 
-    let willFetch = force || store.isStale(.history)
-    let service = appContext.contentService
-    let fetch: @Sendable () async throws -> [MediaCard] = {
-      let history = try await service.fetchHistory().history
-      return Self.cards(from: history)
-    }
-    if force {
-      await store.refresh(.history, fetch: fetch)
-    } else {
-      await store.refreshIfStale(.history, fetch: fetch)
-    }
+  private func retryPagination() {
+    paginationFailed = false
+    Task { await fetchPage(reset: false) }
+  }
 
-    cards = store.cards(.history)
-    isLoaded = true
-    loadFailed = cards.isEmpty && store.lastError(.history) != nil
-    loadError = cards.isEmpty ? store.lastError(.history) : nil
-    if willFetch, !cards.isEmpty, let error = store.lastError(.history) {
-      // Content stayed on screen; just say the refresh didn't land.
-      errorHandler.setError(error)
+  private func loadMoreContent(after card: MediaCard) {
+    guard let pagination,
+          CatalogLoadMore.isThresholdID(card.id, lastID: cards.last?.id),
+          pagination.current < pagination.total else {
+      return
+    }
+    Task { await fetchPage(reset: false) }
+  }
+
+  private func fetchPage(reset: Bool) async {
+    let isFirstPage = reset || pagination == nil
+    if !isFirstPage {
+      guard !isFetching else { return }
+    }
+    isFetching = true
+    defer { isFetching = false }
+
+    do {
+      let page = isFirstPage ? nil : pagination.map { $0.current + 1 }
+      let data = try await appContext.contentService.fetchHistory(page: page)
+      let newCards = Self.cards(from: data.history)
+      if isFirstPage {
+        cards = newCards
+      } else {
+        var seen = Set(cards.map(\.id))
+        for card in newCards where seen.insert(card.id).inserted {
+          cards.append(card)
+        }
+      }
+      pagination = data.pagination
+      isLoaded = true
+      loadFailed = false
+      loadError = nil
+      paginationFailed = false
+    } catch {
+      if isFirstPage {
+        loadFailed = cards.isEmpty
+        loadError = error
+        Logger.app.error("History first page fetch failed: \(error)")
+      } else {
+        paginationFailed = true
+        Logger.app.debug("History page fetch failed, keeping loaded items: \(error)")
+        errorHandler.setError(error)
+      }
+      isLoaded = true
     }
   }
 
@@ -84,6 +195,8 @@ struct HistoryView: View {
       guard seen.insert(entry.item.id).inserted else { continue }
       let posters = entry.item.posters
       let wide = posters?.wideURL ?? posters?.big ?? posters?.medium ?? ""
+      let episodeStill = entry.media?.thumbnail.flatMap { $0.isEmpty ? nil : $0 }
+      let landscape = episodeStill ?? wide
       let isSeries = entry.isEpisode || (entry.item.type?.contains("serial") ?? false)
       var label: [String] = []
       if entry.isEpisode, let season = entry.media?.snumber, let episode = entry.media?.number {
@@ -99,7 +212,7 @@ struct HistoryView: View {
           ?? entry.item.title
           ?? "",
         progress: entry.progress,
-        landscapeImageURL: wide,
+        landscapeImageURL: landscape.isEmpty ? nil : landscape,
         overlayLabel: label.isEmpty ? nil : label.joined(separator: " · "),
         itemID: entry.item.id,
         video: entry.media?.number,
