@@ -39,7 +39,6 @@ public struct FallbackRemoteImage: View {
           .transition(.opacity)
       } else if loading {
         Color.black.opacity(0.25)
-          .overlay { RemoteImageLoadingCue() }
       } else {
         Color.black.opacity(0.4)
       }

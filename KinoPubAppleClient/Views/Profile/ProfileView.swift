@@ -20,10 +20,6 @@ struct ProfileView: View {
   @AppStorage(SubtitlePreferences.dualSubtitlesKey) private var dualSubtitlesEnabled: Bool = false
   @AppStorage(SubtitlePreferences.secondSubtitleLanguageKey) private var secondSubtitleLanguage: String = "ru"
   @AppStorage(StreamQuality.userDefaultsKey) private var streamQualityRaw: String = StreamQuality.auto.rawValue
-  @AppStorage(AppFeatures.homeBannerKey) private var homeBannerEnabled: Bool = false
-#if !os(tvOS)
-  @AppStorage(AppFeatures.downloadsKey) private var downloadsEnabled: Bool = true
-#endif
 
   @State private var showLogoutAlert: Bool = false
 
@@ -42,7 +38,6 @@ struct ProfileView: View {
       dualSubtitlesEnabled: $dualSubtitlesEnabled,
       secondSubtitleLanguage: $secondSubtitleLanguage,
       streamQualityRaw: $streamQualityRaw,
-      homeBannerEnabled: $homeBannerEnabled,
       onLogout: { showLogoutAlert = true },
       onLanguageChange: { model.changeLanguage(to: $0) }
     )
@@ -77,7 +72,6 @@ struct ProfileView: View {
 
             languageSection
             playbackSection
-            featuresSection
 
             // DESIGN: Devices section — `DeviceService.listDevices` / `removeDevice` are ready
             // (identity + HEVC/4K/HDR already sync on auth). Layout TBD before shipping chrome.
@@ -169,14 +163,6 @@ struct ProfileView: View {
       }
       .pickerStyle(MenuPickerStyle())
       .disabled(!dualSubtitlesEnabled)
-    }
-  }
-
-  private var featuresSection: some View {
-    Section(header: Text("Features"),
-            footer: Text("Off features skip their work entirely — not just the chrome.")) {
-      Toggle("Home banner", isOn: $homeBannerEnabled)
-      Toggle("Downloads", isOn: $downloadsEnabled)
     }
   }
 #endif

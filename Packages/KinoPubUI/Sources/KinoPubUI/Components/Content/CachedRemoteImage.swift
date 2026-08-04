@@ -89,35 +89,59 @@ public extension CachedRemoteImage where Placeholder == Color, Failure == Color 
 }
 
 /// Quiet loading cue for contained artwork (banners, posters). Appears only after
-/// a short delay so a warm cache never flashes a spinner.
+/// a short delay so a warm cache never flashes a spinner. Shows the title when the
+/// call site already has it (matches Apple TV / Music holding a static identity
+/// placeholder instead of a spinner); otherwise falls back to a neutral glyph.
 public struct RemoteImageLoadingCue: View {
+  private let title: String?
   private let delay: Duration
   @State private var isVisible = false
 
-  public init(delay: Duration = .milliseconds(350)) {
+  public init(title: String? = nil, delay: Duration = .milliseconds(350)) {
+    self.title = title
     self.delay = delay
   }
 
   public var body: some View {
-    ProgressView()
-      .controlSize(.regular)
-      .opacity(isVisible ? 0.55 : 0)
-      .animation(.easeOut(duration: 0.2), value: isVisible)
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .task {
-        try? await Task.sleep(for: delay)
-        guard !Task.isCancelled else { return }
-        isVisible = true
+    Group {
+      if let title, !title.isEmpty {
+        Text(title)
+          .font(.caption)
+          .fontWeight(.medium)
+          .multilineTextAlignment(.center)
+          .lineLimit(2)
+          .padding(.horizontal, 16)
+      } else {
+        Image(systemName: "film")
+          .font(.title2)
       }
+    }
+    .foregroundStyle(.white)
+    .opacity(isVisible ? 0.55 : 0)
+    .animation(.easeOut(duration: 0.2), value: isVisible)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .task {
+      try? await Task.sleep(for: delay)
+      guard !Task.isCancelled else { return }
+      isVisible = true
+    }
   }
 }
 
 #Preview("Loading cue") {
-  ZStack {
-    Color.black.opacity(0.4)
-    RemoteImageLoadingCue(delay: .milliseconds(50))
+  HStack(spacing: 16) {
+    ZStack {
+      Color.black.opacity(0.4)
+      RemoteImageLoadingCue(delay: .milliseconds(50))
+    }
+    .frame(width: 200, height: 160)
+
+    ZStack {
+      Color.black.opacity(0.4)
+      RemoteImageLoadingCue(title: "Стражи Галактики. Часть 3", delay: .milliseconds(50))
+    }
+    .frame(width: 200, height: 160)
   }
-  .frame(width: 280, height: 160)
   .padding()
   .background(Color.black)
   .preferredColorScheme(.dark)

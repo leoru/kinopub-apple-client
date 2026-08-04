@@ -16,9 +16,6 @@ struct MainView: View {
   @Namespace private var zoomNamespace
 
   @StateObject private var catalog: HomeCatalog
-  /// Live toggle — when flipped off, the shelf disappears and `HomeCatalog`
-  /// clears `bannerCards` on the next assemble (no more wide-poster loads).
-  @AppStorage(AppFeatures.homeBannerKey) private var homeBannerEnabled = false
 
   init(catalog: @autoclosure @escaping () -> HomeCatalog) {
     _catalog = StateObject(wrappedValue: catalog())
@@ -78,7 +75,9 @@ struct MainView: View {
   private var rows: some View {
     MediaRowsView(
       rows: catalog.rows,
-      bannerCards: homeBannerEnabled ? catalog.bannerCards : [],
+      // Gated by `FeatureFlags.homeBannerEnabled`. When off, HomeCatalog also
+      // skips sampling so wide-poster artwork is never requested.
+      bannerCards: FeatureFlags.homeBannerEnabled ? catalog.bannerCards : [],
       navigationLinkProvider: { card in
         Route.detailsById(card.id)
       },
@@ -103,11 +102,6 @@ struct MainView: View {
         )
       }
     )
-    .onChange(of: homeBannerEnabled) { _, _ in
-      // Flip mid-session: drop sampled cards (kills artwork tasks with the views)
-      // or rebuild from already-loaded shelves — no extra catalog network.
-      catalog.forceBannerRefresh()
-    }
   }
 }
 

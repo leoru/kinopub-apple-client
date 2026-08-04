@@ -144,7 +144,7 @@ public struct HomeBannerCardView: View {
       placeholder: {
         ZStack {
           Color.black.opacity(0.25)
-          RemoteImageLoadingCue(delay: .milliseconds(250))
+          RemoteImageLoadingCue(title: card.title, delay: .milliseconds(250))
         }
       },
       failure: {

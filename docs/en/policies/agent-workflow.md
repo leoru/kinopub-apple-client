@@ -51,8 +51,9 @@ Use when the user asks, or when a visible custom piece has multiple defensible d
 
 ## Feature flags and incomplete work
 
-- Prefer finishing a thin vertical slice or **feature-gating** it (`AppFeatures`, Downloads-style)
-  over shipping half-chrome. An off flag must skip the work (network, sampling), not only hide UI.
+- Prefer finishing a thin vertical slice or **feature-gating** it (`FeatureFlags`,
+  Downloads-style) over shipping half-chrome. An off flag must skip the work
+  (network, sampling), not only hide UI.
 - Do not claim recommendations / Top Shelf / light theme / advanced subtitles exist when they do not.
 - Dual subtitles and other parked surfaces stay parked until their feature doc says otherwise.
 

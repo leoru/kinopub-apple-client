@@ -412,6 +412,7 @@ class MediaItemModel: ObservableObject {
   }
   
   func startDownload(item: DownloadableMediaItem, file: FileInfo) {
+    guard FeatureFlags.downloadsEnabled else { return }
     let meta = DownloadMeta.make(from: item, quality: file.quality)
 #if os(iOS)
     // Prefer offline HLS (.movpkg) — full quality + all dubs/subs. Fall back to mp4.
@@ -435,7 +436,8 @@ class MediaItemModel: ObservableObject {
 #if os(tvOS)
     return 0
 #else
-    AppContext.shared.seasonDownloadManager.downloadSeason(
+    guard FeatureFlags.downloadsEnabled else { return 0 }
+    return AppContext.shared.seasonDownloadManager.downloadSeason(
       mediaId: mediaId,
       seriesTitle: seriesTitle,
       season: season,

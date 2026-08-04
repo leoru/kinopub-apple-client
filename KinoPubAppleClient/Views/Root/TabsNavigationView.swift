@@ -61,11 +61,6 @@ struct TabsNavigationView: View {
 #if os(macOS)
   @AppStorage("sidebarTabCustomization") private var tabCustomization = TabViewCustomization()
 #endif
-#if !os(tvOS)
-  /// Single gate for the Downloads tab — Settings → Features. Always off on tvOS
-  /// via `AppFeatures.downloadsEnabled`.
-  @AppStorage(AppFeatures.downloadsKey) private var downloadsEnabled = true
-#endif
 
   var body: some View {
     modernTabs
@@ -83,13 +78,6 @@ struct TabsNavigationView: View {
       }
       // DESIGN: offline / reachability banner when `networkMonitor.isOnline` flips false.
       .onChange(of: networkMonitor.isOnline) { _, _ in }
-#if !os(tvOS)
-      .onChange(of: downloadsEnabled) { _, enabled in
-        if !enabled, navigationState.selectedTab == .downloads {
-          navigationState.selectedTab = .home
-        }
-      }
-#endif
   }
 
   /// Re-selecting the current tab pops that tab's stack to root (Apple Music /
@@ -312,7 +300,7 @@ struct TabsNavigationView: View {
         .customizationID("tab.bookmarks")
         .badge(bookmarksBadgeCount)
 
-        if downloadsEnabled {
+        if FeatureFlags.downloadsEnabled {
           Tab("Downloads", systemImage: "laptopcomputer.and.arrow.down", value: NavigationTabs.downloads) {
             downloadsContent
           }
@@ -390,7 +378,7 @@ struct TabsNavigationView: View {
       }
       .badge(libraryBadgeCount)
 
-      if downloadsEnabled {
+      if FeatureFlags.downloadsEnabled {
         Tab("Downloads", systemImage: "laptopcomputer.and.arrow.down", value: NavigationTabs.downloads) {
           downloadsContent
         }
@@ -430,7 +418,7 @@ struct TabsNavigationView: View {
         .tabItem { Label("Library", systemImage: "rectangle.stack.badge.person.crop") }
         .tag(CompactPhoneTab.library.rawValue)
 
-      if downloadsEnabled {
+      if FeatureFlags.downloadsEnabled {
         downloadsContent
           .tabItem { Label("Downloads", systemImage: "laptopcomputer.and.arrow.down") }
           .tag(CompactPhoneTab.downloads.rawValue)
@@ -635,7 +623,7 @@ struct TabsNavigationView: View {
     async let foldersTask = fetchFolders()
     async let watchlistTask = fetchWatchlistCount()
 #if !os(tvOS)
-    let downloads = downloadsEnabled
+    let downloads = FeatureFlags.downloadsEnabled
       ? (appContext.downloadedFilesDatabase.readData() ?? []).count
       : 0
 #endif
@@ -661,7 +649,7 @@ struct TabsNavigationView: View {
     let folders = await foldersTask
     let watchlist = await watchlistTask
 #if !os(tvOS)
-    let downloads = downloadsEnabled
+    let downloads = FeatureFlags.downloadsEnabled
       ? (appContext.downloadedFilesDatabase.readData() ?? []).count
       : 0
 #endif

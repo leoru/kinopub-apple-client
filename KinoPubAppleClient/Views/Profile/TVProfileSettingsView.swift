@@ -23,7 +23,6 @@ struct TVProfileSettingsView: View {
   @Binding var dualSubtitlesEnabled: Bool
   @Binding var secondSubtitleLanguage: String
   @Binding var streamQualityRaw: String
-  @Binding var homeBannerEnabled: Bool
   var onLogout: () -> Void
   var onLanguageChange: (String) -> Void
 
@@ -52,7 +51,6 @@ struct TVProfileSettingsView: View {
       accountSection
       languageSection
       playbackSection
-      featuresSection
       // DESIGN: Devices section — `DeviceService.listDevices` / `removeDevice` are ready
       // (identity + HEVC/4K/HDR already sync on auth). Focusable Settings list TBD.
       kinopoiskSection
@@ -189,16 +187,6 @@ struct TVProfileSettingsView: View {
       .buttonStyle(SettingsPillButtonStyle())
       .focused($focusedItem, equals: .secondLang)
       .disabled(!dualSubtitlesEnabled)
-    }
-  }
-
-  private var featuresSection: some View {
-    SettingsSection("Features") {
-      toggleRow(
-        title: "Home banner",
-        isOn: $homeBannerEnabled,
-        focus: .homeBanner
-      )
     }
   }
 
@@ -389,7 +377,6 @@ private enum SettingsFocusItem: Hashable {
   case nonCC
   case dual
   case secondLang
-  case homeBanner
   case kinopoisk
   case dataSources
   case logout
@@ -413,8 +400,6 @@ private struct SettingsTip {
       return SettingsTip(messageKey: "Settings_Tip_DualSubtitles")
     case .secondLang:
       return SettingsTip(messageKey: "Settings_Tip_SecondLanguage")
-    case .homeBanner:
-      return SettingsTip(messageKey: "Settings_Tip_HomeBanner")
     case .kinopoisk:
       return SettingsTip(messageKey: "Settings_Tip_Kinopoisk")
     case .dataSources:

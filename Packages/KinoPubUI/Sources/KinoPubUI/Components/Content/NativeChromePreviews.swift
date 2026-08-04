@@ -211,14 +211,32 @@ enum PreviewSample {
 }
 
 #Preview("Image loading cue") {
-  ZStack {
-    Color.black.opacity(0.45)
-    RemoteImageLoadingCue(delay: .milliseconds(100))
+  VStack(alignment: .leading, spacing: 16) {
+    Text("No title available — neutral glyph")
+      .font(.caption)
+      .foregroundStyle(.secondary)
+    ZStack {
+      Color.black.opacity(0.45)
+      RemoteImageLoadingCue(delay: .milliseconds(100))
+    }
+    .frame(width: 320, height: 180)
+    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+    Text("Title known at call site — shown as text")
+      .font(.caption)
+      .foregroundStyle(.secondary)
+    ZStack {
+      Color.black.opacity(0.45)
+      RemoteImageLoadingCue(
+        title: PreviewSample.posterCard().title,
+        delay: .milliseconds(100)
+      )
+    }
+    .frame(width: 320, height: 180)
+    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
   }
-  .frame(width: 320, height: 180)
-  .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
   .padding(32)
-  .frame(maxWidth: .infinity, maxHeight: .infinity)
+  .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   .background(Color.black)
   .preferredColorScheme(.dark)
 }
