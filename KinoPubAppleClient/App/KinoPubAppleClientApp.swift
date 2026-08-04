@@ -73,6 +73,14 @@ struct KinoPubAppleClientApp: App {
 #if os(macOS)
     .windowResizability(.contentSize)
     .defaultSize(width: WindowSize.macosDefault.width, height: WindowSize.macosDefault.height)
+    // "New Window" was the File menu's only item, so removing it drops the whole
+    // File menu — expected for now. A second library window would duplicate
+    // NavigationState, AuthState, etc. per-scene in ways the app doesn't support.
+    // File menu comes back once it has a real item (e.g. a new-bookmark-list
+    // command, the way the TV app's File menu has New Playlist).
+    .commands {
+      CommandGroup(replacing: .newItem) { }
+    }
 #endif
 
 #if os(macOS)

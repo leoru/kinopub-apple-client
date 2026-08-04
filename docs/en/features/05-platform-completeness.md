@@ -18,7 +18,7 @@ subtitle work.
 - [ ] Top Shelf extension target + content provider
 - [ ] macOS Settings scene / menu wiring polished with stage 02
 - [ ] iOS compact layout pass for Library/History single-scroll model
-- [ ] Feature-flag Downloads if incomplete
+- [ ] Feature-flag Downloads if incomplete — **`AppFeatures.downloads`** (Settings → Features; always off on tvOS)
 
 ## Depends on
 

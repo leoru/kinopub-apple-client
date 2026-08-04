@@ -108,6 +108,12 @@ class HomeCatalog: ObservableObject {
     loadError = rows.isEmpty ? firstError : nil
   }
 
+  /// Re-run banner sampling after the Features toggle flips — clears cards when
+  /// off, rebuilds from the already-loaded shelves when on (no extra network).
+  func forceBannerRefresh() {
+    assembleRows()
+  }
+
   /// Pull-to-refresh: forces every row to refetch regardless of TTL.
   func refresh() async {
     errorHandler.reset()
@@ -139,7 +145,14 @@ class HomeCatalog: ObservableObject {
   /// (not Continue Watching). Prefer cards that already carry wide artwork.
   /// Keeps the previous selection when most of it is still in the pool so a
   /// background refresh does not reshuffle the banner under the remote.
+  /// Skipped entirely when `AppFeatures.homeBanner` is off — no sampling and
+  /// therefore no wide-poster fetches from `HomeBannerCardView`.
   private func refreshBannerCards(from rows: [MediaRow]) {
+    guard AppFeatures.homeBannerEnabled else {
+      if !bannerCards.isEmpty { bannerCards = [] }
+      return
+    }
+
     var seen = Set<Int>()
     var pool: [MediaCard] = []
     for row in rows where row.id != Self.continueWatchingRowID {

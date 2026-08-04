@@ -61,6 +61,11 @@ struct TabsNavigationView: View {
 #if os(macOS)
   @AppStorage("sidebarTabCustomization") private var tabCustomization = TabViewCustomization()
 #endif
+#if !os(tvOS)
+  /// Single gate for the Downloads tab — Settings → Features. Always off on tvOS
+  /// via `AppFeatures.downloadsEnabled`.
+  @AppStorage(AppFeatures.downloadsKey) private var downloadsEnabled = true
+#endif
 
   var body: some View {
     modernTabs
@@ -78,6 +83,13 @@ struct TabsNavigationView: View {
       }
       // DESIGN: offline / reachability banner when `networkMonitor.isOnline` flips false.
       .onChange(of: networkMonitor.isOnline) { _, _ in }
+#if !os(tvOS)
+      .onChange(of: downloadsEnabled) { _, enabled in
+        if !enabled, navigationState.selectedTab == .downloads {
+          navigationState.selectedTab = .home
+        }
+      }
+#endif
   }
 
   /// Re-selecting the current tab pops that tab's stack to root (Apple Music /
@@ -300,11 +312,13 @@ struct TabsNavigationView: View {
         .customizationID("tab.bookmarks")
         .badge(bookmarksBadgeCount)
 
-        Tab("Downloads", systemImage: "laptopcomputer.and.arrow.down", value: NavigationTabs.downloads) {
-          downloadsContent
+        if downloadsEnabled {
+          Tab("Downloads", systemImage: "laptopcomputer.and.arrow.down", value: NavigationTabs.downloads) {
+            downloadsContent
+          }
+          .customizationID("tab.downloads")
+          .badge(downloadsBadgeCount)
         }
-        .customizationID("tab.downloads")
-        .badge(downloadsBadgeCount)
       }
 
       TabSection("Folders") {
@@ -376,10 +390,12 @@ struct TabsNavigationView: View {
       }
       .badge(libraryBadgeCount)
 
-      Tab("Downloads", systemImage: "laptopcomputer.and.arrow.down", value: NavigationTabs.downloads) {
-        downloadsContent
+      if downloadsEnabled {
+        Tab("Downloads", systemImage: "laptopcomputer.and.arrow.down", value: NavigationTabs.downloads) {
+          downloadsContent
+        }
+        .badge(downloadsBadgeCount)
       }
-      .badge(downloadsBadgeCount)
 
       Tab("Profile", systemImage: "person.crop.circle", value: NavigationTabs.settings) {
         settingsContent
@@ -414,9 +430,11 @@ struct TabsNavigationView: View {
         .tabItem { Label("Library", systemImage: "rectangle.stack.badge.person.crop") }
         .tag(CompactPhoneTab.library.rawValue)
 
-      downloadsContent
-        .tabItem { Label("Downloads", systemImage: "laptopcomputer.and.arrow.down") }
-        .tag(CompactPhoneTab.downloads.rawValue)
+      if downloadsEnabled {
+        downloadsContent
+          .tabItem { Label("Downloads", systemImage: "laptopcomputer.and.arrow.down") }
+          .tag(CompactPhoneTab.downloads.rawValue)
+      }
 
       settingsContent
         .tabItem { Label("Profile", systemImage: "person.crop.circle") }
@@ -617,7 +635,9 @@ struct TabsNavigationView: View {
     async let foldersTask = fetchFolders()
     async let watchlistTask = fetchWatchlistCount()
 #if !os(tvOS)
-    let downloads = (appContext.downloadedFilesDatabase.readData() ?? []).count
+    let downloads = downloadsEnabled
+      ? (appContext.downloadedFilesDatabase.readData() ?? []).count
+      : 0
 #endif
 
     // A failed fetch must not wipe the cached profile the row is already showing.
@@ -641,7 +661,9 @@ struct TabsNavigationView: View {
     let folders = await foldersTask
     let watchlist = await watchlistTask
 #if !os(tvOS)
-    let downloads = (appContext.downloadedFilesDatabase.readData() ?? []).count
+    let downloads = downloadsEnabled
+      ? (appContext.downloadedFilesDatabase.readData() ?? []).count
+      : 0
 #endif
     // Only publish when values change — rewriting tab `.badge` during a tab switch
     // recreates `UITabBarItem`s and can assert on iPhone.

@@ -16,6 +16,7 @@ current auxiliary work so the app feels instant and native.
 
 - [x] Home/Library list cache + disk snapshots (`ContentStore` / `RowSnapshotStore`)
 - [x] Banner shelf + delete Netflix focus-preview path
+- [x] Home banner gated by `AppFeatures.homeBanner` (off by default; Settings → Features; off skips sampling + artwork loads)
 - [x] Private `variableBlur` replaces Metal progressive blur
 - [x] Unified routes + zoom transitions (iOS/tvOS)
 - [x] App-scoped `PlaybackSession`
