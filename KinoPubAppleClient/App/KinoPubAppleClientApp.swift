@@ -9,7 +9,11 @@ import SwiftUI
 import KinoPubKit
 
 enum WindowSize {
-  static let macos = CGSize(width: 960, height: 580) // minimum size, default must be read from this value (to 1280/880 kinda ratio)
+  static let macos = CGSize(width: 960, height: 580)
+
+  /// Opening size on launch, scaled up from `macos` (the enforced minimum) toward
+  /// roughly a 1280x880 window instead of letting the system pick its own default.
+  static let macosDefault = CGSize(width: macos.width * 4 / 3, height: macos.height * 4 / 3)
 }
 
 @main
@@ -68,6 +72,7 @@ struct KinoPubAppleClientApp: App {
     }
 #if os(macOS)
     .windowResizability(.contentSize)
+    .defaultSize(width: WindowSize.macosDefault.width, height: WindowSize.macosDefault.height)
 #endif
 
 #if os(macOS)
