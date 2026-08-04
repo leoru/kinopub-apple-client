@@ -110,7 +110,15 @@ struct AppContext: AppContextProtocol {
     hlsDownloadManager.onDownloadFailed = { [weak downloadNotificationManager] meta in
       downloadNotificationManager?.notifyFailed(title: meta.notificationTitle, identifier: "\(meta.id)")
     }
-    hlsDownloadManager.restorePendingDownloads()
+    // Deferred a tick: reattaching to a background AVAssetDownloadURLSession is an XPC round
+    // trip to nsurlsessiond (~20-25ms measured, main-thread-only work since AVAssetDownloadURLSession
+    // requires a main delegate queue here). Called synchronously this sat directly in front of
+    // RootView's first frame, since `AppContext.shared` is resolved on the main thread before
+    // any view renders. A paused/interrupted HLS download reattaching a few hundred ms later is
+    // imperceptible; blocking every cold launch on it (even with zero downloads to restore) is not.
+    Task { @MainActor in
+      hlsDownloadManager.restorePendingDownloads()
+    }
     downloadManager.onDownloadFinished = { [weak seasonDownloadManager, weak downloadNotificationManager] url, meta in
       let handledBySeason = seasonDownloadManager?.handleFinished(url: url) ?? false
       if !handledBySeason {

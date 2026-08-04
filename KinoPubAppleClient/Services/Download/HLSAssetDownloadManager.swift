@@ -173,7 +173,12 @@ public final class HLSAssetDownloadManager: NSObject, ObservableObject, AVAssetD
     self.store = store
     self.maxResolutionProvider = maxResolutionProvider
     super.init()
-    _ = session // force lazy creation so background tasks are reattached
+    // `session` is left genuinely lazy: constructing an AVAssetDownloadURLSession with a
+    // background identifier is an XPC round trip to nsurlsessiond (~20-25ms measured on the
+    // simulator, likely more on device) on the main thread, since `AppContext.shared` — which
+    // owns this instance — is resolved synchronously on the main thread before the first frame.
+    // `restorePendingDownloads()` is what actually needs the session to reattach background
+    // tasks, and it's deferred off that path (see its call site in `AppContext.shared`).
   }
 
   private lazy var session: AVAssetDownloadURLSession = {
