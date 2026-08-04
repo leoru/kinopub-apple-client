@@ -97,7 +97,7 @@ Reuse (move, don’t duplicate logic):
 
 - **Live controls:** `@AppStorage`, Keychain, `ProfileModel` — persist as today.
 - **Demo controls:** `@State` in the pane; reset when the view disappears; never write UserDefaults/Keychain.
-- **Search:** optional sidebar `.searchable` chrome; filtering is nice-to-have, not required for v1.
+- **Search:** none in v1 (no sidebar search).
 
 ## Out of scope
 

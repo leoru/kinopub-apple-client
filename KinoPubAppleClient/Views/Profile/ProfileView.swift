@@ -14,14 +14,6 @@ struct ProfileView: View {
   @EnvironmentObject var errorHandler: ErrorHandler
   @Environment(\.appContext) var appContext
   @StateObject private var model: ProfileModel
-  @AppStorage("selectedLanguage") private var selectedLanguage: String = (Locale.current.language.languageCode?.identifier ?? "en")
-  @AppStorage(SubtitlePreferences.preferEnglishKey) private var preferEnglishSubtitles: Bool = true
-  @AppStorage(SubtitlePreferences.preferNonCCKey) private var preferNonCCSubtitles: Bool = true
-  @AppStorage(SubtitlePreferences.dualSubtitlesKey) private var dualSubtitlesEnabled: Bool = false
-  @AppStorage(SubtitlePreferences.secondSubtitleLanguageKey) private var secondSubtitleLanguage: String = "ru"
-  @AppStorage(StreamQuality.userDefaultsKey) private var streamQualityRaw: String = StreamQuality.auto.rawValue
-
-  @State private var showLogoutAlert: Bool = false
 
   init(model: @autoclosure @escaping () -> ProfileModel) {
     _model = StateObject(wrappedValue: model())
@@ -29,6 +21,33 @@ struct ProfileView: View {
 
   var body: some View {
 #if os(tvOS)
+    TVProfileSettingsHost(model: model)
+#else
+    NavigationStack {
+      SettingsRootView(model: model)
+        .background(Color.KinoPub.background)
+    }
+    .navigationStackActive(for: .settings, selected: navigationState.selectedTab)
+#endif
+  }
+}
+
+#if os(tvOS)
+/// Keeps tvOS bindings and alerts next to the legacy TV settings chrome.
+private struct TVProfileSettingsHost: View {
+  @ObservedObject var model: ProfileModel
+  @Environment(\.appContext) private var appContext
+  @AppStorage("selectedLanguage") private var selectedLanguage: String = (
+    Locale.current.language.languageCode?.identifier ?? "en"
+  )
+  @AppStorage(SubtitlePreferences.preferEnglishKey) private var preferEnglishSubtitles = true
+  @AppStorage(SubtitlePreferences.preferNonCCKey) private var preferNonCCSubtitles = true
+  @AppStorage(SubtitlePreferences.dualSubtitlesKey) private var dualSubtitlesEnabled = false
+  @AppStorage(SubtitlePreferences.secondSubtitleLanguageKey) private var secondSubtitleLanguage = "ru"
+  @AppStorage(StreamQuality.userDefaultsKey) private var streamQualityRaw = StreamQuality.auto.rawValue
+  @State private var showLogoutAlert = false
+
+  var body: some View {
     TVProfileSettingsView(
       model: model,
       kinopoiskKeyProvider: appContext.kinopoiskKeyProvider,
@@ -51,122 +70,13 @@ struct ProfileView: View {
       Alert(
         title: Text("Restarting the app"),
         message: Text("The app will restart to apply the language change."),
-        primaryButton: .default(Text("OK")) {
-          exit(0)
-        },
+        primaryButton: .default(Text("OK")) { exit(0) },
         secondaryButton: .cancel()
       )
     }
-#else
-    NavigationStack {
-      ZStack {
-        Color.KinoPub.background.edgesIgnoringSafeArea(.all)
-        VStack(alignment: .leading) {
-          Form {
-            Section {
-              LabeledContent("User Name", value: model.userData.username)
-              LabeledContent("User Subscription", value: "\(model.userData.subscription.days) \("days".localized)")
-              LabeledContent("Registration Date", value: "\(model.userData.registrationDateFormatted)")
-              LabeledContent("App version", value: Bundle.main.appVersionLong)
-            }
-
-            languageSection
-            playbackSection
-
-            // DESIGN: Devices section — `DeviceService.listDevices` / `removeDevice` are ready
-            // (identity + HEVC/4K/HDR already sync on auth). Layout TBD before shipping chrome.
-
-            KinopoiskSettingsSection(keyProvider: appContext.kinopoiskKeyProvider)
-
-            Section(header: Text("Data sources")) {
-              DataSourcesAttributionView()
-            }
-
-#if DEBUG
-            Section(header: Text("Diagnostics")) {
-              NavigationLink("Stream survey") {
-                StreamSurveyView()
-              }
-            }
-#endif
-
-            Section {
-              Button(action: {
-                showLogoutAlert = true
-              }, label: {
-                Text("Logout").foregroundStyle(Color.red)
-              })
-#if os(macOS)
-              .buttonStyle(PlainButtonStyle())
-#endif
-            }
-          }
-          .scrollContentBackground(.hidden)
-          .background(Color.KinoPub.background)
-        }
-      }
-      .platformNavigationTitle("Settings")
-      .onAppear(perform: {
-        model.fetch()
-      })
-      .alert("Are you sure?", isPresented: $showLogoutAlert) {
-        Button("Logout", role: .destructive) { model.logout() }
-        Button("Cancel", role: .cancel) { }
-      }
-      .alert(isPresented: $model.shouldShowExitAlert) {
-        Alert(
-          title: Text("Restarting the app"),
-          message: Text("The app will restart to apply the language change."),
-          primaryButton: .default(Text("OK")) {
-            exit(0)
-          },
-          secondaryButton: .cancel()
-        )
-      }
-    }
-    .navigationStackActive(for: .settings, selected: navigationState.selectedTab)
-#endif
   }
-
-#if !os(tvOS)
-  private var languageSection: some View {
-    Section(header: Text("Language")) {
-      Picker("Select Language", selection: $selectedLanguage) {
-        ForEach(model.availableLanguages.keys.sorted(), id: \.self) { key in
-          Text(model.availableLanguages[key] ?? key).tag(key)
-        }
-      }
-      .pickerStyle(MenuPickerStyle())
-      .onChange(of: selectedLanguage) { _, newLanguage in
-        model.changeLanguage(to: newLanguage)
-      }
-    }
-  }
-
-  private var playbackSection: some View {
-    Section(header: Text("Playback"),
-            footer: Text("A track picked in the player wins over these, and is remembered for the next episode.")) {
-      Picker("Stream quality", selection: $streamQualityRaw) {
-        ForEach(StreamQuality.allCases) { quality in
-          Text(quality.title).tag(quality.rawValue)
-        }
-      }
-      .pickerStyle(MenuPickerStyle())
-      Toggle("Default English subtitles", isOn: $preferEnglishSubtitles)
-      Toggle("Prefer non-CC / non-SDH", isOn: $preferNonCCSubtitles)
-        .disabled(!preferEnglishSubtitles)
-      Toggle("Dual subtitles", isOn: $dualSubtitlesEnabled)
-      Picker("Second subtitle language", selection: $secondSubtitleLanguage) {
-        ForEach(SubtitlePreferences.secondLanguageOptions, id: \.self) { code in
-          Text(LanguageNames.name(for: code)).tag(code)
-        }
-      }
-      .pickerStyle(MenuPickerStyle())
-      .disabled(!dualSubtitlesEnabled)
-    }
-  }
-#endif
 }
+#endif
 
 struct ProfileView_Previews: PreviewProvider {
   static var previews: some View {

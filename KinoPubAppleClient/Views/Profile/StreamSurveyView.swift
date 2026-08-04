@@ -47,7 +47,9 @@ struct StreamSurveyView: View {
         .padding()
       }
     }
+#if os(iOS)
     .platformNavigationTitle("Stream survey")
+#endif
   }
 }
 

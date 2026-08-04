@@ -7,6 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		SETDF825DAAA59C540189386 /* SettingsMacChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETAE1E9DCFC9D1562C867E1 /* SettingsMacChrome.swift */; };
+		SET38DA130C33C055C9AE448 /* SettingsDetailRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETE104248D056B59D598267 /* SettingsDetailRoute.swift */; };
+		SET6C560BDADA5D579BBF72E /* SettingsCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETF09DA820DA3F549DAA022 /* SettingsCategory.swift */; };
+		SET561AB6E8E3DE5BB2BBA93 /* SettingsRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SET9A213DB27F3C591EB487A /* SettingsRootView.swift */; };
+		SET2D329781649E5EA8ACF03 /* SettingsIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SET312E0ECC943354B89F065 /* SettingsIconView.swift */; };
+		SET441B5D63E89A548688262 /* SettingsSidebarProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETD3D07A541B2D52009FE12 /* SettingsSidebarProfileView.swift */; };
+		SET28F089788C945C5FAC70E /* GeneralSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = SET0E9950F96F335186B2AA5 /* GeneralSettingsPane.swift */; };
+		SET31AD3D1B4EE45687ACDD6 /* PlaybackSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = SET3B137862050E5816818B6 /* PlaybackSettingsPane.swift */; };
+		SET8421330220495D149ACA6 /* IntegrationsSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETA03F72B683335535A4137 /* IntegrationsSettingsPane.swift */; };
+		SET7CE1977F6C1A56898469F /* AdvancedSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = SET1B1979434854503599E28 /* AdvancedSettingsPane.swift */; };
+		SETF4AE203F2CEF5453BD14B /* PlaceholderSettingsPanes.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETB0F1DB506A5D5988BCA04 /* PlaceholderSettingsPanes.swift */; };
+		SET29847048EFE05A0894826 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETF1B0655944AC5DC0905DD /* AboutView.swift */; };
 		359B8BE15FCC4D9983B859BF /* StreamQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CF41D6D63054F0F92A507B1 /* StreamQuality.swift */; };
 		08CB3863EAFD08F1DBFCCD26 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A4D333AA7AC384F2D66551C /* FeatureFlags.swift */; };
 		5154F406DBC7545E25F4B0EE /* CollectionsServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF84111EC8ACE8C4885E1A76 /* CollectionsServiceImpl.swift */; };
@@ -134,6 +146,18 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		SETAE1E9DCFC9D1562C867E1 /* SettingsMacChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsMacChrome.swift; sourceTree = "<group>"; };
+		SETE104248D056B59D598267 /* SettingsDetailRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDetailRoute.swift; sourceTree = "<group>"; };
+		SETF09DA820DA3F549DAA022 /* SettingsCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCategory.swift; sourceTree = "<group>"; };
+		SET9A213DB27F3C591EB487A /* SettingsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRootView.swift; sourceTree = "<group>"; };
+		SET312E0ECC943354B89F065 /* SettingsIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsIconView.swift; sourceTree = "<group>"; };
+		SETD3D07A541B2D52009FE12 /* SettingsSidebarProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSidebarProfileView.swift; sourceTree = "<group>"; };
+		SET0E9950F96F335186B2AA5 /* GeneralSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsPane.swift; sourceTree = "<group>"; };
+		SET3B137862050E5816818B6 /* PlaybackSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSettingsPane.swift; sourceTree = "<group>"; };
+		SETA03F72B683335535A4137 /* IntegrationsSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationsSettingsPane.swift; sourceTree = "<group>"; };
+		SET1B1979434854503599E28 /* AdvancedSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsPane.swift; sourceTree = "<group>"; };
+		SETB0F1DB506A5D5988BCA04 /* PlaceholderSettingsPanes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderSettingsPanes.swift; sourceTree = "<group>"; };
+		SETF1B0655944AC5DC0905DD /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskKeyStorage.swift; sourceTree = "<group>"; };
 		13B122808656F8D05B7D97DC /* DeviceCapabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceCapabilities.swift; sourceTree = "<group>"; };
 		285B09E94948CDC959E3D287 /* DeviceServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceServiceImpl.swift; sourceTree = "<group>"; };
@@ -279,6 +303,41 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		SET3CDB33CD1E0053FBB6873 /* Panes */ = {
+			isa = PBXGroup;
+			children = (
+				SET0E9950F96F335186B2AA5 /* GeneralSettingsPane.swift */,
+				SET3B137862050E5816818B6 /* PlaybackSettingsPane.swift */,
+				SETA03F72B683335535A4137 /* IntegrationsSettingsPane.swift */,
+				SET1B1979434854503599E28 /* AdvancedSettingsPane.swift */,
+				SETB0F1DB506A5D5988BCA04 /* PlaceholderSettingsPanes.swift */,
+			);
+			path = Panes;
+			sourceTree = "<group>";
+		};
+		SET5F449030BE4759108DBE1 /* About */ = {
+			isa = PBXGroup;
+			children = (
+				SETF1B0655944AC5DC0905DD /* AboutView.swift */,
+			);
+			path = About;
+			sourceTree = "<group>";
+		};
+		SETBDD5415EB512526487B4D /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				SETF09DA820DA3F549DAA022 /* SettingsCategory.swift */,
+				SET9A213DB27F3C591EB487A /* SettingsRootView.swift */,
+				SET312E0ECC943354B89F065 /* SettingsIconView.swift */,
+				SETD3D07A541B2D52009FE12 /* SettingsSidebarProfileView.swift */,
+				SETAE1E9DCFC9D1562C867E1 /* SettingsMacChrome.swift */,
+				SETE104248D056B59D598267 /* SettingsDetailRoute.swift */,
+				SET3CDB33CD1E0053FBB6873 /* Panes */,
+				SET5F449030BE4759108DBE1 /* About */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		3F62C34DB1BD4457BD04AAF8 /* LocalWatchProgress */ = {
 			isa = PBXGroup;
 			children = (
@@ -371,6 +430,7 @@
 		CC71E6F12A6C04AE004AFB3F /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				SETBDD5415EB512526487B4D /* Settings */,
 				CC71E6F52A6C05BF004AFB3F /* Auth */,
 				CC71E6F42A6C05B9004AFB3F /* Bookmarks */,
 				CC71E6FD2A6C0691004AFB3F /* Downloads */,
@@ -879,6 +939,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				SETDF825DAAA59C540189386 /* SettingsMacChrome.swift in Sources */,
+				SET38DA130C33C055C9AE448 /* SettingsDetailRoute.swift in Sources */,
+				SET6C560BDADA5D579BBF72E /* SettingsCategory.swift in Sources */,
+				SET561AB6E8E3DE5BB2BBA93 /* SettingsRootView.swift in Sources */,
+				SET2D329781649E5EA8ACF03 /* SettingsIconView.swift in Sources */,
+				SET441B5D63E89A548688262 /* SettingsSidebarProfileView.swift in Sources */,
+				SET28F089788C945C5FAC70E /* GeneralSettingsPane.swift in Sources */,
+				SET31AD3D1B4EE45687ACDD6 /* PlaybackSettingsPane.swift in Sources */,
+				SET8421330220495D149ACA6 /* IntegrationsSettingsPane.swift in Sources */,
+				SET7CE1977F6C1A56898469F /* AdvancedSettingsPane.swift in Sources */,
+				SETF4AE203F2CEF5453BD14B /* PlaceholderSettingsPanes.swift in Sources */,
+				SET29847048EFE05A0894826 /* AboutView.swift in Sources */,
 				CCF388282A718BB600242581 /* AppContext.swift in Sources */,
 				CCF388212A718ADE00242581 /* VideoContentService.swift in Sources */,
 				CCF3881A2A71882300242581 /* AuthorizationService.swift in Sources */,

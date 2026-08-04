@@ -2,23 +2,37 @@
 //  SettingsView.swift
 //  KinoPubAppleClient
 //
-//  Created by Kirill Kunst on 28.10.2023.
+//  macOS Settings window content — shared catalog lives in SettingsRootView.
 //
 
-import Foundation
 import SwiftUI
 
 #if os(macOS)
 struct SettingsView: View {
-  @EnvironmentObject var windowSettings: WindowSettings
-  @AppStorage("alwaysOnTop") var alwaysOnTop: Bool = false
-  
+  @Environment(\.appContext) private var appContext
+  @EnvironmentObject private var errorHandler: ErrorHandler
+  @EnvironmentObject private var authState: AuthState
+
   var body: some View {
-    Form {
-      Toggle("AlwaysOnTop", isOn: $windowSettings.alwaysOnTop)
-    }
-    .padding()
-    .frame(width: 300, height: 200)
+    SettingsSceneHost(
+      model: ProfileModel(
+        userService: appContext.userService,
+        errorHandler: errorHandler,
+        authState: authState
+      )
+    )
+  }
+}
+
+private struct SettingsSceneHost: View {
+  @StateObject private var model: ProfileModel
+
+  init(model: @autoclosure @escaping () -> ProfileModel) {
+    _model = StateObject(wrappedValue: model())
+  }
+
+  var body: some View {
+    SettingsRootView(model: model)
   }
 }
 #endif

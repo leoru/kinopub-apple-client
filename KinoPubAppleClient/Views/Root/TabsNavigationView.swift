@@ -60,6 +60,7 @@ struct TabsNavigationView: View {
   private static let sidebarSyncTTL: TimeInterval = 120
 #if os(macOS)
   @AppStorage("sidebarTabCustomization") private var tabCustomization = TabViewCustomization()
+  @Environment(\.openWindow) private var openWindow
 #endif
 
   var body: some View {
@@ -325,19 +326,12 @@ struct TabsNavigationView: View {
     .tabViewCustomization($tabCustomization)
     .tabViewSidebarBottomBar {
       Button {
-        showSettings = true
+        openWindow(id: SettingsWindow.id)
       } label: {
         profileLabel(avatarSize: 20)
       }
       .buttonStyle(.borderless)
       .badge(subscriptionDaysBadge)
-    }
-    .sheet(isPresented: $showSettings) {
-      settingsContent
-        .environmentObject(navigationState)
-        .environmentObject(errorHandler)
-        .environmentObject(authState)
-        .frame(minWidth: 480, minHeight: 520)
     }
   }
 #endif

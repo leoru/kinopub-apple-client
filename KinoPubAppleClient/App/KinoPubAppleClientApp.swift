@@ -80,6 +80,8 @@ struct KinoPubAppleClientApp: App {
     // File menu comes back once it has a real item (e.g. a new-bookmark-list
     // command, the way the TV app's File menu has New Playlist).
     .commands {
+      AboutCommands()
+      SettingsCommands()
       CommandGroup(replacing: .newItem) { }
       // Into the system View menu — `CommandMenu("View")` would add a second View.
       CommandGroup(after: .toolbar) {
@@ -126,11 +128,63 @@ struct KinoPubAppleClientApp: App {
       return WindowPlacement(.center, size: CGSize(width: width, height: width * 9.0 / 16.0))
     }
 
-    Settings {
+    // Custom Settings window (not SwiftUI `Settings` scene) so we own the chrome —
+    // System Settings–style sidebar + toolbar. Opened via App menu / ⌘, / profile button.
+    Window("Settings", id: SettingsWindow.id) {
       SettingsView()
+        .environment(\.appContext, AppContext.shared)
         .environmentObject(windowSettings)
+        .environmentObject(authState)
+        .environmentObject(errorHandler)
         .preferredColorScheme(.dark)
     }
+    .windowResizability(.contentSize)
+    .defaultSize(width: 720, height: 520)
+    .commandsRemoved()
+
+    Window("About KinoPub", id: AboutWindow.id) {
+      AboutView()
+        .preferredColorScheme(.dark)
+    }
+    .windowResizability(.contentSize)
+    .restorationBehavior(.disabled)
+    .commandsRemoved()
 #endif
   }
 }
+
+#if os(macOS)
+enum SettingsWindow {
+  static let id = "settings"
+}
+
+enum AboutWindow {
+  static let id = "about"
+}
+
+private struct AboutCommands: Commands {
+  @Environment(\.openWindow) private var openWindow
+
+  var body: some Commands {
+    CommandGroup(replacing: .appInfo) {
+      Button("About KinoPub") {
+        openWindow(id: AboutWindow.id)
+      }
+    }
+  }
+}
+
+private struct SettingsCommands: Commands {
+  @Environment(\.openWindow) private var openWindow
+
+  var body: some Commands {
+    CommandGroup(replacing: .appSettings) {
+      Button("Settings…") {
+        openWindow(id: SettingsWindow.id)
+      }
+      .keyboardShortcut(",", modifiers: .command)
+    }
+  }
+}
+#endif
+
