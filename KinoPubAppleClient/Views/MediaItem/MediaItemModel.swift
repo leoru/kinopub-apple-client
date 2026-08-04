@@ -432,13 +432,17 @@ class MediaItemModel: ObservableObject {
 #if os(iOS)
     // Prefer offline HLS (.movpkg) — full quality + all dubs/subs. Fall back to mp4.
     if let hls = URL(string: file.url.hls4), !file.url.hls4.isEmpty {
-      let result = AppContext.shared.hlsDownloadManager.startDownload(meta: meta, hlsURL: hls)
-      switch result {
-      case .started, .alreadyDownloading, .alreadyDownloaded:
-        return
-      case .failed:
-        break
+      Task { @MainActor in
+        let result = await AppContext.shared.hlsDownloadManager.startDownload(meta: meta, hlsURL: hls)
+        switch result {
+        case .started, .alreadyDownloading, .alreadyDownloaded:
+          return
+        case .failed:
+          guard let url = URL(string: file.url.http), !file.url.http.isEmpty else { return }
+          _ = self.downloadManager.startDownload(url: url, withMetadata: meta)
+        }
       }
+      return
     }
 #endif
     guard let url = URL(string: file.url.http), !file.url.http.isEmpty else { return }

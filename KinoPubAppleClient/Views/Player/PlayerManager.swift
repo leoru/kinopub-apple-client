@@ -421,8 +421,10 @@ class PlayerManager: ObservableObject {
 
   private func disableSystemLegibleSelection() {
     guard let item = player.currentItem else { return }
-    guard let group = item.asset.mediaSelectionGroup(forMediaCharacteristic: .legible) else { return }
-    item.select(nil, in: group)
+    Task { @MainActor in
+      guard let group = try? await item.asset.loadMediaSelectionGroup(for: .legible) else { return }
+      item.select(nil, in: group)
+    }
   }
 
   private func addCueTimeObserver() {
@@ -719,25 +721,28 @@ extension PlayerManager {
   }
 
   private func applyAudibleGroup(from item: AVPlayerItem) {
-    guard audibleGroup == nil,
-          let group = item.asset.mediaSelectionGroup(forMediaCharacteristic: .audible) else { return }
-    audibleGroup = group
+    guard audibleGroup == nil else { return }
+    Task { @MainActor in
+      guard self.audibleGroup == nil,
+            let group = try? await item.asset.loadMediaSelectionGroup(for: .audible) else { return }
+      self.audibleGroup = group
 
-    if !didChooseDefaultAudio {
-      didChooseDefaultAudio = true
-      let remembered = AudioTrackMemory.choice(for: playItem.metadata.id)
-      let chosen = remembered.flatMap { name in
-        group.options.first { $0.kinopubTrackName == name }
-      } ?? AudioTrackRanker.best(in: group.options)
-      if let chosen {
-        item.select(chosen, in: group)
-        // Seed the persist baseline with what we opened on, so the polling write only
-        // fires once the user actually switches away from this — the auto-pick itself is
-        // not a "choice" worth remembering as one.
-        lastPersistedAudioName = chosen.kinopubTrackName
+      if !self.didChooseDefaultAudio {
+        self.didChooseDefaultAudio = true
+        let remembered = AudioTrackMemory.choice(for: self.playItem.metadata.id)
+        let chosen = remembered.flatMap { name in
+          group.options.first { $0.kinopubTrackName == name }
+        } ?? AudioTrackRanker.best(in: group.options)
+        if let chosen {
+          item.select(chosen, in: group)
+          // Seed the persist baseline with what we opened on, so the polling write only
+          // fires once the user actually switches away from this — the auto-pick itself is
+          // not a "choice" worth remembering as one.
+          self.lastPersistedAudioName = chosen.kinopubTrackName
+        }
       }
+      self.rebuildTransportBarMenus()
     }
-    rebuildTransportBarMenus()
   }
 
   /// The audio track showing right now, whether we auto-picked it or the user chose it in

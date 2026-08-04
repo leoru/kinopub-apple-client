@@ -63,7 +63,7 @@ struct PlayerView: View {
       UIApplication.shared.isIdleTimerDisabled = false
       AppDelegate.orientationLock = .all
       UIDevice.current.setValue(UIDevice.current.orientation.rawValue, forKey: "orientation")
-      UIViewController.attemptRotationToDeviceOrientation()
+      Self.requestSupportedOrientationsUpdate()
     })
 #endif
 #if os(tvOS)
@@ -120,6 +120,23 @@ struct PlayerView: View {
       }
 #endif
   }
+
+#if os(iOS)
+  /// Asks the key window's top view controller to re-evaluate
+  /// `AppDelegate.supportedInterfaceOrientationsFor` after the player unlocks rotation.
+  private static func requestSupportedOrientationsUpdate() {
+    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    let window = scenes
+      .first(where: { $0.activationState == .foregroundActive })?
+      .windows.first(where: \.isKeyWindow)
+      ?? scenes.flatMap(\.windows).first(where: \.isKeyWindow)
+    var top = window?.rootViewController
+    while let presented = top?.presentedViewController {
+      top = presented
+    }
+    top?.setNeedsUpdateOfSupportedInterfaceOrientations()
+  }
+#endif
 
   /// The player never sits on a silent black screen: while the stream is being prepared
   /// there is a spinner and the title, when it fails there is the reason, and either way

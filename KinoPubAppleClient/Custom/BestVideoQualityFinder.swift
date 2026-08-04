@@ -16,14 +16,25 @@ import KinoPubBackend
 struct BestVideoQualityFinder {
 
 #if canImport(UIKit) && !os(macOS)
+  /// Vertical display capability in pixels, matched against `FileInfo.resolution` (e.g. 1080 from "1080p").
+  /// Uses `nativeBounds` so Apple TV 4K reports ~2160 rather than the 1080pt UI buffer.
   private static var deviceCapabilitySize: CGFloat {
-#if os(tvOS)
-    return max(UIScreen.main.bounds.width, UIScreen.main.bounds.height)
-#else
-    UIApplication.shared.statusBarOrientation.isLandscape
-      ? UIScreen.main.bounds.width
-      : UIScreen.main.bounds.height
-#endif
+    guard let screen = preferredScreen() else { return 1080 }
+    let pixels = screen.nativeBounds.size
+    return min(pixels.width, pixels.height)
+  }
+
+  private static func preferredScreen() -> UIScreen? {
+    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    if let active = scenes.first(where: { $0.activationState == .foregroundActive }) {
+      return active.screen
+    }
+    return scenes
+      .max {
+        min($0.screen.nativeBounds.width, $0.screen.nativeBounds.height)
+          < min($1.screen.nativeBounds.width, $1.screen.nativeBounds.height)
+      }?
+      .screen
   }
 #endif
 

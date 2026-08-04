@@ -40,8 +40,8 @@ player.
 - [ ] `PlayerTimeObserver` fires its callback on `.global(qos: .userInteractive)`
 - [ ] `Task.detached(priority: .utility) { [unowned self] … }` in `PlayerManager`
 - [ ] `HLSAudioLabeler` writes a temp `.m3u8` per launch into `tmp/kinopub-hls` and never cleans up
-- [ ] `BestVideoQualityFinder` uses deprecated `UIScreen.main.bounds`, which reports 1920×1080pt even
-  on 4K Apple TVs
+- [x] `BestVideoQualityFinder` uses window-scene `nativeBounds` (pixel height) instead of deprecated
+  `UIScreen.main.bounds`, so 4K Apple TVs can select a 2160p ladder
 
 Detailed rationale and file:line references stay in
 [`modernization.md`](../plans/modernization.md).
