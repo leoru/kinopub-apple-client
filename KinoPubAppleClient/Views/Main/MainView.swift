@@ -23,15 +23,21 @@ struct MainView: View {
 
   var body: some View {
     NavigationStack(path: $navigationState.mainRoutes) {
+      // No page-level material and no `backgroundExtensionEffect` on any platform.
+      //
+      // That modifier duplicates the view into *mirrored, blurred copies* laid into
+      // whatever safe area is free. It exists for the detail column of a
+      // `NavigationSplitView`, so artwork can bleed under an overlaying sidebar or
+      // inspector. This app has no split view at all, and our sidebars are meant to
+      // displace content, not float over it — so there is nothing for the copies to
+      // sit behind. What it produced instead was mirrored rows smeared into the
+      // navigation and tab bars, and, on a failed or empty load, a mirrored copy of
+      // the error placeholder. The native Apple TV app does not do this.
+      //
+      // The navigation bar is likewise left to the system: on 26 it is already
+      // Liquid Glass with the scroll-edge effect.
       rowsView
         .platformNavigationTitle("Home")
-#if os(iOS) || os(tvOS)
-        .background(.ultraThickMaterial)
-        .backgroundExtensionEffect()
-#endif
-#if os(iOS)
-        .containerBackground(.ultraThickMaterial, for: .navigation)
-#endif
         .navigationDestination(for: Route.self) { route in
           RouteDestination(route: route,
                            linkProvider: AppRoutesLinkProvider(),
