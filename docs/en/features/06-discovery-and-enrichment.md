@@ -9,6 +9,8 @@ recommendations source or an honest absence.
 - TMDB via worker proxy; Kinopoisk Unofficial per-user key + keyless proxy fallback.
 - Enrichment sections hide when empty; third-party proxies may die.
 - Title logos, tagline, box office, reviews get UI only when data is ready.
+- Detail hero: hold the lettered title until enrichment settles; assume a logo will
+  load, paint text only when there is no URL or the image fails.
 - Personal recommendations require an explicit source/model — until then, say we don't have them.
 - Editorial tops (IMDb lists, etc.) are exploratory and source-constrained.
 

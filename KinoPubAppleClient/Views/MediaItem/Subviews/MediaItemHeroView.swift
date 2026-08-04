@@ -358,8 +358,12 @@ struct MediaItemHeroView: View {
   /// Series watchlist toggle for the shared context menu (not the hero checkmark).
   var isInWatchlist: Bool = false
   var onToggleWatchlist: (() -> Void)? = nil
-  /// TMDB title logo when available; otherwise the text title block is shown.
+  /// TMDB / Kinopoisk title logo when enrichment supplied one.
   var titleLogoURL: URL? = nil
+  /// False until external metadata settles. While false, the title slot stays empty
+  /// (optimistic: a logo is expected). Defaults to `true` so previews without the
+  /// enrichment pipeline still show the lettered title.
+  var externalMetadataLoaded: Bool = true
 
   /// tvOS only: the Up gesture lifts the muted inline preview into a real full-screen
   /// player. Kept here so the same view that owns the preview owns its promotion.
@@ -513,7 +517,7 @@ struct MediaItemHeroView: View {
     GeometryReader { proxy in
       let frame = proxy.frame(in: .named(MediaItemLayout.scrollSpace))
       Color.clear
-        .onChange(of: frame.minY >= -Self.onScreenSlop) { onScreen in
+        .onChange(of: frame.minY >= -Self.onScreenSlop) { _, onScreen in
           isHeroOnScreen = onScreen
         }
     }
@@ -627,21 +631,39 @@ struct MediaItemHeroView: View {
 
   @ViewBuilder
   private var titleBlock: some View {
-    if let titleLogoURL {
-      AsyncImage(url: titleLogoURL) { phase in
-        switch phase {
-        case .success(let image):
-          image
-            .resizable()
-            .scaledToFit()
-            .frame(maxWidth: Self.logoMaxWidth, maxHeight: Self.logoMaxHeight, alignment: .leading)
-        default:
-          titleTextBlock
+    // Optimistic hold: do not paint letters until enrichment has settled and any
+    // logo URL has either drawn or failed. Bottom-aligned column keeps meta/actions put.
+    // 150ms opacity fade — same AsyncImage transaction pattern as the wide still.
+    Group {
+      if !externalMetadataLoaded {
+        EmptyView()
+      } else if let titleLogoURL {
+        AsyncImage(
+          url: titleLogoURL,
+          transaction: Transaction(animation: .easeOut(duration: 0.15))
+        ) { phase in
+          switch phase {
+          case .success(let image):
+            image
+              .resizable()
+              .scaledToFit()
+              .frame(maxWidth: Self.logoMaxWidth, maxHeight: Self.logoMaxHeight, alignment: .leading)
+              .transition(.opacity)
+          case .failure:
+            titleTextBlock
+              .transition(.opacity)
+          case .empty:
+            EmptyView()
+          @unknown default:
+            EmptyView()
+          }
         }
+      } else {
+        titleTextBlock
+          .transition(.opacity)
       }
-    } else {
-      titleTextBlock
     }
+    .animation(.easeOut(duration: 0.15), value: externalMetadataLoaded)
   }
 
   private var titleTextBlock: some View {

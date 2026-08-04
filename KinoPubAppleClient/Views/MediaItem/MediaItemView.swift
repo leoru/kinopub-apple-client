@@ -125,7 +125,8 @@ struct MediaItemView: View {
                           onBrowseWatchlist: { Self.openWatchlist(navigationState) },
                           isInWatchlist: itemModel.isInWatchlist,
                           onToggleWatchlist: { itemModel.toggleWatchlist() },
-                          titleLogoURL: itemModel.externalMetadata.titleLogoURL)
+                          titleLogoURL: itemModel.externalMetadata.titleLogoURL,
+                          externalMetadataLoaded: itemModel.externalMetadataLoaded)
 #if os(tvOS)
           .containerRelativeFrame(.vertical) { length, _ in length }
           .focusSection()
