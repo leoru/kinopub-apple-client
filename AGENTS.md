@@ -1,80 +1,90 @@
 # Working agreement
 
-Read this before changing code. The product direction, current state and roadmap live in
-[README.md](README.md) — keep it accurate as you go instead of writing separate status documents.
+Read this before changing code. Product overview and macro stages live in
+[README.md](README.md). Detailed behavior and checklists live in feature docs. Durable rules live
+in policies. Platform how-tos live in the Apple-platform knowledge base.
 
-## Priorities
+## Authority (highest wins)
 
-1. **tvOS is the primary platform.** Design for the 10-foot experience and the Siri Remote first.
-2. iOS, iPadOS and macOS must keep building, but they are supplementary — a reasonable-looking layout is
-   enough, they do not drive design decisions.
-3. Match the stock Apple TV app for look, and microiptv for features. When in doubt, do what Apple does.
+1. **The user's current explicit decision** in this conversation.
+2. **Accepted feature decisions** in [`docs/en/features/`](docs/en/features/).
+3. **Policies** in [`docs/en/policies/`](docs/en/policies/).
+4. **Implementation plans** in [`docs/en/plans/`](docs/en/plans/) — how, not whether.
+5. **Research / archive evidence** — never automatic requirements.
 
-## Ground rules
+If sources conflict, stop only the disputed part and ask. Do **not** invent blockers, close open
+design questions with "Apple defaults", or rewrite docs to rationalize an implementation.
 
-- **One target.** `KinoPubAppleClient` is a single multiplatform target. Use `#if os(tvOS)` /
-  `#if os(iOS)` / `#if os(macOS)` for differences. Do not add a second app target.
-- **No custom chrome where a system control exists.** No site-styled green buttons, no hand-rolled
-  transport bars, no iOS-sized controls on TV. Native SwiftUI/AVKit components, HIG defaults.
-- **Everything must be focus-navigable on tvOS.** Any `Button`, `NavigationLink` or interactive chip you
-  add has to be reachable and visibly focusable with the remote. `.buttonStyle(.plain)` usually breaks
-  this — check before shipping.
-- **Focus drives the page on TV.** Rows screens (`MediaRowsView`) hand the remote the first banner or
-  shelf card rather than the tab bar. Anything new built out of rows should inherit that by using
-  `MediaRowsView`, not a hand-rolled stack. Do not put inert reserved space above a row — it swallows
-  Up and strands the user with the tab bar out of reach. Home’s featured band is the focusable banner
-  shelf, not a separate non-interactive preview.
-- **Colours come from the system.** `Color.KinoPub.background`, `.text` and `.subtitle` resolve to the
-  platform's own background and label colours. Don't reintroduce hand-picked greys; accents stay in the
-  asset catalogue. **Dark appearance only for now** (scene-root `.preferredColorScheme(.dark)` +
-  `UIUserInterfaceStyle = Dark`); do not half-support light until that deliberate pass lands. On tvOS,
-  `Color.KinoPub.background` is `Color.black` so Liquid Glass samples a real page, not a clear window.
-- **No skeletons.** A screen that is waiting shows nothing, then `LoadingIndicatorView` once the wait
-  is long enough to notice, then fades the real content in. Don't reintroduce stand-in cards, shimmer
-  or greyed-out text — Apple's own apps don't.
-- **No analytics, no crash reporting.** Firebase was deliberately removed; don't reintroduce it or
-  anything like it.
-- **Downloads is non-TV only.** Don't wire download UI into tvOS surfaces.
-- **New API calls go through `KinoPubBackend`.** Add an `Endpoint` in `Requests/`, a model in `Models/`,
-  and expose it via the relevant service protocol + mock in `KinoPubAppleClient/Services/`. Keep the mock
-  implementations in sync so previews keep compiling.
-- **Localization.** User-facing strings go through `Localizable.xcstrings` (`"key".localized` /
-  `Text("key")`), Russian and English both.
+## Preserve user work
+
+- Treat every pre-existing modified or untracked file as user-owned.
+- Re-read a file immediately before patching it.
+- Prefer narrow patches. Do not revert, wholesale-replace, or reformat unrelated work.
+- Do not change requirements, policies, feature docs, or README merely to match what you built.
+
+## Non-negotiables
+
+- **One multiplatform target.** Platform differences use `#if os(...)`. Do not add a second app target.
+- **Native Apple UI first.** Stock SwiftUI / AVKit / system UIKit-AppKit bridges before custom chrome.
+  Custom UI needs a named missing API, rejected alternatives, and a maintenance cost. See
+  [apple-native-design](docs/en/policies/apple-native-design.md).
+- **Multiplatform-native, tvOS-quality.** Ship a real app on tvOS, iOS, iPadOS, and macOS. tvOS sets
+  the media / focus / 10-foot bar; other platforms get their own native controls, not TV chrome
+  forced sideways.
+- **Focus must work on tvOS.** Interactive controls are reachable and visibly focusable. Avoid
+  `.buttonStyle(.plain)` unless you have verified focus. Rows screens use `MediaRowsView` and do
+  not put inert reserved space above content.
+- **Continuity before placeholders.** Stale local data and already-loaded artwork beat blank screens.
+  Exact-layout skeletons are allowed only for true cold loads. See
+  [data-continuity](docs/en/policies/data-continuity.md).
+- **System colours.** `Color.KinoPub.background` / `.text` / `.subtitle` resolve to platform colours.
+  **Dark only, forced on every platform,** until the deliberate light-theme stage. tvOS ships no
+  semantic background colour (`systemBackground` is iOS-only), so the TV base is real black. The
+  token must stay **opaque**: a transparent one no-ops every `.background(…)` and every `.opacity()`
+  scrim derived from it. Liquid Glass samples the *content* over the fill — never rely on the page
+  fill to feed glass.
+- **Telemetry.** No third-party SDK today: TestFlight / Xcode Organizer already deliver crashes, and
+  distribution is personal builds / TestFlight. Product analytics is a late-stage item. Do not add
+  Firebase, Sentry, or similar without an explicit decision from the user.
+- **Downloads are non-TV only.** Feature-gate incomplete surfaces rather than inventing half-UI.
+- **New API calls go through `KinoPubBackend`** (Endpoint + model + service protocol + mock).
+- **Localization** through `Localizable.xcstrings` (RU + EN). Maintained *docs* are English-only.
+
+## Workflow
+
+Logic and data flow first; presentation second. Borrow before build. Ambiguous UI gets 2–3 isolated
+variants; predetermined system controls do not. Verify by risk, not ritual. Details:
+[agent-workflow](docs/en/policies/agent-workflow.md).
+
+## Documentation map
+
+| Document | Owns |
+| --- | --- |
+| [README.md](README.md) | Public overview, differentiators, current macro stage, setup |
+| [CHANGELOG.md](CHANGELOG.md) | Notable shipped changes and agent-relevant implementation facts |
+| [docs/en/policies/](docs/en/policies/) | Durable design / continuity / workflow rules |
+| [docs/en/features/](docs/en/features/) | Feature behavior, small checklists, flags, validation |
+| [docs/en/apple-platform/](docs/en/apple-platform/) | Categorized Apple API / HIG / pitfalls knowledge base |
+| [docs/en/plans/](docs/en/plans/) | Dated implementation history — not living authority |
+
+README changes only when public positioning, a macro stage, or a broad capability changes — not after
+every PR. Tick detail checkboxes in the relevant feature doc instead.
 
 ## Style
 
-- 2-space indentation, matching the existing files.
-- SwiftUI views: `@StateObject` view models injected via `@autoclosure @escaping` initializers, the
-  pattern used across `Views/`. Follow the surrounding file rather than introducing a new architecture.
-- Services are protocol + `…Impl` + `…Mock`; view models are `ObservableObject`, `@MainActor` where they
-  touch UI state.
-- Keep `PreviewProvider` / `#Preview` blocks working.
+- 2-space indentation.
+- SwiftUI: `@StateObject` view models via `@autoclosure @escaping` initializers, matching `Views/`.
+- Services: protocol + `…Impl` + `…Mock`. View models: `ObservableObject`, `@MainActor` when touching UI.
+- Keep `#Preview` / `PreviewProvider` working for reusable UI.
 
-### Driving the remote
+## Driving the remote
 
-Only input needs a window; `simctl` has no key-press API.
+There is no Simulator.app on current Xcode. The simulator window is hosted by **Device Hub**
+(`com.apple.dt.Devices`). Focus the window title bar; arrow keys + Return are the D-pad. Escape is
+**not** Menu — use the on-screen remote `‹` button. Focus bugs do not show in previews.
 
-**There is no Simulator.app on current Xcode.** `tell application "Simulator"` fails with `-1728` and
-the process list has no such entry. The simulator window is hosted by **Device Hub**
-(`com.apple.dt.Devices`), which also draws an on-screen remote along the bottom edge. If you are using
-computer-use, request access to `Device Hub` — asking for "Simulator" returns notInstalled and sends
-agents off believing the device cannot be driven at all.
+## Community fork
 
-Then: click the window's title bar to focus it, and use arrow keys + Return as the D-pad. **Escape is
-not Menu** — it does not go back and does not dismiss a sheet; use the `‹` button on the on-screen
-remote for that.
-
-Focus bugs do not show up in previews, so anything focusable gets driven this way before it ships.
-
-## Housekeeping
-
-- Tick the roadmap checkboxes in `README.md` as phases land, and move items out of "Known issues" when
-  they're fixed.
-- If you find a new defect and aren't fixing it now, add it to "Known issues" with the file path.
-
-## Community fork (technical steals only)
-
-[dungeon-master-xx/kinopub-apple-client](https://github.com/dungeon-master-xx/kinopub-apple-client) is
-a sibling fork of the same leoru original. Track it as remote `community` — **never rebase** our UI
-onto theirs. Steal Request/Model/Service slices; keep our screens. Details:
-[docs/en/community-fork.md](docs/en/community-fork.md).
+Track [dungeon-master-xx/kinopub-apple-client](https://github.com/dungeon-master-xx/kinopub-apple-client)
+as remote `community`. Steal Request/Model/Service slices only. Never rebase our UI onto theirs.
+Details: [docs/en/community-fork.md](docs/en/community-fork.md).

@@ -1,0 +1,18 @@
+---
+description: Preserve user edits, narrow scope, and never silently rewrite requirements
+alwaysApply: true
+---
+
+# Agent safety
+
+- Inspect `git status` and relevant diffs before editing. Treat every existing modified or untracked file as **user-owned**.
+- Re-read a file immediately before patching it. Prefer small, reviewable patches over wholesale rewrites.
+- Do **not** revert, replace, or reformat unrelated work to make your change cleaner.
+- Implement only what the user asked for in this turn. If an unspecified choice affects UX, architecture, data loss, or requirements, **ask once** — do not invent Apple defaults or close design decisions unilaterally.
+- Ambiguous short messages are questions, not green lights for autonomous resolution agents.
+- Do **not** edit README, policies, feature docs, or decisions merely to rationalize an implementation.
+- Do **not** mark work `done` / `landed` / phase-complete without the verification the change's risk requires. If verification is deferred, say `implemented, validation pending`.
+- Plans and research never outrank the user's current decision or an accepted feature decision.
+- Leave incomplete surfaces behind a feature flag or honest empty state rather than inventing half-chrome.
+- **Telemetry:** no third-party SDK. TestFlight / Xcode Organizer already deliver crashes; product analytics is a late-stage item. Do not add Firebase, Sentry, or similar without an explicit decision from the user.
+- **Distribution is personal builds / TestFlight, not the App Store.** Private API (e.g. `CAFilter` `variableBlur`) is therefore *allowed* behind a thin isolated helper. Do not "fix" it on App Store review grounds that do not apply here.

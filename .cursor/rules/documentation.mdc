@@ -1,0 +1,17 @@
+---
+description: Documentation ownership — what may live where
+globs: "**/*.md"
+alwaysApply: false
+---
+
+# Documentation ownership
+
+- Maintained docs are **English-only**. Russian snapshots belong under `docs/archive/` and are evidence, not law.
+- [README.md](../../README.md): public overview, differentiators, current macro stage, setup. Change it only when positioning, a macro stage, or a broad capability changes.
+- [docs/en/policies/](../../docs/en/policies/): durable rules. Edit only with an explicit policy change.
+- [docs/en/features/](../../docs/en/features/): feature behavior, small checklists, flags, validation status.
+- [docs/en/apple-platform/](../../docs/en/apple-platform/): categorized Apple API / HIG knowledge. Keep evergreen guidance separate from dated code audits.
+- [CHANGELOG.md](../../CHANGELOG.md): notable shipped changes and agent-relevant facts. No trivial token churn.
+- [docs/en/plans/](../../docs/en/plans/) and [docs/archive/](../../docs/archive/): dated history / evidence. Do not treat them as living requirements. `modernization.md` is closed — it carries no open checkboxes; its remaining work moved into feature-doc checklists. Add new work to the feature doc that owns it, never back into a plan.
+- Do **not** tick roadmap minutiae into README. Do **not** promote research recommendations that conflict with accepted feature decisions or policies.
+- Do **not** mark phases complete in docs from a simulator compile alone when the change is visual, focus, blur, navigation, or player related.

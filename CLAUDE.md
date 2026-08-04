@@ -1,10 +1,16 @@
 # CLAUDE.md
 
-This is a **tvOS-first** kino.pub client. Before changing anything:
+Compatibility entry point for Claude Code / Claude-compatible agents.
 
-- [AGENTS.md](AGENTS.md) — working agreement: platform priorities, ground rules, style, how to verify.
-- [README.md](README.md) — current state, known issues, target UX, roadmap, API notes.
-- [docs/en/community-fork.md](docs/en/community-fork.md) — how we track
-  dungeon-master-xx (sibling fork): remote `community`, steal technical slices, never rebase UI.
+**Canonical rules live in [AGENTS.md](AGENTS.md).** Do not invent a second policy here.
 
-Keep both accurate as work lands.
+Read, in order, as needed:
+
+1. [AGENTS.md](AGENTS.md) — authority, preservation, non-negotiables, doc map
+2. [README.md](README.md) — what the product is and which macro stage is current
+3. [docs/en/policies/](docs/en/policies/) — durable design / continuity / workflow
+4. [docs/en/features/](docs/en/features/) — the feature you are changing
+5. [docs/en/apple-platform/](docs/en/apple-platform/) — Apple API / HIG how-tos for this task
+6. [docs/en/community-fork.md](docs/en/community-fork.md) — technical steals only
+
+Archive and dated plans under `docs/archive/` and `docs/en/plans/` are evidence, not living law.

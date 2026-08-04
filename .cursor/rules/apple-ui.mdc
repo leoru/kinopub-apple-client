@@ -1,0 +1,42 @@
+---
+description: Native Apple UI decision tree for Swift views and KinoPubUI
+globs: KinoPubAppleClient/Views/**/*.swift,KinoPubAppleClient/App/**/*.swift,Packages/KinoPubUI/Sources/**/*.swift
+alwaysApply: false
+---
+
+# Apple UI
+
+Full policy: [docs/en/policies/apple-native-design.md](../../docs/en/policies/apple-native-design.md). Continuity: [docs/en/policies/data-continuity.md](../../docs/en/policies/data-continuity.md). API how-tos: [docs/en/apple-platform/](../../docs/en/apple-platform/).
+
+## Decision tree
+
+1. Stock SwiftUI control / container / transition
+2. System UIKit / AppKit / AVKit API through a thin bridge
+3. Proven library or reference-app pattern (borrow before build)
+4. Minimal custom component — only with a named missing API, rejected alternatives, and cost
+
+## Do
+
+- Prefer `List` / `Form` / `TabView` / `NavigationStack` / system buttons / `AVPlayerViewController` over hand-rolled chrome.
+- Keep one atomic media-card / badge / image / typography path; inherit, don't re-declare.
+- On tvOS: focusable controls, `.borderless` + explicit `.hoverEffect` for poster lockups, no inert dead space above rows.
+- `Color.KinoPub.background` is **opaque on every platform** (`Color.black` on tvOS — tvOS ships no semantic background colour). A transparent token silently no-ops every `.background(…)` and every `.opacity()` scrim built on it.
+- All `glassEffect` goes through `kinoGlass` / `kinoPlayerGlass` in `KinoPubUI/DesignSystem/KinoGlass.swift`. Never write `glassEffect` at a call site. System `.buttonStyle(.glass)` is a separate, allowed path.
+- New reusable components live in `KinoPubUI`, use semantic tokens, ship a `#Preview`, and are focus-verified on a real remote — previews do not prove tvOS focus.
+- Ambiguous UI gets 2–3 variants in `Packages/KinoPubUI/Sources/KinoPubUI/Previews/` (`#if DEBUG`, `VariantGallery`), deleted once one is promoted.
+- TVUIKit (`TVPosterView`, `TVMediaItemContentConfiguration`, `TVCollectionViewFullScreenLayout`, …) exists and is unused here — see [focus-and-tvui.md](../../docs/en/apple-platform/focus-and-tvui.md) before assuming SwiftUI is the only option on TV.
+- Pass already-known item + artwork into detail; do not blank-reload what the card already had.
+- Skeletons only for true cold loads, matching final geometry. Never use eternal grey as both loading and error.
+
+## Don't
+
+- Invent website-green buttons, custom transport bars, or fake glass toolbars when system materials / scroll-edge exist.
+- Put Liquid Glass on hero Play CTAs — white primary pill + translucent secondaries.
+- Use `backgroundExtensionEffect` **anywhere**. It duplicates the view into mirrored, blurred copies laid into free safe area — it is for the detail column of a `NavigationSplitView` bleeding under an *overlaying* sidebar. This app has no split view, our sidebars displace content, and on a failed load it mirrors the error placeholder into the chrome.
+- Override the navigation bar with `containerBackground(.ultraThickMaterial, for: .navigation)` or a page-level material. On 26 the nav bar is already Liquid Glass with the scroll-edge effect.
+- Use `.ignoresSafeArea(.horizontal)` to fake sidebar bleed on macOS — it draws under the sidebar and clips the first poster. Top only there.
+- Claim zoom / matched transitions "done" on platforms where the API is unavailable.
+
+## Open, not banned
+
+The Home hero is heading toward a focus-preview / autoplaying direction — the contained banner shelf is only what ships today. Do not "defend" it as a decision; reopen with prototypes. `TVCollectionViewFullScreenLayout`'s `didCenterCellAtIndexPath:` is the system hook for autoplay triggering.
