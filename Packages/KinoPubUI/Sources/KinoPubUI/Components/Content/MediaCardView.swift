@@ -15,6 +15,17 @@ public enum MediaCardPrimaryAction: String, Codable, Hashable, Sendable {
   case play
 }
 
+/// Icon + value shown under a card title (collection watchers / views, etc.).
+public struct MediaCardCaptionStat: Hashable, Codable, Sendable {
+  public let systemImage: String
+  public let value: String
+
+  public init(systemImage: String, value: String) {
+    self.systemImage = systemImage
+    self.value = value
+  }
+}
+
 /// Everything a poster card needs to draw itself, so rows can be built from any
 /// endpoint's payload rather than only from a full `MediaItem`.
 public struct MediaCard: Identifiable, Hashable, Codable {
@@ -86,6 +97,11 @@ public struct MediaCard: Identifiable, Hashable, Codable {
   public let bookmarkFolderIDs: [Int]
   /// Single-click / Select target. Continue Watching uses `.play`; History stays detail for now.
   public let primaryAction: MediaCardPrimaryAction
+  /// When true, Select opens a curated collection rather than a media title — Home /
+  /// Collections grids use this so collection ids are not mistaken for item ids.
+  public let opensCollection: Bool
+  /// Icon + counter stack under the title (watchers / views on collection covers).
+  public let captionStats: [MediaCardCaptionStat]
 
   public var isLandscape: Bool { landscapeImageURL != nil }
 
@@ -149,7 +165,9 @@ public struct MediaCard: Identifiable, Hashable, Codable {
               countryLine: String? = nil,
               isBookmarked: Bool = false,
               bookmarkFolderIDs: [Int] = [],
-              primaryAction: MediaCardPrimaryAction = .openDetail) {
+              primaryAction: MediaCardPrimaryAction = .openDetail,
+              opensCollection: Bool = false,
+              captionStats: [MediaCardCaptionStat] = []) {
     self.id = id
     self.posterURL = posterURL
     self.title = title
@@ -183,6 +201,8 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     self.isBookmarked = isBookmarked
     self.bookmarkFolderIDs = bookmarkFolderIDs
     self.primaryAction = primaryAction
+    self.opensCollection = opensCollection
+    self.captionStats = captionStats
   }
 
   public init(from decoder: Decoder) throws {
@@ -222,6 +242,8 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     // Old row snapshots omit this key — keep opening detail until the next CW fetch.
     primaryAction = try c.decodeIfPresent(MediaCardPrimaryAction.self, forKey: .primaryAction)
       ?? .openDetail
+    opensCollection = try c.decodeIfPresent(Bool.self, forKey: .opensCollection) ?? false
+    captionStats = try c.decodeIfPresent([MediaCardCaptionStat].self, forKey: .captionStats) ?? []
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -259,6 +281,8 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     try c.encode(isBookmarked, forKey: .isBookmarked)
     try c.encode(bookmarkFolderIDs, forKey: .bookmarkFolderIDs)
     try c.encode(primaryAction, forKey: .primaryAction)
+    try c.encode(opensCollection, forKey: .opensCollection)
+    try c.encode(captionStats, forKey: .captionStats)
   }
 
   private enum CodingKeys: String, CodingKey {
@@ -268,6 +292,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     case isWatched, isSeries, isInHistory, isInWatchlist, is4K, isHDR
     case isHD, is3D, hasClosedCaptions, year, durationSeconds
     case genreLine, countryLine, isBookmarked, bookmarkFolderIDs, primaryAction
+    case opensCollection, captionStats
   }
 }
 
@@ -564,7 +589,12 @@ public struct MediaCardView: View {
     .accessibilityElement(children: .combine)
     .accessibilityLabel(Text(accessibilityTitle))
     .accessibilityValue(Text(accessibilityValue))
-    .accessibilityHint(Text(playsOnSelect ? "Plays or resumes" : "Opens the title"))
+    .accessibilityHint(Text(accessibilityHint))
+  }
+
+  private var accessibilityHint: String {
+    if card.opensCollection { return String(localized: "Opens the collection") }
+    return playsOnSelect ? String(localized: "Plays or resumes") : String(localized: "Opens the title")
   }
 
   private var accessibilityTitle: String {
@@ -581,6 +611,9 @@ public struct MediaCardView: View {
     }
     if let progress = card.progress {
       parts.append("\(Int((progress * 100).rounded())) percent watched")
+    }
+    for stat in card.captionStats {
+      parts.append(stat.value)
     }
     if card.is4K { parts.append("4K") }
     if card.isHDR { parts.append("HDR") }
@@ -773,8 +806,10 @@ public struct MediaCardView: View {
       titleRow
 
       // Original title is poster-only — landscape captions stay a single title line.
+      // Collection covers reuse `subtitle` for the updated date; always show it
+      // (independent of the "Original title" appearance toggle).
       if !card.isLandscape,
-         showOriginalTitle,
+         (showOriginalTitle || card.opensCollection),
          let subtitle = card.subtitle,
          !subtitle.isEmpty,
          subtitle != card.title {
@@ -799,6 +834,22 @@ public struct MediaCardView: View {
         MediaScoresView(imdb: captionImdb, kinopoisk: captionKinopoisk)
           .font(TypeScale.cardMeta)
           .foregroundStyle(Color.KinoPub.subtitle)
+      }
+
+      if !card.captionStats.isEmpty {
+        HStack(spacing: 10) {
+          ForEach(Array(card.captionStats.enumerated()), id: \.offset) { _, stat in
+            HStack(spacing: 4) {
+              Image(systemName: stat.systemImage)
+              Text(stat.value)
+                .monospacedDigit()
+            }
+          }
+        }
+        .font(TypeScale.cardMeta)
+        .foregroundStyle(Color.KinoPub.subtitle)
+        .lineLimit(1)
+        .frame(maxWidth: .infinity, alignment: .center)
       }
 
       if !captionMetaParts.isEmpty {

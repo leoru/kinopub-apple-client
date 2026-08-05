@@ -96,7 +96,10 @@ struct AuthView: View {
 #if !os(tvOS)
         Button("Auth_Activate") {
           model.openActivationURL()
-        }
+        }            .buttonStyle(.glass)
+              .controlSize(.large)
+              .frame(maxWidth: .infinity, maxHeight: .infinity)
+//              .focused() we need to focus it
 #endif
       }
     }
@@ -124,9 +127,9 @@ private enum Metrics {
   static let headerSpacing: CGFloat = 10
   static let horizontalPadding: CGFloat = 24
   static let contentWidth: CGFloat = 460
-  static let titleFont: Font = .title2.weight(.semibold)
-  static let descriptionFont: Font = .footnote
-  static let urlFont: Font = .subheadline.weight(.semibold)
+    static let titleFont: Font = .largeTitle.weight(.semibold)
+  static let descriptionFont: Font = .body
+  static let urlFont: Font = .body.weight(.medium)
   static let tileSpacing: CGFloat = 8
   static let tileSize = CGSize(width: 48, height: 64)
   static let tileCornerRadius: CGFloat = 10

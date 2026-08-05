@@ -10,22 +10,17 @@ import OSLog
 import KinoPubLogging
 import Combine
 
-/// The full collections browser: one shelf per curated collection, each shelf
-/// a preview of that collection's own items. `/v1/collections` returns only the
-/// collection metadata — the preview cards come from a per-collection fetch
-/// (`/v1/collections/view`), run in parallel and capped, same tradeoff the
-/// community fork made for the same endpoint shape.
+/// The full collections browser: a paginated grid of curated collection covers
+/// (`GET /v1/collections`). Each cover opens that collection's item grid — no
+/// per-collection preview fetch (covers already ship on the list endpoint).
 @MainActor
 class CollectionsModel: ObservableObject {
 
-  /// Cards shown per shelf before the row defers the rest to the collection's
-  /// own detail page.
-  static let previewCardCount = 12
-
-  @Published public private(set) var rows: [MediaRow] = []
+  @Published public private(set) var cards: [MediaCard] = []
   @Published public private(set) var isLoaded: Bool = false
   @Published public private(set) var loadFailed: Bool = false
   @Published public private(set) var loadError: Error?
+  @Published public private(set) var paginationError: Bool = false
 
   private var authState: AuthState
   private var errorHandler: ErrorHandler
@@ -55,16 +50,22 @@ class CollectionsModel: ObservableObject {
     errorHandler.reset()
     isLoaded = false
     pagination = nil
-    rows = []
+    cards = []
+    paginationError = false
     await loadFirstPage()
   }
 
-  /// Fires from `MediaRowsView.onRowAppear` — pages in more collections once the
-  /// last loaded shelf is on screen.
-  func loadMoreIfNeeded(after row: MediaRow) {
-    guard row.id == rows.last?.id,
+  /// Fires from `MediaCardsListView.onLoadMoreContent` — pages in more covers
+  /// once the last loaded card is on screen.
+  func loadMoreIfNeeded(after card: MediaCard) {
+    guard card.id == cards.last?.id,
           let pagination, pagination.current < pagination.total,
           !isFetchingMore else { return }
+    Task { await fetchNextPage() }
+  }
+
+  func retryPagination() {
+    guard !isFetchingMore else { return }
     Task { await fetchNextPage() }
   }
 
@@ -72,9 +73,10 @@ class CollectionsModel: ObservableObject {
     do {
       let data = try await collectionsService.fetchCollections(page: nil, sort: nil)
       pagination = data.pagination
-      rows = await Self.rows(for: data.collections, service: collectionsService)
+      cards = data.collections.map(CollectionMediaCard.make(from:))
       loadFailed = false
       loadError = nil
+      paginationError = false
     } catch {
       Logger.app.debug("fetch collections error: \(error)")
       loadFailed = true
@@ -90,39 +92,12 @@ class CollectionsModel: ObservableObject {
     do {
       let data = try await collectionsService.fetchCollections(page: pagination.current + 1, sort: nil)
       self.pagination = data.pagination
-      rows.append(contentsOf: await Self.rows(for: data.collections, service: collectionsService))
+      cards.append(contentsOf: data.collections.map(CollectionMediaCard.make(from:)))
+      paginationError = false
     } catch {
       Logger.app.debug("fetch more collections error: \(error)")
+      paginationError = true
       errorHandler.setError(error)
-    }
-  }
-
-  /// One row per collection, in the order the API returned them. A collection
-  /// whose preview fetch fails or comes back empty is dropped rather than shown
-  /// as a dead shelf.
-  private static func rows(for collections: [Collection], service: CollectionsService) async -> [MediaRow] {
-    await withTaskGroup(of: (Int, MediaRow?).self) { group in
-      for (index, collection) in collections.enumerated() {
-        group.addTask {
-          let items = (try? await service.fetchCollection(id: collection.id).1) ?? []
-          guard !items.isEmpty else { return (index, nil) }
-          let cards = items.prefix(previewCardCount).map { item -> MediaCard in
-            BookmarkMembershipStore.shared.seed(from: item)
-            return MediaCard(item)
-          }
-          let row = MediaRow(id: "collection-\(collection.id)",
-                             title: collection.title,
-                             count: collection.itemsCount.map { String($0) },
-                             cards: Array(cards),
-                             destination: Route.collection(collection))
-          return (index, row)
-        }
-      }
-      var slots = [MediaRow?](repeating: nil, count: collections.count)
-      for await (index, row) in group {
-        slots[index] = row
-      }
-      return slots.compactMap { $0 }
     }
   }
 
@@ -133,5 +108,56 @@ class CollectionsModel: ObservableObject {
       .sink { [weak self] _ in
         Task { await self?.fetch() }
       }.store(in: &bag)
+  }
+}
+
+/// Shared mapping from curated `Collection` metadata → poster `MediaCard` used by
+/// Home's preview row and the full Collections grid.
+enum CollectionMediaCard {
+
+  static func make(from collection: Collection) -> MediaCard {
+    MediaCard(
+      id: collection.id,
+      posterURL: collection.posters?.medium
+        ?? collection.posters?.big
+        ?? collection.posters?.small
+        ?? "",
+      title: collection.title,
+      subtitle: updatedSubtitle(from: collection.updated),
+      opensCollection: true,
+      captionStats: captionStats(for: collection)
+    )
+  }
+
+  /// Route payload for a collection cover — id + title are enough for detail; the
+  /// screen refetches `/v1/collections/view` for the full item list.
+  static func routeCollection(from card: MediaCard) -> Collection {
+    Collection(
+      id: card.id,
+      title: card.title,
+      posters: Collection.Posters(small: card.posterURL, medium: card.posterURL, big: card.posterURL)
+    )
+  }
+
+  private static func captionStats(for collection: Collection) -> [MediaCardCaptionStat] {
+    var stats: [MediaCardCaptionStat] = []
+    if let watchers = collection.watchers, watchers > 0 {
+      stats.append(MediaCardCaptionStat(systemImage: "person.2", value: compact(watchers)))
+    }
+    if let views = collection.views, views > 0 {
+      stats.append(MediaCardCaptionStat(systemImage: "eye", value: compact(views)))
+    }
+    return stats
+  }
+
+  private static func updatedSubtitle(from timestamp: Int?) -> String? {
+    guard let timestamp, timestamp > 0 else { return nil }
+    let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+    return date.formatted(date: .abbreviated, time: .omitted)
+  }
+
+  /// Compact count, e.g. 12_345 → "12K".
+  private static func compact(_ value: Int) -> String {
+    value.formatted(.number.notation(.compactName))
   }
 }

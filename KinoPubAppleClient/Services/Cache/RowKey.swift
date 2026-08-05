@@ -15,9 +15,8 @@ enum RowKey: Hashable, Codable {
   case watchlist
   case history
   case folder(Int)
-  /// Home's "Collections" preview row — a handful of curated collections, each
-  /// shown as a poster tile. The full browser (one shelf per collection) is a
-  /// live screen and does not go through the store.
+  /// Home's "Collections" preview row — a handful of curated collection covers.
+  /// The full browser is a paginated cover grid and does not go through the store.
   case collections
 
   /// Group for prefix invalidation: clearing history shouldn't blow away catalog

@@ -74,8 +74,16 @@ public struct Collection: Decodable, Identifiable, Hashable {
   public static func mock(
     id: Int = 0,
     title: String = "Collection",
+    watchers: Int? = 113,
+    views: Int? = 5_183,
+    updated: Int? = 1_713_963_602,
     posters: Posters? = nil
   ) -> Collection {
-    Collection(id: id, title: title, posters: posters)
+    Collection(id: id,
+               title: title,
+               watchers: watchers,
+               views: views,
+               updated: updated,
+               posters: posters)
   }
 }

@@ -87,13 +87,18 @@ struct MainView: View {
       // skips sampling so wide-poster artwork is never requested.
       bannerCards: FeatureFlags.homeBannerEnabled ? catalog.bannerCards : [],
       navigationLinkProvider: { card in
-        Route.detailsById(card.id)
+        if card.opensCollection {
+          Route.collection(CollectionMediaCard.routeCollection(from: card))
+        } else {
+          Route.detailsById(card.id)
+        }
       },
       onPlay: { card in
         cardMenu.play(card) { navigationState.push($0) }
       },
       contextMenuProvider: { card, surface in
-        menuEntries(for: card, surface: surface, isContinueWatching: card.isLandscape)
+        guard !card.opensCollection else { return [] }
+        return menuEntries(for: card, surface: surface, isContinueWatching: card.isLandscape)
       }
     )
   }

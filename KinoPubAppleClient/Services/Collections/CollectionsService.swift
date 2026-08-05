@@ -19,7 +19,8 @@ struct CollectionsServiceMock: CollectionsService {
 
   func fetchCollections(page: Int?, sort: String?) async throws -> CollectionsData {
     .mock(data: [
-      Collection.mock(id: 1, title: "Mock Collection")
+      Collection.mock(id: 1, title: "Mock Collection"),
+      Collection.mock(id: 2, title: "Another Collection", watchers: 42, views: 900)
     ])
   }
 

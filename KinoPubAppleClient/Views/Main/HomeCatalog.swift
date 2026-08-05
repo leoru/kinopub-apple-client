@@ -87,6 +87,8 @@ class HomeCatalog: ObservableObject {
     assembleRows()
     isLoaded = !rows.isEmpty
 
+    let collectionsNeedMigration = store.cards(.collections).contains { !$0.opensCollection }
+
     await withTaskGroup(of: Void.self) { group in
       group.addTask { [store] in
         await store.refreshIfStale(.continueWatching) { [weak self] in
@@ -95,9 +97,18 @@ class HomeCatalog: ObservableObject {
         }
       }
       group.addTask { [store] in
-        await store.refreshIfStale(.collections) { [weak self] in
-          guard let self else { throw CancellationError() }
-          return try await self.fetchCollectionsPreviewCards()
+        // Stale snapshots predate `opensCollection` — force a refresh so Select
+        // opens the collection rather than a colliding media id.
+        if collectionsNeedMigration {
+          await store.refresh(.collections) { [weak self] in
+            guard let self else { throw CancellationError() }
+            return try await self.fetchCollectionsPreviewCards()
+          }
+        } else {
+          await store.refreshIfStale(.collections) { [weak self] in
+            guard let self else { throw CancellationError() }
+            return try await self.fetchCollectionsPreviewCards()
+          }
         }
       }
       for shortcut in Self.shortcuts {
@@ -139,17 +150,18 @@ class HomeCatalog: ObservableObject {
                                 title: "Continue Watching".localized,
                                 cards: continueWatchingCards))
     }
+    for shortcut in Self.shortcuts {
+      let cards = store.cards(.shortcut(shortcut.shortcut, shortcut.contentType))
+      guard !cards.isEmpty else { continue }
+      assembled.append(MediaRow(id: shortcut.id, title: shortcut.title.localized, cards: cards))
+    }
+    // Collections sit last — a catalog add-on, not mixed into the hot/fresh/popular band.
     let collectionsCards = store.cards(.collections)
     if !collectionsCards.isEmpty {
       assembled.append(MediaRow(id: Self.collectionsRowID,
                                 title: "Collections".localized,
                                 cards: collectionsCards,
                                 destination: Route.collections))
-    }
-    for shortcut in Self.shortcuts {
-      let cards = store.cards(.shortcut(shortcut.shortcut, shortcut.contentType))
-      guard !cards.isEmpty else { continue }
-      assembled.append(MediaRow(id: shortcut.id, title: shortcut.title.localized, cards: cards))
     }
     rows = assembled
     refreshBannerCards(from: assembled)
@@ -169,7 +181,7 @@ class HomeCatalog: ObservableObject {
 
     var seen = Set<Int>()
     var pool: [MediaCard] = []
-    for row in rows where row.id != Self.continueWatchingRowID {
+    for row in rows where row.id != Self.continueWatchingRowID && row.id != Self.collectionsRowID {
       for card in row.cards where seen.insert(card.id).inserted {
         pool.append(card)
       }
@@ -419,18 +431,11 @@ class HomeCatalog: ObservableObject {
 
   // MARK: - Collections
 
-  /// First page of curated collections, as poster tiles — `/v1/collections` itself
-  /// carries no items, so this is the collection's own artwork, not a preview of
-  /// its contents (the full browser fetches per-collection previews separately).
+  /// First page of curated collections, as poster tiles — `/v1/collections` ships
+  /// each collection's own artwork + counters (no per-collection item fetch).
   private func fetchCollectionsPreviewCards() async throws -> [MediaCard] {
     let data = try await collectionsService.fetchCollections(page: nil, sort: nil)
-    return data.collections.prefix(Self.collectionsPreviewCount).map(Self.card(for:))
-  }
-
-  private static func card(for collection: Collection) -> MediaCard {
-    MediaCard(id: collection.id,
-             posterURL: collection.posters?.medium ?? collection.posters?.big ?? collection.posters?.small ?? "",
-             title: collection.title)
+    return data.collections.prefix(Self.collectionsPreviewCount).map(CollectionMediaCard.make(from:))
   }
 
   private func subscribeForAuth() {

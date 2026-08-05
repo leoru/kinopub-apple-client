@@ -41,6 +41,8 @@
          </TestableReference>
       </Testables>
    </TestAction>
+   <!-- Library scheme: no app runnable. Previews host in the package itself —
+        required when the app target opts out of ENABLE_DEBUG_DYLIB on macOS. -->
    <LaunchAction
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
@@ -51,16 +53,6 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CC88E1E02A6586E600E9387F"
-            BuildableName = "KinoPub.app"
-            BlueprintName = "KinoPubAppleClient"
-            ReferencedContainer = "container:../../KinoPubAppleClient.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

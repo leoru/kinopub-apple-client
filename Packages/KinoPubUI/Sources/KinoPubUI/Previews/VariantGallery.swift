@@ -44,7 +44,7 @@ public struct VariantGallery<Content: View>: View {
           .foregroundStyle(Color.KinoPub.subtitle)
       }
 
-      HStack(alignment: .top, spacing: 32) {
+        VStack(alignment: .leading, spacing: 32) {
         content
       }
     }
