@@ -41,8 +41,19 @@ current auxiliary work so the app feels instant and native.
 
 - [ ] `MediaCardView` gets an `accessibilityLabel`
 - [ ] `RatingBadgeView` encodes tier **only** by colour — add a non-colour differentiator
-- [ ] Replace remaining `.system(size:)` calls with text styles
-- [ ] `@ScaledMetric` on every square / hairline dimension (portraits, circular buttons, tab icons)
+- [ ] Replace remaining `.system(size:)` calls with `TypeScale` text styles. **Measured 2026-08-05:**
+  80 call sites — 67 in the app target (30 of them in `MediaItemDetailSections.swift` alone,
+  10 in `PersonItemsView`, 6 each in `SeasonsRailView` / `MediaItemHeroView`) and 13 in `KinoPubUI`.
+  Not all are wrong: `TypeScale.swift` itself and preview files legitimately name sizes. Audit
+  rather than sweep blindly, and split package from app target so the diff stays reviewable.
+- [ ] Retire `Font.KinoPub` (`KinoPubUI/Font/Font+Extension.swift`) — superseded by `TypeScale`
+- [ ] `@ScaledMetric` on every square / hairline dimension (portraits, circular buttons, tab icons).
+  **Measured 2026-08-05:** 1 use in the whole codebase.
+
+**Why this is not cosmetic:** tvOS 27 turns on Dynamic Type system-wide, and Apple names hard-coded
+font sizes and fixed frames as the direct cause of breakage (WWDC26 session 221). `.system(size:)`
+never scales, so the app's text stays put while system chrome around it grows — a worse failure than
+not supporting it at all. See [layout-and-containers](../apple-platform/layout-and-containers.md).
 
 ### Focus, navigation, chrome
 
@@ -54,9 +65,40 @@ current auxiliary work so the app feels instant and native.
 - [ ] tvOS tab background via `containerBackground(for: .tabView)` where useful
 - [ ] `LibraryFiltersBar` / `MainView` material cleanups — system glass only where it matches
   scroll / nav chrome, through `kinoGlass`
+- [ ] **`GlassEffectContainer` where glass surfaces sit together.** Measured 2026-08-05: zero uses.
+  This is the one glass API that is about *performance*, not looks — Apple warns that many
+  independent `.glassEffect` calls outside a container degrade rendering. Current glass: 1
+  `kinoGlass`, 2 `kinoGlassRim`, 3 `.buttonStyle(.glass)`. The hero action row is the obvious first
+  container. Keep container spacing ≤ the inner stack's spacing or shapes blend at rest.
+- [ ] **`scrollEdgeEffectStyle` on scrolling surfaces.** Measured 2026-08-05: zero uses. This is
+  what gives the native "content slides under the bar" treatment on iOS. Expected to be a no-op on
+  tvOS (no floating bars on a plain `NavigationStack` screen) — verify rather than assume, and
+  suppress it there if so.
 - [ ] Apply the `variableBlur` helper on detail / Home hero and banner overlays
 - [ ] Bring poster overlays back on tvOS behind an explicit `.hoverEffect(.highlight)`
 - [ ] Banner polish: page dots / L-R affordances only if it becomes a real carousel
+
+### Observation model
+
+**Measured 2026-08-05:** zero `@Observable`; 27 `ObservableObject`, 117 `@Published`,
+39 `@StateObject`, 55 `@EnvironmentObject`.
+
+- [ ] Pilot `@Observable` on leaf models with no Combine chains — `ErrorHandler`, `WindowSettings`,
+  `ProfileModel` — to establish the house pattern before touching anything load-bearing
+- [ ] `HomeCatalog` — five `@Published` on one object means a change to `isLoaded` re-evaluates the
+  whole rows screen. Highest-value single conversion
+- [ ] `NavigationState` **last** — `NavigationStack(path:)` needs a `Binding`, so it wants
+  `@Bindable`, and it is the most connected object in the app
+
+**The trap, before anyone starts:** 14 view models are constructed through
+`init(model: @autoclosure @escaping () -> X)` so `StateObject.init(wrappedValue:)` evaluates them
+lazily, exactly once. `State.init(wrappedValue:)` has **no** autoclosure overload — a naive
+`@StateObject` → `@State` swap re-creates the model on every view `init` and throws it away. Either
+keep the laziness deliberately or move that model behind `ContentStore`/environment instead.
+
+`@Observable` is a **precondition** for granular invalidation, not a performance win on its own —
+the granularity comes from how data is keyed, not from the macro. See
+[local-caching](../plans/local-caching.md) for the `ContentStore` side of this.
 
 **Known ceiling, so nobody plans around it:** `TabViewCustomization` limits are documented in the
 plan — check there before designing sidebar customization.
