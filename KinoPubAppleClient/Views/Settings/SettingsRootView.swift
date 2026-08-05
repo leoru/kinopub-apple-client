@@ -15,7 +15,7 @@ import AppKit
 /// Shared Settings shell: sidebar split on macOS, category list on iOS.
 struct SettingsRootView: View {
   @Environment(\.appContext) private var appContext
-  @ObservedObject var model: ProfileModel
+  @Bindable var model: ProfileModel
   @State private var selectedCategory: SettingsCategory? = .general
   @State private var showLogoutAlert = false
   @State private var avatarImage: Image?

@@ -12,7 +12,7 @@ import KinoPubBackend
 struct BookmarksView: View {
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var authState: AuthState
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @Environment(\.appContext) var appContext
   @Environment(\.openURL) private var openURL
   @StateObject private var catalog: BookmarksCatalog
@@ -23,6 +23,7 @@ struct BookmarksView: View {
   }
   
   var body: some View {
+    @Bindable var errorHandler = errorHandler
     NavigationStack(path: $navigationState.bookmarksRoutes) {
       bookmarksRows
         .platformNavigationTitle("Bookmarks")

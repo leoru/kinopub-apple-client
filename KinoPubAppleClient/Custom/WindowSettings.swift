@@ -10,9 +10,10 @@ import SwiftUI
 
 #if os(macOS)
 
-/// A class that manages the window settings, including the "always on top" feature. 
-class WindowSettings: ObservableObject {
-    @Published var alwaysOnTop = UserDefaults.standard.bool(forKey: "alwaysOnTop") {
+/// A class that manages the window settings, including the "always on top" feature.
+@Observable
+class WindowSettings {
+    var alwaysOnTop = UserDefaults.standard.bool(forKey: "alwaysOnTop") {
         didSet {
             UserDefaults.standard.set(alwaysOnTop, forKey: "alwaysOnTop")
             updateWindowLevel()

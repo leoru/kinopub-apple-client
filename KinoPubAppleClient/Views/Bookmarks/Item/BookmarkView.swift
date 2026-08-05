@@ -12,7 +12,7 @@ import KinoPubBackend
 
 struct BookmarkView: View {
   @EnvironmentObject var navigationState: NavigationState
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @Environment(\.openURL) private var openURL
 
   @StateObject private var model: BookmarkModel
@@ -24,6 +24,7 @@ struct BookmarkView: View {
   }
 
   var body: some View {
+    @Bindable var errorHandler = errorHandler
     VStack {
       listView
     }

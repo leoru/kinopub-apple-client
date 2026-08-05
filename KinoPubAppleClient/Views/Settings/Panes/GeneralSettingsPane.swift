@@ -7,13 +7,13 @@ import SwiftUI
 
 #if !os(tvOS)
 struct GeneralSettingsPane: View {
-  @ObservedObject var model: ProfileModel
+  let model: ProfileModel
   @Binding var showLogoutAlert: Bool
   @AppStorage("selectedLanguage") private var selectedLanguage: String = (
     Locale.current.language.languageCode?.identifier ?? "en"
   )
 #if os(macOS)
-  @EnvironmentObject private var windowSettings: WindowSettings
+  @Environment(WindowSettings.self) private var windowSettings
 #endif
 
   var body: some View {
@@ -26,7 +26,8 @@ struct GeneralSettingsPane: View {
 
 #if os(macOS)
   private var macBody: some View {
-    VStack(spacing: 0) {
+    @Bindable var windowSettings = windowSettings
+    return VStack(spacing: 0) {
       Form {
         accountAndLanguageSections
         Section("Window") {

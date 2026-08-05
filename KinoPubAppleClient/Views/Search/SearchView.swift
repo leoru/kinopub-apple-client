@@ -11,7 +11,7 @@ import KinoPubBackend
 /// browse surface (rows of artwork) the way tvOS apps present a home screen.
 struct SearchView: View {
   @EnvironmentObject var navigationState: NavigationState
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
 
@@ -35,6 +35,7 @@ struct SearchView: View {
   private static let placeholderCount = 12
 
   var body: some View {
+    @Bindable var errorHandler = errorHandler
     NavigationStack(path: $navigationState.searchRoutes) {
       Group {
         if catalog.loadFailed && catalog.items.isEmpty {

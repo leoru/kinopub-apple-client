@@ -80,21 +80,59 @@ not supporting it at all. See [layout-and-containers](../apple-platform/layout-a
 
 ### Observation model
 
-**Measured 2026-08-05:** zero `@Observable`; 27 `ObservableObject`, 117 `@Published`,
-39 `@StateObject`, 55 `@EnvironmentObject`.
+**Measured 2026-08-05, before the pilot:** zero `@Observable`; 27 `ObservableObject`, 117
+`@Published`, 39 `@StateObject`, 55 `@EnvironmentObject`.
 
-- [ ] Pilot `@Observable` on leaf models with no Combine chains — `ErrorHandler`, `WindowSettings`,
-  `ProfileModel` — to establish the house pattern before touching anything load-bearing
+- [x] Pilot `@Observable` on leaf models with no Combine chains — `ErrorHandler`, `WindowSettings`,
+  `ProfileModel` — to establish the house pattern before touching anything load-bearing. Pattern
+  settled below.
 - [ ] `HomeCatalog` — five `@Published` on one object means a change to `isLoaded` re-evaluates the
   whole rows screen. Highest-value single conversion
 - [ ] `NavigationState` **last** — `NavigationStack(path:)` needs a `Binding`, so it wants
   `@Bindable`, and it is the most connected object in the app
+- [ ] `AuthState`, `PlayerManager`, and anything still driven by a Combine `$property` chain —
+  after the two above prove the pattern holds under more fan-out than a leaf model
 
-**The trap, before anyone starts:** 14 view models are constructed through
-`init(model: @autoclosure @escaping () -> X)` so `StateObject.init(wrappedValue:)` evaluates them
-lazily, exactly once. `State.init(wrappedValue:)` has **no** autoclosure overload — a naive
-`@StateObject` → `@State` swap re-creates the model on every view `init` and throws it away. Either
-keep the laziness deliberately or move that model behind `ContentStore`/environment instead.
+**The settled pattern**, from the
+[`ErrorHandler`](../../../KinoPubAppleClient/States/Error/ErrorHandler.swift) /
+[`WindowSettings`](../../../KinoPubAppleClient/Custom/WindowSettings.swift) (macOS-only) /
+[`ProfileModel`](../../../KinoPubAppleClient/Views/Profile/ProfileModel.swift) pilot. Mixed
+`ObservableObject`/`@Observable` is supported by SwiftUI; migrate type by type, not in one pass.
+
+- `final class X: ObservableObject` → `@Observable final class X`; drop every `@Published`. A
+  plain `var` streams through the macro's own access tracking; `didSet`/`willSet` on a stored
+  property still fire normally under `@Observable`.
+- Root owner: `@StateObject var x = X()` → `@State var x = X()`.
+- Injection: `.environmentObject(x)` → `.environment(x)`. Consumer: `@EnvironmentObject var x: X`
+  → `@Environment(X.self) var x`. `@Environment(X.self)` crashes if nothing was injected for that
+  type on that branch of the view tree — re-check every injection point the model reaches
+  (`RootView`, `TabsNavigationView`, the app struct, any scene/sheet that re-injects for a
+  presented root) when migrating a type, not just the one call site you're editing.
+- Binding into an `@Observable` property read via `@Environment`: there is no `$` projection off
+  `@Environment` itself. Shadow it locally as the first statement of `body`:
+  `@Bindable var x = x` — then `$x.property` works exactly like it did off `@ObservedObject`.
+  Where a child view just receives the object as a parameter (not via `@Environment`), skip the
+  shadow and mark the stored property `@Bindable var x: X` directly — same effect, no
+  `@ObservedObject` needed.
+- Read-only pass-down with no binding derived from it in that view → plain `let x: X`. SwiftUI's
+  re-render tracking follows property *reads* inside `body`, not the wrapper, so a plain `let`
+  observes correctly as long as the object was obtained through the environment/parameter chain
+  that actually holds it.
+
+**The trap, resolved:** 14 view models are constructed through
+`init(model: @autoclosure @escaping () -> X) { _model = StateObject(wrappedValue: model()) }` so
+`StateObject.init(wrappedValue:)` evaluates them lazily, exactly once. `State.init(wrappedValue:)`
+has **no** autoclosure overload — a naive `@StateObject` → `@State` swap re-creates the model on
+every view `init` and throws it away. Decide per model, don't default to either side:
+  - `ProfileModel.init` only stores references and does one synchronous `UserDefaults` read — no
+    `Task`, no network call. Eager construction is genuinely fine, so the autoclosure came off:
+    `init(model: X) { _model = State(wrappedValue: model) }`, and call sites
+    (`ProfileView`, `SettingsSceneHost` in the macOS Settings window) now pass the value directly.
+    The discarded extra allocations on re-render cost nothing worth guarding against.
+  - A model whose `init` starts a `Task`, opens a connection, or does anything else with a
+    side effect needs the laziness kept on purpose: `@State private var model: X?`, constructed
+    once inside `.task`/`.onAppear` guarded on `nil`, not via a property initializer. Applies to
+    the remaining 13 — judge each on its own merits when its turn comes, same as `ProfileModel` was.
 
 `@Observable` is a **precondition** for granular invalidation, not a performance win on its own —
 the granularity comes from how data is keyed, not from the macro. See

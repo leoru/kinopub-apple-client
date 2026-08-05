@@ -11,12 +11,17 @@ import KinoPubKit
 struct ProfileView: View {
 
   @EnvironmentObject var navigationState: NavigationState
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @Environment(\.appContext) var appContext
-  @StateObject private var model: ProfileModel
+  // Eager, not lazy: `ProfileModel.init` only stores references and reads
+  // `UserDefaults` synchronously — no Task, no network call — so re-evaluating it on
+  // every `ProfileView.init` (and discarding the extra instances `@State` doesn't use)
+  // costs nothing worth guarding against. See docs/en/features/01-foundation-continuity.md
+  // "Observation model" for the general rule this follows.
+  @State private var model: ProfileModel
 
-  init(model: @autoclosure @escaping () -> ProfileModel) {
-    _model = StateObject(wrappedValue: model())
+  init(model: ProfileModel) {
+    _model = State(wrappedValue: model)
   }
 
   var body: some View {
@@ -35,7 +40,7 @@ struct ProfileView: View {
 #if os(tvOS)
 /// Keeps tvOS bindings and alerts next to the legacy TV settings chrome.
 private struct TVProfileSettingsHost: View {
-  @ObservedObject var model: ProfileModel
+  @Bindable var model: ProfileModel
   @Environment(\.appContext) private var appContext
   @AppStorage("selectedLanguage") private var selectedLanguage: String = (
     Locale.current.language.languageCode?.identifier ?? "en"

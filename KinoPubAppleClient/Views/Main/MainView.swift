@@ -10,7 +10,7 @@ import KinoPubBackend
 
 struct MainView: View {
   @EnvironmentObject var navigationState: NavigationState
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
   @Environment(\.openURL) private var openURL
@@ -24,6 +24,7 @@ struct MainView: View {
   }
 
   var body: some View {
+    @Bindable var errorHandler = errorHandler
     NavigationStack(path: $navigationState.mainRoutes) {
       // No page-level material and no `backgroundExtensionEffect` on any platform.
       //

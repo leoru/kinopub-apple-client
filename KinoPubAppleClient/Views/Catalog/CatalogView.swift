@@ -11,7 +11,7 @@ import KinoPubBackend
 /// sort control; searching and filtering live in the Search tab.
 struct CatalogView: View {
   @EnvironmentObject var navigationState: NavigationState
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
   @Environment(\.openURL) private var openURL
@@ -44,6 +44,7 @@ struct CatalogView: View {
   }
 
   var body: some View {
+    @Bindable var errorHandler = errorHandler
     NavigationStack(path: Binding(get: { navigationState[keyPath: path] },
                                   set: { navigationState[keyPath: path] = $0 })) {
       catalogView

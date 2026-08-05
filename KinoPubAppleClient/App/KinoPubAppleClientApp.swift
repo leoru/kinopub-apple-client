@@ -20,13 +20,13 @@ enum WindowSize {
 struct KinoPubAppleClientApp: App {
   
   @StateObject var navigationState = NavigationState()
-  @StateObject var errorHandler = ErrorHandler()
+  @State var errorHandler = ErrorHandler()
   @StateObject var networkMonitor = NetworkMonitor()
   @StateObject var authState = AuthState(authService: AppContext.shared.authService,
                                          accessTokenService: AppContext.shared.accessTokenService)
   
 #if os(macOS)
-  @StateObject var windowSettings = WindowSettings()
+  @State var windowSettings = WindowSettings()
   @AppStorage(HistoryCardLayout.storageKey) private var historyCardLayout: String = HistoryCardLayout.landscape.rawValue
 #endif
   
@@ -48,7 +48,7 @@ struct KinoPubAppleClientApp: App {
         .environment(\.appContext, AppContext.shared)
         .environmentObject(navigationState)
         .environmentObject(authState)
-        .environmentObject(errorHandler)
+        .environment(errorHandler)
         .environmentObject(networkMonitor)
         // Dark-only until light is a deliberate pass (modernization Phase 0).
         // Info.plist UIUserInterfaceStyle=Dark covers system chrome; this covers SwiftUI.
@@ -106,7 +106,7 @@ struct KinoPubAppleClientApp: App {
         .environment(\.appContext, AppContext.shared)
         .environmentObject(navigationState)
         .environmentObject(authState)
-        .environmentObject(errorHandler)
+        .environment(errorHandler)
         .environmentObject(networkMonitor)
         .preferredColorScheme(.dark)
     }
@@ -133,9 +133,9 @@ struct KinoPubAppleClientApp: App {
     Window("Settings", id: SettingsWindow.id) {
       SettingsView()
         .environment(\.appContext, AppContext.shared)
-        .environmentObject(windowSettings)
+        .environment(windowSettings)
         .environmentObject(authState)
-        .environmentObject(errorHandler)
+        .environment(errorHandler)
         .preferredColorScheme(.dark)
     }
     .windowResizability(.contentSize)

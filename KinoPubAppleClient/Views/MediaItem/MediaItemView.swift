@@ -22,7 +22,7 @@ enum MediaItemFocusTarget: Hashable {
 
 struct MediaItemView: View {
 
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @EnvironmentObject var navigationState: NavigationState
   @StateObject private var itemModel: MediaItemModel
   /// Shared with the hero (Up → fullscreen) and, on tvOS, the pinned full-bleed
@@ -48,6 +48,7 @@ struct MediaItemView: View {
   }
 
   var body: some View {
+    @Bindable var errorHandler = errorHandler
     details
       .background(pageBackground)
       .overlay {

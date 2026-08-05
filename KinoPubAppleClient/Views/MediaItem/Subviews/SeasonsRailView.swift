@@ -50,7 +50,7 @@ struct SeasonsRailView: View {
   /// Ask the model to fetch schedule for a season number (kino.pub season.number).
   var onSeasonVisible: ((Int) -> Void)? = nil
 
-  @EnvironmentObject private var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) private var errorHandler
   @EnvironmentObject private var navigationState: NavigationState
   @Environment(\.openURL) private var openURL
   @StateObject private var cardMenu = MediaCardMenuCoordinator()

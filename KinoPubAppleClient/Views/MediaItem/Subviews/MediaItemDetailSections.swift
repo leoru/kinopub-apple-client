@@ -598,7 +598,7 @@ struct MediaItemSimilarSection: View {
   let linkProvider: NavigationLinkProvider
   var onSectionFocused: (() -> Void)? = nil
 
-  @EnvironmentObject private var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) private var errorHandler
   @EnvironmentObject private var navigationState: NavigationState
   @Environment(\.openURL) private var openURL
   @StateObject private var cardMenu = MediaCardMenuCoordinator()

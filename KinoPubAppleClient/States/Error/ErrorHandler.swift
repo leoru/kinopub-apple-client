@@ -10,7 +10,8 @@ import SwiftUI
 import KinoPubBackend
 
 /// ErrorHandler is a class that handles error states and provides methods to set and reset errors.
-final class ErrorHandler: ObservableObject {
+@Observable
+final class ErrorHandler {
 
   /// State is a struct that holds the error message and a flag to indicate whether to show the error.
   struct State {
@@ -19,7 +20,7 @@ final class ErrorHandler: ObservableObject {
   }
 
   /// The current state of the ErrorHandler.
-  @Published var state: State = State(error: nil, showError: false)
+  var state: State = State(error: nil, showError: false)
 
   /// Sets the error state with the provided error. Cancelled requests are superseded
   /// by newer ones, not failed — they never raise the toast.

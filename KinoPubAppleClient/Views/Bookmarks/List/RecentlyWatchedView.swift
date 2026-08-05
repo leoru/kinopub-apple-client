@@ -11,7 +11,7 @@ import KinoPubBackend
 /// steal Home's `mainRoutes` path.
 struct RecentlyWatchedView: View {
   @EnvironmentObject var navigationState: NavigationState
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
 
