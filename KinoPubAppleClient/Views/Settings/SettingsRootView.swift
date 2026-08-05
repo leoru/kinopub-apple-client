@@ -72,6 +72,9 @@ struct SettingsRootView: View {
             case .devicesList:
               DevicesListView()
                 .settingsMacChrome(title: "Devices", isRoot: false)
+            case .storage:
+              StorageSettingsView()
+                .settingsMacChrome(title: "Storage", isRoot: false)
 #if DEBUG
             case .streamSurvey:
               StreamSurveyView()
@@ -167,6 +170,8 @@ struct SettingsRootView: View {
           switch route {
           case .devicesList:
             DevicesListView()
+          case .storage:
+            StorageSettingsView()
 #if DEBUG
           case .streamSurvey:
             StreamSurveyView()

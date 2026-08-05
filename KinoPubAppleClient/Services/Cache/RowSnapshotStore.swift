@@ -60,4 +60,15 @@ final class RowSnapshotStore {
       Logger.app.error("RowSnapshotStore: save failed: \(error.localizedDescription)")
     }
   }
+
+  /// Bytes on disk — for the Settings storage screen. 0 when there is no snapshot yet.
+  var diskUsage: Int64 {
+    let attributes = try? FileManager.default.attributesOfItem(atPath: fileURL.path)
+    return (attributes?[.size] as? Int64) ?? 0
+  }
+
+  /// Deletes the snapshot file. The next `loadAll()` simply sees an empty cache and refetches.
+  func clear() {
+    try? FileManager.default.removeItem(at: fileURL)
+  }
 }

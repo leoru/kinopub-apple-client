@@ -15,6 +15,10 @@ struct AdvancedSettingsPane: View {
 
   var body: some View {
     Form {
+      Section {
+        NavigationLink("Storage", value: SettingsDetailRoute.storage)
+      }
+
 #if DEBUG
       Section("Diagnostics") {
         NavigationLink("Stream survey", value: SettingsDetailRoute.streamSurvey)

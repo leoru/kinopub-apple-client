@@ -32,9 +32,25 @@ enum HLSAudioLabeler {
   /// Older builds wrote rewritten masters under tmp and never deleted them.
   /// One sweep at launch clears whatever they left behind.
   static func removeLegacyTemporaryFiles() {
-    let dir = FileManager.default.temporaryDirectory
-      .appendingPathComponent("kinopub-hls", isDirectory: true)
-    try? FileManager.default.removeItem(at: dir)
+    try? FileManager.default.removeItem(at: legacyTemporaryDirectory)
+  }
+
+  static var legacyTemporaryDirectory: URL {
+    FileManager.default.temporaryDirectory.appendingPathComponent("kinopub-hls", isDirectory: true)
+  }
+
+  /// Bytes still sitting in the legacy scratch directory — for the Settings storage screen.
+  /// Normally 0: `removeLegacyTemporaryFiles()` already sweeps this at every launch.
+  static var legacyTemporaryDirectorySize: Int64 {
+    guard let enumerator = FileManager.default.enumerator(
+      at: legacyTemporaryDirectory, includingPropertiesForKeys: [.fileSizeKey]
+    ) else { return 0 }
+    var total: Int64 = 0
+    for case let url as URL in enumerator {
+      let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize
+      total += Int64(size ?? 0)
+    }
+    return total
   }
 
   /// Pure rewrite for tests: absolute-izes relative URIs and replaces AUDIO `NAME`s.
