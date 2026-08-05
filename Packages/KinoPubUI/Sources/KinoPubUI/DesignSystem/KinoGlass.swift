@@ -13,6 +13,14 @@ import SwiftUI
 /// The system button styles — `.buttonStyle(.glass)` / `.glassProminent` — are a
 /// separate, fully system-owned path. They degrade on their own and deliberately
 /// do **not** route through here.
+///
+/// `kinoGlassGroup` is the same rule applied to `GlassEffectContainer`: call sites
+/// group sibling `kinoGlass` / `kinoPlayerGlass` surfaces through it rather than
+/// writing `GlassEffectContainer` inline, so the "no raw glass API at call sites"
+/// rule holds for grouping too. Reach for it only where two or more of those
+/// surfaces actually sit next to each other — most of the app's chrome (hero
+/// action row, `.buttonStyle(.glass)` buttons) isn't `kinoGlass` at all, and
+/// wrapping non-glass content in a container does nothing.
 public extension View {
   /// Liquid Glass over static content: chrome, chips, floating panels.
   func kinoGlass(in shape: some Shape,
@@ -36,6 +44,21 @@ public extension View {
                               interactive: false,
                               overVideo: true))
   }
+}
+
+/// Groups sibling `kinoGlass` / `kinoPlayerGlass` surfaces into one `GlassEffectContainer`
+/// so the system renders them in a single pass instead of re-sampling the backdrop once
+/// per surface. Only worth reaching for where two or more such surfaces are actually
+/// adjacent — a container around a single glass view, or around non-glass content, does
+/// nothing.
+///
+/// `spacing` must stay at or below the surrounding stack's own spacing: a container
+/// spacing *larger* than the stack's makes the glass shapes blend into each other at
+/// rest, which is only correct when merging is the intent. `nil` (the default) uses the
+/// system's own default spacing.
+public func kinoGlassGroup<Content: View>(spacing: CGFloat? = nil,
+                                          @ViewBuilder content: () -> Content) -> some View {
+  GlassEffectContainer(spacing: spacing, content: content)
 }
 
 private struct KinoGlassModifier<S: Shape>: ViewModifier {

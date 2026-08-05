@@ -97,6 +97,12 @@ public struct MediaCardsListView: View {
     }
 #if os(tvOS)
     .defaultFocus($focusedItemID, cards.first?.id)
+#else
+    // Native fade as the grid passes under the nav bar. A plain `ScrollView` doesn't
+    // inherit the edge treatment `List` gets automatically, so it needs asking for
+    // explicitly. tvOS has no floating bar over this screen to slide under — see
+    // `docs/en/apple-platform/materials-blur-and-chrome.md`.
+    .scrollEdgeEffectStyle(.automatic, for: .top)
 #endif
   }
 }

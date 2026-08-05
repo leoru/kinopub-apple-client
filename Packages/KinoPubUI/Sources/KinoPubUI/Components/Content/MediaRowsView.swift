@@ -103,6 +103,13 @@ public struct MediaRowsView: View {
       }
       .padding(.bottom, Self.rowSpacing)
     }
+#if !os(tvOS)
+    // Native fade as rows pass under the nav bar / large title. A plain `ScrollView`
+    // doesn't inherit the edge treatment `List` gets automatically, so it needs asking
+    // for explicitly. tvOS has no floating bar over this screen to slide under — see
+    // `docs/en/apple-platform/materials-blur-and-chrome.md`.
+    .scrollEdgeEffectStyle(.automatic, for: .top)
+#endif
   }
 
 #if os(tvOS)

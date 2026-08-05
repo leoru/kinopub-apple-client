@@ -43,6 +43,20 @@
   sidebar and clips the first poster / episode. `MediaItemView` deliberately ignores **top only**
   there.
 - macOS `ProgressiveBlur` / material using `.behindWindow` can grey out cards — validate carefully.
+- **`GlassEffectContainer` goes through `kinoGlassGroup` (`KinoGlass.swift`)**, the same "no
+  raw glass API at call sites" rule as `glassEffect` itself. As of this writing nothing in the
+  shipped app has two or more `kinoGlass`/`kinoPlayerGlass` surfaces sitting adjacent — the hero
+  action row is hand-rolled translucent circles, not `glassEffect` (see above); `.buttonStyle(.glass)`
+  is the separate system-owned path. The helper exists for the next surface that needs it; do not
+  wrap non-glass content in it.
+- **`scrollEdgeEffectStyle(.automatic, for: .top)` on the app's `ScrollView`-backed grids/rows**
+  (`ContentItemsListView`, `MediaCardsListView`, `MediaRowsView`) — `List`-backed screens (Settings,
+  Downloads) already get this automatically; a plain `ScrollView` does not, so poster grids and the
+  Home rail need it explicit. Gated `#if !os(tvOS)`: no floating bar sits over these tvOS screens
+  for content to slide under (plain `NavigationStack`, no search/nav chrome pinned above the grid),
+  matching the reference app's approach. Not applied to `MediaItemView`'s hero scroll — that page
+  hides the nav bar background on purpose (`toolbarBackground(.hidden, ...)`) so artwork runs to
+  the top edge; there is no bar for the effect to key off.
 
 ## Superseded
 
