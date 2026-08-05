@@ -16,9 +16,21 @@ public enum Metrics {
   public static let cardCaptionSpacing: CGFloat = 20
   public static let rowSpacing: CGFloat = 40
   public static let focusPadding: CGFloat = 32
+  /// Apple TV Alerts / Light / Glyph + Title squircle.
+  public static let hudSide: CGFloat = 220
+  public static let hudCornerRadius: CGFloat = 36
+  public static let hudGlyphPointSize: CGFloat = 56
+  public static let hudGlyphTitleSpacing: CGFloat = 16
+  public static let hudContentInset: CGFloat = 28
 #else
   public static let cardCaptionSpacing: CGFloat = 6
   public static let rowSpacing: CGFloat = 24
   public static let focusPadding: CGFloat = 4
+  /// Music-style confirmation HUD.
+  public static let hudSide: CGFloat = 154
+  public static let hudCornerRadius: CGFloat = 28
+  public static let hudGlyphPointSize: CGFloat = 44
+  public static let hudGlyphTitleSpacing: CGFloat = 12
+  public static let hudContentInset: CGFloat = 20
 #endif
 }
