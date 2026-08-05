@@ -61,6 +61,8 @@ struct HistoryView: View {
           posterURL: card.posterURL,
           title: card.title,
           subtitle: card.subtitle,
+          imdbRating: card.imdbRating,
+          kinopoiskRating: card.kinopoiskRating,
           progress: card.progress,
           badge: card.badge,
           backdropURL: card.backdropURL,
@@ -69,8 +71,21 @@ struct HistoryView: View {
           video: card.video,
           season: card.season,
           mediaID: card.mediaID,
+          isWatched: card.isWatched,
           isSeries: card.isSeries,
-          isInHistory: card.isInHistory
+          isInHistory: card.isInHistory,
+          isInWatchlist: card.isInWatchlist,
+          is4K: card.is4K,
+          isHDR: card.isHDR,
+          isHD: card.isHD,
+          is3D: card.is3D,
+          hasClosedCaptions: card.hasClosedCaptions,
+          year: card.year,
+          durationSeconds: card.durationSeconds,
+          genreLine: card.genreLine,
+          countryLine: card.countryLine,
+          isBookmarked: card.isBookmarked,
+          primaryAction: card.primaryAction
         )
       }
     }
@@ -202,15 +217,14 @@ struct HistoryView: View {
       if entry.isEpisode, let season = entry.media?.snumber, let episode = entry.media?.number {
         label.append("S\(season), E\(episode)")
       }
-      if let duration = entry.media?.duration, duration >= 60 {
-        label.append(Duration.hoursMinutes(seconds: duration))
-      }
+      let durationSeconds = entry.media?.duration.flatMap { $0 >= 60 ? $0 : nil }
       result.append(MediaCard(
         id: entry.item.id,
         posterURL: posters?.medium ?? wide,
         title: entry.item.title?.components(separatedBy: " / ").first
           ?? entry.item.title
           ?? "",
+        subtitle: entry.item.title?.components(separatedBy: " / ").last,
         progress: entry.progress,
         landscapeImageURL: landscape.isEmpty ? nil : landscape,
         overlayLabel: label.isEmpty ? nil : label.joined(separator: " · "),
@@ -219,7 +233,8 @@ struct HistoryView: View {
         season: entry.isEpisode ? entry.media?.snumber : nil,
         mediaID: entry.media?.id,
         isSeries: isSeries,
-        isInHistory: true
+        isInHistory: true,
+        durationSeconds: durationSeconds
       ))
     }
     return result

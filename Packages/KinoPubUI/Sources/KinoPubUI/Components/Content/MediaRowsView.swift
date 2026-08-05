@@ -37,6 +37,8 @@ public struct MediaRowsView: View {
   /// Contained 16:9 featured cards shown above the catalog rows (Home). Empty elsewhere.
   private let bannerCards: [MediaCard]
   private let navigationLinkProvider: (MediaCard) -> any Hashable
+  /// When a card's `primaryAction` is `.play`, Select/click runs this instead of navigating.
+  private let onPlay: ((MediaCard) -> Void)?
   private let onRowAppear: ((MediaRow) -> Void)?
   /// Long-press menu for a card. Return an empty array to leave the card without one.
   /// `surface` distinguishes shelf lockups from featured banners (artwork URL, etc.).
@@ -59,11 +61,13 @@ public struct MediaRowsView: View {
   public init(rows: [MediaRow],
               bannerCards: [MediaCard] = [],
               navigationLinkProvider: @escaping (MediaCard) -> any Hashable,
+              onPlay: ((MediaCard) -> Void)? = nil,
               onRowAppear: ((MediaRow) -> Void)? = nil,
               contextMenuProvider: ((MediaCard, MediaCardContextSurface) -> [MediaCardContextEntry])? = nil) {
     self.rows = rows
     self.bannerCards = bannerCards
     self.navigationLinkProvider = navigationLinkProvider
+    self.onPlay = onPlay
     self.onRowAppear = onRowAppear
     self.contextMenuProvider = contextMenuProvider
   }
@@ -162,19 +166,17 @@ public struct MediaRowsView: View {
       ScrollView(.horizontal, showsIndicators: false) {
         LazyHStack(alignment: .top, spacing: metrics.gutter) {
           ForEach(row.cards) { card in
-            NavigationLink(value: navigationLinkProvider(card)) {
-              MediaCardView(card: card, caption: Self.cardCaption)
-            }
-            .mediaZoomSource(id: "media-\(card.id)")
-            .containerRelativeFrame(.horizontal,
-                                    count: metrics.columns,
-                                    span: 1,
-                                    spacing: metrics.gutter)
+            cardLink(card)
+              .mediaZoomSource(id: "media-\(card.id)")
+              .containerRelativeFrame(.horizontal,
+                                      count: metrics.columns,
+                                      span: 1,
+                                      spacing: metrics.gutter)
 #if !os(tvOS)
-            .buttonStyle(MediaCardButtonStyle())
+              .buttonStyle(MediaCardButtonStyle())
 #endif
-            .focused($focusedCard, equals: CardKey(row: row.id, card: card.id))
-            .modifier(MediaCardContextMenuModifier(entries: contextMenuProvider?(card, .shelf) ?? []))
+              .focused($focusedCard, equals: CardKey(row: row.id, card: card.id))
+              .modifier(MediaCardContextMenuModifier(entries: contextMenuProvider?(card, .shelf) ?? []))
           }
         }
         .safeAreaPadding(.horizontal, metrics.inset)
@@ -191,6 +193,21 @@ public struct MediaRowsView: View {
 #endif
     }
     .onAppear { onRowAppear?(row) }
+  }
+
+  @ViewBuilder
+  private func cardLink(_ card: MediaCard) -> some View {
+    if card.primaryAction == .play, let onPlay {
+      Button {
+        onPlay(card)
+      } label: {
+        MediaCardView(card: card, caption: Self.cardCaption)
+      }
+    } else {
+      NavigationLink(value: navigationLinkProvider(card)) {
+        MediaCardView(card: card, caption: Self.cardCaption)
+      }
+    }
   }
 
   private func shelfMetrics(for row: MediaRow) -> ShelfMetrics {

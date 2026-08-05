@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import KinoPubUI
 
 #if !os(tvOS)
 
@@ -62,24 +63,117 @@ struct DevicesSettingsPane: View {
 }
 
 struct AppearanceSettingsPane: View {
-  @State private var reduceMotion = false
-  @State private var showPosterTitles = true
-  @State private var accentRaw = "system"
+  @AppStorage(MediaCardDisplayPreferences.ratingPlacementKey)
+  private var ratingPlacement = MediaCardDisplayPreferences.defaultRatingPlacement.rawValue
+  @AppStorage(MediaCardDisplayPreferences.ratingSourceKey)
+  private var ratingSource = MediaCardDisplayPreferences.defaultRatingSource.rawValue
+  @AppStorage(MediaCardDisplayPreferences.capabilityPlacementKey)
+  private var capabilityPlacement = MediaCardDisplayPreferences.defaultCapabilityPlacement.rawValue
+  @AppStorage(MediaCardDisplayPreferences.show4KKey)
+  private var show4K = MediaCardDisplayPreferences.defaultShow4K
+  @AppStorage(MediaCardDisplayPreferences.showHDRKey)
+  private var showHDR = MediaCardDisplayPreferences.defaultShowHDR
+  @AppStorage(MediaCardDisplayPreferences.showHDKey)
+  private var showHD = MediaCardDisplayPreferences.defaultShowHD
+  @AppStorage(MediaCardDisplayPreferences.show3DKey)
+  private var show3D = MediaCardDisplayPreferences.defaultShow3D
+  @AppStorage(MediaCardDisplayPreferences.showCCKey)
+  private var showCC = MediaCardDisplayPreferences.defaultShowCC
+  @AppStorage(MediaCardDisplayPreferences.editorialPlacementKey)
+  private var editorialPlacement = MediaCardDisplayPreferences.defaultEditorialPlacement.rawValue
+  @AppStorage(MediaCardDisplayPreferences.showOriginalTitleKey)
+  private var showOriginalTitle = MediaCardDisplayPreferences.defaultShowOriginalTitle
+  @AppStorage(MediaCardDisplayPreferences.showYearKey)
+  private var showYear = MediaCardDisplayPreferences.defaultShowYear
+  @AppStorage(MediaCardDisplayPreferences.showDurationKey)
+  private var showDuration = MediaCardDisplayPreferences.defaultShowDuration
+  @AppStorage(MediaCardDisplayPreferences.showGenreKey)
+  private var showGenre = MediaCardDisplayPreferences.defaultShowGenre
+  @AppStorage(MediaCardDisplayPreferences.showCountryKey)
+  private var showCountry = MediaCardDisplayPreferences.defaultShowCountry
+  @AppStorage(MediaCardDisplayPreferences.showBookmarkSymbolKey)
+  private var showBookmarkSymbol = MediaCardDisplayPreferences.defaultShowBookmarkSymbol
+  @AppStorage(MediaCardDisplayPreferences.progressVisibilityKey)
+  private var progressVisibility = MediaCardDisplayPreferences.defaultProgressVisibility.rawValue
+  @AppStorage(MediaCardDisplayPreferences.watchedStyleKey)
+  private var watchedStyle = MediaCardDisplayPreferences.defaultWatchedStyle.rawValue
 
   var body: some View {
     Form {
       Section {
         LabeledContent("Theme", value: "Dark")
-        Toggle("Show titles on posters", isOn: $showPosterTitles)
-        Toggle("Reduce motion", isOn: $reduceMotion)
-        Picker("Accent", selection: $accentRaw) {
-          Text("System").tag("system")
-          Text("Blue").tag("blue")
-          Text("Orange").tag("orange")
-        }
-        .pickerStyle(.menu)
       } footer: {
-        Text("Dark-only until a deliberate light-theme pass. Demo controls are not saved.")
+        Text("Dark-only until a deliberate light-theme pass.")
+      }
+
+      Section {
+        Picker("Rating", selection: $ratingPlacement) {
+          ForEach(MediaCardChromePlacement.allCases) { placement in
+            Text(LocalizedStringKey(placement.titleKey)).tag(placement.rawValue)
+          }
+        }
+        Picker("Rating source", selection: $ratingSource) {
+          ForEach(MediaCardRatingSource.allCases) { source in
+            Text(LocalizedStringKey(source.titleKey)).tag(source.rawValue)
+          }
+        }
+        .disabled(ratingPlacement == MediaCardChromePlacement.hidden.rawValue)
+      } header: {
+        Text("Poster score")
+      } footer: {
+        Text("On poster uses the coloured plaque. Under title shows IMDb / Kinopoisk logos separately.")
+      }
+
+      Section {
+        Picker("Quality badges", selection: $capabilityPlacement) {
+          ForEach(MediaCardChromePlacement.allCases) { placement in
+            Text(LocalizedStringKey(placement.titleKey)).tag(placement.rawValue)
+          }
+        }
+        Toggle("4K", isOn: $show4K)
+        Toggle("HDR", isOn: $showHDR)
+        Toggle("HD", isOn: $showHD)
+        Toggle("3D", isOn: $show3D)
+        Toggle("CC", isOn: $showCC)
+        Picker("New-episode badge", selection: $editorialPlacement) {
+          ForEach(MediaCardChromePlacement.allCases) { placement in
+            Text(LocalizedStringKey(placement.titleKey)).tag(placement.rawValue)
+          }
+        }
+        Toggle("Bookmark on artwork", isOn: $showBookmarkSymbol)
+      } header: {
+        Text("Badges")
+      } footer: {
+        Text("Bookmark sits top-trailing, right of the quality chips.")
+      }
+
+      Section {
+        Toggle("Original title", isOn: $showOriginalTitle)
+        Toggle("Year", isOn: $showYear)
+        Toggle("Genre", isOn: $showGenre)
+        Toggle("Country", isOn: $showCountry)
+      } header: {
+        Text("Vertical posters")
+      } footer: {
+        Text("Original title never appears under landscape Continue Watching cards.")
+      }
+
+      Section {
+        Toggle("Duration chip", isOn: $showDuration)
+        Picker("Progress bar", selection: $progressVisibility) {
+          ForEach(MediaCardProgressVisibility.allCases) { visibility in
+            Text(LocalizedStringKey(visibility.titleKey)).tag(visibility.rawValue)
+          }
+        }
+        Picker("Watched", selection: $watchedStyle) {
+          ForEach(MediaCardWatchedStyle.allCases) { style in
+            Text(LocalizedStringKey(style.titleKey)).tag(style.rawValue)
+          }
+        }
+      } header: {
+        Text("Landscape cards")
+      } footer: {
+        Text("Duration chip pins bottom-leading. New-episode counts (+N) render as a caption label, not a title chip. Watched dim/checkmark is for vertical posters.")
       }
     }
     .formStyle(.grouped)

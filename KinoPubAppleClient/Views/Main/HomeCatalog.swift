@@ -310,24 +310,32 @@ class HomeCatalog: ObservableObject {
     } else if !isSeries {
       video = history?.media?.number ?? local?.episode ?? 1
       season = nil
+    } else if let watched = item.watched {
+      // Watchlist / following with no play head — next episode in series order.
+      video = watched + 1
+      season = history?.media?.snumber ?? local?.season
     } else {
       video = history?.media?.number ?? local?.episode
       season = history?.media?.snumber ?? local?.season
     }
 
     let localFraction = local?.watch.isResumable == true ? local?.watch.fraction : nil
-    let progress = [localFraction, history?.progress, item.progress].compactMap { $0 }.max()
+    // Episode resume only — never serial watched/total (that is not a scrubber).
+    let episodeProgress = localFraction ?? history?.progress
+    let durationSeconds = Self.durationSeconds(history: history, local: local)
+    let overlay = Self.overlayLabel(for: item, history: history, local: local)
+    let newCount = item.new.flatMap { $0 > 0 ? $0 : nil }
 
     return MediaCard(id: item.id,
                      posterURL: item.posters.medium,
                      title: item.localizedTitle,
                      subtitle: item.originalTitle,
-                     progress: progress,
-                     badge: item.hasNewEpisodes ? "+\(item.new ?? 0)" : nil,
+                     progress: episodeProgress,
+                     badge: newCount.map { "+\($0)" },
                      backdropURL: landscapeImageURL(for: item, history: history, local: local),
-                     metaLine: overlayLabel(for: history, local: local),
+                     metaLine: overlay,
                      landscapeImageURL: landscapeImageURL(for: item, history: history, local: local),
-                     overlayLabel: overlayLabel(for: history, local: local),
+                     overlayLabel: overlay,
                      itemID: item.id,
                      video: video,
                      season: season,
@@ -335,7 +343,15 @@ class HomeCatalog: ObservableObject {
                      isWatched: false,
                      isSeries: isSeries,
                      isInHistory: isInHistory,
-                     isInWatchlist: isInWatchlist)
+                     isInWatchlist: isInWatchlist,
+                     durationSeconds: durationSeconds,
+                     primaryAction: .play)
+  }
+
+  private static func durationSeconds(history: HistoryEntry?, local: LocalWatchEntry?) -> Int? {
+    if let duration = history?.media?.duration, duration >= 60 { return duration }
+    if let duration = local?.duration, duration >= 60 { return Int(duration) }
+    return nil
   }
 
   private static func landscapeImageURL(for item: WatchingItem,
@@ -347,20 +363,24 @@ class HomeCatalog: ObservableObject {
       ?? item.posters.big
   }
 
-  private static func overlayLabel(for history: HistoryEntry?, local: LocalWatchEntry?) -> String? {
-    var parts: [String] = []
+  /// Prefer history/local S/E; for watchlist/following without a play head, next
+  /// episode is `watched + 1` from the watching counters.
+  private static func overlayLabel(for item: WatchingItem,
+                                   history: HistoryEntry?,
+                                   local: LocalWatchEntry?) -> String? {
     if let history, history.isEpisode,
        let season = history.media?.snumber, let episode = history.media?.number {
-      parts.append("S\(season), E\(episode)")
-    } else if let season = local?.season, let episode = local?.episode {
-      parts.append("S\(season), E\(episode)")
+      return "S\(season), E\(episode)"
     }
-    if let duration = history?.media?.duration, duration >= 60 {
-      parts.append(Duration.hoursMinutes(seconds: duration))
-    } else if let duration = local?.duration, duration >= 60 {
-      parts.append(Duration.hoursMinutes(seconds: Int(duration)))
+    if let season = local?.season, let episode = local?.episode {
+      return "S\(season), E\(episode)"
     }
-    return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    if item.type.contains("serial"), let watched = item.watched {
+      let next = watched + 1
+      if let total = item.total, next > total { return nil }
+      return "E\(next)"
+    }
+    return nil
   }
 
   // MARK: - Catalog shortcuts
