@@ -739,7 +739,7 @@ public struct MediaCardView: View {
   private func editorialBadge(_ badge: String) -> some View {
     Text(badge)
       .font(.caption.weight(.bold))
-      .padding(.horizontal, 6)
+      .padding(.horizontal, 4)
       .padding(.vertical, 3)
       .background(Color.KinoPub.accent, in: Capsule())
       .foregroundStyle(.black)
@@ -793,7 +793,7 @@ public struct MediaCardView: View {
           .frame(width: geometry.size.width * min(max(progress, 0), 1))
       }
     }
-    .frame(height: 3)
+    .frame(height: 4)
     .padding(.horizontal, 1)
   }
 
