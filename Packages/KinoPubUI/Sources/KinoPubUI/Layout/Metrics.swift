@@ -21,4 +21,13 @@ public enum Metrics {
   public static let rowSpacing: CGFloat = 24
   public static let focusPadding: CGFloat = 4
 #endif
+
+  // MARK: - HudToast
+
+  /// System Apple Music / volume-HUD squircle: fixed square side.
+  public static let hudSide: CGFloat = 100
+  public static let hudCornerRadius: CGFloat = 20
+  public static let hudContentInset: CGFloat = 16
+  public static let hudGlyphPointSize: CGFloat = 28
+  public static let hudGlyphTitleSpacing: CGFloat = 8
 }
