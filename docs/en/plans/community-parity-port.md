@@ -19,7 +19,7 @@ feature doc it belongs to (02 / 03 / 04) — that stays the living checklist.
 | --- | --- | --- |
 | Home shelves | 9 typed shelves mirroring the web home (`Views/Home/HomeModel.swift`) | 6 shelves: hot/fresh/popular × movie/serial ([HomeCatalog.swift:27](../../../KinoPubAppleClient/Views/Main/HomeCatalog.swift)) |
 | Catalog sections | 6 content types + 5 genre presets (cartoons, cartoon series, anime, stand-up, 3D) in sidebar/tabs (`NavigationTabs.swift`) | Movies + Series tabs only |
-| Collections | Full browser + detail (`Views/Collections/`) | Service wired, **zero UI** ([CollectionsService.swift](../../../KinoPubAppleClient/Services/Collections/CollectionsService.swift)) |
+| Collections | Full browser + detail (`Views/Collections/`) | Home row + browser + detail ([Views/Collections/](../../../KinoPubAppleClient/Views/Collections/)); sidebar entry still open |
 | New episodes | Dedicated screen, tabs New episodes / My series, type sub-tabs (`Views/Watching/`) | Watchlist row inside Library only |
 | More from director / with actor | Two shelves on the detail page (`MediaItemView.swift:933`) | `PersonItemsView` exists, but the detail page doesn't offer the shelves |
 | Filters | Sheet with genre, country, year range, KP/IMDb sliders, HD/4K/AC3 toggles (`Views/Main/Filter/`) | Model has every facet; bar exposes sort/type/genre/country/year only ([LibraryFiltersBar.swift](../../../KinoPubAppleClient/Views/Search/LibraryFiltersBar.swift)) |
@@ -58,13 +58,14 @@ feature doc it belongs to (02 / 03 / 04) — that stays the living checklist.
 
 The one place where a whole product surface is missing and the service is already built.
 
-- [ ] `CollectionsView`: paginated grid/rows of collections (`GET /v1/collections`, `sort` from their
-      list), our card treatment, focus-correct on tvOS
-- [ ] `CollectionDetailView`: `GET /v1/collections/view` → items grid, reusing the catalog grid
-- [ ] Routes: `Route.collections` / `.collection(id)` + `RouteDestination` cases; entry point in the
-      shell (sidebar item on tvOS/iPad/macOS, tab or Home row on iPhone)
-- [ ] One Home row "Collections" that opens the browser (title-tap → full screen, per `MediaRow.destination`)
-- [ ] `RowKey.collections` + TTL so the row participates in `ContentStore` like every other row
+- [x] `CollectionsView`: paginated shelves of collections (`GET /v1/collections`), one row per
+      collection with preview cards from `/v1/collections/view` (same endpoint-shape tradeoff as
+      community). Sort picker still open.
+- [x] `CollectionDetailView`: `GET /v1/collections/view` → items grid via `ContentItemsListView`
+- [x] Routes: `Route.collections` / `.collection(Collection)` + `RouteDestination` cases; Home row
+      entry on every platform. Sidebar / tab item still open.
+- [x] One Home row "Collections" that opens the browser (title-tap → full screen, per `MediaRow.destination`)
+- [x] `RowKey.collections` + TTL so the row participates in `ContentStore` like every other row
 
 ## 2. Home / For You shelves
 
@@ -236,11 +237,11 @@ they weren't; verify against current code before trusting old drafts of this sec
 
 ## Suggested order
 
-1. Collections (§1) — whole surface missing, service already built
+1. ~~Collections (§1)~~ — Home row + browser + detail landed; sidebar entry / sort picker still open
 2. Filter chrome (§6) — pure UI over a model that's already ported
-3. Device settings + Devices (§7) — replaces a fake pane, unblocks "why won't this play in 4K"
+3. ~~Device settings + Devices (§7)~~ — landed (real Device pane, Devices list, Storage, Sections)
 4. Shelf-spec refactor + Home shelves + type/genre sections (§2, §3) — one machinery, do it once
 5. More from director / with actor (§5) — cheap once §3's filter plumbing exists
-6. New episodes (§4), section visibility (§8)
+6. New episodes (§4) — section visibility (§8) also landed
 
 §9 is not in this order — the rail scroll regression jumps the queue.

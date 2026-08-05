@@ -15,6 +15,10 @@ enum RowKey: Hashable, Codable {
   case watchlist
   case history
   case folder(Int)
+  /// Home's "Collections" preview row — a handful of curated collections, each
+  /// shown as a poster tile. The full browser (one shelf per collection) is a
+  /// live screen and does not go through the store.
+  case collections
 
   /// Group for prefix invalidation: clearing history shouldn't blow away catalog
   /// shelves, and toggling a bookmark shouldn't touch continue-watching.
@@ -27,7 +31,7 @@ enum RowKey: Hashable, Codable {
   var family: Family {
     switch self {
     case .continueWatching, .history, .watchlist: return .watch
-    case .shortcut: return .catalog
+    case .shortcut, .collections: return .catalog
     case .folder: return .bookmarks
     }
   }
@@ -39,7 +43,7 @@ enum RowKey: Hashable, Codable {
     switch self {
     case .continueWatching, .history: return 60
     case .watchlist: return 120
-    case .shortcut: return 15 * 60
+    case .shortcut, .collections: return 15 * 60
     case .folder: return 10 * 60
     }
   }

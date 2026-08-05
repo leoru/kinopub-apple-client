@@ -34,6 +34,10 @@ class HomeCatalog: ObservableObject {
   ]
 
   static let continueWatchingRowID = "continue-watching"
+  static let collectionsRowID = "collections"
+  /// Cards shown in the Home preview row — the full browser (`Route.collections`)
+  /// pages through everything.
+  static let collectionsPreviewCount = 12
 
   /// Empty until the first fetch lands — the screen shows a spinner rather than
   /// stand-in artwork, the way the Apple TV app waits.
@@ -52,6 +56,7 @@ class HomeCatalog: ObservableObject {
   private var errorHandler: ErrorHandler
   private var itemsService: VideoContentService
   private var actionsService: UserActionsService
+  private var collectionsService: CollectionsService
   private var store: ContentStore
   private var bag = Set<AnyCancellable>()
 
@@ -59,11 +64,13 @@ class HomeCatalog: ObservableObject {
        authState: AuthState,
        errorHandler: ErrorHandler,
        actionsService: UserActionsService = AppContext.shared.actionsService,
+       collectionsService: CollectionsService = AppContext.shared.collectionsService,
        store: ContentStore = AppContext.shared.contentStore) {
     self.itemsService = itemsService
     self.authState = authState
     self.errorHandler = errorHandler
     self.actionsService = actionsService
+    self.collectionsService = collectionsService
     self.store = store
   }
 
@@ -85,6 +92,12 @@ class HomeCatalog: ObservableObject {
         await store.refreshIfStale(.continueWatching) { [weak self] in
           guard let self else { throw CancellationError() }
           return try await self.fetchContinueWatchingCards()
+        }
+      }
+      group.addTask { [store] in
+        await store.refreshIfStale(.collections) { [weak self] in
+          guard let self else { throw CancellationError() }
+          return try await self.fetchCollectionsPreviewCards()
         }
       }
       for shortcut in Self.shortcuts {
@@ -125,6 +138,13 @@ class HomeCatalog: ObservableObject {
       assembled.append(MediaRow(id: Self.continueWatchingRowID,
                                 title: "Continue Watching".localized,
                                 cards: continueWatchingCards))
+    }
+    let collectionsCards = store.cards(.collections)
+    if !collectionsCards.isEmpty {
+      assembled.append(MediaRow(id: Self.collectionsRowID,
+                                title: "Collections".localized,
+                                cards: collectionsCards,
+                                destination: Route.collections))
     }
     for shortcut in Self.shortcuts {
       let cards = store.cards(.shortcut(shortcut.shortcut, shortcut.contentType))
@@ -394,6 +414,22 @@ class HomeCatalog: ObservableObject {
 
   private static func card(for item: MediaItem) -> MediaCard {
     MediaCard(item)
+  }
+
+  // MARK: - Collections
+
+  /// First page of curated collections, as poster tiles — `/v1/collections` itself
+  /// carries no items, so this is the collection's own artwork, not a preview of
+  /// its contents (the full browser fetches per-collection previews separately).
+  private func fetchCollectionsPreviewCards() async throws -> [MediaCard] {
+    let data = try await collectionsService.fetchCollections(page: nil, sort: nil)
+    return data.collections.prefix(Self.collectionsPreviewCount).map(Self.card(for:))
+  }
+
+  private static func card(for collection: Collection) -> MediaCard {
+    MediaCard(id: collection.id,
+             posterURL: collection.posters?.medium ?? collection.posters?.big ?? collection.posters?.small ?? "",
+             title: collection.title)
   }
 
   private func subscribeForAuth() {

@@ -22,6 +22,10 @@ enum Route: Hashable {
   case person(MediaPerson)
   case player(any PlayableItem)
   case trailerPlayer(any PlayableItem)
+  /// The curated-collections browser (`GET /v1/collections`).
+  case collections
+  /// One collection's full item grid (`GET /v1/collections/view`).
+  case collection(Collection)
 
   func hash(into hasher: inout Hasher) {
     switch self {
@@ -51,6 +55,11 @@ enum Route: Hashable {
     case .trailerPlayer(let item):
       hasher.combine(8)
       hasher.combine(item.id)
+    case .collections:
+      hasher.combine(9)
+    case .collection(let collection):
+      hasher.combine(10)
+      hasher.combine(collection)
     }
   }
 
@@ -74,6 +83,10 @@ enum Route: Hashable {
       return a.id == b.id
     case (.trailerPlayer(let a), .trailerPlayer(let b)):
       return a.id == b.id
+    case (.collections, .collections):
+      return true
+    case (.collection(let a), .collection(let b)):
+      return a == b
     default:
       return false
     }

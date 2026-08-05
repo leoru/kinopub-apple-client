@@ -76,6 +76,23 @@
         }
       }
     },
+    "%@ + %d more": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ + %d more"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ + ещё %d"
+          }
+        }
+      }
+    },
     "%@ left": {
       "extractionState": "stale",
       "localizations": {
@@ -123,6 +140,23 @@
           "stringUnit": {
             "state": "new",
             "value": "%1$lld %2$@"
+          }
+        }
+      }
+    },
+    "+ %d more": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+ %d more"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+ ещё %d"
           }
         }
       }
@@ -734,7 +768,7 @@
       }
     },
     "Bookmarked": {
-      "extractionState": "stale",
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -6782,34 +6816,70 @@
         }
       }
     },
-    "%@ + %d more": {
+    "Added to Watchlist": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ + %d more"
+            "value": "Added to Watchlist"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ + ещё %d"
+            "value": "Добавлено в список"
           }
         }
       }
     },
-    "+ %d more": {
+    "Removed from Watchlist": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "+ %d more"
+            "value": "Removed from Watchlist"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "+ ещё %d"
+            "value": "Убрано из списка"
+          }
+        }
+      }
+    },
+    "Removed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removed"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалено"
+          }
+        }
+      }
+    },
+    "Marked as New": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marked as New"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отмечено как новое"
           }
         }
       }

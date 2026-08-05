@@ -49,6 +49,14 @@ struct RouteDestination: View {
                            context: appContext,
                            authState: authState,
                            errorHandler: errorHandler)
+    case .collections:
+      CollectionsView.make(context: appContext,
+                           authState: authState,
+                           errorHandler: errorHandler)
+    case .collection(let collection):
+      CollectionDetailView.make(collection: collection,
+                                context: appContext,
+                                errorHandler: errorHandler)
     case .player(let item):
 #if os(macOS)
       MacPlayerRouteGuard(item: item, mode: .media)
