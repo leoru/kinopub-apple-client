@@ -11,6 +11,7 @@ import OSLog
 import KinoPubLogging
 import KinoPubKit
 import KinoPubMetadata
+import KinoPubUI
 
 /// The viewer's own kino.pub thumbs vote for a title. Votes are one-shot server-side.
 enum MediaItemUserVote: Equatable {
@@ -73,6 +74,9 @@ class MediaItemModel: ObservableObject {
   @Published public var myVote: MediaItemUserVote = .none
   @Published public var likeCount: Int = 0
   @Published public var dislikeCount: Int = 0
+  /// Glyph + Title confirmation for hero library actions. Cleared by the view
+  /// modifier as soon as presentation starts.
+  @Published public var hudToast: HudToast?
 
   /// TMDB (and later other sources) overlay. Empty when the proxy is unset or the
   /// title has no IMDb id — the page then draws exactly as before.
@@ -269,6 +273,7 @@ class MediaItemModel: ObservableObject {
     }
     let previous = isWatched
     isWatched.toggle()
+    presentWatchedHud(nowWatched: isWatched)
     Task {
       do {
         try await actionsService.toggleWatching(id: mediaItemId, video: 1, season: nil)
@@ -287,6 +292,7 @@ class MediaItemModel: ObservableObject {
     // Force the published item to refresh so the rail redraws checkmarks/progress.
     mediaItem = mediaItem
     isWatched = mediaItem.playbackAction == .playAgain
+    presentWatchedHud(nowWatched: episode.watched > 0)
     Task {
       do {
         let watched = try await actionsService.toggleWatching(id: mediaItemId,
@@ -319,6 +325,7 @@ class MediaItemModel: ObservableObject {
     }
     mediaItem = mediaItem
     isWatched = mediaItem.playbackAction == .playAgain
+    presentWatchedHud(nowWatched: target > 0)
     Task {
       do {
         _ = try await actionsService.toggleWatching(id: mediaItemId, video: nil, season: season.number)
@@ -344,6 +351,7 @@ class MediaItemModel: ObservableObject {
 
   /// Drops the title from history so it stops cluttering Continue Watching.
   func clearFromContinueWatching() {
+    presentHud(systemImage: "trash", title: "Removed")
     Task {
       do {
         try await actionsService.clearHistoryForItem(id: mediaItemId)
@@ -373,8 +381,10 @@ class MediaItemModel: ObservableObject {
     let previous = folderIDsContainingItem
     if folderIDsContainingItem.contains(folder.id) {
       folderIDsContainingItem.remove(folder.id)
+      presentHud(systemImage: "bookmark", title: "Removed")
     } else {
       folderIDsContainingItem.insert(folder.id)
+      presentHud(systemImage: "bookmark.fill", title: "Bookmarked")
     }
     Task {
       do {
@@ -395,6 +405,11 @@ class MediaItemModel: ObservableObject {
   func toggleWatchlist() {
     let previous = isInWatchlist
     isInWatchlist.toggle()
+    if isInWatchlist {
+      presentHud(systemImage: "plus", title: "Added to Watchlist")
+    } else {
+      presentHud(systemImage: "minus", title: "Removed from Watchlist")
+    }
     Task {
       do {
         try await actionsService.toggleWatchlist(id: mediaItemId)
@@ -417,10 +432,23 @@ class MediaItemModel: ObservableObject {
         folderIDsContainingItem.insert(folderId)
         folders = try await itemsService.fetchBookmarks().items
         contentStore.invalidate(family: .bookmarks)
+        presentHud(systemImage: "bookmark.fill", title: "Bookmarked")
       } catch {
         errorHandler.setError(error)
       }
     }
+  }
+
+  private func presentWatchedHud(nowWatched: Bool) {
+    if nowWatched {
+      presentHud(systemImage: "checkmark", title: "Watched")
+    } else {
+      presentHud(systemImage: "eye", title: "Marked as New")
+    }
+  }
+
+  private func presentHud(systemImage: String, title: String) {
+    hudToast = HudToast(systemImage: systemImage, title: title.localized)
   }
 
   /// kino.pub exposes aggregate as `rating` + `rating_votes` (+ percentage); derive like/dislike

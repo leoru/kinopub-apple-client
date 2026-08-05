@@ -126,6 +126,7 @@ struct MediaItemView: View {
       }
 #endif
       .handleError(state: $errorHandler.state)
+      .hudToast($itemModel.hudToast)
   }
 
 #if os(iOS) || os(macOS)
