@@ -27,6 +27,9 @@ final class AuthState: ObservableObject {
   private var accessTokenService: AccessTokenService
   private var refreshRetryTask: Task<Void, Never>?
   private var refreshRetryAttempt = 0
+  /// Serializes refresh attempts — startup check, backoff retry and 401-triggered
+  /// refreshes must never overlap.
+  private var isRefreshing = false
 
   /// Initializes the `AuthState` with the provided services.
   /// - Parameters:
@@ -41,6 +44,13 @@ final class AuthState: ObservableObject {
     let hasToken = (accessTokenService.token() as AccessToken?) != nil
     self.userState = hasToken ? .authorized : .unauthorized
     self.shouldShowAuthentication = !hasToken
+
+    // A 401 from any content endpoint mid-session → one guarded refresh.
+    NotificationCenter.default.addObserver(
+      forName: .kinopubUnauthorizedResponse, object: nil, queue: .main
+    ) { [weak self] _ in
+      self?.handleUnauthorizedResponse()
+    }
   }
 
   /// Checks the authentication state of the user.
@@ -56,7 +66,23 @@ final class AuthState: ObservableObject {
     await refreshToken()
   }
 
+  /// A 401 from a content endpoint means the access token died mid-session. One
+  /// refresh decides: success rotates quietly, rejection brings the activation
+  /// screen, a network failure falls back to the scheduled retries.
+  private func handleUnauthorizedResponse() {
+    Logger.app.info("Content endpoint answered 401 — refreshing the token")
+    guard let _: AccessToken = accessTokenService.token() else {
+      userState = .unauthorized
+      shouldShowAuthentication = true
+      return
+    }
+    Task { await refreshToken() }
+  }
+
   private func refreshToken() async {
+    guard !isRefreshing else { return }
+    isRefreshing = true
+    defer { isRefreshing = false }
     Logger.app.debug("Refreshing token...")
     do {
       try await authService.refreshToken()

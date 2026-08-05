@@ -115,6 +115,7 @@
 		CCF2ABB42AED39E0000448A8 /* WindowSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF2ABB32AED39E0000448A8 /* WindowSettings.swift */; };
 		CCF3881A2A71882300242581 /* AuthorizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388192A71882300242581 /* AuthorizationService.swift */; };
 		CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */; };
+		C9A401FF2B7E4D0A91C36B12 /* UnauthorizedResponsePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A401FE2B7E4D0A91C36B11 /* UnauthorizedResponsePlugin.swift */; };
 		CCF388212A718ADE00242581 /* VideoContentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388202A718ADE00242581 /* VideoContentService.swift */; };
 		CCF388252A718AF300242581 /* VideoContentServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388242A718AF300242581 /* VideoContentServiceImpl.swift */; };
 		CCF388282A718BB600242581 /* AppContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388272A718BB600242581 /* AppContext.swift */; };
@@ -259,6 +260,7 @@
 		CCF2ABB32AED39E0000448A8 /* WindowSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSettings.swift; sourceTree = "<group>"; };
 		CCF388192A71882300242581 /* AuthorizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationService.swift; sourceTree = "<group>"; };
 		CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationServiceImpl.swift; sourceTree = "<group>"; };
+		C9A401FE2B7E4D0A91C36B11 /* UnauthorizedResponsePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnauthorizedResponsePlugin.swift; sourceTree = "<group>"; };
 		CCF388202A718ADE00242581 /* VideoContentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoContentService.swift; sourceTree = "<group>"; };
 		CCF388242A718AF300242581 /* VideoContentServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoContentServiceImpl.swift; sourceTree = "<group>"; };
 		CCF388272A718BB600242581 /* AppContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContext.swift; sourceTree = "<group>"; };
@@ -750,6 +752,7 @@
 			children = (
 				CCF388192A71882300242581 /* AuthorizationService.swift */,
 				CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */,
+				C9A401FE2B7E4D0A91C36B11 /* UnauthorizedResponsePlugin.swift */,
 			);
 			path = Authorization;
 			sourceTree = "<group>";
@@ -992,6 +995,7 @@
 				CC8202FD2A8656E70041079A /* BestVideoQualityFinder.swift in Sources */,
 				CC21CEAD2AF6B61500EFCA8E /* SeasonsModel.swift in Sources */,
 				CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */,
+				C9A401FF2B7E4D0A91C36B12 /* UnauthorizedResponsePlugin.swift in Sources */,
 				CC01461F2A783F8400F858AF /* Routes.swift in Sources */,
 				A1B2C3D42E5F60718293A002 /* RouteDestination.swift in Sources */,
 				CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */,

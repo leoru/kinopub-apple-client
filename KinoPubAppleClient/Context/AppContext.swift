@@ -182,6 +182,7 @@ struct AppContext: AppContextProtocol {
       plugins: [
         CURLLoggingPlugin(),
         ResponseLoggingPlugin(),
+        UnauthorizedResponsePlugin(),
         AccessTokenPlugin(accessTokenService: accessTokenService)
       ],
       // Genres/countries only (see CacheableRequest). Personalized rows stay on ContentStore.
