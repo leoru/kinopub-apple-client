@@ -9,12 +9,14 @@
 /* Begin PBXBuildFile section */
 		08CB3863EAFD08F1DBFCCD26 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A4D333AA7AC384F2D66551C /* FeatureFlags.swift */; };
 		359B8BE15FCC4D9983B859BF /* StreamQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CF41D6D63054F0F92A507B1 /* StreamQuality.swift */; };
+		37B5470AC84450505E1E280E /* DevicesSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15641DC3A39CE8E9CF528384 /* DevicesSettingsPane.swift */; };
 		5154F406DBC7545E25F4B0EE /* CollectionsServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF84111EC8ACE8C4885E1A76 /* CollectionsServiceImpl.swift */; };
 		57DF3824CA609C7DA4EB8324 /* RowSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 849905DC0A8DF6F36DF8A402 /* RowSnapshotStore.swift */; };
 		5CDA790E2BD84471ADAD5D9D /* ContentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A455BD91626C3A69A07FF16 /* ContentStore.swift */; };
 		84B06A5DC1674B8DBDF075FC /* DeviceIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673B11D8E07244CCADA6EBBB /* DeviceIdentity.swift */; };
 		9181898AA7F0D28971B9EAB2 /* DeviceCapabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B122808656F8D05B7D97DC /* DeviceCapabilities.swift */; };
 		957B7DB6C328FC72EA807FB4 /* KinopoiskKeyStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */; };
+		9B557ACAF0C4E827778EFCB4 /* DevicesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A638F296984806CE370A2B2 /* DevicesListView.swift */; };
 		9BB427D377EF668A2FFC1A10 /* KinopoiskSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */; };
 		A1B2C3D42E5F60718293A002 /* RouteDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293A001 /* RouteDestination.swift */; };
 		A1B2C3D42E5F60718293A004 /* PlaybackSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293A003 /* PlaybackSession.swift */; };
@@ -25,6 +27,7 @@
 		B7C4A1E02F9D4C1B8A635002 /* UserProfileCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7C4A1E02F9D4C1B8A635001 /* UserProfileCache.swift */; };
 		BAE1B37E90AC85EEB728965C /* CollectionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C102076A821C81AC8BAB6DE6 /* CollectionsService.swift */; };
 		C746BAF04ACC4B519A6D7046 /* LocalWatchProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */; };
+		C9A401FF2B7E4D0A91C36B12 /* UnauthorizedResponsePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A401FE2B7E4D0A91C36B11 /* UnauthorizedResponsePlugin.swift */; };
 		CC01461B2A783DF900F858AF /* NavigationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461A2A783DF900F858AF /* NavigationState.swift */; };
 		CC01461D2A783EEF00F858AF /* NavigationTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461C2A783EEF00F858AF /* NavigationTabs.swift */; };
 		CC01461F2A783F8400F858AF /* Routes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01461E2A783F8400F858AF /* Routes.swift */; };
@@ -33,7 +36,6 @@
 		CC0904812A7C34D200A71F53 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0904802A7C34D200A71F53 /* PlayerView.swift */; };
 		CC0904832A7C353200A71F53 /* PlayerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0904822A7C353200A71F53 /* PlayerManager.swift */; };
 		CC21151D2A7A8FA7001996BD /* MediaItemModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */; };
-		SETD15PLAYPREF0002BBBB2 /* MediaItemDisplayPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETD15PLAYPREF0001AAAA1 /* MediaItemDisplayPreferences.swift */; };
 		CC2115212A7AA6F8001996BD /* String+Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2115202A7AA6F8001996BD /* String+Localization.swift */; };
 		CC21CEAB2AF6B60500EFCA8E /* SeasonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21CEAA2AF6B60500EFCA8E /* SeasonsView.swift */; };
 		CC21CEAD2AF6B61500EFCA8E /* SeasonsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21CEAC2AF6B61500EFCA8E /* SeasonsModel.swift */; };
@@ -98,11 +100,11 @@
 		CCA100012D0001 /* HLSManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0002 /* HLSManifest.swift */; };
 		CCA100012D0003 /* StreamSurvey.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0004 /* StreamSurvey.swift */; };
 		CCA100012D0005 /* StreamSurveyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0006 /* StreamSurveyView.swift */; };
+		CCA100012D0010 /* TVProfileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0011 /* TVProfileSettingsView.swift */; };
+		CCA100012D0021 /* HLSAudioLabeler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0020 /* HLSAudioLabeler.swift */; };
 		CCA100012E1002 /* UILabRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1001 /* UILabRoot.swift */; };
 		CCA100012E1005 /* UILabSearchToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1004 /* UILabSearchToolbar.swift */; };
 		CCA100012E1007 /* SystemTypeStylesCatalogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1006 /* SystemTypeStylesCatalogView.swift */; };
-		CCA100012D0010 /* TVProfileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0011 /* TVProfileSettingsView.swift */; };
-		CCA100012D0021 /* HLSAudioLabeler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0020 /* HLSAudioLabeler.swift */; };
 		CCA200012D001001 /* KinoPubMetadata in Frameworks */ = {isa = PBXBuildFile; productRef = CCA200012D001002 /* KinoPubMetadata */; };
 		CCA200012D001010 /* DataSourcesAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA200012D001011 /* DataSourcesAttributionView.swift */; };
 		CCC70B8A2A7FC15F00274E5F /* BookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B892A7FC15F00274E5F /* BookmarkView.swift */; };
@@ -118,7 +120,6 @@
 		CCF2ABB42AED39E0000448A8 /* WindowSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF2ABB32AED39E0000448A8 /* WindowSettings.swift */; };
 		CCF3881A2A71882300242581 /* AuthorizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388192A71882300242581 /* AuthorizationService.swift */; };
 		CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */; };
-		C9A401FF2B7E4D0A91C36B12 /* UnauthorizedResponsePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A401FE2B7E4D0A91C36B11 /* UnauthorizedResponsePlugin.swift */; };
 		CCF388212A718ADE00242581 /* VideoContentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388202A718ADE00242581 /* VideoContentService.swift */; };
 		CCF388252A718AF300242581 /* VideoContentServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388242A718AF300242581 /* VideoContentServiceImpl.swift */; };
 		CCF388282A718BB600242581 /* AppContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388272A718BB600242581 /* AppContext.swift */; };
@@ -146,6 +147,7 @@
 		SET6C560BDADA5D579BBF72E /* SettingsCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETF09DA820DA3F549DAA022 /* SettingsCategory.swift */; };
 		SET7CE1977F6C1A56898469F /* AdvancedSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = SET1B1979434854503599E28 /* AdvancedSettingsPane.swift */; };
 		SET8421330220495D149ACA6 /* IntegrationsSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETA03F72B683335535A4137 /* IntegrationsSettingsPane.swift */; };
+		SETD15PLAYPREF0002BBBB2 /* MediaItemDisplayPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETD15PLAYPREF0001AAAA1 /* MediaItemDisplayPreferences.swift */; };
 		SETDF825DAAA59C540189386 /* SettingsMacChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETAE1E9DCFC9D1562C867E1 /* SettingsMacChrome.swift */; };
 		SETF4AE203F2CEF5453BD14B /* PlaceholderSettingsPanes.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETB0F1DB506A5D5988BCA04 /* PlaceholderSettingsPanes.swift */; };
 /* End PBXBuildFile section */
@@ -153,6 +155,7 @@
 /* Begin PBXFileReference section */
 		0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskKeyStorage.swift; sourceTree = "<group>"; };
 		13B122808656F8D05B7D97DC /* DeviceCapabilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceCapabilities.swift; sourceTree = "<group>"; };
+		15641DC3A39CE8E9CF528384 /* DevicesSettingsPane.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DevicesSettingsPane.swift; sourceTree = "<group>"; };
 		1A4D333AA7AC384F2D66551C /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlags.swift; sourceTree = "<group>"; };
 		285B09E94948CDC959E3D287 /* DeviceServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceServiceImpl.swift; sourceTree = "<group>"; };
 		32DB07C35241802B74DE0958 /* RowKey.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RowKey.swift; sourceTree = "<group>"; };
@@ -162,6 +165,7 @@
 		5CC78C38545E52587CFE1639 /* HLSDownloadsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSDownloadsStore.swift; sourceTree = "<group>"; };
 		6061CC9A771DBC1648BCA1F0 /* SeasonDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonDownloadManager.swift; sourceTree = "<group>"; };
 		673B11D8E07244CCADA6EBBB /* DeviceIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdentity.swift; sourceTree = "<group>"; };
+		6A638F296984806CE370A2B2 /* DevicesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DevicesListView.swift; sourceTree = "<group>"; };
 		76F6301ED273E06AFCEBCC48 /* KinopoiskKeySettingsModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskKeySettingsModel.swift; sourceTree = "<group>"; };
 		849905DC0A8DF6F36DF8A402 /* RowSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RowSnapshotStore.swift; sourceTree = "<group>"; };
 		8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskSettingsSection.swift; sourceTree = "<group>"; };
@@ -173,6 +177,7 @@
 		B7C4A1E02F9D4C1B8A635001 /* UserProfileCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserProfileCache.swift; sourceTree = "<group>"; };
 		C102076A821C81AC8BAB6DE6 /* CollectionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsService.swift; sourceTree = "<group>"; };
 		C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalWatchProgressStore.swift; sourceTree = "<group>"; };
+		C9A401FE2B7E4D0A91C36B11 /* UnauthorizedResponsePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnauthorizedResponsePlugin.swift; sourceTree = "<group>"; };
 		CC01461A2A783DF900F858AF /* NavigationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationState.swift; sourceTree = "<group>"; };
 		CC01461C2A783EEF00F858AF /* NavigationTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationTabs.swift; sourceTree = "<group>"; };
 		CC01461E2A783F8400F858AF /* Routes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Routes.swift; sourceTree = "<group>"; };
@@ -181,7 +186,6 @@
 		CC0904802A7C34D200A71F53 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		CC0904822A7C353200A71F53 /* PlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerManager.swift; sourceTree = "<group>"; };
 		CC21151C2A7A8FA7001996BD /* MediaItemModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemModel.swift; sourceTree = "<group>"; };
-		SETD15PLAYPREF0001AAAA1 /* MediaItemDisplayPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDisplayPreferences.swift; sourceTree = "<group>"; };
 		CC2115202A7AA6F8001996BD /* String+Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Localization.swift"; sourceTree = "<group>"; };
 		CC21CEAA2AF6B60500EFCA8E /* SeasonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonsView.swift; sourceTree = "<group>"; };
 		CC21CEAC2AF6B61500EFCA8E /* SeasonsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonsModel.swift; sourceTree = "<group>"; };
@@ -246,11 +250,11 @@
 		CCA100012D0002 /* HLSManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSManifest.swift; sourceTree = "<group>"; };
 		CCA100012D0004 /* StreamSurvey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurvey.swift; sourceTree = "<group>"; };
 		CCA100012D0006 /* StreamSurveyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurveyView.swift; sourceTree = "<group>"; };
+		CCA100012D0011 /* TVProfileSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVProfileSettingsView.swift; sourceTree = "<group>"; };
+		CCA100012D0020 /* HLSAudioLabeler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSAudioLabeler.swift; sourceTree = "<group>"; };
 		CCA100012E1001 /* UILabRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UILabRoot.swift; sourceTree = "<group>"; };
 		CCA100012E1004 /* UILabSearchToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UILabSearchToolbar.swift; sourceTree = "<group>"; };
 		CCA100012E1006 /* SystemTypeStylesCatalogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemTypeStylesCatalogView.swift; sourceTree = "<group>"; };
-		CCA100012D0011 /* TVProfileSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVProfileSettingsView.swift; sourceTree = "<group>"; };
-		CCA100012D0020 /* HLSAudioLabeler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSAudioLabeler.swift; sourceTree = "<group>"; };
 		CCA200012D001003 /* KinoPubMetadata */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubMetadata; path = Packages/KinoPubMetadata; sourceTree = "<group>"; };
 		CCA200012D001011 /* DataSourcesAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSourcesAttributionView.swift; sourceTree = "<group>"; };
 		CCC70B892A7FC15F00274E5F /* BookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkView.swift; sourceTree = "<group>"; };
@@ -266,7 +270,6 @@
 		CCF2ABB32AED39E0000448A8 /* WindowSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSettings.swift; sourceTree = "<group>"; };
 		CCF388192A71882300242581 /* AuthorizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationService.swift; sourceTree = "<group>"; };
 		CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationServiceImpl.swift; sourceTree = "<group>"; };
-		C9A401FE2B7E4D0A91C36B11 /* UnauthorizedResponsePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnauthorizedResponsePlugin.swift; sourceTree = "<group>"; };
 		CCF388202A718ADE00242581 /* VideoContentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoContentService.swift; sourceTree = "<group>"; };
 		CCF388242A718AF300242581 /* VideoContentServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoContentServiceImpl.swift; sourceTree = "<group>"; };
 		CCF388272A718BB600242581 /* AppContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContext.swift; sourceTree = "<group>"; };
@@ -288,6 +291,7 @@
 		SETA03F72B683335535A4137 /* IntegrationsSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationsSettingsPane.swift; sourceTree = "<group>"; };
 		SETAE1E9DCFC9D1562C867E1 /* SettingsMacChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsMacChrome.swift; sourceTree = "<group>"; };
 		SETB0F1DB506A5D5988BCA04 /* PlaceholderSettingsPanes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderSettingsPanes.swift; sourceTree = "<group>"; };
+		SETD15PLAYPREF0001AAAA1 /* MediaItemDisplayPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDisplayPreferences.swift; sourceTree = "<group>"; };
 		SETD3D07A541B2D52009FE12 /* SettingsSidebarProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSidebarProfileView.swift; sourceTree = "<group>"; };
 		SETE104248D056B59D598267 /* SettingsDetailRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDetailRoute.swift; sourceTree = "<group>"; };
 		SETF09DA820DA3F549DAA022 /* SettingsCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCategory.swift; sourceTree = "<group>"; };
@@ -420,16 +424,6 @@
 				CC71E6F22A6C04B5004AFB3F /* Root */,
 			);
 			path = Views;
-			sourceTree = "<group>";
-		};
-		CCA100012E1003 /* UILab */ = {
-			isa = PBXGroup;
-			children = (
-				CCA100012E1001 /* UILabRoot.swift */,
-				CCA100012E1004 /* UILabSearchToolbar.swift */,
-				CCA100012E1006 /* SystemTypeStylesCatalogView.swift */,
-			);
-			path = UILab;
 			sourceTree = "<group>";
 		};
 		CC71E6F22A6C04B5004AFB3F /* Root */ = {
@@ -616,6 +610,16 @@
 				CCA100012C6F000100000502 /* CatalogView.swift */,
 			);
 			path = Catalog;
+			sourceTree = "<group>";
+		};
+		CCA100012E1003 /* UILab */ = {
+			isa = PBXGroup;
+			children = (
+				CCA100012E1001 /* UILabRoot.swift */,
+				CCA100012E1004 /* UILabSearchToolbar.swift */,
+				CCA100012E1006 /* SystemTypeStylesCatalogView.swift */,
+			);
+			path = UILab;
 			sourceTree = "<group>";
 		};
 		CCA5023B2AF24FB400B18283 /* macOS */ = {
@@ -849,6 +853,7 @@
 				SETA03F72B683335535A4137 /* IntegrationsSettingsPane.swift */,
 				SET1B1979434854503599E28 /* AdvancedSettingsPane.swift */,
 				SETB0F1DB506A5D5988BCA04 /* PlaceholderSettingsPanes.swift */,
+				15641DC3A39CE8E9CF528384 /* DevicesSettingsPane.swift */,
 			);
 			path = Panes;
 			sourceTree = "<group>";
@@ -872,6 +877,7 @@
 				SETE104248D056B59D598267 /* SettingsDetailRoute.swift */,
 				SET3CDB33CD1E0053FBB6873 /* Panes */,
 				SET5F449030BE4759108DBE1 /* About */,
+				6A638F296984806CE370A2B2 /* DevicesListView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -933,7 +939,7 @@
 			packageReferences = (
 				CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */,
-				CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */,
+				CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */,
 			);
 			productRefGroup = CC88E1E22A6586E600E9387F /* Products */;
 			projectDirPath = "";
@@ -1092,6 +1098,8 @@
 				C746BAF04ACC4B519A6D7046 /* LocalWatchProgressStore.swift in Sources */,
 				A33EDB761E32D7E524DDAB0F /* ActorImageProvider.swift in Sources */,
 				5CDA790E2BD84471ADAD5D9D /* ContentStore.swift in Sources */,
+				37B5470AC84450505E1E280E /* DevicesSettingsPane.swift in Sources */,
+				9B557ACAF0C4E827778EFCB4 /* DevicesListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1231,8 +1239,8 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = Z2PQ733PSP;
-				ENABLE_HARDENED_RUNTIME = YES;
 				"ENABLE_DEBUG_DYLIB[sdk=macosx*]" = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KinoPubAppleClient/Info.plist;
@@ -1279,8 +1287,8 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = Z2PQ733PSP;
-				ENABLE_HARDENED_RUNTIME = YES;
 				"ENABLE_DEBUG_DYLIB[sdk=macosx*]" = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KinoPubAppleClient/Info.plist;
@@ -1347,7 +1355,7 @@
 				minimumVersion = 2.6.0;
 			};
 		};
-		CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */ = {
+		CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ashleymills/Reachability.swift";
 			requirement = {
@@ -1389,7 +1397,7 @@
 		};
 		CC8202FF2A8657BA0041079A /* Reachability */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */;
+			package = CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */;
 			productName = Reachability;
 		};
 		CCA200012D001002 /* KinoPubMetadata */ = {

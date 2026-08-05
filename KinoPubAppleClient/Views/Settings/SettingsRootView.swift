@@ -67,9 +67,12 @@ struct SettingsRootView: View {
     } detail: {
       NavigationStack(path: $detailPath) {
         macDetailRoot
-#if DEBUG
           .navigationDestination(for: SettingsDetailRoute.self) { route in
             switch route {
+            case .devicesList:
+              DevicesListView()
+                .settingsMacChrome(title: "Devices", isRoot: false)
+#if DEBUG
             case .streamSurvey:
               StreamSurveyView()
                 .settingsMacChrome(title: "Stream survey", isRoot: false)
@@ -80,9 +83,9 @@ struct SettingsRootView: View {
             case .typeStyles:
               SystemTypeStylesCatalogView()
                 .settingsMacChrome(title: "Type Styles", isRoot: false)
+#endif
             }
           }
-#endif
       }
       .navigationSplitViewColumnWidth(500)
     }
@@ -160,18 +163,20 @@ struct SettingsRootView: View {
       pane(for: category)
         .navigationTitle(category.titleKey)
         .navigationBarTitleDisplayMode(.inline)
-#if DEBUG
         .navigationDestination(for: SettingsDetailRoute.self) { route in
           switch route {
+          case .devicesList:
+            DevicesListView()
+#if DEBUG
           case .streamSurvey:
             StreamSurveyView()
           case .uiLab(let chrome):
             UILabRoot(initialChrome: chrome)
           case .typeStyles:
             SystemTypeStylesCatalogView()
+#endif
           }
         }
-#endif
     }
     .platformNavigationTitle("Settings")
     .task {

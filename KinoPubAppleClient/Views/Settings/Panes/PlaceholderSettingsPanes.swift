@@ -34,34 +34,6 @@ struct DownloadsSettingsPane: View {
   }
 }
 
-struct DevicesSettingsPane: View {
-  @State private var preferHEVC = true
-  @State private var allow4K = true
-  @State private var allowHDR = true
-  @State private var mixedPlaylist = false
-
-  var body: some View {
-    Form {
-      Section {
-        Toggle("Prefer HEVC", isOn: $preferHEVC)
-        Toggle("Allow 4K", isOn: $allow4K)
-        Toggle("Allow HDR", isOn: $allowHDR)
-        Toggle("Mixed playlists", isOn: $mixedPlaylist)
-      } header: {
-        Text("This device")
-      } footer: {
-        Text("Capabilities already sync on sign-in. These controls are placeholders.")
-      }
-
-      Section("Other devices") {
-        LabeledContent("Living Room", value: "Apple TV")
-        LabeledContent("MacBook", value: "This Mac")
-      }
-    }
-    .formStyle(.grouped)
-  }
-}
-
 struct AppearanceSettingsPane: View {
   @AppStorage(MediaCardDisplayPreferences.ratingPlacementKey)
   private var ratingPlacement = MediaCardDisplayPreferences.defaultRatingPlacement.rawValue
