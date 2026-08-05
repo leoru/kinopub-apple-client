@@ -16,50 +16,37 @@ import UIKit
 import AppKit
 #endif
 
-/// Primary chrome on iOS, tvOS and macOS — stock system `TabView`.
+/// Primary chrome — classic system `TabView` tab bar on every platform.
 ///
-/// Platform IA:
-/// - **tvOS:** `.sidebarAdaptable`, profile at the top, Search with `.search` role,
-///   Library merges watchlist / history / bookmarks.
-/// - **iPhone (compact):** classic `.tabItem` tab bar — the iOS 18+ `Tab` API’s
-///   `UIKitTabBarController` asserts on Library selection on Phone.
-/// - **iPad (regular):** `Tab` + `.sidebarAdaptable`; Library merges the three personal rows.
-/// - **macOS:** sidebar sections (Browse / Library / Folders), profile in
-///   `tabViewSidebarBottomBar`, `TabViewCustomization` for show/hide + folders.
+/// - **tvOS:** `.tabBarOnly` (top); Search is the **first** tab (left of Home).
+/// - **macOS:** `.tabBarOnly`; no Settings tab (Settings window / ⌘,); no Search tab —
+///   compact trailing toolbar search via `macToolbarSearch()` on each `NavigationStack`
+///   (Finder/Photos). Return opens Search results. System back/forward stay leading.
+/// - **iPad:** `.tabBarOnly`; Search via `Tab(role: .search)` (trailing).
+/// - **iPhone:** bottom tab bar; `Tab(role: .search)` pins Search trailing (HIG).
+///
+/// PARKED (do not re-enable until locked properly per docs/WWDC): `.sidebarAdaptable`,
+/// `TabViewCustomization`, custom `NavigationSplitView` sidebars, Home segmented
+/// Movies/Series. Prototypes remain in `Views/UILab/`.
 struct TabsNavigationView: View {
 
   @Environment(\.appContext) var appContext
 #if os(iOS)
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-  /// Int tags for the classic compact tab bar — avoids `NavigationTabs`’ associated-value
-  /// `Hashable` path, which has been implicated in SwiftUI tab identity mismatches.
-  @State private var compactTabTag: Int = CompactPhoneTab.home.rawValue
 #endif
   @EnvironmentObject var navigationState: NavigationState
   @Environment(ErrorHandler.self) var errorHandler
   @EnvironmentObject var authState: AuthState
-  /// Wired at app root. Banner chrome TBD — do not invent community tab-lock UI here.
   @EnvironmentObject var networkMonitor: NetworkMonitor
 
-  /// Sidebar folder tabs — snapshotted so the tab set does not mutate while
-  /// Settings is open (same wedge Rivulet guards against on tvOS).
   @State private var sidebarFolders: [Bookmark] = []
-  /// Seeded from disk so the profile row is never blank on a cold/offline start;
-  /// refreshed from the network, and a failed refresh keeps the cached value.
   @State private var userData: UserData? = UserProfileCache.shared.loadUser()
-  /// Rasterized avatar — `AsyncImage` inside a `Tab`/`Label` is stripped by the
-  /// system sidebar, which is why the profile row used to show title-only "Settings".
   @State private var avatarImage: Image?
   @State private var watchlistBadgeCount = 0
   @State private var downloadsBadgeCount = 0
-  @State private var showSettings = false
-  /// Last time the sidebar (folders + watchlist badge) synced with the network.
-  /// Without this, every single tab switch fired 2 requests — `syncSidebarFolders()`
-  /// used to run unconditionally on every `selectedTab` change.
   @State private var sidebarSyncedAt: Date?
   private static let sidebarSyncTTL: TimeInterval = 120
 #if os(macOS)
-  @AppStorage("sidebarTabCustomization") private var tabCustomization = TabViewCustomization()
   @Environment(\.openWindow) private var openWindow
 #endif
 
@@ -73,28 +60,48 @@ struct TabsNavigationView: View {
           navigationState.push(route)
         }
       }
-      .task { await loadSidebarChrome() }
-      .onChange(of: navigationState.selectedTab) { _, newTab in
-#if os(iOS)
-        if horizontalSizeClass != .regular, let tag = CompactPhoneTab(newTab)?.rawValue {
-          compactTabTag = tag
-        }
-#endif
-        guard !showSettings else { return }
+      .task(id: authState.phase) {
+        guard authState.phase == .signedIn else { return }
+        await loadSidebarChrome()
+      }
+      .onChange(of: navigationState.selectedTab) { _, _ in
+        guard authState.phase == .signedIn else { return }
         Task { await syncSidebarFolders() }
       }
       // DESIGN: offline / reachability banner when `networkMonitor.isOnline` flips false.
       .onChange(of: networkMonitor.isOnline) { _, _ in }
   }
 
-  /// Re-selecting the current tab pops that tab's stack to root (Apple Music /
-  /// Apple TV). `TabView` still calls the setter with the same value.
-  /// Selection must update synchronously — deferring leaves UIKit with a selected
-  /// `UITabBarItem` that has no matching VC yet and asserts on Library taps.
   private var tabSelection: Binding<NavigationTabs> {
     Binding(
-      get: { navigationState.selectedTab },
+      get: {
+#if os(macOS)
+        // Search is not a tab on macOS — TabView only knows browse destinations.
+        let tab = navigationState.selectedTab
+        if tab == .search || tab == .settings {
+          return navigationState.searchReturnTab ?? .home
+        }
+        return tab
+#else
+        navigationState.selectedTab
+#endif
+      },
       set: { newValue in
+#if os(macOS)
+        if navigationState.selectedTab == .search {
+          navigationState.selectBrowseTab(newValue)
+          return
+        }
+#endif
+        if newValue == .search {
+          if navigationState.selectedTab == .search {
+            navigationState.popToRoot(for: .search)
+          } else {
+            // Remember previous tab so Back can leave Search (toolbar / tab / filter jump).
+            navigationState.enterSearch()
+          }
+          return
+        }
         if newValue == navigationState.selectedTab {
           navigationState.popToRoot(for: newValue)
         } else {
@@ -108,262 +115,66 @@ struct TabsNavigationView: View {
 
   @ViewBuilder
   private var modernTabs: some View {
-#if os(tvOS)
-    tvSidebarTabs
-#elseif os(macOS)
-    macSidebarTabs
-#else
-    phonePadTabs
-#endif
-  }
-
-  // MARK: - tvOS (flat, profile first, circle icons)
-
-#if os(tvOS)
-  @ViewBuilder
-  private var tvSidebarTabs: some View {
-    if #available(tvOS 27.0, *) {
-      tvSidebarTabsWithProfileHeader
-    } else {
-      tvSidebarTabsWithProfileTab
-    }
-  }
-
-  /// tvOS 27+: profile row in the sidebar header — avatar, name, days on the trailing edge.
-  @available(tvOS 27.0, *)
-  @ViewBuilder
-  private var tvSidebarTabsWithProfileHeader: some View {
-    TabView(selection: tabSelection) {
-      tvBrowseTabs
-    }
-    .tabViewStyle(.sidebarAdaptable)
-    .tabViewSidebarHeader {
-      Button {
-        showSettings = true
-      } label: {
-        profileHeaderLabel
-      }
-      .buttonStyle(.plain)
-    }
-    .fullScreenCover(isPresented: $showSettings) {
-      settingsContent
-        .environmentObject(navigationState)
-        .environment(errorHandler)
-        .environmentObject(authState)
-    }
-  }
-
-  /// tvOS 26: no sidebar header API and no `Tab.badge` — profile is the first tab,
-  /// days ride in the title; Library count likewise.
-  @ViewBuilder
-  private var tvSidebarTabsWithProfileTab: some View {
-    TabView(selection: tabSelection) {
-      Tab(value: NavigationTabs.settings) {
-        settingsContent
-      } label: {
-        Label {
-          Text(profileTabTitle)
-        } icon: {
-          profileAvatar(size: 36)
-        }
-      }
-
-      tvBrowseTabs
-    }
-    .tabViewStyle(.sidebarAdaptable)
-  }
-
-  @TabContentBuilder<NavigationTabs>
-  private var tvBrowseTabs: some TabContent<NavigationTabs> {
-    Tab(value: NavigationTabs.search, role: .search) {
-      searchContent
-    } label: {
-      Label("Search", systemImage: "magnifyingglass")
-    }
-
-    Tab(value: NavigationTabs.home) {
-      homeContent
-    } label: {
-      Label("For You", systemImage: "play.fill")
-    }
-
-    Tab(value: NavigationTabs.movies) {
-      moviesContent
-    } label: {
-      Label("Movies", systemImage: "movieclapper")
-    }
-
-    Tab(value: NavigationTabs.series) {
-      seriesContent
-    } label: {
-      Label("Series", systemImage: "rectangle.stack")
-    }
-
-    Tab(value: NavigationTabs.library) {
-      libraryContent
-    } label: {
-      Label(libraryTabTitle, systemImage: "rectangle.stack.fill.badge.person.crop")
-    }
-  }
-
-  private var profileHeaderLabel: some View {
-    HStack(spacing: 12) {
-      profileAvatar(size: 36)
-      Text(profileDisplayName)
-        .lineLimit(1)
-      Spacer(minLength: 8)
-      if subscriptionDaysBadge > 0 {
-        Text("\(subscriptionDaysBadge)")
-           .font(.body.monospacedDigit())
-           .foregroundStyle(.secondary.opacity(0.5))
-//          .font(.subheadline)
-      }
-    }
-    .contentShape(Rectangle())
-  }
-
-  /// Name + remaining days when `Tab.badge` / header trailing slot isn't available.
-  private var profileTabTitle: String {
-    let name = profileDisplayName.trimmingCharacters(in: .whitespaces)
-    let display = name.isEmpty ? " " : name
-    return subscriptionDaysBadge > 0 ? "\(display)  \(subscriptionDaysBadge)" : display
-  }
-
-  private var libraryTabTitle: String {
-    let base = "Library".localized
-    return libraryBadgeCount > 0 ? "\(base)  \(libraryBadgeCount)" : base
-  }
-
-  private func tvTabLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
-    Label {
-      Text(title)
-    } icon: {
-      tvTabIcon(systemImage)
-    }
-  }
-
-  private func tvTabLabel(_ title: String, systemImage: String) -> some View {
-    Label {
-      Text(title)
-    } icon: {
-      tvTabIcon(systemImage)
-    }
-  }
-
-  private func tvTabIcon(_ systemImage: String) -> some View {
-    Image(systemName: systemImage)
-      .font(.body.weight(.semibold))
-      .foregroundStyle(.primary)
-      .frame(width: 36, height: 36)
-      .background(Circle().fill(Color.secondary.opacity(0.35)))
-  }
-#endif
-
-  // MARK: - macOS (sections + footer + customization)
-
 #if os(macOS)
-  @ViewBuilder
-  private var macSidebarTabs: some View {
-    TabView(selection: tabSelection) {
-      TabSection("Browse") {
-        Tab(value: NavigationTabs.search, role: .search) {
-          searchContent
-        } label: {
-          Label("Search", systemImage: "magnifyingglass")
-        }
-        .customizationID("tab.search")
-
-        Tab("For You", systemImage: "play.fill", value: NavigationTabs.home) {
-          homeContent
-        }
-        .customizationID("tab.home")
-
-        Tab("Movies", systemImage: "movieclapper", value: NavigationTabs.movies) {
-          moviesContent
-        }
-        .customizationID("tab.movies")
-
-        Tab("Series", systemImage: "rectangle.stack", value: NavigationTabs.series) {
-          seriesContent
-        }
-        .customizationID("tab.series")
-      }
-
-      TabSection("Library") {
-        Tab("Watchlist", systemImage: "text.append", value: NavigationTabs.watchlist) {
-          WatchlistView()
-        }
-        .customizationID("tab.watchlist")
-        .badge(watchlistBadgeCount)
-
-        Tab("History", systemImage: "memories", value: NavigationTabs.recentlyWatched) {
-          RecentlyWatchedView()
-        }
-        .customizationID("tab.history")
-
-        if FeatureFlags.allBookmarksEnabled {
-          Tab("All Bookmarks", systemImage: "bookmark", value: NavigationTabs.bookmarks) {
-            savedContent
-          }
-          .customizationID("tab.bookmarks")
-          .badge(bookmarksBadgeCount)
-        }
-
-        if FeatureFlags.downloadsEnabled {
-          Tab("Downloads", systemImage: "laptopcomputer.and.arrow.down", value: NavigationTabs.downloads) {
-            downloadsContent
-          }
-          .customizationID("tab.downloads")
-          .badge(downloadsBadgeCount)
-        }
-      }
-
-      TabSection("Folders") {
-        ForEach(sidebarFolders, id: \.id) { folder in
-          Tab(folder.title, systemImage: "folder", value: NavigationTabs.bookmark(folder.id)) {
-            BookmarkFolderTabView(bookmark: folder)
-          }
-          .customizationID("tab.folder.\(folder.id)")
-          .badge(Int(folder.count) ?? 0)
-        }
-      }
-    }
-    .tabViewStyle(.sidebarAdaptable)
-    .tabViewCustomization($tabCustomization)
-    .tabViewSidebarBottomBar {
-      Button {
-        openWindow(id: SettingsWindow.id)
-      } label: {
-        profileLabel(avatarSize: 20)
-      }
-      .buttonStyle(.borderless)
-      .badge(subscriptionDaysBadge)
-    }
-  }
-#endif
-
-  // MARK: - iOS / iPad (Library combined; Downloads own tab)
-
-#if os(iOS)
-  @ViewBuilder
-  private var phonePadTabs: some View {
+    macShell
+#elseif os(tvOS)
+    tvTabBar
+#elseif os(iOS)
     if horizontalSizeClass == .regular {
-      phonePadSidebarTabs
+      padTabBar
     } else {
       phoneCompactTabBar
     }
+#endif
   }
 
-  /// iPad — new `Tab` API + sidebar. Badges / search role are fine here.
-  private var phonePadSidebarTabs: some View {
-    TabView(selection: tabSelection) {
-      Tab(value: NavigationTabs.search, role: .search) {
+#if os(macOS)
+  /// Browse tabs; trailing toolbar search lives on each tab's `NavigationStack` via
+  /// `macToolbarSearch()` — never on `TabView` (that yields the giant under-tab field).
+  /// Return in the field opens the Search results surface.
+  private var macShell: some View {
+    ZStack {
+      TabView(selection: tabSelection) {
+        Tab("Home", systemImage: "house.fill", value: NavigationTabs.home) {
+          homeContent
+        }
+        Tab("Movies", systemImage: "movieclapper", value: NavigationTabs.movies) {
+          moviesContent
+        }
+        Tab("Shows", systemImage: "rectangle.stack", value: NavigationTabs.series) {
+          seriesContent
+        }
+        Tab("Library", systemImage: "rectangle.stack.badge.person.crop", value: NavigationTabs.library) {
+          libraryContent
+        }
+        .badge(libraryBadgeCount)
+      }
+      .tabViewStyle(.tabBarOnly)
+      .opacity(navigationState.selectedTab == .search ? 0 : 1)
+      .allowsHitTesting(navigationState.selectedTab != .search)
+
+      if navigationState.selectedTab == .search {
         searchContent
-      } label: {
-        Label("Search", systemImage: "magnifyingglass")
+          .background(Color.KinoPub.background)
+      }
+    }
+    .onAppear {
+      if navigationState.selectedTab == .settings {
+        navigationState.selectedTab = .home
+      }
+    }
+  }
+#endif
+
+#if os(tvOS)
+  /// Top tab bar — Search is first (left of Home), not `role: .search` (that pins trailing).
+  private var tvTabBar: some View {
+    TabView(selection: tabSelection) {
+      Tab("Search", systemImage: "magnifyingglass", value: NavigationTabs.search) {
+        searchContent
       }
 
-      Tab("For You", systemImage: "play.fill", value: NavigationTabs.home) {
+      Tab("Home", systemImage: "house.fill", value: NavigationTabs.home) {
         homeContent
       }
 
@@ -371,7 +182,35 @@ struct TabsNavigationView: View {
         moviesContent
       }
 
-      Tab("Series", systemImage: "rectangle.stack", value: NavigationTabs.series) {
+      Tab("Shows", systemImage: "rectangle.stack", value: NavigationTabs.series) {
+        seriesContent
+      }
+
+      Tab("Library", systemImage: "rectangle.stack.badge.person.crop", value: NavigationTabs.library) {
+        libraryContent
+      }
+
+      Tab("Settings", systemImage: "gearshape", value: NavigationTabs.settings) {
+        settingsContent
+      }
+    }
+    .tabViewStyle(.tabBarOnly)
+  }
+#endif
+
+#if os(iOS)
+  /// iPad top tab bar — Search pinned trailing via `.search` role.
+  private var padTabBar: some View {
+    TabView(selection: tabSelection) {
+      Tab("Home", systemImage: "house.fill", value: NavigationTabs.home) {
+        homeContent
+      }
+
+      Tab("Movies", systemImage: "movieclapper", value: NavigationTabs.movies) {
+        moviesContent
+      }
+
+      Tab("Shows", systemImage: "rectangle.stack", value: NavigationTabs.series) {
         seriesContent
       }
 
@@ -380,124 +219,62 @@ struct TabsNavigationView: View {
       }
       .badge(libraryBadgeCount)
 
-      if FeatureFlags.downloadsEnabled {
-        Tab("Downloads", systemImage: "laptopcomputer.and.arrow.down", value: NavigationTabs.downloads) {
-          downloadsContent
-        }
-        .badge(downloadsBadgeCount)
-      }
-
-      Tab("Profile", systemImage: "person.crop.circle", value: NavigationTabs.settings) {
+      Tab("Settings", systemImage: "gearshape", value: NavigationTabs.settings) {
         settingsContent
       }
       .badge(subscriptionDaysBadge)
+
+      Tab(value: NavigationTabs.search, role: .search) {
+        searchContent
+      } label: {
+        Label("Search", systemImage: "magnifyingglass")
+      }
     }
-    .tabViewStyle(.sidebarAdaptable)
+    .tabViewStyle(.tabBarOnly)
   }
 
-  /// iPhone — classic `tabItem`/`tag` tab bar. The iOS 18+ `Tab { }` path hosts
-  /// `SwiftUI.UIKitTabBarController`, which asserts on Phone when selecting Library
-  /// ("No view controller matches the UITabBarItem"). Overflow goes to system More.
+  /// iPhone bottom bar — content tabs + pinned trailing Search (`Tab(role: .search)`).
   private var phoneCompactTabBar: some View {
-    TabView(selection: compactTabSelection) {
-      searchContent
-        .tabItem { Label("Search", systemImage: "magnifyingglass") }
-        .tag(CompactPhoneTab.search.rawValue)
-
-      homeContent
-        .tabItem { Label("For You", systemImage: "play.fill") }
-        .tag(CompactPhoneTab.home.rawValue)
-
-      moviesContent
-        .tabItem { Label("Movies", systemImage: "movieclapper") }
-        .tag(CompactPhoneTab.movies.rawValue)
-
-      seriesContent
-        .tabItem { Label("Series", systemImage: "rectangle.stack") }
-        .tag(CompactPhoneTab.series.rawValue)
-
-      libraryContent
-        .tabItem { Label("Library", systemImage: "rectangle.stack.badge.person.crop") }
-        .tag(CompactPhoneTab.library.rawValue)
-
-      if FeatureFlags.downloadsEnabled {
-        downloadsContent
-          .tabItem { Label("Downloads", systemImage: "laptopcomputer.and.arrow.down") }
-          .tag(CompactPhoneTab.downloads.rawValue)
+    TabView(selection: tabSelection) {
+      Tab("Home", systemImage: "house.fill", value: NavigationTabs.home) {
+        homeContent
       }
 
-      settingsContent
-        .tabItem { Label("Profile", systemImage: "person.crop.circle") }
-        .tag(CompactPhoneTab.settings.rawValue)
-    }
-  }
-
-  private var compactTabSelection: Binding<Int> {
-    Binding(
-      get: { compactTabTag },
-      set: { newValue in
-        if newValue == compactTabTag {
-          if let tab = CompactPhoneTab(rawValue: newValue) {
-            navigationState.popToRoot(for: tab.navigationTab)
-          }
-        } else {
-          compactTabTag = newValue
-          if let tab = CompactPhoneTab(rawValue: newValue) {
-            navigationState.selectedTab = tab.navigationTab
-          }
-        }
+      Tab("Movies", systemImage: "movieclapper", value: NavigationTabs.movies) {
+        moviesContent
       }
-    )
-  }
 
-  /// Stable Int-backed tabs for the classic iPhone tab bar.
-  private enum CompactPhoneTab: Int {
-    case search = 0
-    case home = 1
-    case movies = 2
-    case series = 3
-    case library = 4
-    case downloads = 5
-    case settings = 6
-
-    var navigationTab: NavigationTabs {
-      switch self {
-      case .search: return .search
-      case .home: return .home
-      case .movies: return .movies
-      case .series: return .series
-      case .library: return .library
-      case .downloads: return .downloads
-      case .settings: return .settings
+      Tab("Shows", systemImage: "rectangle.stack", value: NavigationTabs.series) {
+        seriesContent
       }
-    }
 
-    init?(_ tab: NavigationTabs) {
-      switch tab {
-      case .search: self = .search
-      case .home: self = .home
-      case .movies: self = .movies
-      case .series: self = .series
-      case .library, .watchlist, .recentlyWatched, .bookmarks, .bookmark: self = .library
-      case .downloads: self = .downloads
-      case .settings: self = .settings
+      Tab("Library", systemImage: "rectangle.stack.badge.person.crop", value: NavigationTabs.library) {
+        libraryContent
+      }
+      .badge(libraryBadgeCount)
+
+      Tab("Settings", systemImage: "gearshape", value: NavigationTabs.settings) {
+        settingsContent
+      }
+      .badge(subscriptionDaysBadge)
+
+      Tab(value: NavigationTabs.search, role: .search) {
+        searchContent
+      } label: {
+        Label("Search", systemImage: "magnifyingglass")
       }
     }
   }
 #endif
 
-  // MARK: - Profile chrome
+  // MARK: - Profile chrome (badges / Settings tab)
 
-  /// Prefer display name, then username — never "Settings", which made the row
-  /// look like a gear-less settings button when the avatar failed to resolve.
-  /// With nothing loaded at all (offline cold start, no cache) it's "Profile".
   private var profileDisplayName: String {
     userData?.profile.name?.nilIfEmpty
       ?? userData?.username.nilIfEmpty
       ?? "Profile".localized
   }
 
-  /// Whole days left on the subscription — shown as a trailing sidebar badge.
   private var subscriptionDaysBadge: Int {
     guard let days = userData?.subscription.days else { return 0 }
     return max(0, Int(days.rounded(.down)))
@@ -509,51 +286,6 @@ struct TabsNavigationView: View {
 
   private var bookmarksBadgeCount: Int {
     sidebarFolders.reduce(0) { $0 + (Int($1.count) ?? 0) }
-  }
-
-  private func profileLabel(avatarSize: CGFloat) -> some View {
-    Label {
-      Text(profileDisplayName)
-    } icon: {
-      profileAvatar(size: avatarSize)
-    }
-  }
-
-  @ViewBuilder
-  private func profileAvatar(size: CGFloat) -> some View {
-    if let avatarImage {
-      avatarImage
-        .resizable()
-        .scaledToFill()
-        .frame(width: size, height: size)
-        .clipShape(Circle())
-    } else {
-      initialsAvatar(size: size)
-    }
-  }
-
-  private func initialsAvatar(size: CGFloat) -> some View {
-    ZStack {
-      Circle().fill(Color.secondary.opacity(0.35))
-      if profileInitials.isEmpty {
-        Image(systemName: "person.fill")
-          .font(.system(size: size * 0.45, weight: .semibold))
-          .foregroundStyle(Color.primary)
-      } else {
-        Text(profileInitials)
-          .font(.system(size: size * 0.4, weight: .semibold))
-          .foregroundStyle(Color.primary)
-      }
-    }
-    .frame(width: size, height: size)
-  }
-
-  private var profileInitials: String {
-    let name = profileDisplayName.trimmingCharacters(in: .whitespaces)
-    guard !name.isEmpty else { return "" }
-    let parts = name.split(separator: " ").prefix(2)
-    let letters = parts.compactMap { $0.first.map(String.init) }
-    return letters.isEmpty ? String(name.prefix(1)).uppercased() : letters.joined().uppercased()
   }
 
   // MARK: - Tab roots
@@ -581,7 +313,7 @@ struct TabsNavigationView: View {
   }
 
   private var seriesContent: some View {
-    CatalogView(title: "Series",
+    CatalogView(title: "Shows",
                 tab: .series,
                 path: \.seriesRoutes,
                 catalog: MediaCatalog(itemsService: appContext.contentService,
@@ -596,23 +328,15 @@ struct TabsNavigationView: View {
                                                 errorHandler: errorHandler))
   }
 
-  private var savedContent: some View {
-    BookmarksView(catalog: BookmarksCatalog(itemsService: appContext.contentService,
-                                            authState: authState,
-                                            errorHandler: errorHandler))
-  }
-
-  private var downloadsContent: some View {
-    DownloadsView(catalog: DownloadsCatalog(downloadsDatabase: appContext.downloadedFilesDatabase, downloadManager: appContext.downloadManager))
-  }
-
+#if !os(macOS)
   private var settingsContent: some View {
     ProfileView(model: ProfileModel(userService: appContext.userService,
                                     errorHandler: errorHandler,
                                     authState: authState))
   }
+#endif
 
-  // MARK: - Sidebar data
+  // MARK: - Badge / profile data
 
   private func loadSidebarChrome() async {
     if avatarImage == nil, let cachedAvatar = UserProfileCache.shared.loadAvatar() {
@@ -624,22 +348,13 @@ struct TabsNavigationView: View {
     }()
     async let foldersTask = fetchFolders()
     async let watchlistTask = fetchWatchlistCount()
-#if !os(tvOS)
-    let downloads = FeatureFlags.downloadsEnabled
-      ? (appContext.downloadedFilesDatabase.readData() ?? []).count
-      : 0
-#endif
 
-    // A failed fetch must not wipe the cached profile the row is already showing.
     if let freshUser = await userTask {
       userData = freshUser
       UserProfileCache.shared.save(user: freshUser)
     }
     sidebarFolders = await foldersTask
     watchlistBadgeCount = await watchlistTask
-#if !os(tvOS)
-    downloadsBadgeCount = downloads
-#endif
     sidebarSyncedAt = Date()
     await loadAvatarImage(from: userData?.profile.avatar)
   }
@@ -650,18 +365,8 @@ struct TabsNavigationView: View {
     async let watchlistTask = fetchWatchlistCount()
     let folders = await foldersTask
     let watchlist = await watchlistTask
-#if !os(tvOS)
-    let downloads = FeatureFlags.downloadsEnabled
-      ? (appContext.downloadedFilesDatabase.readData() ?? []).count
-      : 0
-#endif
-    // Only publish when values change — rewriting tab `.badge` during a tab switch
-    // recreates `UITabBarItem`s and can assert on iPhone.
     if folders != sidebarFolders { sidebarFolders = folders }
     if watchlist != watchlistBadgeCount { watchlistBadgeCount = watchlist }
-#if !os(tvOS)
-    if downloads != downloadsBadgeCount { downloadsBadgeCount = downloads }
-#endif
     sidebarSyncedAt = Date()
   }
 
@@ -685,7 +390,6 @@ struct TabsNavigationView: View {
 
   private func loadAvatarImage(from urlString: String?) async {
     guard let urlString, !urlString.isEmpty, let url = URL(string: urlString) else {
-      // The freshest profile says there is no avatar — drop the cached one too.
       avatarImage = nil
       UserProfileCache.shared.clearAvatar()
       return
@@ -696,8 +400,7 @@ struct TabsNavigationView: View {
       avatarImage = image
       UserProfileCache.shared.saveAvatar(data)
     } catch {
-      // Keep whatever's on screen (possibly the disk-cached copy) — a failed
-      // avatar download is not a reason to blank the row.
+      // Keep whatever's on screen.
     }
   }
 
@@ -717,6 +420,19 @@ private extension String {
     isEmpty ? nil : self
   }
 }
+
+/*
+ PARKED — sidebarAdaptable / locked-sidebar experiments (revisit with docs + device checks)
+
+ Do not re-enable until sidebar toggle / hide / edit are solved the system way:
+ - TabView(.sidebarAdaptable) + TabSection + tabViewSidebarBottomBar / Header
+ - TabViewCustomization (macOS hide/reorder) — intentionally omitted before; still open
+ - .toolbar(removing: .sidebarToggle) + CommandGroup(replacing: .sidebar)
+ - NavigationSplitView + List(selection:) / custom Button rows — rejected vs apple-native-design
+ - Home segmented For You/Movies/Series instead of separate tabs
+
+ Working prototypes: Views/UILab/UILabRoot.swift (adaptable vs split).
+*/
 
 struct TabsNavigationView_Previews: PreviewProvider {
   static var previews: some View {

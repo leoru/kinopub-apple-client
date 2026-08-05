@@ -19,39 +19,60 @@ struct RootView: View {
 #endif
 
   var body: some View {
-    // Swap entirely (not overlay): a live catalog behind the code keeps loading artwork and
-    // cycling the hero through the material, and its unauthorized requests toast on a screen
-    // you cannot leave. No animated teardown — UIKit's TabView asserts when sidebarAdaptable
-    // tabs are removed mid-update ("No view controller matches the UITabBarItem").
-    //
     // `.resolving` is a blank splash on purpose: mounting Tabs with a Keychain token that
     // then fails refresh is what used to DDoS `/v1/items/*` + spam 401→refresh.
-    Group {
-      switch authState.phase {
-      case .resolving:
-        ZStack {
-          Color.KinoPub.background.ignoresSafeArea()
-          ProgressView()
-        }
-      case .signedOut:
-        AuthView(model: AuthModel(authService: appContext.authService, authState: authState))
-      case .signedIn:
-        TabsNavigationView()
+    //
+    // iOS/tvOS still swap Auth↔Tabs entirely — a live catalog behind the code used to
+    // keep loading artwork, and UIKit's TabView asserts when tabs are removed mid-update.
+    //
+    // macOS keeps the tab shell mounted and presents Auth as a non-dismissible sheet so
+    // the window chrome does not jump from a title-less auth layout into the library.
+    rootContent
+      .task {
+        await authState.check()
       }
-    }
-    .task {
-      await authState.check()
-    }
 #if os(macOS)
-    // `NavigationState.push` redirects `.player` / `.trailerPlayer` routes into
-    // `PlaybackWindowState` instead of a stack; this is the one place holding the
-    // `openWindow` environment action needed to actually raise that window.
-    .onChange(of: navigationState.playerWindowRequestID) { _, requestID in
-      guard requestID != nil else { return }
-      openWindow(id: PlaybackWindowState.windowID)
-    }
+      .sheet(isPresented: macAuthSheetPresented) {
+        AuthView(model: AuthModel(authService: appContext.authService, authState: authState))
+          .frame(minWidth: 440, idealWidth: 520, minHeight: 360, idealHeight: 400)
+          .interactiveDismissDisabled()
+      }
+      .onChange(of: navigationState.playerWindowRequestID) { _, requestID in
+        guard requestID != nil else { return }
+        openWindow(id: PlaybackWindowState.windowID)
+      }
 #endif
   }
+
+  @ViewBuilder
+  private var rootContent: some View {
+    switch authState.phase {
+    case .resolving:
+      ZStack {
+        Color.KinoPub.background.ignoresSafeArea()
+        ProgressView()
+      }
+#if os(macOS)
+    case .signedOut, .signedIn:
+      TabsNavigationView()
+#else
+    case .signedOut:
+      AuthView(model: AuthModel(authService: appContext.authService, authState: authState))
+    case .signedIn:
+      TabsNavigationView()
+#endif
+    }
+  }
+
+#if os(macOS)
+  /// Sheet stays up for the whole signed-out phase; dismiss is auth success only.
+  private var macAuthSheetPresented: Binding<Bool> {
+    Binding(
+      get: { authState.phase == .signedOut },
+      set: { _ in }
+    )
+  }
+#endif
 }
 
 struct RootView_Previews: PreviewProvider {

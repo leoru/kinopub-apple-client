@@ -41,6 +41,9 @@ struct MainView: View {
       // Liquid Glass with the scroll-edge effect.
       rowsView
         .platformNavigationTitle("Home")
+#if os(macOS)
+        .macToolbarSearch()
+#endif
         .navigationDestination(for: Route.self) { route in
           RouteDestination(route: route,
                            linkProvider: AppRoutesLinkProvider(),

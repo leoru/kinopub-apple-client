@@ -19,7 +19,11 @@ struct SearchView: View {
   @StateObject private var cardMenu = MediaCardMenuCoordinator()
   /// What the search field shows. When this matches `filterFieldAnchor`, the
   /// catalog is filter-driven (query stays empty so the filter bar stays up).
+#if os(macOS)
+  // Bound to the shell's always-visible toolbar field (`NavigationState.macSearchFieldText`).
+#else
   @State private var searchFieldText = ""
+#endif
   /// The label we stuffed into the field for a filter jump — editing away from
   /// it switches to a normal text search.
   @State private var filterFieldAnchor: String?
@@ -77,30 +81,52 @@ struct SearchView: View {
               tvBackRow
             }
 #endif
-            // Filters scroll away with the grid — pinning them above a remnant
-            // GeometryReader was eating half the screen and delaying `.searchable`.
+            // Filters scroll away with the grid on iOS/tvOS. On macOS they live in
+            // the toolbar accessory bar under the principal search field.
+#if !os(macOS)
             if !catalog.isSearching {
               LibraryFiltersBar(catalog: catalog)
             }
+#endif
           }
         }
       }
+#if os(macOS)
+      // Finder/Photos: compact trailing toolbar field + suggestion menu; not under-tab chrome.
+      .macToolbarSearch()
+      .navigationTitle("Search")
+#else
       .searchable(text: $searchFieldText, placement: .automatic)
       .platformNavigationTitle(navigationTitleText)
-//      .background(Color.KinoPub.background)
-#if !os(tvOS)
+#endif
       .toolbar {
-        if navigationState.canReturnFromSearch {
-          ToolbarItem(placement: .cancellationAction) {
+#if os(macOS)
+        // Filters under the trailing search field (accessory), not icon menus.
+        ToolbarItem(placement: .accessoryBar(id: MacToolbarChrome.accessoryID)) {
+          if !catalog.isSearching {
+            LibraryFiltersBar(catalog: catalog)
+              .frame(maxWidth: .infinity)
+          } else {
+            Color.clear
+              .frame(height: MacToolbarChrome.accessoryMinHeight)
+              .frame(maxWidth: .infinity)
+          }
+        }
+#endif
+#if !os(tvOS)
+        // Leave Search → previous tab. Only at Search root so NavigationStack can own
+        // system back/forward once a title is pushed. (tvOS uses `tvBackRow` in-content.)
+        if navigationState.canReturnFromSearch && navigationState.searchRoutes.isEmpty {
+          ToolbarItem(placement: searchReturnPlacement) {
             Button {
               navigationState.returnFromSearch()
             } label: {
-              Label("Back", systemImage: "chevron.backward")
+              Label(backLabel, systemImage: "chevron.backward")
             }
           }
         }
-      }
 #endif
+      }
       .navigationDestination(for: Route.self) { route in
         RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
       }
@@ -121,11 +147,26 @@ struct SearchView: View {
         navigationState.pendingSearch = nil
         applyPending(pending)
       }
+#if os(macOS)
+      .onChange(of: navigationState.macSearchFieldText) { _, newValue in
+        handleSearchFieldChange(newValue)
+      }
+#else
       .onChange(of: searchFieldText) { _, newValue in
         handleSearchFieldChange(newValue)
       }
+#endif
     }
     .navigationStackActive(for: .search, selected: navigationState.selectedTab)
+  }
+
+  private var searchReturnPlacement: ToolbarItemPlacement {
+#if os(macOS)
+    // Leading toolbar — same strip as system back/forward once the stack has depth.
+    .navigation
+#else
+    .topBarLeading
+#endif
   }
 
   private var tvBackRow: some View {
@@ -155,7 +196,11 @@ struct SearchView: View {
 
   private func applyPending(_ pending: PendingSearch) {
     filterFieldAnchor = pending.title
+#if os(macOS)
+    navigationState.macSearchFieldText = pending.title
+#else
     searchFieldText = pending.title
+#endif
     navigationTitleText = pending.title
     catalog.applyExternalFilter(pending.filter)
   }

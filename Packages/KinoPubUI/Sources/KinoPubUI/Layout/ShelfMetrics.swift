@@ -24,10 +24,10 @@ public struct ShelfMetrics: Equatable, Sendable {
     let base: Self = switch width {
     case ..<420:  .init(inset: 20, gutter: 20, columns: 3)
     case ..<700:  .init(inset: 40, gutter: 20, columns: 4)
-    case ..<1000: .init(inset: 40, gutter: 20, columns: 5)
-    case ..<1200: .init(inset: 40, gutter: 20, columns: 6)
-    case ..<1400: .init(inset: 40, gutter: 20, columns: 7)
-    case ..<1600: .init(inset: 40, gutter: 20, columns: 8)
+    case ..<1000: .init(inset: 40, gutter: 28, columns: 5)
+    case ..<1200: .init(inset: 40, gutter: 28, columns: 6)
+    case ..<1400: .init(inset: 40, gutter: 32, columns: 7)
+    case ..<1600: .init(inset: 40, gutter: 32, columns: 8)
     default:      .init(inset: 40, gutter: 20, columns: 6)
     }
     guard typeSize.isAccessibilitySize else { return base }

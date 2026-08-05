@@ -35,14 +35,6 @@ struct CatalogView: View {
     _catalog = StateObject(wrappedValue: catalog())
   }
 
-  var toolbarItemPlacement: ToolbarItemPlacement {
-#if os(iOS) || os(tvOS)
-    .topBarTrailing
-#elseif os(macOS)
-    .navigation
-#endif
-  }
-
   var body: some View {
     @Bindable var errorHandler = errorHandler
     NavigationStack(path: Binding(get: { navigationState[keyPath: path] },
@@ -51,14 +43,19 @@ struct CatalogView: View {
         .platformNavigationTitle(title)
         .background(Color.KinoPub.background)
         .toolbar {
-          ToolbarItem(placement: toolbarItemPlacement) {
+          // Not `.primaryAction` on macOS — that placement nests inside `.searchable`
+          // and makes the search field look custom (sort glyph in the field).
+          ToolbarItem(placement: sortToolbarPlacement) {
             Button {
               showShortCutPicker = true
             } label: {
-              Image(systemName: "arrow.up.arrow.down")
+              Label("Sort", systemImage: "arrow.up.arrow.down")
             }
           }
         }
+#if os(macOS)
+        .macToolbarSearch()
+#endif
         .sheet(isPresented: $showShortCutPicker) {
           ShortcutSelectionView(shortcut: $catalog.shortcut, mediaType: $catalog.contentType)
         }
@@ -77,6 +74,14 @@ struct CatalogView: View {
     }
     .environment(\.zoomTransitionNamespace, zoomNamespace)
     .navigationStackActive(for: tab, selected: navigationState.selectedTab)
+  }
+
+  private var sortToolbarPlacement: ToolbarItemPlacement {
+#if os(iOS) || os(tvOS)
+    .topBarTrailing
+#elseif os(macOS)
+    .automatic
+#endif
   }
 
   @ViewBuilder

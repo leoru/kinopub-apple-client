@@ -50,6 +50,9 @@ struct KinoPubAppleClientApp: App {
         .environmentObject(authState)
         .environment(errorHandler)
         .environmentObject(networkMonitor)
+#if os(macOS)
+        .environment(windowSettings)
+#endif
         // Dark-only until light is a deliberate pass (modernization Phase 0).
         // Info.plist UIUserInterfaceStyle=Dark covers system chrome; this covers SwiftUI.
         .preferredColorScheme(.dark)
@@ -74,6 +77,8 @@ struct KinoPubAppleClientApp: App {
 #if os(macOS)
     .windowResizability(.contentSize)
     .defaultSize(width: WindowSize.macosDefault.width, height: WindowSize.macosDefault.height)
+    // Unified toolbar — system back/forward + trailing search own the chrome with the tab bar.
+    .windowToolbarStyle(.unified(showsTitle: false))
     // "New Window" was the File menu's only item, so removing it drops the whole
     // File menu — expected for now. A second library window would duplicate
     // NavigationState, AuthState, etc. per-scene in ways the app doesn't support.
@@ -86,6 +91,9 @@ struct KinoPubAppleClientApp: App {
       UILabCommands()
 #endif
       CommandGroup(replacing: .newItem) { }
+      // Keep for when `.sidebarAdaptable` returns — hide View → Hide Sidebar.
+      // Harmless with classic `.tabBarOnly` (no sidebar chrome).
+      CommandGroup(replacing: .sidebar) { }
       // Into the system View menu — `CommandMenu("View")` would add a second View.
       CommandGroup(after: .toolbar) {
         Divider()

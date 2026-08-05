@@ -28,6 +28,9 @@ struct LibraryView: View {
       content
         .platformNavigationTitle("Library")
         .background(Color.KinoPub.background)
+#if os(macOS)
+        .macToolbarSearch()
+#endif
         .task {
           cardMenu.bind(errorHandler: errorHandler)
           await catalog.fetch()

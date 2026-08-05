@@ -15,8 +15,15 @@ struct PendingSearch: Equatable {
   var title: String
 }
 
+/*
+ PARKED — HomeBrowseSegment (macOS sidebar Home + For You/Movies/Series segmented).
+ Only needed if we revive sidebarAdaptable / locked Home without Movies/Shows tabs.
+ enum HomeBrowseSegment: String, CaseIterable, Identifiable, Hashable {
+   case forYou, movies, series
+ }
+*/
+
 class NavigationState: ObservableObject {
-  @Published var columnVisibility = NavigationSplitViewVisibility.automatic
   @Published var selectedTab: NavigationTabs = .home
   @Published var mainRoutes: [Route] = []
   @Published var searchRoutes: [Route] = []
@@ -32,11 +39,17 @@ class NavigationState: ObservableObject {
   @Published var pendingSearch: PendingSearch?
   /// Tab to restore when the user backs out of a filter-driven Search jump.
   @Published private(set) var searchReturnTab: NavigationTabs?
+#if os(macOS)
+  /// Shared with the always-visible trailing toolbar search field (Finder/Photos style).
+  @Published var macSearchFieldText = ""
+  /// Recent queries for the searchable suggestion menu (Photos-style dropdown).
+  @Published private(set) var macSearchRecents: [String] = MacSearchRecentsStore.load()
+#endif
 
 #if os(macOS)
   /// Bumped instead of appending whenever `push` redirects a `.player` / `.trailerPlayer`
   /// route to the dedicated window (see `push`). `RootView` holds the `openWindow`
-  /// environment action and observes this to actually open it — `NavigationState` is a
+  /// environment action and observes this to actually raise that window — `NavigationState` is a
   /// plain `ObservableObject`, not a view, so it cannot call `openWindow` itself. A fresh
   /// UUID on every redirect makes a repeat request for the same item still fire the
   /// observer.
@@ -52,19 +65,78 @@ class NavigationState: ObservableObject {
     }
     pendingSearch = PendingSearch(filter: filter, title: title)
     searchRoutes = []
+#if os(macOS)
+    macSearchFieldText = title
+    rememberMacSearchRecent(title)
+#endif
     selectedTab = .search
   }
 
+  /// Focus the search surface (toolbar field / Search tab) without a preselected filter.
+  func enterSearch() {
+    if selectedTab != .search {
+      searchReturnTab = selectedTab
+    }
+    selectedTab = .search
+  }
+
+#if os(macOS)
+  /// Finder/Photos pattern: typing stays on the current tab; Return opens Search results.
+  func submitToolbarSearch() {
+    let query = macSearchFieldText.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !query.isEmpty else { return }
+    rememberMacSearchRecent(query)
+    enterSearch()
+  }
+
+  func clearMacSearchRecents() {
+    macSearchRecents = []
+    MacSearchRecentsStore.save([])
+  }
+
+  private func rememberMacSearchRecent(_ raw: String) {
+    let query = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !query.isEmpty else { return }
+    var next = macSearchRecents.filter { $0.caseInsensitiveCompare(query) != .orderedSame }
+    next.insert(query, at: 0)
+    if next.count > MacSearchRecentsStore.limit {
+      next = Array(next.prefix(MacSearchRecentsStore.limit))
+    }
+    macSearchRecents = next
+    MacSearchRecentsStore.save(next)
+  }
+#endif
+
   /// Leave Search and restore the tab the filter jump came from.
   func returnFromSearch() {
-    guard let tab = searchReturnTab else { return }
+    guard let tab = searchReturnTab else {
+      selectedTab = .home
+#if os(macOS)
+      macSearchFieldText = ""
+#endif
+      return
+    }
     searchReturnTab = nil
     pendingSearch = nil
+#if os(macOS)
+    macSearchFieldText = ""
+#endif
     selectedTab = tab
   }
 
-  /// Clears the selected tab's stack so a second click on the same sidebar/tab
-  /// item returns to that tab's root (Apple Music / Apple TV behaviour).
+  /// Leave Search for an explicit browse tab (toolbar tab click while Search is up).
+  func selectBrowseTab(_ tab: NavigationTabs) {
+    searchReturnTab = nil
+    pendingSearch = nil
+    searchRoutes = []
+#if os(macOS)
+    macSearchFieldText = ""
+#endif
+    selectedTab = tab
+  }
+
+  /// Clears the selected tab's stack so a second click on the same tab
+  /// returns to that tab's root (Apple Music / Apple TV behaviour).
   func popToRoot(for tab: NavigationTabs) {
     switch tab {
     case .search:
@@ -139,11 +211,10 @@ class NavigationState: ObservableObject {
 }
 
 extension View {
-  /// On macOS, `.sidebarAdaptable` keeps every tab's view tree in the same
-  /// split-view column. Sibling `NavigationStack`s then steal `NavigationLink`s
-  /// (`MainRoutes` hits a `CatalogRoutes` stack and never activates). Only the
-  /// selected tab may expose a stack; classic tab bars already isolate content.
-  /// The tab root stays mounted so `@StateObject` catalogs survive switches.
+  /// Sibling `NavigationStack`s in one column can steal `NavigationLink`s when multiple
+  /// tab roots stay mounted. Only the selected tab may expose a stack; classic tab bars
+  /// already isolate content on most platforms. Keep the root mounted so `@StateObject`
+  /// catalogs survive switches.
   @ViewBuilder
   func navigationStackActive(for tab: NavigationTabs, selected: NavigationTabs) -> some View {
 #if os(macOS)
@@ -155,3 +226,57 @@ extension View {
 #endif
   }
 }
+
+#if os(macOS)
+enum MacSearchRecentsStore {
+  static let limit = 8
+  private static let key = "macSearchRecents"
+
+  static func load() -> [String] {
+    UserDefaults.standard.stringArray(forKey: key) ?? []
+  }
+
+  static func save(_ values: [String]) {
+    UserDefaults.standard.set(values, forKey: key)
+  }
+}
+
+extension View {
+  /// Finder/Photos: compact trailing toolbar search on a `NavigationStack` (never on
+  /// `TabView` — that renders a giant under-tab field). Use `placement: .toolbar`
+  /// (probe-confirmed on macOS 26/27 with `.tabBarOnly`). Suggestions open as a menu
+  /// under the field; Return opens the Search results surface.
+  func macToolbarSearch() -> some View {
+    modifier(MacToolbarSearchModifier())
+  }
+}
+
+private struct MacToolbarSearchModifier: ViewModifier {
+  @EnvironmentObject private var navigationState: NavigationState
+
+  func body(content: Content) -> some View {
+    content
+      // Probe: `.toolbar` = compact trailing field beside `.tabBarOnly` tabs (Finder/Photos).
+      // `.automatic` / no placement on this shell can still stretch; `.toolbarPrincipal` is the giant center field.
+      .searchable(
+        text: $navigationState.macSearchFieldText,
+        placement: .toolbar,
+        prompt: "Search"
+      ) {
+        if !navigationState.macSearchRecents.isEmpty {
+          Section("Recents") {
+            ForEach(navigationState.macSearchRecents, id: \.self) { recent in
+              Text(recent).searchCompletion(recent)
+            }
+            Button("Clear") {
+              navigationState.clearMacSearchRecents()
+            }
+          }
+        }
+      }
+      .onSubmit(of: .search) {
+        navigationState.submitToolbarSearch()
+      }
+  }
+}
+#endif

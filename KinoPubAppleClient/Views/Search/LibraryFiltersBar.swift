@@ -7,8 +7,9 @@ import SwiftUI
 import KinoPubUI
 import KinoPubBackend
 
-/// Sort and filter dropdowns across the top of the library, as microiptv has them.
-/// Menus rather than sheets: one click to open, one to choose, no modal to dismiss.
+/// Sort and filter dropdowns — system `.glass` / `.glassProminent` capsules.
+/// On macOS Search they sit centered in the toolbar accessory bar under the
+/// trailing search field; on iOS/tvOS they scroll with the grid.
 ///
 /// DESIGN: `CatalogPeriod` (`LibraryFilter.period`) is wired into `/v1/items` — add a
 /// Period menu here when the filter chrome is designed (day/week/month/year).
@@ -22,41 +23,75 @@ struct LibraryFiltersBar: View {
     YearRange.decades(upTo: Calendar.current.component(.year, from: Date()))
   }
 
-  var body: some View {
-    ScrollView(.horizontal, showsIndicators: false) {
-      HStack(spacing: Self.spacing) {
-        LibrarySortMenu(catalog: catalog)
-        typeMenu
-        genreMenu
-        countryMenu
-        yearMenu
+  private var solidChrome: Bool {
+    reduceTransparency || contrast == .increased
+  }
 
-        if catalog.filter.hasActiveFilters {
-          Button {
-            catalog.clearFilters()
-          } label: {
-            Label("Clear", systemImage: "xmark")
-          }
-          .buttonStyle(.bordered)
-          .buttonBorderShape(.capsule)
-          .controlSize(Self.controlSize)
-        }
-      }
-      .controlSize(Self.controlSize)
-      .padding(.horizontal, Self.horizontalInset)
-      .padding(.vertical, Self.verticalPadding)
+  var body: some View {
+#if os(macOS)
+    // Centered glass chips under the trailing toolbar search (accessory bar).
+    HStack(spacing: 0) {
+      Spacer(minLength: 0)
+      filterChips
+      Spacer(minLength: 0)
     }
+    .frame(maxWidth: .infinity)
+#else
+    ScrollView(.horizontal, showsIndicators: false) {
+      filterChips
+        .padding(.horizontal, Self.horizontalInset)
+        .padding(.vertical, Self.verticalPadding)
+    }
+#endif
+  }
+
+  private var filterChips: some View {
+    HStack(spacing: Self.spacing) {
+      sortMenu
+      typeMenu
+      genreMenu
+      countryMenu
+      yearMenu
+
+      if catalog.filter.hasActiveFilters {
+        Button {
+          catalog.clearFilters()
+        } label: {
+          Label("Clear", systemImage: "xmark")
+        }
+        .modifier(LibraryFilterGlassStyle(isProminent: false, useSolid: solidChrome))
+      }
+    }
+#if os(macOS)
+    .padding(.horizontal, Self.horizontalInset)
+    .padding(.vertical, Self.verticalPadding)
+#endif
   }
 
   // MARK: - Menus
 
+  private var sortMenu: some View {
+    glassMenu(
+      label: LocalizedStringKey(catalog.filter.sort.titleKey),
+      icon: "arrow.up.arrow.down",
+      isActive: false
+    ) {
+      ForEach(MediaSortOrder.allCases) { order in
+        Button {
+          catalog.update { $0.sort = order }
+        } label: {
+          Self.checkmarkLabel(LocalizedStringKey(order.titleKey),
+                              selected: catalog.filter.sort == order)
+        }
+      }
+    }
+  }
+
   private var typeMenu: some View {
-    Self.filterMenu(
+    glassMenu(
       label: catalog.filter.contentType.map { LocalizedStringKey($0.title) } ?? "Type",
       icon: "square.grid.2x2",
-      isActive: catalog.filter.contentType != nil,
-      reduceTransparency: reduceTransparency,
-      highContrast: contrast == .increased
+      isActive: catalog.filter.contentType != nil
     ) {
       Button {
         catalog.update { $0.contentType = nil }
@@ -75,12 +110,10 @@ struct LibraryFiltersBar: View {
 
   private var genreMenu: some View {
     let selected = catalog.genres.first { $0.id == catalog.filter.genreID }
-    return Self.filterMenu(
+    return glassMenu(
       label: selected.map { LocalizedStringKey($0.title) } ?? "Genre",
       icon: "theatermasks",
-      isActive: catalog.filter.genreID != nil,
-      reduceTransparency: reduceTransparency,
-      highContrast: contrast == .increased
+      isActive: catalog.filter.genreID != nil
     ) {
       Button {
         catalog.update { $0.genreID = nil }
@@ -99,12 +132,10 @@ struct LibraryFiltersBar: View {
 
   private var countryMenu: some View {
     let selected = catalog.countries.first { $0.id == catalog.filter.countryID }
-    return Self.filterMenu(
+    return glassMenu(
       label: selected.map { LocalizedStringKey($0.title) } ?? "Country",
       icon: "globe",
-      isActive: catalog.filter.countryID != nil,
-      reduceTransparency: reduceTransparency,
-      highContrast: contrast == .increased
+      isActive: catalog.filter.countryID != nil
     ) {
       Button {
         catalog.update { $0.countryID = nil }
@@ -122,12 +153,10 @@ struct LibraryFiltersBar: View {
   }
 
   private var yearMenu: some View {
-    Self.filterMenu(
+    glassMenu(
       label: catalog.filter.years.map { LocalizedStringKey($0.title) } ?? "Years",
       icon: "calendar",
-      isActive: catalog.filter.years != nil,
-      reduceTransparency: reduceTransparency,
-      highContrast: contrast == .increased
+      isActive: catalog.filter.years != nil
     ) {
       Button {
         catalog.update { $0.years = nil }
@@ -146,8 +175,25 @@ struct LibraryFiltersBar: View {
 
   // MARK: - Building blocks
 
-  /// Shared Menu chrome — native bordered styles, with Reduce Transparency /
-  /// increased-contrast falling back to a solid prominent plate when active.
+  /// Same path as UI Lab `UILabGlassChipStyle` — glass on the Menu itself, not bordered.
+  @ViewBuilder
+  private func glassMenu<Content: View>(
+    label: LocalizedStringKey,
+    icon: String,
+    isActive: Bool,
+    @ViewBuilder content: () -> Content
+  ) -> some View {
+    Menu {
+      content()
+    } label: {
+      Label(label, systemImage: icon)
+        .labelStyle(.titleAndIcon)
+        .lineLimit(1)
+    }
+    .modifier(LibraryFilterGlassStyle(isProminent: isActive, useSolid: solidChrome))
+  }
+
+  /// Shared Menu chrome for person credits / call sites that still use the static API.
   @ViewBuilder
   static func filterMenu<Content: View>(
     label: LocalizedStringKey,
@@ -157,30 +203,19 @@ struct LibraryFiltersBar: View {
     highContrast: Bool = false,
     @ViewBuilder content: () -> Content
   ) -> some View {
-    let solidActive = isActive && (reduceTransparency || highContrast)
-    if isActive {
-      Menu {
-        content()
-      } label: {
-        Label(label, systemImage: icon).lineLimit(1)
-      }
-      .buttonStyle(.borderedProminent)
-      .buttonBorderShape(.capsule)
-      .tint(solidActive ? Color.KinoPub.accent : Color.KinoPub.accent)
-      .controlSize(controlSize)
-    } else {
-      Menu {
-        content()
-      } label: {
-        Label(label, systemImage: icon).lineLimit(1)
-      }
-      .buttonStyle(.bordered)
-      .buttonBorderShape(.capsule)
-      .controlSize(controlSize)
+    Menu {
+      content()
+    } label: {
+      Label(label, systemImage: icon)
+        .labelStyle(.titleAndIcon)
+        .lineLimit(1)
     }
+    .modifier(LibraryFilterGlassStyle(
+      isProminent: isActive,
+      useSolid: reduceTransparency || highContrast
+    ))
   }
 
-  /// Back-compat for `LibrarySortMenu` and person credits.
   @ViewBuilder
   static func menu<Content: View>(label: LocalizedStringKey,
                                   icon: String,
@@ -189,7 +224,6 @@ struct LibraryFiltersBar: View {
     filterMenu(label: label, icon: icon, isActive: isActive, content: content)
   }
 
-  /// Menus on tvOS don't mark the selected row themselves.
   static func checkmarkLabel(_ title: LocalizedStringKey, selected: Bool) -> some View {
     Label(title, systemImage: selected ? "checkmark" : "")
   }
@@ -199,7 +233,12 @@ struct LibraryFiltersBar: View {
   static let horizontalInset: CGFloat = 80
   static let verticalPadding: CGFloat = 16
   static let controlSize: ControlSize = .large
-  /// Kept for call sites that still pass `.font(LibraryFiltersBar.font)`.
+  static let font: Font = TypeScale.filterControl
+#elseif os(macOS)
+  static let spacing: CGFloat = 8
+  static let horizontalInset: CGFloat = 12
+  static let verticalPadding: CGFloat = 4
+  static let controlSize: ControlSize = .regular
   static let font: Font = TypeScale.filterControl
 #else
   static let spacing: CGFloat = 10
@@ -210,16 +249,59 @@ struct LibraryFiltersBar: View {
 #endif
 }
 
+/// Glass chip styling — mirrors UI Lab. Solid bordered fallback only for Reduce
+/// Transparency / increased contrast.
+struct LibraryFilterGlassStyle: ViewModifier {
+  var isProminent: Bool
+  var useSolid: Bool = false
+  var controlSize: ControlSize = LibraryFiltersBar.controlSize
+
+  func body(content: Content) -> some View {
+    Group {
+      if useSolid {
+        if isProminent {
+          content
+            .buttonStyle(.borderedProminent)
+            .tint(Color.KinoPub.accent)
+        } else {
+          content
+            .buttonStyle(.bordered)
+        }
+      } else if isProminent {
+        content
+          .buttonStyle(.glassProminent)
+          .tint(Color.KinoPub.accent)
+      } else {
+        content
+          // System glass — required for accessory-bar filter chips (UI Lab path).
+          .buttonStyle(.glass)
+      }
+    }
+    .buttonBorderShape(.capsule)
+    .controlSize(controlSize)
+#if os(macOS)
+    // Accessory bar can flatten Menu chrome; keep glass interactive.
+    .tint(isProminent ? Color.KinoPub.accent : nil)
+#endif
+  }
+}
+
 /// The sort dropdown on its own. A person's credits are the same listing narrowed to
 /// one name, so they get sorting without the filter pickers around it.
 struct LibrarySortMenu: View {
 
   @ObservedObject var catalog: LibraryCatalog
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+  @Environment(\.colorSchemeContrast) private var contrast
 
   var body: some View {
-    LibraryFiltersBar.menu(label: LocalizedStringKey(catalog.filter.sort.titleKey),
-                           icon: "arrow.up.arrow.down",
-                           isActive: false) {
+    LibraryFiltersBar.filterMenu(
+      label: LocalizedStringKey(catalog.filter.sort.titleKey),
+      icon: "arrow.up.arrow.down",
+      isActive: false,
+      reduceTransparency: reduceTransparency,
+      highContrast: contrast == .increased
+    ) {
       ForEach(MediaSortOrder.allCases) { order in
         Button {
           catalog.update { $0.sort = order }
