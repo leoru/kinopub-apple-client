@@ -77,7 +77,7 @@ public struct RatingBadgeView: View {
       }
 
       Text(rating.formatted)
-        .font(.system(size: Self.fontSize, weight: .bold))
+        .font(TypeScale.ratingBadge)
         .foregroundStyle(rating.tier.showsWings ? .black : .white)
 
       if rating.tier.showsWings {
@@ -100,12 +100,10 @@ public struct RatingBadgeView: View {
   }
 
 #if os(tvOS)
-  static let fontSize: CGFloat = 22
   static let horizontalPadding: CGFloat = 6
   static let verticalPadding: CGFloat = 2
   static let wingHeight: CGFloat = 22
 #else
-  static let fontSize: CGFloat = 13
   static let horizontalPadding: CGFloat = 6
   static let verticalPadding: CGFloat = 2
   static let wingHeight: CGFloat = 14
@@ -129,7 +127,7 @@ public struct AggregateRatingLabel: View {
       }
 
       Text(rating.formatted)
-        .font(.system(size: Self.fontSize, weight: .bold))
+        .font(TypeScale.ratingAggregate)
         .monospacedDigit()
         .foregroundStyle(rating.tier.color)
 
@@ -150,11 +148,9 @@ public struct AggregateRatingLabel: View {
   }
 
 #if os(tvOS)
-  static let fontSize: CGFloat = 44
   static let wingHeight: CGFloat = 36
   static let wingSpacing: CGFloat = 6
 #else
-  static let fontSize: CGFloat = 28
   static let wingHeight: CGFloat = 22
   static let wingSpacing: CGFloat = 4
 #endif

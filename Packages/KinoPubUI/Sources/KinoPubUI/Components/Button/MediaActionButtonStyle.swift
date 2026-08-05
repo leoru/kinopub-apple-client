@@ -43,6 +43,33 @@ public enum MediaActionMetrics {
   public static var cornerRadius: CGFloat { buttonHeight / 2 }
 }
 
+// MARK: - Scaled icon glyphs
+
+/// `.system(size:weight:)` for an SF Symbol glyph, but the size still tracks Dynamic
+/// Type. Icons here are sized off the button's own geometry (`buttonHeight`), not a
+/// text baseline, so a text style would fit the wrong thing — this scales the exact
+/// point size instead, the same way a semantic style would.
+private struct ScaledIconFont: ViewModifier {
+  @ScaledMetric private var size: CGFloat
+  private let weight: Font.Weight
+
+  init(size: CGFloat, weight: Font.Weight) {
+    self._size = ScaledMetric(wrappedValue: size)
+    self.weight = weight
+  }
+
+  func body(content: Content) -> some View {
+    content.font(.system(size: size, weight: weight))
+  }
+}
+
+public extension View {
+  /// Apply to an `Image(systemName:)` glyph in place of `.font(.system(size:weight:))`.
+  func mediaActionIconFont(size: CGFloat, weight: Font.Weight) -> some View {
+    modifier(ScaledIconFont(size: size, weight: weight))
+  }
+}
+
 // MARK: - Pill style (Play / Resume / Watchlist)
 
 public struct MediaActionPillStyle: ButtonStyle {
@@ -325,7 +352,7 @@ public extension View {
     Button {} label: {
       HStack(spacing: MediaActionMetrics.contentSpacing) {
         Image(systemName: "play.fill")
-          .font(.system(size: MediaActionMetrics.iconPointSize, weight: .semibold))
+          .mediaActionIconFont(size: MediaActionMetrics.iconPointSize, weight: .semibold)
         Text("Play")
           .font(MediaActionMetrics.labelFont)
       }
@@ -340,13 +367,13 @@ public extension View {
 
     Button {} label: {
       Image(systemName: "bookmark.fill")
-        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
+        .mediaActionIconFont(size: MediaActionMetrics.circleIconPointSize, weight: .semibold)
     }
     .mediaActionCircleStyle()
 
     Button {} label: {
       Image(systemName: "ellipsis")
-        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .bold))
+        .mediaActionIconFont(size: MediaActionMetrics.circleIconPointSize, weight: .bold)
     }
     .mediaActionGhostStyle()
   }

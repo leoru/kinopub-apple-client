@@ -260,7 +260,7 @@ enum PreviewSample {
 
     Button {} label: {
       Image(systemName: "checkmark")
-        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
+        .mediaActionIconFont(size: MediaActionMetrics.circleIconPointSize, weight: .semibold)
     }
     .mediaActionCircleStyle()
   }
