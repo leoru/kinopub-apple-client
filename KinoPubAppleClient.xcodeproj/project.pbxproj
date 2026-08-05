@@ -98,6 +98,9 @@
 		CCA100012D0001 /* HLSManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0002 /* HLSManifest.swift */; };
 		CCA100012D0003 /* StreamSurvey.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0004 /* StreamSurvey.swift */; };
 		CCA100012D0005 /* StreamSurveyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0006 /* StreamSurveyView.swift */; };
+		CCA100012E1002 /* UILabRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1001 /* UILabRoot.swift */; };
+		CCA100012E1005 /* UILabSearchToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1004 /* UILabSearchToolbar.swift */; };
+		CCA100012E1007 /* SystemTypeStylesCatalogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1006 /* SystemTypeStylesCatalogView.swift */; };
 		CCA100012D0010 /* TVProfileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0011 /* TVProfileSettingsView.swift */; };
 		CCA100012D0021 /* HLSAudioLabeler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0020 /* HLSAudioLabeler.swift */; };
 		CCA200012D001001 /* KinoPubMetadata in Frameworks */ = {isa = PBXBuildFile; productRef = CCA200012D001002 /* KinoPubMetadata */; };
@@ -243,6 +246,9 @@
 		CCA100012D0002 /* HLSManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSManifest.swift; sourceTree = "<group>"; };
 		CCA100012D0004 /* StreamSurvey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurvey.swift; sourceTree = "<group>"; };
 		CCA100012D0006 /* StreamSurveyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurveyView.swift; sourceTree = "<group>"; };
+		CCA100012E1001 /* UILabRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UILabRoot.swift; sourceTree = "<group>"; };
+		CCA100012E1004 /* UILabSearchToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UILabSearchToolbar.swift; sourceTree = "<group>"; };
+		CCA100012E1006 /* SystemTypeStylesCatalogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemTypeStylesCatalogView.swift; sourceTree = "<group>"; };
 		CCA100012D0011 /* TVProfileSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVProfileSettingsView.swift; sourceTree = "<group>"; };
 		CCA100012D0020 /* HLSAudioLabeler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSAudioLabeler.swift; sourceTree = "<group>"; };
 		CCA200012D001003 /* KinoPubMetadata */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubMetadata; path = Packages/KinoPubMetadata; sourceTree = "<group>"; };
@@ -400,6 +406,7 @@
 			isa = PBXGroup;
 			children = (
 				SETBDD5415EB512526487B4D /* Settings */,
+				CCA100012E1003 /* UILab */,
 				CC71E6F52A6C05BF004AFB3F /* Auth */,
 				CC71E6F42A6C05B9004AFB3F /* Bookmarks */,
 				CC71E6FD2A6C0691004AFB3F /* Downloads */,
@@ -413,6 +420,16 @@
 				CC71E6F22A6C04B5004AFB3F /* Root */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		CCA100012E1003 /* UILab */ = {
+			isa = PBXGroup;
+			children = (
+				CCA100012E1001 /* UILabRoot.swift */,
+				CCA100012E1004 /* UILabSearchToolbar.swift */,
+				CCA100012E1006 /* SystemTypeStylesCatalogView.swift */,
+			);
+			path = UILab;
 			sourceTree = "<group>";
 		};
 		CC71E6F22A6C04B5004AFB3F /* Root */ = {
@@ -979,6 +996,9 @@
 				CC21151D2A7A8FA7001996BD /* MediaItemModel.swift in Sources */,
 				SETD15PLAYPREF0002BBBB2 /* MediaItemDisplayPreferences.swift in Sources */,
 				CCA100012D0005 /* StreamSurveyView.swift in Sources */,
+				CCA100012E1002 /* UILabRoot.swift in Sources */,
+				CCA100012E1005 /* UILabSearchToolbar.swift in Sources */,
+				CCA100012E1007 /* SystemTypeStylesCatalogView.swift in Sources */,
 				CCA100012D0010 /* TVProfileSettingsView.swift in Sources */,
 				CCA200012D001010 /* DataSourcesAttributionView.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* ProfileView.swift in Sources */,

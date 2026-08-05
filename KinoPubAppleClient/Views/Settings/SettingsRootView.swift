@@ -73,6 +73,13 @@ struct SettingsRootView: View {
             case .streamSurvey:
               StreamSurveyView()
                 .settingsMacChrome(title: "Stream survey", isRoot: false)
+            case .uiLab(let chrome):
+              // Prefer Window menu / openWindow on macOS; this is a fallback push.
+              UILabRoot(initialChrome: chrome)
+                .settingsMacChrome(title: LocalizedStringKey(chrome.windowTitle), isRoot: false)
+            case .typeStyles:
+              SystemTypeStylesCatalogView()
+                .settingsMacChrome(title: "Type Styles", isRoot: false)
             }
           }
 #endif
@@ -158,6 +165,10 @@ struct SettingsRootView: View {
           switch route {
           case .streamSurvey:
             StreamSurveyView()
+          case .uiLab(let chrome):
+            UILabRoot(initialChrome: chrome)
+          case .typeStyles:
+            SystemTypeStylesCatalogView()
           }
         }
 #endif

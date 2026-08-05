@@ -82,6 +82,9 @@ struct KinoPubAppleClientApp: App {
     .commands {
       AboutCommands()
       SettingsCommands()
+#if DEBUG
+      UILabCommands()
+#endif
       CommandGroup(replacing: .newItem) { }
       // Into the system View menu — `CommandMenu("View")` would add a second View.
       CommandGroup(after: .toolbar) {
@@ -149,6 +152,19 @@ struct KinoPubAppleClientApp: App {
     .windowResizability(.contentSize)
     .restorationBehavior(.disabled)
     .commandsRemoved()
+
+#if DEBUG
+    // UI labs — A/B chrome (adaptable TabView vs locked NavigationSplitView).
+    // Open from Window menu, Advanced Settings, or the in-lab toolbar.
+    WindowGroup("UI Lab", id: UILabWindow.id, for: UILabChrome.self) { $chrome in
+      UILabRoot(initialChrome: chrome ?? .adaptableSidebar)
+        .frame(minWidth: 1100, minHeight: 700)
+        .preferredColorScheme(.dark)
+    }
+    .defaultSize(width: 1200, height: 800)
+    .windowResizability(.contentSize)
+    .restorationBehavior(.disabled)
+#endif
 #endif
   }
 }
@@ -186,5 +202,24 @@ private struct SettingsCommands: Commands {
     }
   }
 }
+
+#if DEBUG
+private struct UILabCommands: Commands {
+  @Environment(\.openWindow) private var openWindow
+
+  var body: some Commands {
+    // Window menu — next to Settings / About style utility windows.
+    CommandGroup(after: .windowArrangement) {
+      Divider()
+      Button("UI Lab — Navigation Split") {
+        openWindow(id: UILabWindow.id, value: UILabChrome.navigationSplit)
+      }
+      Button("UI Lab — Adaptable Sidebar") {
+        openWindow(id: UILabWindow.id, value: UILabChrome.adaptableSidebar)
+      }
+    }
+  }
+}
+#endif
 #endif
 
