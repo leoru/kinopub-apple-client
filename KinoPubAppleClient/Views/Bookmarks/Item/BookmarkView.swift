@@ -13,8 +13,10 @@ import KinoPubBackend
 struct BookmarkView: View {
   @EnvironmentObject var navigationState: NavigationState
   @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(\.openURL) private var openURL
 
   @StateObject private var model: BookmarkModel
+  @StateObject private var cardMenu = MediaCardMenuCoordinator()
   @Environment(\.appContext) var appContext
 
   init(model: @autoclosure @escaping () -> BookmarkModel) {
@@ -28,8 +30,11 @@ struct BookmarkView: View {
     .platformNavigationTitle(model.bookmark.title)
     .background(Color.KinoPub.background)
     .task {
+      cardMenu.bind(errorHandler: errorHandler)
       await model.fetchItems()
     }
+    .task { await cardMenu.refreshFolders() }
+    .mediaCardNewFolderAlert(cardMenu)
     .handleError(state: $errorHandler.state)
   }
 
@@ -50,6 +55,14 @@ struct BookmarkView: View {
       },
       navigationLinkProvider: { item in
         BookmarksRoutesLinkProvider().link(for: item)
+      },
+      contextMenuProvider: { item in
+        MediaCardContextMenus.entries(
+          for: item,
+          menu: cardMenu,
+          pushRoute: { navigationState.push($0) },
+          openURL: { openURL($0) }
+        )
       },
       paginationError: model.paginationFailed,
       onRetryPagination: {

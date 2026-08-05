@@ -14,12 +14,14 @@ struct CatalogView: View {
   @EnvironmentObject var errorHandler: ErrorHandler
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
+  @Environment(\.openURL) private var openURL
 
   private let title: LocalizedStringKey
   private let tab: NavigationTabs
   private let path: ReferenceWritableKeyPath<NavigationState, [CatalogRoutes]>
 
   @StateObject private var catalog: MediaCatalog
+  @StateObject private var cardMenu = MediaCardMenuCoordinator()
   @State private var showShortCutPicker: Bool = false
   @Namespace private var zoomNamespace
 
@@ -66,8 +68,11 @@ struct CatalogView: View {
         }
         .handleError(state: $errorHandler.state)
         .task {
+          cardMenu.bind(errorHandler: errorHandler)
           await catalog.fetchItems()
         }
+        .task { await cardMenu.refreshFolders() }
+        .mediaCardNewFolderAlert(cardMenu)
     }
     .environment(\.zoomTransitionNamespace, zoomNamespace)
     .navigationStackActive(for: tab, selected: navigationState.selectedTab)
@@ -91,12 +96,26 @@ struct CatalogView: View {
   }
 
   private var grid: some View {
-    ContentItemsListView(items: $catalog.items, onLoadMoreContent: { item in
-      catalog.loadMoreContent(after: item)
-    }, navigationLinkProvider: { item in
-      CatalogRoutesLinkProvider().link(for: item)
-    }, paginationError: catalog.paginationFailed, onRetryPagination: {
-      catalog.retryPagination()
-    })
+    ContentItemsListView(
+      items: $catalog.items,
+      onLoadMoreContent: { item in
+        catalog.loadMoreContent(after: item)
+      },
+      navigationLinkProvider: { item in
+        CatalogRoutesLinkProvider().link(for: item)
+      },
+      contextMenuProvider: { item in
+        MediaCardContextMenus.entries(
+          for: item,
+          menu: cardMenu,
+          pushRoute: { navigationState.push($0) },
+          openURL: { openURL($0) }
+        )
+      },
+      paginationError: catalog.paginationFailed,
+      onRetryPagination: {
+        catalog.retryPagination()
+      }
+    )
   }
 }

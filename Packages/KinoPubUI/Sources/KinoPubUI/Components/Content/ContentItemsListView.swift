@@ -14,6 +14,8 @@ public struct ContentItemsListView<Header: View>: View {
   @Binding public var items: [MediaItem]
   public var onLoadMoreContent: (MediaItem) -> Void
   public var navigationLinkProvider: (MediaItem) -> any Hashable
+  /// Long-press / secondary-click menu. Empty array leaves the poster without one.
+  public var contextMenuProvider: ((MediaItem) -> [MediaCardContextEntry])?
   /// Poster tiles drawn while the first page is still unknown, so the grid's
   /// shape is on screen before the response arrives.
   private let placeholderCount: Int
@@ -53,6 +55,7 @@ public struct ContentItemsListView<Header: View>: View {
   public init(items: Binding<[MediaItem]>,
               onLoadMoreContent: @escaping (MediaItem) -> Void,
               navigationLinkProvider: @escaping (MediaItem) -> any Hashable,
+              contextMenuProvider: ((MediaItem) -> [MediaCardContextEntry])? = nil,
               placeholderCount: Int = 0,
               emptyMessage: LocalizedStringKey? = nil,
               paginationError: Bool = false,
@@ -61,6 +64,7 @@ public struct ContentItemsListView<Header: View>: View {
     self._items = items
     self.onLoadMoreContent = onLoadMoreContent
     self.navigationLinkProvider = navigationLinkProvider
+    self.contextMenuProvider = contextMenuProvider
     self.placeholderCount = placeholderCount
     self.emptyMessage = emptyMessage
     self.paginationError = paginationError
@@ -98,6 +102,7 @@ public struct ContentItemsListView<Header: View>: View {
 #else
                 .buttonStyle(MediaCardButtonStyle())
 #endif
+                .modifier(MediaCardContextMenuModifier(entries: contextMenuProvider?(item) ?? []))
               }
             }
           }
@@ -156,6 +161,7 @@ public extension ContentItemsListView where Header == EmptyView {
   init(items: Binding<[MediaItem]>,
        onLoadMoreContent: @escaping (MediaItem) -> Void,
        navigationLinkProvider: @escaping (MediaItem) -> any Hashable,
+       contextMenuProvider: ((MediaItem) -> [MediaCardContextEntry])? = nil,
        placeholderCount: Int = 0,
        emptyMessage: LocalizedStringKey? = nil,
        paginationError: Bool = false,
@@ -163,6 +169,7 @@ public extension ContentItemsListView where Header == EmptyView {
     self.init(items: items,
               onLoadMoreContent: onLoadMoreContent,
               navigationLinkProvider: navigationLinkProvider,
+              contextMenuProvider: contextMenuProvider,
               placeholderCount: placeholderCount,
               emptyMessage: emptyMessage,
               paginationError: paginationError,

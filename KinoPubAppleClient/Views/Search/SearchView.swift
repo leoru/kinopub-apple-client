@@ -16,6 +16,7 @@ struct SearchView: View {
   @Environment(\.appContext) var appContext
 
   @StateObject private var catalog: LibraryCatalog
+  @StateObject private var cardMenu = MediaCardMenuCoordinator()
   /// What the search field shows. When this matches `filterFieldAnchor`, the
   /// catalog is filter-driven (query stays empty so the filter bar stays up).
   @State private var searchFieldText = ""
@@ -23,6 +24,8 @@ struct SearchView: View {
   /// it switches to a normal text search.
   @State private var filterFieldAnchor: String?
   @State private var navigationTitleText: String = "Search".localized
+
+  @Environment(\.openURL) private var openURL
 
   init(catalog: @autoclosure @escaping () -> LibraryCatalog) {
     _catalog = StateObject(wrappedValue: catalog())
@@ -52,6 +55,14 @@ struct SearchView: View {
             },
             navigationLinkProvider: { item in
               SearchRoutesLinkProvider().link(for: item)
+            },
+            contextMenuProvider: { item in
+              MediaCardContextMenus.entries(
+                for: item,
+                menu: cardMenu,
+                pushRoute: { navigationState.push($0) },
+                openURL: { openURL($0) }
+              )
             },
             placeholderCount: showsPlaceholders ? Self.placeholderCount : 0,
             emptyMessage: showsEmptyMessage ? "No Results" : nil,
@@ -94,6 +105,7 @@ struct SearchView: View {
       }
       .handleError(state: $errorHandler.state)
       .task {
+        cardMenu.bind(errorHandler: errorHandler)
         if let pending = navigationState.pendingSearch {
           navigationState.pendingSearch = nil
           applyPending(pending)
@@ -101,6 +113,8 @@ struct SearchView: View {
           await catalog.load()
         }
       }
+      .task { await cardMenu.refreshFolders() }
+      .mediaCardNewFolderAlert(cardMenu)
       .onChange(of: navigationState.pendingSearch) { _, pending in
         guard let pending else { return }
         navigationState.pendingSearch = nil

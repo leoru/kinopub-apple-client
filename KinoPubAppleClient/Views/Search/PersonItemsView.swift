@@ -19,8 +19,11 @@ struct PersonItemsView: View {
   private let metadataService: MetadataService
 
   @EnvironmentObject var errorHandler: ErrorHandler
+  @EnvironmentObject var navigationState: NavigationState
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.openURL) private var openURL
   @StateObject private var catalog: LibraryCatalog
+  @StateObject private var cardMenu = MediaCardMenuCoordinator()
   @State private var personMetadata = PersonMetadata()
   @State private var bioExpanded = false
 
@@ -39,6 +42,14 @@ struct PersonItemsView: View {
       items: $catalog.items,
       onLoadMoreContent: { catalog.loadMoreContent(after: $0) },
       navigationLinkProvider: { linkProvider.link(for: $0) },
+      contextMenuProvider: { item in
+        MediaCardContextMenus.entries(
+          for: item,
+          menu: cardMenu,
+          pushRoute: { navigationState.push($0) },
+          openURL: { openURL($0) }
+        )
+      },
       emptyMessage: showsEmptyMessage ? "No Results" : nil,
       paginationError: catalog.paginationFailed,
       onRetryPagination: { catalog.retryPagination() }
@@ -68,8 +79,11 @@ struct PersonItemsView: View {
     .animation(.easeInOut(duration: 0.3), value: catalog.isLoading)
     .animation(.easeInOut(duration: 0.3), value: catalog.loadFailed)
     .task {
+      cardMenu.bind(errorHandler: errorHandler)
       await catalog.load()
     }
+    .task { await cardMenu.refreshFolders() }
+    .mediaCardNewFolderAlert(cardMenu)
     .task(id: person.tmdbPersonId) {
       guard let id = person.tmdbPersonId else { return }
       personMetadata = await metadataService.person(id: id)

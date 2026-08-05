@@ -242,4 +242,38 @@ enum MediaCardContextMenus {
       onOpenImageURL: openURL
     )
   }
+
+  /// Catalog / Search / person-credits / bookmark-folder grids (`MediaItem` → card).
+  @MainActor
+  static func entries(
+    for item: MediaItem,
+    menu: MediaCardMenuCoordinator,
+    pushRoute: @escaping (Route) -> Void,
+    openURL: @escaping (URL) -> Void
+  ) -> [MediaCardContextEntry] {
+    entries(for: MediaCard(item),
+            surface: .shelf,
+            menu: menu,
+            pushRoute: pushRoute,
+            openURL: openURL)
+  }
+
+  /// DEBUG-only image URL rows (cast photos, etc.).
+  static func debugImageEntries(urls: [URL],
+                                openURL: @escaping (URL) -> Void) -> [MediaCardContextEntry] {
+#if DEBUG
+    guard !urls.isEmpty else { return [] }
+    return urls.enumerated().map { index, url in
+      .action(MediaCardContextAction(
+        id: "debug-image-url-\(index)",
+        title: url.absoluteString,
+        systemImage: "link",
+        handler: { openURL(url) }
+      ))
+    }
+#else
+    _ = (urls, openURL)
+    return []
+#endif
+  }
 }

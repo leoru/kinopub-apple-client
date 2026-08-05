@@ -386,6 +386,7 @@ struct CastAvatarView: View {
   let name: String
   var photoURL: URL? = nil
   @Environment(\.colorScheme) private var colorScheme
+  @Environment(\.openURL) private var openURL
   @State private var image: Image?
   @State private var loadedName: String?
   @State private var loadedURL: URL?
@@ -407,11 +408,19 @@ struct CastAvatarView: View {
     }
     .frame(width: Self.avatarWidth, height: Self.avatarHeight)
     .clipShape(Self.posterShape)
-    .overlay { rimOverlay }
+    .kinoGlassRim(in: Self.posterShape)
     .animation(.easeOut(duration: 0.2), value: image == nil)
+    .modifier(MediaCardContextMenuModifier(entries: debugMenuEntries))
     .task(id: loadKey) {
       await loadPhoto()
     }
+  }
+
+  private var debugMenuEntries: [MediaCardContextEntry] {
+    MediaCardContextMenus.debugImageEntries(
+      urls: [photoURL].compactMap { $0 },
+      openURL: { openURL($0) }
+    )
   }
 
   private var loadKey: String {
@@ -466,20 +475,6 @@ struct CastAvatarView: View {
         .font(Self.initialsFont)
         .foregroundStyle(Color.KinoPub.text)
     }
-  }
-
-  private var rimOverlay: some View {
-    let rim = colorScheme == .dark ? Color.white : Color.black
-    return Self.posterShape
-      .strokeBorder(
-        LinearGradient(
-          colors: [rim.opacity(0.15), rim.opacity(0.4)],
-          startPoint: .topLeading,
-          endPoint: .bottomTrailing
-        ),
-        lineWidth: 0.5
-      )
-      .blur(radius: 0)
   }
 
   static func initials(of name: String) -> String {
@@ -603,6 +598,11 @@ struct MediaItemSimilarSection: View {
   let linkProvider: NavigationLinkProvider
   var onSectionFocused: (() -> Void)? = nil
 
+  @EnvironmentObject private var errorHandler: ErrorHandler
+  @EnvironmentObject private var navigationState: NavigationState
+  @Environment(\.openURL) private var openURL
+  @StateObject private var cardMenu = MediaCardMenuCoordinator()
+
   var body: some View {
     if !items.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
@@ -621,13 +621,28 @@ struct MediaItemSimilarSection: View {
 #else
               .buttonStyle(MediaCardButtonStyle())
 #endif
+              .modifier(MediaCardContextMenuModifier(entries: menuEntries(for: item)))
             }
           }
           .padding(.horizontal, MediaItemLayout.horizontalInset)
           .padding(.vertical, Self.focusPadding)
         }
       }
+      .task {
+        cardMenu.bind(errorHandler: errorHandler)
+        await cardMenu.refreshFolders()
+      }
+      .mediaCardNewFolderAlert(cardMenu)
     }
+  }
+
+  private func menuEntries(for item: MediaItem) -> [MediaCardContextEntry] {
+    MediaCardContextMenus.entries(
+      for: item,
+      menu: cardMenu,
+      pushRoute: { navigationState.push($0) },
+      openURL: { openURL($0) }
+    )
   }
 
 #if os(tvOS)
