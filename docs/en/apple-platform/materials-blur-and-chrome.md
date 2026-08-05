@@ -5,7 +5,8 @@
 - Liquid Glass on tvOS 26+: `glassEffect`, `GlassEffectContainer`, `glassEffectID` / morphing,
   `.buttonStyle(.glass)` / `.glassProminent`, `scrollEdgeEffectStyle`, `safeAreaBar`,
   `ConcentricRectangle`. Older Apple TV hardware may keep prior appearance.
-  (`backgroundExtensionEffect` is part of the same release but is **banned here** — see Pitfalls.)
+  (`backgroundExtensionEffect` as *shell* chrome is banned here — contained blur bleed is open;
+  see Pitfalls.)
 - On tvOS, many elements adopt glass **on focus**; glass does not replace focus indication.
 - Glass samples the **content** behind it. A flat page fill gives it nothing and degrades it to a
   matte slab — put artwork / rails under the chrome, not a colour, when the glass should read.
@@ -31,9 +32,10 @@
   over **static** hero / banner art. Metal `ProgressiveBlur` path removed.
 - **tvOS + macOS:** no variable blur over **video**. **iOS + iPadOS:** blur OK over video too.
 - Hero Play CTAs are **not** `.glassProminent` — white pill + translucent circles.
-- **`backgroundExtensionEffect` is not used anywhere, on any platform.** Removed from Home. Our
-  sidebars are meant to **displace** content, not float over it, so nothing needs to bleed
-  underneath. See the pitfall below before reintroducing it.
+- **`backgroundExtensionEffect` as shell chrome is banned** (Home / page / under
+  `TabView(.sidebarAdaptable)`). Sidebars **displace** content — there is nothing to bleed under.
+  **Contained** use (card / hero still → system mirror+blur into that view's own `safeAreaInset`)
+  is a different axis; prototype in `HeroBleedVariants` before promoting. See the pitfall.
 - **No page-level material behind Home.** The old `.background(.ultraThickMaterial)` sat on top of
   the page background doing nothing but lightening it.
 - **The navigation bar is left to the system.** On 26 it is already Liquid Glass with the
@@ -68,14 +70,13 @@
 
 - Full-screen `layerEffect` blur recomputed every focus move is a performance footgun.
 - Blur must be tied to image identity changes, not every focus tick.
-- **`backgroundExtensionEffect` is not glass, and this app must not use it.** Apple's own docs: the
-  view "will be duplicated into mirrored copies which will be placed around the view on any edge
-  with available safe area", then blurred. It exists for the **detail column of a
-  `NavigationSplitView`**, so artwork bleeds under an *overlaying* sidebar or inspector.
-  - This app has no `NavigationSplitView` at all — `TabView(.sidebarAdaptable)` everywhere.
-  - A tvOS sidebar is an **overlay** and behaves differently again; the native Apple TV app does
-    not mirror anything.
-  - The product intent is that a sidebar **displaces** content, so there is nothing to hide behind.
-  - Because it wraps whatever the page currently renders, a failed or empty load gets the **error
-    placeholder mirrored** into the chrome. That alone should have caught it.
-  - "Gate it on an actual sidebar" is not the fix. Do not reintroduce it.
+- **`backgroundExtensionEffect` is not glass.** Apple's docs: the view is duplicated into
+  mirrored, blurred copies on edges with available safe area. Two different jobs:
+  - **Shell / sidebar / nav (banned here).** Canonical WWDC use is the detail column of a
+    `NavigationSplitView` bleeding under an *overlaying* sidebar. This app uses
+    `TabView(.sidebarAdaptable)` that **displaces** content — tried on Home, mirrored error
+    placeholders into chrome, removed. Do not put it on the page or under the tab sidebar.
+  - **Contained image blur bleed (open).** Same API on a *clipped* still with its own
+    `safeAreaInset` (nilcoalescing card pattern) soft-extends art for titles / hero chrome.
+    That is blur, not navigation. Gate on real artwork (never an error placeholder). Prototype
+    before shipping into `MediaItemHeroView`.

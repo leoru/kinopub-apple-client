@@ -49,7 +49,8 @@ when Instruments proves SwiftUI cannot hit acceptable focus / layout / performan
 | Home featured band | Contained 16:9 banner shelf **today**. Not a ban: the user's stated direction is toward a focus-preview / autoplaying hero. Reopen it with prototypes, do not "defend" the current shelf |
 | Hero CTAs | White Play pill + translucent circular secondaries — **not** Liquid Glass on hero |
 | Blur | Private `variableBlur` over **static** art; **no blur over video on tvOS/macOS**; blur OK over video on iOS/iPadOS |
-| Nav / list chrome | Prefer system scroll-edge / materials / `backgroundExtensionEffect` |
+| Nav / list chrome | Prefer system scroll-edge / materials. No `backgroundExtensionEffect` under sidebar / page shell |
+| Contained art bleed | `backgroundExtensionEffect` on a still + own `safeAreaInset` is open (blur axis); prototype before ship |
 | Poster focus | Native `.borderless` + explicit `.hoverEffect`; system lift / specular / tilt |
 | Continue Watching | Long-press context menu; **no** decorative ⋯ button on the card |
 | Player | Native `AVPlayerViewController`; single app-scoped `PlaybackSession`; custom overlays only where system cannot (e.g. dual sidecar subs on tvOS) |

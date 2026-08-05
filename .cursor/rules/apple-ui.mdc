@@ -32,7 +32,7 @@ Full policy: [docs/en/policies/apple-native-design.md](../../docs/en/policies/ap
 
 - Invent website-green buttons, custom transport bars, or fake glass toolbars when system materials / scroll-edge exist.
 - Put Liquid Glass on hero Play CTAs — white primary pill + translucent secondaries.
-- Use `backgroundExtensionEffect` **anywhere**. It duplicates the view into mirrored, blurred copies laid into free safe area — it is for the detail column of a `NavigationSplitView` bleeding under an *overlaying* sidebar. This app has no split view, our sidebars displace content, and on a failed load it mirrors the error placeholder into the chrome.
+- Use `backgroundExtensionEffect` as **shell / page / sidebar** chrome. Sidebars displace content; on a failed load it mirrors the error placeholder. Contained still → blur into that view's own `safeAreaInset` (hero/card) is a separate axis — prototype in `HeroBleedVariants`, do not slap it on Home.
 - Override the navigation bar with `containerBackground(.ultraThickMaterial, for: .navigation)` or a page-level material. On 26 the nav bar is already Liquid Glass with the scroll-edge effect.
 - Use `.ignoresSafeArea(.horizontal)` to fake sidebar bleed on macOS — it draws under the sidebar and clips the first poster. Top only there.
 - Claim zoom / matched transitions "done" on platforms where the API is unavailable.
