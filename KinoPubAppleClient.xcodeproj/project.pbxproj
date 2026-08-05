@@ -102,6 +102,10 @@
 		CCA100012C6F000100000C05 /* BookmarkFolderTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C06 /* BookmarkFolderTabView.swift */; };
 		CCA100012C6F000100000C07 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C08 /* LibraryView.swift */; };
 		CCA100012C6F000100000C09 /* PersonalLibraryCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C0A /* PersonalLibraryCatalog.swift */; };
+		CCA1000131000002 /* LibrarySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000001 /* LibrarySection.swift */; };
+		CCA1000131000004 /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000003 /* LibraryModel.swift */; };
+		CCA1000131000006 /* LibrarySectionCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000005 /* LibrarySectionCatalog.swift */; };
+		CCA1000131000008 /* LibraryShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000007 /* LibraryShellView.swift */; };
 		CCA100012D0001 /* HLSManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0002 /* HLSManifest.swift */; };
 		CCA100012D0003 /* StreamSurvey.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0004 /* StreamSurvey.swift */; };
 		CCA100012D0005 /* StreamSurveyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0006 /* StreamSurveyView.swift */; };
@@ -262,6 +266,10 @@
 		CCA100012C6F000100000C06 /* BookmarkFolderTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkFolderTabView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C08 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C0A /* PersonalLibraryCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalLibraryCatalog.swift; sourceTree = "<group>"; };
+		CCA1000131000001 /* LibrarySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySection.swift; sourceTree = "<group>"; };
+		CCA1000131000003 /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
+		CCA1000131000005 /* LibrarySectionCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySectionCatalog.swift; sourceTree = "<group>"; };
+		CCA1000131000007 /* LibraryShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryShellView.swift; sourceTree = "<group>"; };
 		CCA100012D0002 /* HLSManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSManifest.swift; sourceTree = "<group>"; };
 		CCA100012D0004 /* StreamSurvey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurvey.swift; sourceTree = "<group>"; };
 		CCA100012D0006 /* StreamSurveyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurveyView.swift; sourceTree = "<group>"; };
@@ -450,6 +458,7 @@
 				CCA100012E1003 /* UILab */,
 				CC71E6F52A6C05BF004AFB3F /* Auth */,
 				CC71E6F42A6C05B9004AFB3F /* Bookmarks */,
+				CCA1000131000010 /* Library */,
 				CC71E6FD2A6C0691004AFB3F /* Downloads */,
 				CCA5023B2AF24FB400B18283 /* macOS */,
 				CC71E6F32A6C05B4004AFB3F /* Main */,
@@ -666,6 +675,17 @@
 				CCF2ABB02AED37F2000448A8 /* Settings */,
 			);
 			path = macOS;
+			sourceTree = "<group>";
+		};
+		CCA1000131000010 /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				CCA1000131000001 /* LibrarySection.swift */,
+				CCA1000131000003 /* LibraryModel.swift */,
+				CCA1000131000005 /* LibrarySectionCatalog.swift */,
+				CCA1000131000007 /* LibraryShellView.swift */,
+			);
+			path = Library;
 			sourceTree = "<group>";
 		};
 		CCC70B862A7FBF5300274E5F /* List */ = {
@@ -1106,6 +1126,10 @@
 				CCA100012C6F000100000C05 /* BookmarkFolderTabView.swift in Sources */,
 				CCA100012C6F000100000C07 /* LibraryView.swift in Sources */,
 				CCA100012C6F000100000C09 /* PersonalLibraryCatalog.swift in Sources */,
+				CCA1000131000002 /* LibrarySection.swift in Sources */,
+				CCA1000131000004 /* LibraryModel.swift in Sources */,
+				CCA1000131000006 /* LibrarySectionCatalog.swift in Sources */,
+				CCA1000131000008 /* LibraryShellView.swift in Sources */,
 				CCA100012C6F000100000703 /* LibraryFiltersBar.swift in Sources */,
 				CCA100012C6F000100000005 /* SubtitleCueParser.swift in Sources */,
 				CCA100012C6F000100000007 /* SubtitleOverlayView.swift in Sources */,

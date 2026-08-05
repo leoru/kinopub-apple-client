@@ -168,33 +168,57 @@ struct TabsNavigationView: View {
 
 #if os(tvOS)
   /// Top tab bar — Search is first (left of Home), not `role: .search` (that pins trailing).
+  ///
+  /// Shape is icon · text · text · text · text · icon, the way tvOS media apps read:
+  /// the two utility ends are glyphs, the browse destinations are words. Giving the
+  /// browse tabs a `systemImage` too turns the bar into a row of icon+label chips,
+  /// which is what it must not be — so these deliberately pass a bare `Text`.
   private var tvTabBar: some View {
     TabView(selection: tabSelection) {
-      Tab("Search", systemImage: "magnifyingglass", value: NavigationTabs.search) {
+      Tab(value: NavigationTabs.search) {
         searchContent
+      } label: {
+        tvIconTab("magnifyingglass", label: "Search")
       }
 
-      Tab("Home", systemImage: "house.fill", value: NavigationTabs.home) {
+      Tab(value: NavigationTabs.home) {
         homeContent
+      } label: {
+        Text("Home")
       }
 
-      Tab("Movies", systemImage: "movieclapper", value: NavigationTabs.movies) {
+      Tab(value: NavigationTabs.movies) {
         moviesContent
+      } label: {
+        Text("Movies")
       }
 
-      Tab("Shows", systemImage: "rectangle.stack", value: NavigationTabs.series) {
+      Tab(value: NavigationTabs.series) {
         seriesContent
+      } label: {
+        Text("Shows")
       }
 
-      Tab("Library", systemImage: "rectangle.stack.badge.person.crop", value: NavigationTabs.library) {
+      Tab(value: NavigationTabs.library) {
         libraryContent
+      } label: {
+        Text("Library")
       }
 
-      Tab("Settings", systemImage: "gearshape", value: NavigationTabs.settings) {
+      Tab(value: NavigationTabs.settings) {
         settingsContent
+      } label: {
+        tvIconTab("gearshape", label: "Settings")
       }
     }
     .tabViewStyle(.tabBarOnly)
+  }
+
+  /// Glyph-only tab. The title still ships as the accessibility label — dropping the
+  /// text is a visual decision, not a reason for VoiceOver to announce nothing.
+  private func tvIconTab(_ systemImage: String, label: LocalizedStringKey) -> some View {
+    Image(systemName: systemImage)
+      .accessibilityLabel(Text(label))
   }
 #endif
 
@@ -322,10 +346,25 @@ struct TabsNavigationView: View {
                                       contentType: .serial))
   }
 
+  /// macOS and tvOS run the sidebar shell; iOS still gets the shelf-rows Library until
+  /// its Podcasts-shaped list lands (`docs/en/plans/library-sidebar.md`, phase 4).
+  @ViewBuilder
   private var libraryContent: some View {
+#if os(macOS) || os(tvOS)
+    LibraryShellView(
+      model: LibraryModel(contentService: appContext.contentService,
+                          actionsService: appContext.actionsService,
+                          authState: authState,
+                          errorHandler: errorHandler),
+      catalog: LibrarySectionCatalog(contentService: appContext.contentService,
+                                     authState: authState,
+                                     errorHandler: errorHandler)
+    )
+#else
     LibraryView(catalog: PersonalLibraryCatalog(itemsService: appContext.contentService,
                                                 authState: authState,
                                                 errorHandler: errorHandler))
+#endif
   }
 
 #if !os(macOS)

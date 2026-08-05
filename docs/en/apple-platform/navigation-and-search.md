@@ -7,6 +7,12 @@
   legacy `.tabItem` for Search (that keeps it as a normal left-side tab).
 - **tvOS:** Search is a normal first tab (left of Home). Do **not** use `Tab(role: .search)` on
   tvOS when Search must lead the bar — the search role pins trailing.
+- **tvOS tab bar shape is icon · text · text · text · text · icon**: Search and Settings are
+  glyph-only, the browse tabs are words. Pass a bare `Image` / `Text` as the `Tab` label —
+  `Tab("Title", systemImage:)` gives every tab an icon+label chip, which is the thing to avoid.
+  Glyph tabs still carry `.accessibilityLabel`. No in-content Back button on tvOS: Search is a
+  tab, so the way out is up into the tab bar, and a chevron row above the grid also steals the
+  first focus target on entry.
 - **macOS:** no Search tab and no Settings tab in the library window. Settings is the Settings
   window (`⌘,` / App menu). Search is a **compact trailing toolbar field** (Finder/Photos) —
   apply `.searchable(..., placement: .toolbar)` on each tab's `NavigationStack`, **never** on
@@ -16,6 +22,9 @@
   entered from browse/toolbar/filter (`canReturnFromSearch`); once a title is pushed,
   system NavigationStack back/forward own that slot. Do not put unrelated controls in
   `.navigation` on macOS. Filters on Search results stay in `.accessoryBar`.
+- `.toolbar(removing: .sidebarToggle)` must be applied to the **sidebar column's content**, not
+  to the `NavigationSplitView`. On the split view it is silently ignored and the collapse button
+  still appears — probe-confirmed on screen (macOS 27), not from docs.
 - `TabViewCustomization` / tab hide-reorder are **not** wired on macOS production — omitting
   `.tabViewCustomization` leaves tabs fixed (no Edit / hide). Also `.toolbar(removing: .sidebarToggle)`
   and `CommandGroup(replacing: .sidebar)` so the sidebar cannot be collapsed from chrome or the

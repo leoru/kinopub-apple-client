@@ -76,11 +76,10 @@ struct SearchView: View {
               catalog.retryPagination()
             }
           ) {
-#if os(tvOS)
-            if navigationState.canReturnFromSearch {
-              tvBackRow
-            }
-#endif
+            // No in-content Back on tvOS. Search is a normal tab there, so the way out
+            // is up into the tab bar — a chevron row above the grid is a phone idiom
+            // that also steals the first focus target on every entry.
+            //
             // Filters scroll away with the grid on iOS/tvOS. On macOS they live in
             // the toolbar accessory bar under the principal search field.
 #if !os(macOS)
@@ -115,7 +114,8 @@ struct SearchView: View {
 #endif
 #if !os(tvOS)
         // Leave Search → previous tab. Only at Search root so NavigationStack can own
-        // system back/forward once a title is pushed. (tvOS uses `tvBackRow` in-content.)
+        // system back/forward once a title is pushed. tvOS has no equivalent — you go
+        // back up to the tab bar there.
         if navigationState.canReturnFromSearch && navigationState.searchRoutes.isEmpty {
           ToolbarItem(placement: searchReturnPlacement) {
             Button {
@@ -167,17 +167,6 @@ struct SearchView: View {
 #else
     .topBarLeading
 #endif
-  }
-
-  private var tvBackRow: some View {
-    Button {
-      navigationState.returnFromSearch()
-    } label: {
-      Label(backLabel, systemImage: "chevron.backward")
-        .font(LibraryFiltersBar.font)
-    }
-    .buttonStyle(.borderless)
-    .padding(.bottom, 8)
   }
 
   private var backLabel: String {
