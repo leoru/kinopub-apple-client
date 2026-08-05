@@ -216,8 +216,10 @@ final class TrailerLayerHostView: UIView {
 /// Full-screen stack pinned behind the detail `ScrollView` — the Apple TV shape.
 ///
 /// A blurred `/poster/item/small` wash is always there (cheap, rasterised once).
-/// The sharp wide art + trailer sit on top and simply fade to zero when focus
-/// leaves the hero — no re-blurring the hero media on the way out.
+/// Sharp wide art sits on top and fades out when focus leaves the hero.
+/// Ambient trailer is intentionally off (policy: no blur-over-video; scrims +
+/// still until a dedicated hero pass). `trailer` is kept for a later pass /
+/// Up-to-fullscreen when ambient returns.
 struct MediaItemHeroBackdrop: View {
 
   var mediaItem: MediaItem
@@ -237,20 +239,18 @@ struct MediaItemHeroBackdrop: View {
       // to manufacture a blur from the wide frame.
       blurredPoster
 
-      // Wide + trailer as one layer — fade what the user was looking at, don't
-      // peel the trailer off and leave the still underneath mid-scroll.
-      heroMedia
+      heroStill
         .opacity(isHeroOnScreen ? 1 : 0)
 
-      // topGradient
-      //   .opacity(isHeroOnScreen ? 1 : 0)
-      // bottomScrim
+      topGradient
+        .opacity(isHeroOnScreen ? 1 : 0)
+
+      bottomScrim
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .clipped()
     .ignoresSafeArea()
     .animation(.easeOut(duration: 0.35), value: isHeroOnScreen)
-    .animation(.easeInOut(duration: 0.6), value: trailer.isReady)
   }
 
   /// Scale is derived from the real container so a portrait buffer still covers
@@ -279,35 +279,23 @@ struct MediaItemHeroBackdrop: View {
     }
   }
 
-  @ViewBuilder
-  private var heroMedia: some View {
-    ZStack {
-      AsyncImage(url: URL(string: wideURL),
-                 transaction: Transaction(animation: .easeIn(duration: 0.3))) { phase in
-        if let image = phase.image {
-          image
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .transition(.opacity)
-        } else {
-          Color.clear
-        }
-      }
-
-      // Stays in the tree while scrolled away (paused). Gating it on
-      // `isHeroOnScreen` used to remove it first, so the fade briefly revealed
-      // the wide still under the trailer before the group opacity hit zero.
-      if let player = trailer.player, trailer.isReady {
-        TrailerVideoLayer(player: player)
-          .allowsHitTesting(false)
+  private var heroStill: some View {
+    AsyncImage(url: URL(string: wideURL),
+               transaction: Transaction(animation: .easeIn(duration: 0.3))) { phase in
+      if let image = phase.image {
+        image
+          .resizable()
+          .aspectRatio(contentMode: .fill)
           .transition(.opacity)
+      } else {
+        Color.clear
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
   /// Very light black wash from the top edge down to about mid-frame — enough to
-  /// settle the status area without dulling the trailer. Fades out with the hero.
+  /// settle the status area without dulling the still. Fades out with the hero.
   private var topGradient: some View {
     LinearGradient(stops: [
       .init(color: .black.opacity(0.32), location: 0),

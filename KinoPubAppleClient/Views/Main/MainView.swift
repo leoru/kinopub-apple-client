@@ -80,6 +80,7 @@ struct MainView: View {
     }
   }
 
+  @ViewBuilder
   private var rows: some View {
     MediaRowsView(
       rows: catalog.rows,

@@ -96,24 +96,41 @@ public struct MediaRowsView: View {
 
   private var scroll: some View {
     ScrollView(.vertical) {
-      LazyVStack(alignment: .leading, spacing: Self.rowSpacing) {
-        if !bannerCards.isEmpty {
-          bannerSection
-        }
-
-        ForEach(rows) { row in
-          section(for: row)
-        }
+      // VStack on tvOS: LazyVStack clips the focus lift between Hot Movies / Hot Series
+      // even when the inner horizontal rail has scrollClipDisabled. Detail shelves
+      // already used a plain VStack — same section, same parent rules.
+#if os(tvOS)
+      VStack(alignment: .leading, spacing: Self.rowSpacing) {
+        scrollContent
       }
       .padding(.bottom, Self.rowSpacing)
+#else
+      LazyVStack(alignment: .leading, spacing: Self.rowSpacing) {
+        scrollContent
+      }
+      .padding(.bottom, Self.rowSpacing)
+#endif
     }
-#if !os(tvOS)
+#if os(tvOS)
+    .scrollClipDisabled()
+#else
     // Native fade as rows pass under the nav bar / large title. A plain `ScrollView`
     // doesn't inherit the edge treatment `List` gets automatically, so it needs asking
     // for explicitly. tvOS has no floating bar over this screen to slide under — see
     // `docs/en/apple-platform/materials-blur-and-chrome.md`.
     .scrollEdgeEffectStyle(.automatic, for: .top)
 #endif
+  }
+
+  @ViewBuilder
+  private var scrollContent: some View {
+    if !bannerCards.isEmpty {
+      bannerSection
+    }
+
+    ForEach(rows) { row in
+      section(for: row)
+    }
   }
 
 #if os(tvOS)
@@ -168,80 +185,21 @@ public struct MediaRowsView: View {
 
   @ViewBuilder
   private func section(for row: MediaRow) -> some View {
-    let metrics = shelfMetrics(for: row)
-    VStack(alignment: .leading, spacing: 12) {
-      header(for: row)
-        .safeAreaPadding(.horizontal, metrics.inset)
-
-      ScrollView(.horizontal, showsIndicators: false) {
-        LazyHStack(alignment: .top, spacing: metrics.gutter) {
-          ForEach(row.cards) { card in
-            cardLink(card)
-              .mediaZoomSource(id: "media-\(card.id)")
-              .containerRelativeFrame(.horizontal,
-                                      count: metrics.columns,
-                                      span: 1,
-                                      spacing: metrics.gutter)
-#if !os(tvOS)
-              .buttonStyle(MediaCardButtonStyle())
-#endif
-              .focused($focusedCard, equals: CardKey(row: row.id, card: card.id))
-              .modifier(MediaCardContextMenuModifier(
-                isEnabled: contextMenuProvider != nil,
-                entriesProvider: { contextMenuProvider?(card, .shelf) ?? [] }
-              ))
-          }
-        }
-        .safeAreaPadding(.horizontal, metrics.inset)
-        // Focus grows the card past its frame; without room the lift gets clipped.
-        .padding(.vertical, Metrics.focusPadding)
-      }
-#if os(tvOS)
-      // Native poster effect on the shelf (not each link): lift / specular / tilt stay
-      // one unit. Scroll-clip off so focus scale isn't cropped; focusSection so Up/Down
-      // treat the row as a navigable band.
-      .buttonStyle(.borderless)
-      .scrollClipDisabled()
-      .focusSection()
-#endif
-    }
+    MediaPosterShelf(
+      title: row.title,
+      count: row.count,
+      cards: row.cards,
+      destination: row.destination,
+      navigationLinkProvider: navigationLinkProvider,
+      onPlay: onPlay,
+      contextMenuProvider: { card in
+        contextMenuProvider?(card, .shelf) ?? []
+      },
+      caption: Self.cardCaption,
+      focusedCard: $focusedCard,
+      focusKey: { CardKey(row: row.id, card: $0.id) }
+    )
     .onAppear { onRowAppear?(row) }
-  }
-
-  @ViewBuilder
-  private func cardLink(_ card: MediaCard) -> some View {
-    if card.primaryAction == .play, let onPlay {
-      Button {
-        onPlay(card)
-      } label: {
-        MediaCardView(card: card, caption: Self.cardCaption)
-      }
-    } else {
-      NavigationLink(value: navigationLinkProvider(card)) {
-        MediaCardView(card: card, caption: Self.cardCaption)
-      }
-    }
-  }
-
-  private func shelfMetrics(for row: MediaRow) -> ShelfMetrics {
-    if row.cards.first?.isLandscape == true {
-      return .landscape(width: containerWidth, typeSize: typeSize)
-    }
-    return .posters(width: containerWidth, typeSize: typeSize)
-  }
-
-  /// A row whose content has a screen of its own gets a focusable title leading to it;
-  /// the rest stay plain text.
-  @ViewBuilder
-  private func header(for row: MediaRow) -> some View {
-    if let destination = row.destination {
-      NavigationLink(value: destination) {
-        RowHeader(row: row, isLink: true)
-      }
-      .buttonStyle(RowHeaderButtonStyle())
-    } else {
-      RowHeader(row: row, isLink: false)
-    }
   }
 
   // MARK: - Metrics
@@ -252,38 +210,20 @@ public struct MediaRowsView: View {
   static let cardCaption: MediaCardCaption = .onFocus
 
   static let rowSpacing: CGFloat = Metrics.rowSpacing
-  static let headerFont: Font = TypeScale.rowHeader
-  static let countFont: Font = TypeScale.rowCount
-  static let chevronFont: Font = TypeScale.rowChevron
 #else
   /// No focus off TV — the cards have to name themselves.
   static let cardCaption: MediaCardCaption = .always
 
   static let rowSpacing: CGFloat = Metrics.rowSpacing
-  static let headerFont: Font = TypeScale.rowHeader
-  static let countFont: Font = TypeScale.rowCount
-  static let chevronFont: Font = TypeScale.rowChevron
 #endif
-}
-
-/// The row title, its item count, and — where the row leads somewhere — a chevron.
-private struct RowHeader: View {
-  let row: MediaRow
-  let isLink: Bool
-
-  var body: some View {
-    SectionHeader(
-      title: row.title,
-      count: row.count,
-      showsChevron: isLink
-    )
-  }
 }
 
 /// Lifts the row title on focus. The stock tvOS button styles would wrap it in a filled
 /// card, which is not how a section header reads.
-struct RowHeaderButtonStyle: ButtonStyle {
-  func makeBody(configuration: Configuration) -> some View {
+public struct RowHeaderButtonStyle: ButtonStyle {
+  public init() {}
+
+  public func makeBody(configuration: Configuration) -> some View {
     Header(configuration: configuration)
   }
 

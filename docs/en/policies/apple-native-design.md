@@ -51,7 +51,7 @@ when Instruments proves SwiftUI cannot hit acceptable focus / layout / performan
 | Blur | Private `variableBlur` over **static** art; **no blur over video on tvOS/macOS**; blur OK over video on iOS/iPadOS |
 | Nav / list chrome | Prefer system scroll-edge / materials. No `backgroundExtensionEffect` under sidebar / page shell |
 | Contained art bleed | `backgroundExtensionEffect` on a still + own `safeAreaInset` is open (blur axis); prototype before ship |
-| Poster focus | Native `.borderless` + explicit `.hoverEffect`; system lift / specular / tilt |
+| Poster focus | tvOS: shared `TVPosterView` atom (shelf + grid) behind `FeatureFlags.tvUIKitPosters`; else SwiftUI `.borderless` + `.hoverEffect` |
 | Continue Watching | Long-press context menu; **no** decorative ⋯ button on the card |
 | Player | Native `AVPlayerViewController`; single app-scoped `PlaybackSession`; custom overlays only where system cannot (e.g. dual sidecar subs on tvOS) |
 | Downloads | Non-TV only; feature-gate until ready |

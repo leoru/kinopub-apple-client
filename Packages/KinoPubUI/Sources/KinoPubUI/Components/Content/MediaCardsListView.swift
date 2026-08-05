@@ -17,6 +17,8 @@ public struct MediaCardsListView: View {
   private let onRetryPagination: (() -> Void)?
 
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+  @Environment(\.usesTVUIKitPosters) private var usesTVUIKitPosters
+  @Environment(\.mediaNavigation) private var mediaNavigation
   @State private var containerWidth: CGFloat = 1920
 
 #if os(tvOS)
@@ -56,6 +58,48 @@ public struct MediaCardsListView: View {
   }
 
   public var body: some View {
+#if os(tvOS)
+    if usesTVUIKitPosters {
+      tvUIKitGrid
+    } else {
+      swiftUIGrid
+    }
+#else
+    swiftUIGrid
+#endif
+  }
+
+#if os(tvOS)
+  private var tvUIKitGrid: some View {
+    VStack(spacing: 0) {
+      TVUIKitMediaCollection(
+        cards: cards,
+        axis: .vertical,
+        containerWidth: containerWidth,
+        typeSize: dynamicTypeSize,
+        onSelect: { card in
+          mediaNavigation?(navigationLinkProvider(card))
+        },
+        onNearEnd: { card in
+          onLoadMoreContent(card)
+        },
+        contextMenuProvider: contextMenuProvider
+      )
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+      if paginationError, let onRetryPagination {
+        paginationRetry(onRetryPagination)
+      }
+    }
+    .onGeometryChange(for: CGFloat.self) { proxy in
+      proxy.size.width
+    } action: { width in
+      if width > 0 { containerWidth = width }
+    }
+  }
+#endif
+
+  private var swiftUIGrid: some View {
     ScrollView {
       LazyVGrid(columns: gridColumns, spacing: metrics.gutter) {
         ForEach(cards) { card in
@@ -79,18 +123,7 @@ public struct MediaCardsListView: View {
       .padding(.vertical, Metrics.focusPadding)
 
       if paginationError, let onRetryPagination {
-        VStack(spacing: 12) {
-          Text("Couldn't Load More")
-            .font(TypeScale.cardSubtitle)
-            .foregroundStyle(Color.KinoPub.subtitle)
-          Button("Try Again", action: onRetryPagination)
-#if !os(tvOS)
-            .buttonStyle(.glass)
-            .controlSize(.large)
-#endif
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        paginationRetry(onRetryPagination)
       }
     }
     .onGeometryChange(for: CGFloat.self) { proxy in
@@ -107,5 +140,21 @@ public struct MediaCardsListView: View {
     // `docs/en/apple-platform/materials-blur-and-chrome.md`.
     .scrollEdgeEffectStyle(.automatic, for: .top)
 #endif
+  }
+
+  @ViewBuilder
+  private func paginationRetry(_ action: @escaping () -> Void) -> some View {
+    VStack(spacing: 12) {
+      Text("Couldn't Load More")
+        .font(TypeScale.cardSubtitle)
+        .foregroundStyle(Color.KinoPub.subtitle)
+      Button("Try Again", action: action)
+#if !os(tvOS)
+        .buttonStyle(.glass)
+        .controlSize(.large)
+#endif
+    }
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 24)
   }
 }

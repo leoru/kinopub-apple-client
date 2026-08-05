@@ -643,10 +643,8 @@ struct MediaItemPersonShelfSection: View {
   }
 }
 
-/// Shared horizontal poster rail for Similar and the person shelves.
-/// Same sizing path as Home (`MediaRowsView` + `ShelfMetrics` +
-/// `containerRelativeFrame`) — without the column width the card stretches
-/// into a wide plate with a postage-stamp poster in the middle.
+/// Shared horizontal poster rail for Similar and the person shelves —
+/// same `MediaPosterShelf` as Home Hot Movies / Hot Series.
 struct MediaItemPosterShelf: View {
 
   let title: String
@@ -658,73 +656,39 @@ struct MediaItemPosterShelf: View {
   @Environment(ErrorHandler.self) private var errorHandler
   @EnvironmentObject private var navigationState: NavigationState
   @Environment(\.openURL) private var openURL
-  @Environment(\.dynamicTypeSize) private var typeSize
   @StateObject private var cardMenu = MediaCardMenuCoordinator()
-  @State private var containerWidth: CGFloat = 1100
 
-  private var metrics: ShelfMetrics {
-    .posters(width: containerWidth, typeSize: typeSize)
+  private var cards: [MediaCard] {
+    items.map(MediaCard.init)
+  }
+
+  private var destination: (any Hashable)? {
+    personDestination.map { linkProvider.person(for: $0) }
   }
 
   var body: some View {
     if !items.isEmpty {
-      VStack(alignment: .leading, spacing: 12) {
-        header
-          .safeAreaPadding(.horizontal, metrics.inset)
-
-        ScrollView(.horizontal, showsIndicators: false) {
-          LazyHStack(alignment: .top, spacing: metrics.gutter) {
-            ForEach(items, id: \.id) { item in
-              NavigationLink(value: linkProvider.link(for: item)) {
-                MediaCardView(card: MediaCard(item), caption: MediaItemSimilarSection.cardCaption)
-              }
-              .containerRelativeFrame(.horizontal,
-                                      count: metrics.columns,
-                                      span: 1,
-                                      spacing: metrics.gutter)
-#if !os(tvOS)
-              .buttonStyle(MediaCardButtonStyle())
-#endif
-#if os(tvOS)
-              .reportMediaItemSectionFocus(onSectionFocused)
-#endif
-              .modifier(MediaCardContextMenuModifier(entries: menuEntries(for: item)))
-            }
+      MediaPosterShelf(
+        title: title,
+        cards: cards,
+        destination: destination,
+        navigationLinkProvider: { card in
+          if let item = items.first(where: { $0.id == card.id }) {
+            return linkProvider.link(for: item)
           }
-          .safeAreaPadding(.horizontal, metrics.inset)
-          .padding(.vertical, Metrics.focusPadding)
-        }
-#if os(tvOS)
-        .buttonStyle(.borderless)
-        .scrollClipDisabled()
-        .focusSection()
-#endif
-      }
-      .onGeometryChange(for: CGFloat.self) { proxy in
-        proxy.size.width
-      } action: { width in
-        if width > 0 { containerWidth = width }
-      }
+          return linkProvider.link(for: items[0])
+        },
+        contextMenuProvider: { card in
+          guard let item = items.first(where: { $0.id == card.id }) else { return [] }
+          return menuEntries(for: item)
+        },
+        onCardFocused: onSectionFocused
+      )
       .task {
         cardMenu.bind(errorHandler: errorHandler)
         await cardMenu.refreshFolders()
       }
       .mediaCardNewFolderAlert(cardMenu)
-    }
-  }
-
-  @ViewBuilder
-  private var header: some View {
-    if let personDestination {
-      NavigationLink(value: linkProvider.person(for: personDestination)) {
-        SectionHeader(title: title, showsChevron: true)
-      }
-      .buttonStyle(PersonShelfHeaderButtonStyle())
-#if os(tvOS)
-      .reportMediaItemSectionFocus(onSectionFocused)
-#endif
-    } else {
-      SectionHeader(title: title)
     }
   }
 
@@ -780,36 +744,6 @@ private struct MediaItemPosterShelfSkeleton: View {
       if width > 0 { containerWidth = width }
     }
   }
-}
-
-/// Focus lift for the person-shelf title — mirrors `RowHeaderButtonStyle` without
-/// pulling that package-internal type into the app target.
-private struct PersonShelfHeaderButtonStyle: ButtonStyle {
-  func makeBody(configuration: ButtonStyle.Configuration) -> some View {
-    Header(configuration: configuration)
-  }
-
-  private struct Header: View {
-    let configuration: ButtonStyle.Configuration
-    @Environment(\.isFocused) private var isFocused
-
-    var body: some View {
-      configuration.label
-        .environment(\.cardFocused, isFocused)
-        .scaleEffect(isFocused ? 1.06 : 1.0, anchor: .leading)
-        .opacity(configuration.isPressed ? 0.6 : 1)
-        .animation(.easeOut(duration: 0.18), value: isFocused)
-    }
-  }
-}
-
-extension MediaItemSimilarSection {
-#if os(tvOS)
-  /// Match home: caption only while focused, so the rail stays a strip of posters.
-  static let cardCaption: MediaCardCaption = .onFocus
-#else
-  static let cardCaption: MediaCardCaption = .always
-#endif
 }
 
 // MARK: - Awards

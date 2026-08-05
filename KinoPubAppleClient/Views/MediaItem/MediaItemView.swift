@@ -28,8 +28,8 @@ struct MediaItemView: View {
   /// Shared with the hero (Up → fullscreen) and, on tvOS, the pinned full-bleed
   /// backdrop behind the scroll view.
   @StateObject private var trailer: TrailerPreviewModel
-  /// False once focus has left the hero — pauses the trailer and, on tvOS, fades
-  /// the pinned wide/trailer layer down to the blurred poster wash.
+  /// False once focus has left the hero — on tvOS fades the pinned wide still
+  /// down to the blurred poster wash; on macOS also pauses the ambient trailer.
   @State private var isHeroOnScreen = true
   @FocusState private var focus: MediaItemFocusTarget?
 #if os(macOS)
@@ -101,11 +101,12 @@ struct MediaItemView: View {
       .task {
         itemModel.fetchData()
       }
-      // Ambient trailer is off on iPhone for now: the hero band is short there and the
-      // chrome sits on top of it, so a moving picture under the text costs legibility
-      // and battery for something barely visible. The Trailer button still plays it.
-      // // DESIGN: revisit once the phone hero has a shape that gives the picture room.
-#if !os(iOS)
+      // Ambient muted trailer behind the hero:
+      // - iPhone: off (short band, chrome on top — legibility / battery).
+      // - tvOS: off for now (1C) — video without scrims looked broken; Trailer button
+      //   still opens the real player. Revisit when the hero pass lands.
+      // - macOS: on.
+#if os(macOS)
       .task(id: itemModel.itemLoaded ? itemModel.mediaItem.trailerURL : nil) {
         guard itemModel.itemLoaded, let url = itemModel.mediaItem.trailerURL else { return }
         try? await Task.sleep(for: .seconds(MediaItemHeroView.trailerLeadIn))

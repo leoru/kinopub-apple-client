@@ -28,6 +28,8 @@ public struct ContentItemsListView<Header: View>: View {
   private let header: Header
 
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+  @Environment(\.usesTVUIKitPosters) private var usesTVUIKitPosters
+  @Environment(\.mediaNavigation) private var mediaNavigation
   @State private var containerWidth: CGFloat = 1920
 
 #if os(tvOS)
@@ -52,6 +54,10 @@ public struct ContentItemsListView<Header: View>: View {
     )
   }
 
+  private var cards: [MediaCard] {
+    items.map(MediaCard.init)
+  }
+
   public init(items: Binding<[MediaItem]>,
               onLoadMoreContent: @escaping (MediaItem) -> Void,
               navigationLinkProvider: @escaping (MediaItem) -> any Hashable,
@@ -73,6 +79,70 @@ public struct ContentItemsListView<Header: View>: View {
   }
 
   public var body: some View {
+#if os(tvOS)
+    if usesTVUIKitPosters {
+      tvUIKitBody
+    } else {
+      swiftUIBody
+    }
+#else
+    swiftUIBody
+#endif
+  }
+
+#if os(tvOS)
+  private var tvUIKitBody: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      header
+
+      if items.isEmpty, placeholderCount == 0, let emptyMessage {
+        UnavailableView(title: emptyMessage, systemImage: "magnifyingglass")
+          .padding(.top, 40)
+      } else if items.isEmpty, placeholderCount > 0 {
+        LazyVGrid(columns: gridColumns, spacing: metrics.gutter) {
+          ForEach(0..<placeholderCount, id: \.self) { _ in
+            placeholderCard
+          }
+        }
+        .safeAreaPadding(.horizontal, metrics.inset)
+        .padding(.vertical, Metrics.focusPadding)
+      } else {
+        TVUIKitMediaCollection(
+          cards: cards,
+          axis: .vertical,
+          containerWidth: containerWidth,
+          typeSize: dynamicTypeSize,
+          onSelect: { card in
+            if let item = items.first(where: { $0.id == card.id }) {
+              mediaNavigation?(navigationLinkProvider(item))
+            }
+          },
+          onNearEnd: { card in
+            if let item = items.first(where: { $0.id == card.id }) {
+              onLoadMoreContent(item)
+            }
+          },
+          contextMenuProvider: { card in
+            guard let item = items.first(where: { $0.id == card.id }) else { return [] }
+            return contextMenuProvider?(item) ?? []
+          }
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+        if paginationError, let onRetryPagination {
+          paginationRetry(onRetryPagination)
+        }
+      }
+    }
+    .onGeometryChange(for: CGFloat.self) { proxy in
+      proxy.size.width
+    } action: { width in
+      if width > 0 { containerWidth = width }
+    }
+  }
+#endif
+
+  private var swiftUIBody: some View {
     ScrollView {
       // Header (filters, sort) rides in the same scroll as the grid — never pinned
       // above a GeometryReader-sized remnant that steals half the screen.
@@ -113,18 +183,7 @@ public struct ContentItemsListView<Header: View>: View {
           .padding(.vertical, Metrics.focusPadding)
 
           if paginationError, let onRetryPagination {
-            VStack(spacing: 12) {
-              Text("Couldn't Load More")
-                .font(TypeScale.cardSubtitle)
-                .foregroundStyle(Color.KinoPub.subtitle)
-              Button("Try Again", action: onRetryPagination)
-#if !os(tvOS)
-                .buttonStyle(.glass)
-                .controlSize(.large)
-#endif
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 24)
+            paginationRetry(onRetryPagination)
           }
         }
       }
@@ -145,6 +204,22 @@ public struct ContentItemsListView<Header: View>: View {
     // under — see `docs/en/apple-platform/materials-blur-and-chrome.md`.
     .scrollEdgeEffectStyle(.automatic, for: .top)
 #endif
+  }
+
+  @ViewBuilder
+  private func paginationRetry(_ action: @escaping () -> Void) -> some View {
+    VStack(spacing: 12) {
+      Text("Couldn't Load More")
+        .font(TypeScale.cardSubtitle)
+        .foregroundStyle(Color.KinoPub.subtitle)
+      Button("Try Again", action: action)
+#if !os(tvOS)
+        .buttonStyle(.glass)
+        .controlSize(.large)
+#endif
+    }
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 24)
   }
 
   /// Same footprint as a real poster card (tile + caption line), inert so focus

@@ -67,6 +67,12 @@ struct TabsNavigationView: View {
     modernTabs
       .environmentObject(navigationState)
       .environment(errorHandler)
+      .environment(\.usesTVUIKitPosters, FeatureFlags.tvUIKitPosters)
+      .environment(\.mediaNavigation) { value in
+        if let route = value as? Route {
+          navigationState.push(route)
+        }
+      }
       .task { await loadSidebarChrome() }
       .onChange(of: navigationState.selectedTab) { _, newTab in
 #if os(iOS)

@@ -26,4 +26,9 @@ enum FeatureFlags {
   /// per-folder tabs carry browsing; when false the tab is omitted and the overview
   /// catalog is not fetched.
   static let allBookmarksEnabled = false
+
+  /// tvOS shelves + grids share one `TVPosterView` / `TVCardView` atom (same
+  /// `ShelfMetrics` sizing). Off until Device Hub focus validation; SwiftUI
+  /// `MediaCardView` remains the fallback. iOS / macOS ignore this flag.
+  static let tvUIKitPosters = false
 }

@@ -57,6 +57,11 @@ not supporting it at all. See [layout-and-containers](../apple-platform/layout-a
 
 ### Focus, navigation, chrome
 
+- [x] tvOS detail ambient trailer off — still + `topGradient` / `bottomScrim` + blurred poster wash
+  (ambient trailer later with a dedicated hero pass; Trailer button / real player unchanged)
+- [ ] tvOS TVUIKit posters (`FeatureFlags.tvUIKitPosters`) — one shared collection for Home shelves
+  and catalog grids; **Device Hub focus validation pending** before flipping the flag on
+  (Up/Down between rails, overlay scale sync, Select / context menu, grid scroll / pagination)
 - [ ] `MediaItemHeroView` — four buttons share `.focused($focus, equals: .heroOther)`
 - [ ] `MediaItemView` two-slide `.offset(y:)` + `.clipped()` "slideshow"
 - [ ] `TabsNavigationView` — 630 lines across three near-identical platform trees

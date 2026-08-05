@@ -24,7 +24,9 @@ Full policy: [docs/en/policies/apple-native-design.md](../../docs/en/policies/ap
 - All `glassEffect` goes through `kinoGlass` / `kinoPlayerGlass` in `KinoPubUI/DesignSystem/KinoGlass.swift`. Never write `glassEffect` at a call site. System `.buttonStyle(.glass)` is a separate, allowed path.
 - New reusable components live in `KinoPubUI`, use semantic tokens, ship a `#Preview`, and are focus-verified on a real remote — previews do not prove tvOS focus.
 - Ambiguous UI gets 2–3 variants in `Packages/KinoPubUI/Sources/KinoPubUI/Previews/` (`#if DEBUG`, `VariantGallery`), deleted once one is promoted.
-- TVUIKit (`TVPosterView`, `TVMediaItemContentConfiguration`, `TVCollectionViewFullScreenLayout`, …) exists and is unused here — see [focus-and-tvui.md](../../docs/en/apple-platform/focus-and-tvui.md) before assuming SwiftUI is the only option on TV.
+- TVUIKit posters: one `TVUIKitMediaCollection` + `TVPosterView` cell for **shelves and grids**
+  behind `FeatureFlags.tvUIKitPosters` — see [focus-and-tvui.md](../../docs/en/apple-platform/focus-and-tvui.md).
+  Do not invent a second poster component for Home.
 - Pass already-known item + artwork into detail; do not blank-reload what the card already had.
 - Skeletons only for true cold loads, matching final geometry. Never use eternal grey as both loading and error.
 

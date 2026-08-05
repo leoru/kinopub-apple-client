@@ -14,9 +14,18 @@
 
 ## TVUIKit inventory
 
-Public tvOS-only framework, currently **unused in this repo**. "Lockup" in our SwiftUI code means
+Public tvOS-only framework. "Lockup" in our SwiftUI code still means
 `.buttonStyle(.borderless)` + `.hoverEffect` — that is a different thing from `TVLockupView`.
 Verified against `AppleTVOS27.0.sdk/System/Library/Frameworks/TVUIKit.framework/Headers`.
+
+**In use (shelves + grids, gated):** `TVPosterView` / `TVCardView` inside one shared
+`TVUIKitMediaCollection` (horizontal shelf or vertical grid — same cell, same
+`ShelfMetrics` sizing) under `FeatureFlags.tvUIKitPosters` /
+`EnvironmentValues.usesTVUIKitPosters`
+([`KinoPubUI/Components/TVUIKit/`](../../../Packages/KinoPubUI/Sources/KinoPubUI/Components/TVUIKit/)).
+Rivulet pattern: caption nil on `TVPosterView`, overlays as a sibling of the image view with
+focus-scale sync + stale-appearance reset. Flag stays **off** until Device Hub focus validation.
+A Home shelf is the same poster grid scrolled sideways — not a second card component.
 
 | Type | Availability | What it gives |
 | --- | --- | --- |
@@ -30,22 +39,29 @@ Verified against `AppleTVOS27.0.sdk/System/Library/Frameworks/TVUIKit.framework/
 
 Cost, stated honestly: all of it is UIKit. `TVMediaItemContentConfiguration` implies a
 `UICollectionView` rail rather than a SwiftUI `LazyHStack`, and any bridge risks the
-"one focus owner per zone" rule above. Do **not** read this table as a mandate to port the rails.
+"one focus owner per zone" rule above. Do **not** read this table as a mandate to port every rail.
 
 Where it is genuinely worth the bridge:
 
+- **Poster shelves and poster grids** — one `TVUIKitMediaCollection` + `TVUIKitPosterCell`
+  (horizontal or vertical). Shipping path behind the flag above.
 - **`TVCollectionViewFullScreenLayout` for an autoplay hero.** `didCenterCellAtIndexPath:` is a
   system-provided "this card settled in the centre" hook — exactly the trigger a Netflix-style
   autoplaying hero needs, without hand-rolling centre detection, debounce, and fast-scroll
   cancellation. **Needs validation** before committing.
-- Our SwiftUI cards on `.borderless` + `.hoverEffect(.highlight)` already get system lift, specular,
-  and tilt. Replacing them with TVUIKit is not an automatic upgrade — argue it per case.
+- SwiftUI `.borderless` + `.hoverEffect(.highlight)` remains the fallback (and the path on
+  iOS/macOS). Detail / person rails that are not the shared poster atom stay SwiftUI until ported.
 
 ## Project decisions
 
-- Poster cards: native borderless lockup + hover highlight; captions react via `\.isFocused`.
+- **tvOS posters:** one atom — `TVPosterView` cell in `TVUIKitMediaCollection` — for Home shelves
+  and Movies/Series/Search/History/Watchlist grids when `FeatureFlags.tvUIKitPosters` is on.
+  Same `ShelfMetrics` sizing either orientation. SwiftUI `MediaCardView` is the fallback / other
+  platforms.
 - Rows screens hand focus to the first banner or shelf card, not the tab bar.
 - No inert reserved space above rows (old 560pt featured-preview spacer is gone).
+- Detail ambient muted trailer is **off on tvOS** (still + scrims + blurred poster wash). Trailer
+  button / real player unchanged. Ambient trailer may return with a dedicated hero pass.
 - Top Shelf is a **later platform-completeness** item — before advanced subtitles, after core catalog
   / shell work. **Needs validation** on entitlement / extension packaging when implemented.
 

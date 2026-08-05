@@ -25,7 +25,11 @@ public struct MediaZoomSourceModifier: ViewModifier {
   }
 
   public func body(content: Content) -> some View {
-#if os(iOS) || os(tvOS)
+    // tvOS: `matchedTransitionSource` masks the lockup and clips the system
+    // focus lift / specular — Home shelves looked cropped while the same
+    // `MediaPosterShelf` on detail (no zoom namespace) did not. Zoom morph
+    // stays iPhone/iPad only.
+#if os(iOS)
     if let namespace {
       content.matchedTransitionSource(id: id, in: namespace)
     } else {
@@ -39,7 +43,7 @@ public struct MediaZoomSourceModifier: ViewModifier {
 
 public extension View {
   /// Marks artwork as the zoom transition source when the enclosing stack published
-  /// a namespace via `\.zoomTransitionNamespace`.
+  /// a namespace via `\.zoomTransitionNamespace`. No-op on tvOS / macOS.
   func mediaZoomSource(id: String) -> some View {
     modifier(MediaZoomSourceModifier(id: id))
   }

@@ -16,6 +16,9 @@ public enum Metrics {
   public static let cardCaptionSpacing: CGFloat = 20
   public static let rowSpacing: CGFloat = 40
   public static let focusPadding: CGFloat = 32
+  /// Extra room for Continue Watching / landscape focus lift (wider tiles grow more
+  /// in absolute points; poster shelves keep `focusPadding`).
+  public static let landscapeFocusPadding: CGFloat = 56
   /// Apple TV Alerts / Light / Glyph + Title squircle.
   public static let hudSide: CGFloat = 220
   public static let hudCornerRadius: CGFloat = 36
@@ -26,6 +29,7 @@ public enum Metrics {
   public static let cardCaptionSpacing: CGFloat = 6
   public static let rowSpacing: CGFloat = 24
   public static let focusPadding: CGFloat = 4
+  public static let landscapeFocusPadding: CGFloat = 8
   /// Music-style confirmation HUD.
   public static let hudSide: CGFloat = 154
   public static let hudCornerRadius: CGFloat = 28
