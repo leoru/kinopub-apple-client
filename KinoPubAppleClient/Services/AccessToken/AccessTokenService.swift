@@ -17,6 +17,9 @@ protocol AccessTokenService {
   func set<T>(token: T) where T: Token
   func token<T>() -> T? where T: Token
   func clear()
+  /// `false` when the backend ended the session rather than the user — see the
+  /// implementation for why the two cannot be treated the same.
+  func clear(userInitiated: Bool)
 }
 
 protocol AccessTokenServiceProvider {
@@ -34,6 +37,10 @@ struct AccessTokenServiceMock: AccessTokenService {
   }
 
   func clear() {
-    
+
+  }
+
+  func clear(userInitiated: Bool) {
+
   }
 }

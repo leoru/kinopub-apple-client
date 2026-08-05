@@ -68,6 +68,24 @@ Use when the user asks, or when a visible custom piece has multiple defensible d
 Long builds and single-machine limits are real. Deferred verification is allowed; silent
 "everything landed" claims are not.
 
+### Shared debug session
+
+Every DEBUG build (macOS app, tvOS / iOS Simulator) mirrors the kino.pub session to one file,
+`~/.kinopub-dev-session.json`, and reseeds its Keychain from it when the Keychain is empty —
+see `DevSessionMirror` in
+[AccessTokenServiceImpl.swift](../../../KinoPubAppleClient/Services/AccessToken/AccessTokenServiceImpl.swift).
+So a reinstall, a wiped DerivedData or a switch between platforms does **not** need a fresh
+activation code. The account has five device slots; do not spend them on the dev loop.
+
+- Simulator reaches the real home through `SIMULATOR_HOST_HOME`; the sandboxed macOS app needs
+  `com.apple.security.temporary-exception.files.home-relative-path.read-write` for that one path,
+  which is why Debug has its own `KinoPubAppleClient-Debug.entitlements`. **Release must keep
+  pointing at `KinoPubAppleClient.entitlements`** — temporary exceptions fail App Review.
+- In `project.pbxproj` a configuration's `name = Debug` line comes **after** its settings. Check
+  which block you are editing before changing `CODE_SIGN_ENTITLEMENTS`, and verify with
+  `codesign -d --entitlements - --xml <app>` rather than trusting the edit.
+- Sign out (`clear()`) deletes the shared file, on purpose.
+
 ## Anti-patterns seen here
 
 - Inventing design-decision blockers that the user did not set.

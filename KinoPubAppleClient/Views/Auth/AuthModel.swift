@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import KinoPubUI
 import KinoPubBackend
 import KinoPubLogging
 import OSLog
@@ -32,6 +33,13 @@ class AuthModel: ObservableObject {
   @Published var verificationURL: String = ""
   /// A new code is on its way: the screen shows a spinner under the code.
   @Published var isRefreshing: Bool = true
+  /// When the current code stops working. The screen counts down to it, because a code
+  /// that silently swaps under you while you are typing it into a browser is the whole
+  /// reason activation feels broken.
+  @Published var codeValidRange: ClosedRange<Date>?
+  /// Copy confirmation. The code block has no button of its own — the whole block is
+  /// the target — so this is the only thing that says the click landed.
+  @Published var hudToast: HudToast?
 
   /// How long to wait before asking for a code again when the request itself failed.
   /// Doubles on every consecutive failure (capped at 30s) so an offline device does
@@ -59,12 +67,41 @@ class AuthModel: ObservableObject {
       currentRetryInterval = retryInterval
       deviceCode = response.userCode
       verificationURL = displayURL(from: response.verificationUri)
+      let now = Date()
+      codeValidRange = now...now.addingTimeInterval(TimeInterval(response.expiresIn))
       isRefreshing = false
 
       if await pollForToken(with: response) {
         return
       }
     }
+  }
+
+  /// tvOS has no pasteboard worth writing to — there the code is read off the screen.
+  var canCopyCode: Bool {
+#if os(tvOS)
+    false
+#else
+    !deviceCode.isEmpty
+#endif
+  }
+
+  func copyCode() {
+    guard canCopyCode else { return }
+#if os(macOS)
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(deviceCode, forType: .string)
+#elseif canImport(UIKit) && !os(tvOS)
+    UIPasteboard.general.string = deviceCode
+#endif
+    hudToast = HudToast(systemImage: "document.on.document.fill", title: "Copied".localized)
+  }
+
+  /// Opening the site without the code in hand means going back for it — so Activate
+  /// copies first. One press, then paste.
+  func activate() {
+    copyCode()
+    openActivationURL()
   }
 
   func openActivationURL() {

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Debug-only entitlements. The sandbox is OFF here, on purpose and by explicit request:
+  the dev loop kept losing the kino.pub session because a sandboxed build re-signed on
+  every compile gets a fresh container and a Keychain the previous signature can no
+  longer read, so it asked for a new activation code every run. The account has five
+  device slots; that is not a budget for rebuilds.
+
+  With the sandbox off, `NSHomeDirectory()` is the real home and `DevSessionMirror`
+  (Services/AccessToken/AccessTokenServiceImpl.swift) shares ~/.kinopub-dev-session.json
+  with the Simulator builds without needing any file exception.
+
+  Release keeps `KinoPubAppleClient.entitlements`, sandbox ON — nothing here is a
+  statement about shipping. The cost of this trade: Debug no longer catches sandbox
+  violations, so anything touching file access (downloads, exports) must be checked in
+  a Release build before it is called done.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
+	<true/>
+</dict>
+</plist>

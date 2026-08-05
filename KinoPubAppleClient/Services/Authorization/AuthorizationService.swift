@@ -17,6 +17,8 @@ protocol AuthorizationService {
   func fetchToken(by verification: VerificationResponse) async throws
   func refreshToken() async throws
   func logout()
+  /// `false` when the backend rejected the session rather than the user signing out.
+  func logout(userInitiated: Bool)
 }
 
 protocol AuthorizationServiceProvider {
@@ -38,7 +40,11 @@ struct AuthorizationServiceMock: AuthorizationService {
   }
   
   func logout() {
-    
+
+  }
+
+  func logout(userInitiated: Bool) {
+
   }
 
 }

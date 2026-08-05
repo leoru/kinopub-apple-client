@@ -39,12 +39,31 @@ final class AuthorizationServiceImpl: AuthorizationService {
     let request = RefreshTokenRequest(clientID: configuration.clientID,
                                       clientSecret: configuration.clientSecret,
                                       refreshToken: token.refreshToken)
-    let newToken = try await apiClient.performRequest(with: request, decodingType: AccessToken.self)
-    accessTokenService.set(token: newToken)
+    do {
+      let newToken = try await apiClient.performRequest(with: request, decodingType: AccessToken.self)
+      accessTokenService.set(token: newToken)
+    } catch {
+#if DEBUG && (targetEnvironment(simulator) || os(macOS))
+      // kino.pub rotates refresh tokens: refreshing invalidates the token that was used.
+      // Debug builds share one session file, so a second build refreshing a minute later
+      // presents a token the backend already retired and gets a 400 — even though the
+      // session is perfectly alive under the *new* token. Adopt whatever the shared file
+      // holds now before treating this as a dead session.
+      if let shared = DevSessionMirror.load(), shared.refreshToken != token.refreshToken {
+        accessTokenService.set(token: shared)
+        return
+      }
+#endif
+      throw error
+    }
   }
-  
+
   func logout() {
-    accessTokenService.clear()
+    logout(userInitiated: true)
+  }
+
+  func logout(userInitiated: Bool) {
+    accessTokenService.clear(userInitiated: userInitiated)
     BookmarkMembershipStore.shared.clear()
     // Do NOT clear ResponseCache — we only cache immutable reference lists
     // (genres/countries). Those never change per account on kino.pub.

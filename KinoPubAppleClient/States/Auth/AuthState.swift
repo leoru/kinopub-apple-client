@@ -131,7 +131,7 @@ final class AuthState: ObservableObject {
       // really over. Clear Keychain so the next launch does not revive a dead token.
       refreshRetryTask?.cancel()
       refreshRetryTask = nil
-      authService.logout()
+      authService.logout(userInitiated: false)
       markSignedOut(reason: "refresh rejected")
     } catch {
       // Timeout / offline / unreachable host: keep the session. The Keychain token
