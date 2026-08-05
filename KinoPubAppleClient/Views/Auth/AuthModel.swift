@@ -94,11 +94,14 @@ class AuthModel: ObservableObject {
   }
 
   /// Polls until the user activates the code (`true`) or the code goes stale (`false`).
+  /// Floor the server interval at 5s and honour `slow_down` so a pending device does
+  /// not hammer `grant_type=device_token` every second (and flood the console).
   private func pollForToken(with response: VerificationResponse) async -> Bool {
     let expiresAt = Date().addingTimeInterval(TimeInterval(response.expiresIn))
+    var interval = max(TimeInterval(response.interval), 5)
 
     while !Task.isCancelled {
-      try? await Task.sleep(for: .seconds(response.interval))
+      try? await Task.sleep(for: .seconds(interval))
       guard !Task.isCancelled else { return true }
 
       if Date() >= expiresAt {
@@ -108,11 +111,14 @@ class AuthModel: ObservableObject {
 
       do {
         try await authService.fetchToken(by: response)
-        authState.userState = .authorized
-        authState.shouldShowAuthentication = false
+        authState.markSignedIn()
         Logger.app.debug("token requested")
         return true
       } catch let error as APIClientError where error.isAuthorizationPending {
+        continue
+      } catch let error as APIClientError where error.isSlowDown {
+        interval = min(interval * 2, 30)
+        Logger.app.debug("device poll slow_down — backing off to \(interval)s")
         continue
       } catch {
         Logger.app.debug("token request failed: \(error)")

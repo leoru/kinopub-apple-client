@@ -23,10 +23,19 @@ struct RootView: View {
     // cycling the hero through the material, and its unauthorized requests toast on a screen
     // you cannot leave. No animated teardown — UIKit's TabView asserts when sidebarAdaptable
     // tabs are removed mid-update ("No view controller matches the UITabBarItem").
+    //
+    // `.resolving` is a blank splash on purpose: mounting Tabs with a Keychain token that
+    // then fails refresh is what used to DDoS `/v1/items/*` + spam 401→refresh.
     Group {
-      if authState.shouldShowAuthentication {
+      switch authState.phase {
+      case .resolving:
+        ZStack {
+          Color.KinoPub.background.ignoresSafeArea()
+          ProgressView()
+        }
+      case .signedOut:
         AuthView(model: AuthModel(authService: appContext.authService, authState: authState))
-      } else {
+      case .signedIn:
         TabsNavigationView()
       }
     }

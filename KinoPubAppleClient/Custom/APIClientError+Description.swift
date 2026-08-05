@@ -39,6 +39,19 @@ extension APIClientError: CustomStringConvertible {
     return false
   }
 
+  /// OAuth device-flow `slow_down` — caller must increase its poll interval.
+  var isSlowDown: Bool {
+    switch self {
+    case .networkError(let error):
+      if let backendError = error as? BackendError, backendError.errorCode == .slowDown {
+        return true
+      }
+      return false
+    default:
+      return false
+    }
+  }
+
   /// True only when the backend explicitly rejected the credentials. Delegates to
   /// the backend's `isAuthRejection` so the app and the tests share one truth.
   var isFatalAuthError: Bool {
