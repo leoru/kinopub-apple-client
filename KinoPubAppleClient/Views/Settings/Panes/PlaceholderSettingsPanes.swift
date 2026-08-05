@@ -147,6 +147,12 @@ struct AppearanceSettingsPane: View {
       } footer: {
         Text("Duration chip pins bottom-leading. New-episode counts (+N) render as a caption label, not a title chip. Watched dim/checkmark is for vertical posters.")
       }
+
+      Section {
+        NavigationLink("Sections", value: SettingsDetailRoute.sections)
+      } footer: {
+        Text("Choose which tabs show up.")
+      }
     }
     .formStyle(.grouped)
   }

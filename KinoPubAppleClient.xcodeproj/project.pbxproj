@@ -14,11 +14,13 @@
 		57DF3824CA609C7DA4EB8324 /* RowSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 849905DC0A8DF6F36DF8A402 /* RowSnapshotStore.swift */; };
 		5CDA790E2BD84471ADAD5D9D /* ContentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A455BD91626C3A69A07FF16 /* ContentStore.swift */; };
 		68BB8FA83F27CECB0FFCA1E7 /* StorageSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831F62D766B34A0EEBB24C1C /* StorageSettingsView.swift */; };
+		702A02E524E03828B24D58EE /* SectionVisibilityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52C3C1EAD68A9B19F26BA2E /* SectionVisibilityStore.swift */; };
 		84B06A5DC1674B8DBDF075FC /* DeviceIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673B11D8E07244CCADA6EBBB /* DeviceIdentity.swift */; };
 		9181898AA7F0D28971B9EAB2 /* DeviceCapabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B122808656F8D05B7D97DC /* DeviceCapabilities.swift */; };
 		957B7DB6C328FC72EA807FB4 /* KinopoiskKeyStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF839DD0A6CCD4C0704367D /* KinopoiskKeyStorage.swift */; };
 		9B557ACAF0C4E827778EFCB4 /* DevicesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A638F296984806CE370A2B2 /* DevicesListView.swift */; };
 		9BB427D377EF668A2FFC1A10 /* KinopoiskSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */; };
+		9F6F94A15ADEFE2F79EFD2E3 /* SectionsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CCB33005E595A30B2B59E06 /* SectionsSettingsView.swift */; };
 		A1B2C3D42E5F60718293A002 /* RouteDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293A001 /* RouteDestination.swift */; };
 		A1B2C3D42E5F60718293A004 /* PlaybackSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293A003 /* PlaybackSession.swift */; };
 		A33EDB761E32D7E524DDAB0F /* ActorImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A9752C15D23B6E4419BA5E1 /* ActorImageProvider.swift */; };
@@ -167,6 +169,7 @@
 		6061CC9A771DBC1648BCA1F0 /* SeasonDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonDownloadManager.swift; sourceTree = "<group>"; };
 		673B11D8E07244CCADA6EBBB /* DeviceIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdentity.swift; sourceTree = "<group>"; };
 		6A638F296984806CE370A2B2 /* DevicesListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DevicesListView.swift; sourceTree = "<group>"; };
+		6CCB33005E595A30B2B59E06 /* SectionsSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SectionsSettingsView.swift; sourceTree = "<group>"; };
 		76F6301ED273E06AFCEBCC48 /* KinopoiskKeySettingsModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KinopoiskKeySettingsModel.swift; sourceTree = "<group>"; };
 		831F62D766B34A0EEBB24C1C /* StorageSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StorageSettingsView.swift; sourceTree = "<group>"; };
 		849905DC0A8DF6F36DF8A402 /* RowSnapshotStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RowSnapshotStore.swift; sourceTree = "<group>"; };
@@ -176,6 +179,7 @@
 		A1B2C3D42E5F60718293A003 /* PlaybackSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSession.swift; sourceTree = "<group>"; };
 		AC55C398012BAC5D583D1A45 /* DeviceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceService.swift; sourceTree = "<group>"; };
 		AF84111EC8ACE8C4885E1A76 /* CollectionsServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsServiceImpl.swift; sourceTree = "<group>"; };
+		B52C3C1EAD68A9B19F26BA2E /* SectionVisibilityStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SectionVisibilityStore.swift; sourceTree = "<group>"; };
 		B7C4A1E02F9D4C1B8A635001 /* UserProfileCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UserProfileCache.swift; sourceTree = "<group>"; };
 		C102076A821C81AC8BAB6DE6 /* CollectionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsService.swift; sourceTree = "<group>"; };
 		C772C50E0B074833907CDAE2 /* LocalWatchProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalWatchProgressStore.swift; sourceTree = "<group>"; };
@@ -690,6 +694,7 @@
 				CC01461E2A783F8400F858AF /* Routes.swift */,
 				A1B2C3D42E5F60718293A001 /* RouteDestination.swift */,
 				CC0146342A78439600F858AF /* NavigationLinkProvider.swift */,
+				B52C3C1EAD68A9B19F26BA2E /* SectionVisibilityStore.swift */,
 			);
 			path = Navigation;
 			sourceTree = "<group>";
@@ -881,6 +886,7 @@
 				SET5F449030BE4759108DBE1 /* About */,
 				6A638F296984806CE370A2B2 /* DevicesListView.swift */,
 				831F62D766B34A0EEBB24C1C /* StorageSettingsView.swift */,
+				6CCB33005E595A30B2B59E06 /* SectionsSettingsView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -1104,6 +1110,8 @@
 				37B5470AC84450505E1E280E /* DevicesSettingsPane.swift in Sources */,
 				9B557ACAF0C4E827778EFCB4 /* DevicesListView.swift in Sources */,
 				68BB8FA83F27CECB0FFCA1E7 /* StorageSettingsView.swift in Sources */,
+				702A02E524E03828B24D58EE /* SectionVisibilityStore.swift in Sources */,
+				9F6F94A15ADEFE2F79EFD2E3 /* SectionsSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

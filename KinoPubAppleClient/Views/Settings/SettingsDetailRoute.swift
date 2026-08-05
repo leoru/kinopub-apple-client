@@ -10,6 +10,7 @@ import Foundation
 enum SettingsDetailRoute: Hashable {
   case devicesList
   case storage
+  case sections
 #if DEBUG
   case streamSurvey
   /// Opens the in-process UI lab (iOS). macOS uses `openWindow` instead.
