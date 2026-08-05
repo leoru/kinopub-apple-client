@@ -54,10 +54,16 @@ public struct HomeBannerCardView: View {
         poster(height: posterHeight)
 
         VStack(alignment: .leading, spacing: Self.titleSpacing) {
-          MarqueeText(card.title, font: Self.titleFont, foreground: .white)
+          Text(card.title)
+            .font(Self.titleFont)
+            .foregroundStyle(.white)
+            .lineLimit(1)
 
           if let subtitle = card.subtitle, !subtitle.isEmpty, subtitle != card.title {
-            MarqueeText(subtitle, font: Self.subtitleFont, foreground: .white.opacity(0.85))
+            Text(subtitle)
+              .font(Self.subtitleFont)
+              .foregroundStyle(.white.opacity(0.85))
+              .lineLimit(1)
           }
 
           // Detailed IMDb / KP scores stay beside the copy; the poster carries the

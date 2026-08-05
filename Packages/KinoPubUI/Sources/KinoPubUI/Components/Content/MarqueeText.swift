@@ -2,14 +2,34 @@
 //  MarqueeText.swift
 //  KinoPubUI
 //
-//  Focused overflowing labels scroll horizontally; Reduce Motion keeps truncation.
+//  tvOS: UILabel.enablesMarqueeWhenAncestorFocused — system marquee instead of "…".
+//  Other platforms: single-line truncate (no focus marquee).
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
-/// Single-line label that marquees when focused and truncated. Used for card /
-/// episode titles and long sidebar names — not body copy.
+/// Single-line shelf / card title. On tvOS uses the system focus marquee so long
+/// titles scroll instead of ending in an ellipsis while an ancestor is focused.
 public struct MarqueeText: View {
+  public enum Style: Sendable {
+    case title
+    case subtitle
+    case meta
+
+#if os(tvOS)
+    var textStyle: UIFont.TextStyle {
+      switch self {
+      case .title: return .headline
+      case .subtitle: return .callout
+      case .meta: return .caption1
+      }
+    }
+#endif
+  }
+
   private let text: String
   private let font: Font
   private let foreground: Color
@@ -17,74 +37,82 @@ public struct MarqueeText: View {
   /// When true (default), expands to the parent's width for shelf captions.
   /// When false, hugs the glyph width so siblings (badges) can sit flush beside it.
   private let fillsWidth: Bool
-
-  @Environment(\.isFocused) private var isFocused
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var textWidth: CGFloat = 0
-  @State private var containerWidth: CGFloat = 0
-  @State private var offset: CGFloat = 0
-  @State private var runToken = 0
+  private let style: Style
 
   public init(
     _ text: String,
     font: Font = TypeScale.cardTitle,
     foreground: Color = Color.KinoPub.text,
     alignment: Alignment = .leading,
-    fillsWidth: Bool = true
+    fillsWidth: Bool = true,
+    style: Style = .title
   ) {
     self.text = text
     self.font = font
     self.foreground = foreground
     self.alignment = alignment
     self.fillsWidth = fillsWidth
-  }
-
-  private var isTruncated: Bool {
-    textWidth > containerWidth + 1 && containerWidth > 0
+    self.style = style
   }
 
   public var body: some View {
+#if os(tvOS)
+    NativeFocusMarqueeLabel(
+      text: text,
+      textStyle: style.textStyle,
+      foreground: UIColor(foreground),
+      alignment: nsTextAlignment
+    )
+    .modifier(MarqueeWidthModifier(fillsWidth: fillsWidth, alignment: alignment))
+    .accessibilityLabel(Text(text))
+#else
     Text(text)
       .font(font)
       .foregroundStyle(foreground)
       .lineLimit(1)
-      .background {
-        Text(text)
-          .font(font)
-          .lineLimit(1)
-          .fixedSize(horizontal: true, vertical: false)
-          .hidden()
-          .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { textWidth = $0 }
-      }
-      .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { containerWidth = $0 }
-      .offset(x: offset)
+      .truncationMode(.tail)
       .modifier(MarqueeWidthModifier(fillsWidth: fillsWidth, alignment: alignment))
-      .clipped()
-      .onChange(of: isFocused) { _, focused in
-        runToken += 1
-        if focused {
-          startMarquee(token: runToken)
-        } else {
-          withAnimation(.easeOut(duration: 0.2)) { offset = 0 }
-        }
-      }
       .accessibilityLabel(Text(text))
+#endif
   }
 
-  private func startMarquee(token: Int) {
-    offset = 0
-    guard isTruncated, !reduceMotion else { return }
-    Task { @MainActor in
-      try? await Task.sleep(for: .milliseconds(450))
-      guard token == runToken, isFocused, isTruncated, !reduceMotion else { return }
-      let travel = textWidth - containerWidth + 24
-      let duration = min(max(Double(travel) / 40.0, 2.0), 8.0)
-      withAnimation(.linear(duration: duration)) {
-        offset = -travel
-      }
+#if os(tvOS)
+  private var nsTextAlignment: NSTextAlignment {
+    switch alignment {
+    case .center, .top, .bottom: return .center
+    case .trailing, .topTrailing, .bottomTrailing: return .right
+    default: return .left
     }
   }
+#endif
 }
+
+#if os(tvOS)
+/// System marquee: scrolls while any ancestor in the focus hierarchy is focused.
+private struct NativeFocusMarqueeLabel: UIViewRepresentable {
+  var text: String
+  var textStyle: UIFont.TextStyle
+  var foreground: UIColor
+  var alignment: NSTextAlignment
+
+  func makeUIView(context: Context) -> UILabel {
+    let label = UILabel()
+    label.numberOfLines = 1
+    label.enablesMarqueeWhenAncestorFocused = true
+    label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    label.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    return label
+  }
+
+  func updateUIView(_ label: UILabel, context: Context) {
+    label.text = text
+    label.font = .preferredFont(forTextStyle: textStyle)
+    label.textColor = foreground
+    label.textAlignment = alignment
+    label.enablesMarqueeWhenAncestorFocused = true
+  }
+}
+#endif
 
 private struct MarqueeWidthModifier: ViewModifier {
   let fillsWidth: Bool

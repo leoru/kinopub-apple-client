@@ -1446,7 +1446,7 @@ struct MediaItemInfoColumns: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: Self.footerSpacing) {
-      ViewThatFits(in: .horizontal) { // НЕТ КАК РАЗ ТУТ НАДО НАОБОРОТ ОНО ДОЛЖНО ЗАЛИВАТЬ ВСЮ ШИРИНУ И эти колонки должны заполнять нопополам....... а не влево стекаться
+      ViewThatFits(in: .horizontal) {
         HStack(alignment: .top, spacing: Self.columnSpacing) {
           columnViews
         }
@@ -1461,10 +1461,21 @@ struct MediaItemInfoColumns: View {
                  isSeries: mediaItem.isSeries,
                  debugLog: externalMetadata.debugLog,
                  onSectionFocused: onSectionFocused)
-
-      MetadataReferenceSection(onSectionFocused: onSectionFocused)
+    }
+#if os(tvOS)
+    // One panel band at the bottom of the page — cheap material over the wash.
+    .padding(.horizontal, 36)
+    .padding(.vertical, 28)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background {
+      RoundedRectangle(cornerRadius: 28, style: .continuous)
+        .fill(.regularMaterial)
+        .opacity(0.72)
     }
     .padding(.horizontal, MediaItemLayout.horizontalInset)
+#else
+    .padding(.horizontal, MediaItemLayout.horizontalInset)
+#endif
   }
 
   @ViewBuilder
@@ -1916,118 +1927,8 @@ struct MediaItemInfoColumns: View {
     }
   }
 
-  /// Dev-facing map of every TMDB/Kinopoisk field or endpoint touched by this session's
-  /// integration work — what's actually parsed today vs. fetched-but-discarded vs. never
-  /// called. Hand-curated against real API responses, not the docs; re-audit before trusting
-  /// it against a newer TMDB/Kinopoisk response shape. Not for end-user consumption.
-  private struct MetadataReferenceSection: View {
-    var onSectionFocused: (() -> Void)? = nil
-
-    private enum RowStatus: String {
-      case parsed = "Parsed"
-      case fetchedUnused = "Fetched, unused"
-      case available = "Available"
-
-      var tint: Color {
-        switch self {
-        case .parsed: .green
-        case .fetchedUnused: .orange
-        case .available: .secondary
-        }
-      }
-    }
-
-    private struct Row: Identifiable {
-      let id: Int
-      let source: String
-      let name: String
-      let status: RowStatus
-    }
-
-    private static let rows: [Row] = {
-      var rows: [Row] = []
-      var next = 0
-      func add(_ source: String, _ name: String, _ status: RowStatus) {
-        rows.append(Row(id: next, source: source, name: name, status: status))
-        next += 1
-      }
-
-      add("TMDB", "/find (resolve by IMDb id)", .parsed)
-      add("TMDB", "/movie|tv/{id} (base details)", .parsed)
-      add("TMDB", "append_to_response: credits, aggregate_credits", .parsed)
-      add("TMDB", "append_to_response: images", .parsed)
-      add("TMDB", "append_to_response: videos", .parsed)
-      add("TMDB", "append_to_response: release_dates, content_ratings", .parsed)
-      add("TMDB", "append_to_response: keywords", .parsed)
-      add("TMDB", "append_to_response: external_ids → imdb_id", .parsed)
-      add("TMDB", "tagline", .parsed)
-      add("TMDB", "homepage", .parsed)
-      add("TMDB", "budget, revenue", .parsed)
-      add("TMDB", "production_companies, networks", .parsed)
-      add("TMDB", "next_episode_to_air, last_episode_to_air", .parsed)
-      add("TMDB", "/tv/{id}/season/{n} (episode schedule)", .parsed)
-      add("TMDB", "/person/{id} (bio, birthday, photo)", .parsed)
-      add("TMDB", "overview", .fetchedUnused)
-      add("TMDB", "genres", .fetchedUnused)
-      add("TMDB", "external_ids → tvdb_id, facebook_id, instagram_id, twitter_id", .fetchedUnused)
-      add("TMDB", "vote_average, vote_count", .fetchedUnused)
-      add("TMDB", "/movie|tv/{id}/reviews", .available)
-      add("TMDB", "/movie|tv/{id}/recommendations", .available)
-      add("TMDB", "/movie|tv/{id}/similar", .available)
-      add("TMDB", "/movie|tv/{id}/alternative_titles", .available)
-      add("TMDB", "/movie|tv/{id}/translations", .available)
-      add("TMDB", "/movie|tv/{id}/watch/providers", .available)
-      add("TMDB", "/collection/{id} (belongs_to_collection)", .available)
-      add("TMDB", "/discover/movie|tv", .available)
-      add("TMDB", "/trending/...", .available)
-      add("TMDB", "/certification/movie|tv/list", .available)
-
-      add("Kinopoisk", "/api/v2.2/films/{id} (details → artwork)", .parsed)
-      add("Kinopoisk", "/api/v1/staff?filmId= (cast/crew, RU names)", .parsed)
-      add("Kinopoisk", "/api/v2.2/films/{id}/awards", .parsed)
-      add("Kinopoisk", "/api/v2.2/films/{id}/images?type=STILL", .parsed)
-      add("Kinopoisk", "/api/v2.2/films/{id}/facts", .parsed)
-      add("Kinopoisk", "/api/v1/staff/{staffId} (person bio)", .available)
-      add("Kinopoisk", "/api/v2.2/films/{id}/box_office", .available)
-      add("Kinopoisk", "/api/v2.2/films/{id}/videos", .available)
-      add("Kinopoisk", "/api/v2.2/films/{id}/reviews", .available)
-      add("Kinopoisk", "/api/v2.2/films/{id}/similars", .available)
-      add("Kinopoisk", "/api/v2.2/films/{id}/relations", .available)
-      add("Kinopoisk", "/api/v2.1/films/{id}/sequels_and_prequels", .available)
-      add("Kinopoisk", "/api/v2.2/films/collections?type=...", .available)
-
-      return rows
-    }()
-
-    var body: some View {
-      VStack(alignment: .leading, spacing: 10) {
-        Text(verbatim: "Metadata field/endpoint reference")
-          .font(.system(size: 15, weight: .semibold))
-          .foregroundStyle(Color.KinoPub.text)
-        Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 5) {
-          GridRow {
-            Text(verbatim: "Source").foregroundStyle(.secondary)
-            Text(verbatim: "Field / endpoint").foregroundStyle(.secondary)
-            Text(verbatim: "Status").foregroundStyle(.secondary)
-          }
-          .font(.system(size: 11, weight: .semibold))
-          ForEach(Self.rows) { row in
-            GridRow {
-              Text(verbatim: row.source)
-              Text(verbatim: row.name)
-              Text(verbatim: row.status.rawValue)
-                .foregroundStyle(row.status.tint)
-            }
-            .font(.system(size: 12, design: .monospaced))
-          }
-        }
-      }
-#if os(tvOS)
-      .focusable(true)
-      .reportMediaItemSectionFocus(onSectionFocused)
-#endif
-    }
-  }
+  /// Dev-facing MetadataReferenceSection removed from the shipped footer (focus /
+  /// bottom clutter). Restore from git history under this type if an API audit needs it.
 
 #if os(tvOS)
   static let columnSpacing: CGFloat = 60
@@ -2113,14 +2014,18 @@ enum MediaItemLayout {
 #if os(tvOS)
   static let horizontalInset: CGFloat = 80
   static let sectionSpacing: CGFloat = 44
+  /// Clears focus lift under the info panel + safe area.
+  static let bottomPadding: CGFloat = 120
   static let headerFont: Font = .system(size: 32, weight: .semibold)
 #elseif os(macOS)
   static let horizontalInset: CGFloat = 32
   static let sectionSpacing: CGFloat = 28
+  static let bottomPadding: CGFloat = sectionSpacing
   static let headerFont: Font = .system(size: 22, weight: .semibold)
 #else
   static let horizontalInset: CGFloat = 20
   static let sectionSpacing: CGFloat = 24
+  static let bottomPadding: CGFloat = sectionSpacing
   static let headerFont: Font = .system(size: 20, weight: .semibold)
 #endif
 }

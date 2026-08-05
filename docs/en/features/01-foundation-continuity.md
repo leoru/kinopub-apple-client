@@ -59,6 +59,9 @@ not supporting it at all. See [layout-and-containers](../apple-platform/layout-a
 
 - [x] tvOS detail ambient trailer off — still + `topGradient` / `bottomScrim` + blurred poster wash
   (ambient trailer later with a dedicated hero pass; Trailer button / real player unchanged)
+- [x] tvOS detail wash rewired: section focus + scroll progress scrub a cheap `.regularMaterial`
+  veil; hero chrome fades faster than the wash (Rivulet-style). Facts/Reviews hidden on tvOS;
+  metadata-debug footer removed; Info block sits on a material panel
 - [ ] tvOS TVUIKit posters (`FeatureFlags.tvUIKitPosters`) — one shared collection for Home shelves
   and catalog grids; **Device Hub focus validation pending** before flipping the flag on
   (Up/Down between rails, overlay scale sync, Select / context menu, grid scroll / pagination)

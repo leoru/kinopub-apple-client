@@ -31,6 +31,9 @@ struct MediaItemView: View {
   /// False once focus has left the hero — on tvOS fades the pinned wide still
   /// down to the blurred poster wash; on macOS also pauses the ambient trailer.
   @State private var isHeroOnScreen = true
+  /// Scroll-driven wash scrub (0 at hero rest → 1 below fold). Focus still forces
+  /// full wash via `isHeroOnScreen`; this intensifies the material as you scroll.
+  @State private var washProgress: CGFloat = 0
   @FocusState private var focus: MediaItemFocusTarget?
 #if os(macOS)
   /// The one-player rule (`PlaybackSession`) only covers the real film/trailer player.
@@ -117,6 +120,17 @@ struct MediaItemView: View {
       .onChange(of: isHeroOnScreen) { _, onScreen in
         trailer.setActive(onScreen)
       }
+#if os(tvOS)
+      .onChange(of: focus) { _, target in
+        switch target {
+        case .play, .heroOther, .plot:
+          isHeroOnScreen = true
+          washProgress = 0
+        case .none:
+          break
+        }
+      }
+#endif
       .onDisappear {
         trailer.stop()
       }
@@ -167,6 +181,7 @@ struct MediaItemView: View {
                           focus: $focus,
                           trailer: trailer,
                           isHeroOnScreen: $isHeroOnScreen,
+                          washProgress: washProgress,
                           linkProvider: itemModel.linkProvider,
                           isWatched: itemModel.isWatched,
                           isBookmarked: itemModel.isBookmarked,
@@ -189,16 +204,29 @@ struct MediaItemView: View {
 #endif
 
         contentSections
-#if os(tvOS)
-          .focusSection()
-#endif
       }
-      .padding(.bottom, MediaItemLayout.sectionSpacing)
+      .padding(.bottom, MediaItemLayout.bottomPadding)
     }
     .coordinateSpace(name: MediaItemLayout.scrollSpace)
 #if os(tvOS)
-    .scrollTargetBehavior(.viewAligned)
+    // No `.viewAligned` on the vertical detail scroll — it fought section focus
+    // and pinned a full-viewport hero so the info panel never settled on screen.
+    // Home banners keep viewAligned on their own horizontal rails.
+    .onScrollGeometryChange(for: CGFloat.self) { geo in
+      geo.contentOffset.y + geo.contentInsets.top
+    } action: { _, offset in
+      // Rivulet uses ~600pt reserve; map into 0…1 for material scrub.
+      let progress = min(max(offset / Self.washScrollDistance, 0), 1)
+      if abs(progress - washProgress) > 0.01 {
+        washProgress = progress
+      }
+    }
 #endif
+  }
+
+  /// Fired when any below-hero section takes focus — flips the backdrop wash.
+  private var leaveHero: () -> Void {
+    { isHeroOnScreen = false }
   }
 
   @ViewBuilder
@@ -209,6 +237,7 @@ struct MediaItemView: View {
                         linkProvider: itemModel.linkProvider,
                         seriesTitle: itemModel.mediaItem.localizedTitle,
                         showsChrome: true,
+                        onSectionFocused: leaveHero,
                         onHide: { episode, season in
                           itemModel.hide(episode: episode, season: season)
                         },
@@ -222,32 +251,47 @@ struct MediaItemView: View {
                         })
       }
 
-      MediaItemRatingsSection(mediaItem: itemModel.mediaItem, showsHeader: true)
+      MediaItemRatingsSection(mediaItem: itemModel.mediaItem,
+                              showsHeader: true,
+                              onSectionFocused: leaveHero)
       MediaItemCommunityVoteSection(likeCount: itemModel.likeCount,
                                     dislikeCount: itemModel.dislikeCount,
                                     myVote: itemModel.myVote,
-                                    onVote: { itemModel.vote(up: $0) })
+                                    onVote: { itemModel.vote(up: $0) },
+                                    onSectionFocused: leaveHero)
       MediaItemCastSection(mediaItem: itemModel.mediaItem,
                            linkProvider: itemModel.linkProvider,
                            externalMetadata: itemModel.externalMetadata,
-                           externalMetadataLoaded: itemModel.externalMetadataLoaded)
-      MediaItemAwardsSection(awards: itemModel.externalMetadata.awards)
-      MediaItemPhotosSection(stills: itemModel.externalMetadata.stills)
-      MediaItemFactsSection(facts: itemModel.externalMetadata.facts)
-      MediaItemReviewsSection(reviews: itemModel.externalMetadata.reviews)
-      MediaItemSimilarSection(items: itemModel.similarItems, linkProvider: itemModel.linkProvider)
+                           externalMetadataLoaded: itemModel.externalMetadataLoaded,
+                           onSectionFocused: leaveHero)
+      MediaItemAwardsSection(awards: itemModel.externalMetadata.awards,
+                             onSectionFocused: leaveHero)
+      MediaItemPhotosSection(stills: itemModel.externalMetadata.stills,
+                             onSectionFocused: leaveHero)
+#if !os(tvOS)
+      MediaItemFactsSection(facts: itemModel.externalMetadata.facts,
+                            onSectionFocused: leaveHero)
+      MediaItemReviewsSection(reviews: itemModel.externalMetadata.reviews,
+                              onSectionFocused: leaveHero)
+#endif
+      MediaItemSimilarSection(items: itemModel.similarItems,
+                              linkProvider: itemModel.linkProvider,
+                              onSectionFocused: leaveHero)
       MediaItemPersonShelfSection(titleFormat: "More from %@",
                                   person: itemModel.primaryDirector,
                                   items: itemModel.moreFromDirector,
                                   isLoaded: itemModel.moreFromDirectorLoaded,
-                                  linkProvider: itemModel.linkProvider)
+                                  linkProvider: itemModel.linkProvider,
+                                  onSectionFocused: leaveHero)
       MediaItemPersonShelfSection(titleFormat: "More with %@",
                                   person: itemModel.primaryActor,
                                   items: itemModel.moreWithActor,
                                   isLoaded: itemModel.moreWithActorLoaded,
-                                  linkProvider: itemModel.linkProvider)
+                                  linkProvider: itemModel.linkProvider,
+                                  onSectionFocused: leaveHero)
       MediaItemInfoColumns(mediaItem: itemModel.mediaItem,
-                           externalMetadata: itemModel.externalMetadata)
+                           externalMetadata: itemModel.externalMetadata,
+                           onSectionFocused: leaveHero)
     }
   }
 
@@ -257,7 +301,8 @@ struct MediaItemView: View {
     if itemModel.itemLoaded {
       MediaItemHeroBackdrop(mediaItem: itemModel.mediaItem,
                             trailer: trailer,
-                            isHeroOnScreen: isHeroOnScreen)
+                            isHeroOnScreen: isHeroOnScreen,
+                            washProgress: washProgress)
     } else {
       ambientBackground
     }
@@ -300,6 +345,8 @@ struct MediaItemView: View {
   private static let ambientBuffer = CGSize(width: 160, height: 90)
   private static let ambientBlur: CGFloat = 10
   private static let ambientScale: CGFloat = 14
+  /// Rivulet-style reserve distance for wash scrub (~600pt).
+  private static let washScrollDistance: CGFloat = 600
 
   private static func openWatchlist(_ navigationState: NavigationState) {
 #if os(macOS)

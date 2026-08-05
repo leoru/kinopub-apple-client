@@ -61,7 +61,9 @@ public final class TVUIKitContinueWatchingCell: UICollectionViewCell {
     titleLabel.translatesAutoresizingMaskIntoConstraints = false
     titleLabel.font = .preferredFont(forTextStyle: .headline)
     titleLabel.textColor = .white
-    titleLabel.numberOfLines = 2
+    titleLabel.numberOfLines = 1
+    titleLabel.enablesMarqueeWhenAncestorFocused = true
+    titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     card.contentView.addSubview(titleLabel)
 
     metaLabel.translatesAutoresizingMaskIntoConstraints = false

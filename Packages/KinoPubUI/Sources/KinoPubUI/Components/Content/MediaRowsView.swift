@@ -96,20 +96,13 @@ public struct MediaRowsView: View {
 
   private var scroll: some View {
     ScrollView(.vertical) {
-      // VStack on tvOS: LazyVStack clips the focus lift between Hot Movies / Hot Series
-      // even when the inner horizontal rail has scrollClipDisabled. Detail shelves
-      // already used a plain VStack — same section, same parent rules.
-#if os(tvOS)
-      VStack(alignment: .leading, spacing: Self.rowSpacing) {
-        scrollContent
-      }
-      .padding(.bottom, Self.rowSpacing)
-#else
+      // Lazy on every platform — an eager VStack on tvOS decoded every Home poster
+      // at once (1GB+ / CVPixelBuffer -6680). Focus lift room comes from
+      // `scrollClipDisabled` + per-rail vertical padding, not from realizing all rows.
       LazyVStack(alignment: .leading, spacing: Self.rowSpacing) {
         scrollContent
       }
       .padding(.bottom, Self.rowSpacing)
-#endif
     }
 #if os(tvOS)
     .scrollClipDisabled()

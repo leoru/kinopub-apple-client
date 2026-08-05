@@ -871,11 +871,14 @@ public struct MediaCardView: View {
     HStack(spacing: 0) {
       Spacer(minLength: 0)
       HStack(spacing: 6) {
-        Text(card.title)
-          .font(TypeScale.cardTitle)
-          .foregroundStyle(Color.KinoPub.text)
-          .lineLimit(1)
-          .frame(minWidth: 0)
+        MarqueeText(
+          card.title,
+          font: TypeScale.cardTitle,
+          alignment: .center,
+          fillsWidth: true,
+          style: .title
+        )
+        .frame(minWidth: 0)
 
         if !card.isLandscape, editorialPlacement == .inCaption, let badge = card.badge {
           editorialBadge(badge)

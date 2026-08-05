@@ -226,24 +226,41 @@ struct MediaItemHeroBackdrop: View {
   @ObservedObject var trailer: TrailerPreviewModel
   var isHeroOnScreen: Bool
 
-  private var wideURL: String {
-    mediaItem.posters.wideURL ?? mediaItem.posters.big
+  /// 0 = hero sharp; 1 = below-fold wash. Focus flips this; Phase 2 may also scrub via scroll.
+  var washProgress: CGFloat = 0
+
+  private var effectiveWash: CGFloat {
+    // While hero owns focus, keep the sharp still regardless of leftover scroll
+    // offset (Up lands on Play before the scroll settles).
+    if isHeroOnScreen { return 0 }
+    return max(washProgress, 1)
   }
 
   var body: some View {
     ZStack {
       Color.KinoPub.background
 
-      // Always-on page wash. Small poster, tiny buffer, `drawingGroup` — the same
-      // trick as `MediaItemView.ambientBackground`, kept live so scroll never has
-      // to manufacture a blur from the wide frame.
+      // Always-on cheap wash from the *small* poster (120×180 raster). Do not
+      // `drawingGroup`+scale a full-bleed buffer — that path + eager Home shelves
+      // was blowing past 1.5GB (CVPixelBuffer -6680).
       blurredPoster
 
-      heroStill
-        .opacity(isHeroOnScreen ? 1 : 0)
+      // Drop the wide still from the tree once washed off — AsyncImage keeps the
+      // decoded 1080/4K buffer alive at opacity 0 otherwise.
+      if effectiveWash < 0.98 {
+        heroStill
+          .opacity(1 - effectiveWash)
+      }
+
+      if effectiveWash > 0.01 {
+        Rectangle()
+          .fill(.regularMaterial)
+          .opacity(0.55 * effectiveWash)
+          .allowsHitTesting(false)
+      }
 
       topGradient
-        .opacity(isHeroOnScreen ? 1 : 0)
+        .opacity(1 - effectiveWash)
 
       bottomScrim
     }
@@ -251,6 +268,7 @@ struct MediaItemHeroBackdrop: View {
     .clipped()
     .ignoresSafeArea()
     .animation(.easeOut(duration: 0.35), value: isHeroOnScreen)
+    .animation(.easeOut(duration: 0.35), value: washProgress)
   }
 
   /// Scale is derived from the real container so a portrait buffer still covers
@@ -269,7 +287,6 @@ struct MediaItemHeroBackdrop: View {
           .clipped()
           .blur(radius: Self.blurRadius, opaque: true)
           .saturation(1.4)
-          .drawingGroup()
           .scaleEffect(scale)
           .frame(width: geo.size.width, height: geo.size.height)
           .clipped()
@@ -280,7 +297,9 @@ struct MediaItemHeroBackdrop: View {
   }
 
   private var heroStill: some View {
-    AsyncImage(url: URL(string: wideURL),
+    // Prefer `/wide/` when present; fall back to `medium` rather than `big` so we
+    // don't decode a multi‑MB 4K poster into a full-screen layer on the simulator.
+    AsyncImage(url: URL(string: heroStillURL),
                transaction: Transaction(animation: .easeIn(duration: 0.3))) { phase in
       if let image = phase.image {
         image
@@ -294,6 +313,10 @@ struct MediaItemHeroBackdrop: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
+  private var heroStillURL: String {
+    mediaItem.posters.wideURL ?? mediaItem.posters.medium
+  }
+
   /// Very light black wash from the top edge down to about mid-frame — enough to
   /// settle the status area without dulling the still. Fades out with the hero.
   private var topGradient: some View {
@@ -304,14 +327,15 @@ struct MediaItemHeroBackdrop: View {
     ], startPoint: .top, endPoint: .bottom)
   }
 
-  /// Soft shade under the title and buttons. A touch stronger once the hero is
-  /// gone so section text sits cleanly on the blurred wash.
+  /// Soft shade under the title and buttons. Stronger under the material wash so
+  /// section text sits cleanly.
   private var bottomScrim: some View {
-    LinearGradient(stops: [
+    let bottom = 0.35 + (0.25 * effectiveWash)
+    return LinearGradient(stops: [
       .init(color: .clear, location: 0),
       .init(color: .clear, location: 0.2),
-      .init(color: .black.opacity(0.3), location: 0.38),
-      .init(color: .black.opacity(isHeroOnScreen ? 0.35 : 0.55), location: 1)
+      .init(color: .black.opacity(0.3 + 0.1 * effectiveWash), location: 0.38),
+      .init(color: .black.opacity(bottom), location: 1)
     ], startPoint: .top, endPoint: .bottom)
   }
 
@@ -368,6 +392,8 @@ struct MediaItemHeroView: View {
   /// Drives trailer pause / the blurred still on the pinned backdrop. The hero never
   /// leaves the hierarchy on scroll, so this is measured rather than `onDisappear`.
   @Binding var isHeroOnScreen: Bool
+  /// 0…1 scroll wash (tvOS). Chrome fades faster than the backdrop material (Rivulet).
+  var washProgress: CGFloat = 0
   var linkProvider: NavigationLinkProvider
   var isWatched: Bool
   var isBookmarked: Bool
@@ -420,12 +446,25 @@ struct MediaItemHeroView: View {
     !isWatched
   }
 
+  /// Fade title/actions with scroll for polish — never hard-zero. Opacity 0 on the
+  /// whole hero dropped Play/More from the focus graph, so Up from seasons could
+  /// not return (Rivulet keeps a focusable return path; we keep the buttons alive).
+  private var chromeAlpha: CGFloat {
+#if os(tvOS)
+    max(0.35, 1 - min(1, washProgress * 2.6))
+#else
+    1
+#endif
+  }
+
   var body: some View {
 #if os(tvOS)
     // Fills the hero slideshow slide; bottom-aligned over the pinned backdrop.
     // Force dark so `Color.primary` / scores / plot stay light over the artwork —
     // same always-readable chrome as the Apple TV app, without hard-coding whites.
     content
+      .opacity(chromeAlpha)
+      .animation(.easeOut(duration: 0.25), value: chromeAlpha)
       .environment(\.colorScheme, .dark)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
       // The same muted preview, promoted to sound and full screen without restarting.

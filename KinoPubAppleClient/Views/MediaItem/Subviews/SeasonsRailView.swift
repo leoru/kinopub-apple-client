@@ -546,9 +546,9 @@ private struct EpisodeRailCard: View {
   /// Same structure/fonts/line limits as a full caption, for the rail slot only.
   private var captionReserve: some View {
     VStack(alignment: .center, spacing: 6) {
-      Text("\n\n")
+      Text(" ")
         .font(Self.titleFont)
-        .lineLimit(Self.titleLineLimit)
+        .lineLimit(1)
         .multilineTextAlignment(.center)
       Text("EPISODE 99")
         .font(Self.numberFont)
@@ -563,12 +563,12 @@ private struct EpisodeRailCard: View {
   private var caption: some View {
     VStack(alignment: .center, spacing: 6) {
       if !episodeTitle.isEmpty {
-        Text(episodeTitle)
-          .font(Self.titleFont)
-          .foregroundStyle(Color.KinoPub.text)
-          .lineLimit(Self.titleLineLimit)
-          .multilineTextAlignment(.center)
-          .fixedSize(horizontal: false, vertical: true)
+        MarqueeText(
+          episodeTitle,
+          font: Self.titleFont,
+          alignment: .center,
+          style: .title
+        )
 
         Text(episodeNumberLabel)
           .font(Self.numberFont)
@@ -577,12 +577,12 @@ private struct EpisodeRailCard: View {
           .lineLimit(1)
           .multilineTextAlignment(.center)
       } else {
-        Text(episodeNumberLabel)
-          .font(Self.titleFont)
-          .foregroundStyle(Color.KinoPub.text)
-          .lineLimit(1)
-          .multilineTextAlignment(.center)
-          .fixedSize(horizontal: false, vertical: true)
+        MarqueeText(
+          episodeNumberLabel,
+          font: Self.titleFont,
+          alignment: .center,
+          style: .title
+        )
       }
     }
     .frame(maxWidth: .infinity, alignment: .center)

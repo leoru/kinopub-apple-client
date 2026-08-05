@@ -85,7 +85,10 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
     captionLabel.translatesAutoresizingMaskIntoConstraints = false
     captionLabel.font = .preferredFont(forTextStyle: .callout)
     captionLabel.textColor = .white
-    captionLabel.numberOfLines = 2
+    captionLabel.numberOfLines = 1
+    captionLabel.textAlignment = .center
+    captionLabel.enablesMarqueeWhenAncestorFocused = true
+    captionLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     captionLabel.alpha = 0
     contentView.addSubview(captionLabel)
 

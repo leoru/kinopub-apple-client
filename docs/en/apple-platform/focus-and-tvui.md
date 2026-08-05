@@ -62,6 +62,9 @@ Where it is genuinely worth the bridge:
 - No inert reserved space above rows (old 560pt featured-preview spacer is gone).
 - Detail ambient muted trailer is **off on tvOS** (still + scrims + blurred poster wash). Trailer
   button / real player unchanged. Ambient trailer may return with a dedicated hero pass.
+- Detail below-fold wash: section focus forces full wash; scroll offset scrubs
+  `.regularMaterial` over the poster wash and fades hero chrome faster (`1 - min(1, p·2.6)`).
+  No vertical `.viewAligned` on the detail `ScrollView` (it fought section focus).
 - Top Shelf is a **later platform-completeness** item — before advanced subtitles, after core catalog
   / shell work. **Needs validation** on entitlement / extension packaging when implemented.
 

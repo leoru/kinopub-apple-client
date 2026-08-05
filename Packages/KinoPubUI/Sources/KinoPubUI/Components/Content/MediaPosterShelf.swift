@@ -77,10 +77,6 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     VStack(alignment: .leading, spacing: 12) {
       header
         .padding(.horizontal, metrics.inset)
-#if os(tvOS)
-        // Match the rail's focus-lift bleed so title aligns with first card art.
-        .padding(.horizontal, Metrics.focusPadding)
-#endif
 
 #if os(tvOS)
       if usesTVUIKitPosters {
@@ -132,11 +128,9 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
 
   private var swiftUIRail: some View {
     ScrollView(.horizontal, showsIndicators: false) {
-      // Eager HStack — same atom as detail director/actor shelves. Width comes
-      // from `ShelfMetrics` (inset already in the equation), not
-      // `containerRelativeFrame`, which double-counts safe-area inset beside
-      // the tvOS sidebar and makes Home tiles oversized / edge-clipped.
-      HStack(alignment: .top, spacing: metrics.gutter) {
+      // LazyHStack: only on-screen cards decode (Home CW can be 20+ wide stills).
+      // Width from `ShelfMetrics`; `scrollClipDisabled` keeps focus lift visible.
+      LazyHStack(alignment: .top, spacing: metrics.gutter) {
         ForEach(cards) { card in
           cardLink(card)
             .mediaZoomSource(id: "media-\(card.id)")
@@ -158,11 +152,9 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
         }
       }
       .padding(.horizontal, metrics.inset)
-      // Room for `.borderless` focus lift — same padding on posters and CW.
+      // Vertical room for `.borderless` focus lift only — horizontal bleed must
+      // stay inside `ShelfMetrics.cardWidth` or rails overflow ~2·focusPadding.
       .padding(.vertical, railFocusPadding)
-#if os(tvOS)
-      .padding(.horizontal, Metrics.focusPadding)
-#endif
     }
 #if os(tvOS)
     .buttonStyle(.borderless)
