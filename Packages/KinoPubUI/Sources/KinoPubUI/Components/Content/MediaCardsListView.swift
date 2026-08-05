@@ -78,7 +78,7 @@ public struct MediaCardsListView: View {
       if paginationError, let onRetryPagination {
         VStack(spacing: 12) {
           Text("Couldn't Load More")
-            .font(Font.KinoPub.subheader)
+            .font(TypeScale.cardSubtitle)
             .foregroundStyle(Color.KinoPub.subtitle)
           Button("Try Again", action: onRetryPagination)
 #if !os(tvOS)

@@ -57,7 +57,7 @@ public struct KinoPubButton: View {
       Text(title)
         .padding(.horizontal, 8)
         .frame(maxWidth: .infinity, minHeight: 40)
-        .font(.system(size: 16, weight: .semibold))
+        .font(TypeScale.actionLabel)
     }
     .buttonStyle(KinoPubButtonStyle(buttonColor: color))
 

@@ -44,4 +44,27 @@ public enum TypeScale {
   public static let detailSection: Font = .title3.weight(.semibold)
   public static let settingsTitle: Font = .largeTitle.bold()
   public static let settingsTip: Font = .title3
+
+  /// Rating digits on a poster's corner badge, next to the laurel-wing icon
+  /// (`RatingBadgeView.wingHeight`). The nearest text style to the old fixed point
+  /// size (13pt / 22pt on tvOS) on each platform, so it now tracks Dynamic Type
+  /// instead of sitting still while the rest of the badge scales around it.
+  public static let ratingBadge: Font = {
+#if os(tvOS)
+    .caption2.weight(.bold)
+#else
+    .footnote.weight(.bold)
+#endif
+  }()
+
+  /// Large rating digits on the detail page's ratings row (`AggregateRatingLabel`) —
+  /// nearest text style to the old fixed size (28pt / 44pt on tvOS), same reasoning
+  /// as `ratingBadge`.
+  public static let ratingAggregate: Font = {
+#if os(tvOS)
+    .title3.weight(.bold)
+#else
+    .title.weight(.bold)
+#endif
+  }()
 }
