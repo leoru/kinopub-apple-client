@@ -383,8 +383,7 @@ struct SeasonsRailView: View {
 
   private func contextEntries(for episode: Episode, season: Season) -> [MediaCardContextEntry] {
     let card = Self.contextCard(for: episode, in: season)
-    // Cache-only — do not prefetch from the per-episode context-menu builder.
-    let containing = cardMenu.membershipByItemID[card.itemID] ?? []
+    let containing = cardMenu.containingFolders(for: card)
     let folders = cardMenu.folders.map {
       MediaCardContextMenus.BookmarkFolderOption(
         id: $0.id,
@@ -401,7 +400,9 @@ struct SeasonsRailView: View {
       onToggleWatchlist: { cardMenu.toggleWatchlist(card) },
       onToggleBookmarkFolder: { folderID in
         guard let folder = cardMenu.folders.first(where: { $0.id == folderID }) else { return }
-        cardMenu.toggleBookmark(itemID: card.itemID, folder: folder)
+        cardMenu.toggleBookmark(itemID: card.itemID,
+                                folder: folder,
+                                serverHint: Set(card.bookmarkFolderIDs))
       },
       onCreateBookmarkFolder: { cardMenu.promptNewFolder(for: card.itemID) },
       onToggleWatched: { onToggleWatched?(episode, season) },

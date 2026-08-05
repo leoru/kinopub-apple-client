@@ -16,13 +16,6 @@ import KinoPubLogging
 final class MediaCardMenuCoordinator: ObservableObject {
 
   @Published private(set) var folders: [Bookmark] = []
-  /// Folder ids that currently contain each item. **Not** `@Published`: filling this
-  /// from a Home/shelf context-menu builder used to republish on every card, which
-  /// re-entered `MediaRowsView` body, re-fired `get-item-folders` for every visible
-  /// poster, and froze the Mac UI (`NavigationRequestObserver` thrash + blank artwork).
-  /// Mutated silently for cache fills; call sites that need a redraw (toggle) send
-  /// `objectWillChange` themselves via the `@Published` paths below.
-  private(set) var membershipByItemID: [Int: Set<Int>] = [:]
   /// When set, the hosting view should present the New Folder alert for this item.
   @Published var newFolderItemID: Int?
   @Published var newFolderName: String = ""
@@ -30,15 +23,17 @@ final class MediaCardMenuCoordinator: ObservableObject {
   private let contentService: VideoContentService
   private let actionsService: UserActionsService
   private let contentStore: ContentStore
+  private let membership: BookmarkMembershipStore
   private weak var errorHandler: ErrorHandler?
-  private var membershipTasks: [Int: Task<Void, Never>] = [:]
 
   init(contentService: VideoContentService,
        actionsService: UserActionsService,
-       contentStore: ContentStore) {
+       contentStore: ContentStore,
+       membership: BookmarkMembershipStore = .shared) {
     self.contentService = contentService
     self.actionsService = actionsService
     self.contentStore = contentStore
+    self.membership = membership
   }
 
   /// Convenience from the shared app context. Call `bind(errorHandler:)` from the view.
@@ -60,29 +55,14 @@ final class MediaCardMenuCoordinator: ObservableObject {
     }
   }
 
-  /// Warm membership for one item. Safe to call from a **menu-open** path only —
-  /// never from a SwiftUI body / `contextMenuProvider` that runs per visible card.
-  /// Writes the cache without publishing so a burst of prefetches cannot invalidate Home.
-  func prefetchMembership(for itemID: Int) {
-    guard membershipByItemID[itemID] == nil else { return }
-    guard membershipTasks[itemID] == nil else { return }
-    membershipTasks[itemID] = Task { [weak self] in
-      await self?.refreshMembership(for: itemID, publish: false)
-      self?.membershipTasks[itemID] = nil
-    }
+  /// Folder ids that contain this card — local store + `MediaItem.bookmarks` hint on the card.
+  /// Never hits the network (`get-item-folders` is gone on purpose).
+  func containingFolders(for card: MediaCard) -> Set<Int> {
+    membership.folderIDs(for: card.itemID, serverHint: Set(card.bookmarkFolderIDs))
   }
 
-  func refreshMembership(for itemID: Int, publish: Bool = true) async {
-    do {
-      let folders = try await contentService.fetchItemFolders(itemId: itemID).items
-      membershipByItemID[itemID] = Set(folders.map(\.id))
-    } catch {
-      Logger.app.debug("MediaCardMenu membership \(itemID) failed: \(error)")
-      if membershipByItemID[itemID] == nil {
-        membershipByItemID[itemID] = []
-      }
-    }
-    if publish { objectWillChange.send() }
+  func containingFolders(itemID: Int, serverHint: Set<Int> = []) -> Set<Int> {
+    membership.folderIDs(for: itemID, serverHint: serverHint)
   }
 
   func promptNewFolder(for itemID: Int) {
@@ -107,9 +87,7 @@ final class MediaCardMenuCoordinator: ObservableObject {
       do {
         let folderId = try await actionsService.createBookmarkFolder(title: title)
         try await contentService.toggleBookmark(itemId: itemID, folderId: folderId)
-        var set = membershipByItemID[itemID] ?? []
-        set.insert(folderId)
-        membershipByItemID[itemID] = set
+        _ = membership.toggle(itemID: itemID, folderID: folderId)
         objectWillChange.send()
         await refreshFolders()
         contentStore.invalidate(family: .bookmarks)
@@ -125,6 +103,7 @@ final class MediaCardMenuCoordinator: ObservableObject {
     Task {
       do {
         let item = try await contentService.fetchDetails(for: "\(card.itemID)").item
+        membership.seed(from: item)
         push(.player(playable(from: item, preferring: card)))
       } catch {
         errorHandler?.setError(error)
@@ -143,21 +122,17 @@ final class MediaCardMenuCoordinator: ObservableObject {
     }
   }
 
-  func toggleBookmark(itemID: Int, folder: Bookmark) {
-    var set = membershipByItemID[itemID] ?? []
-    if set.contains(folder.id) {
-      set.remove(folder.id)
-    } else {
-      set.insert(folder.id)
-    }
-    membershipByItemID[itemID] = set
+  func toggleBookmark(itemID: Int, folder: Bookmark, serverHint: Set<Int> = []) {
+    _ = membership.toggle(itemID: itemID, folderID: folder.id, serverHint: serverHint)
     objectWillChange.send()
     Task {
       do {
         try await contentService.toggleBookmark(itemId: itemID, folderId: folder.id)
         contentStore.invalidate(family: .bookmarks)
       } catch {
-        await refreshMembership(for: itemID, publish: true)
+        // Flip back locally — still no network membership fetch.
+        _ = membership.toggle(itemID: itemID, folderID: folder.id)
+        objectWillChange.send()
         errorHandler?.setError(error)
       }
     }

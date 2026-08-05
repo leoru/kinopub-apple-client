@@ -210,10 +210,7 @@ enum MediaCardContextMenus {
     includePlay: Bool = true,
     includeGoToTitle: Bool = true
   ) -> [MediaCardContextEntry] {
-    // Do NOT prefetch here — `contextMenuProvider` runs while laying out every
-    // visible card. Membership comes from the silent cache (filled on toggle /
-    // explicit menu-open prefetch only).
-    let containing = menu.membershipByItemID[card.itemID] ?? []
+    let containing = menu.containingFolders(for: card)
     let folderOptions = menu.folders.map {
       BookmarkFolderOption(id: $0.id, title: $0.title, isContaining: containing.contains($0.id))
     }
@@ -232,7 +229,9 @@ enum MediaCardContextMenus {
       onToggleWatchlist: card.isSeries ? { menu.toggleWatchlist(card) } : nil,
       onToggleBookmarkFolder: { folderID in
         guard let folder = menu.folders.first(where: { $0.id == folderID }) else { return }
-        menu.toggleBookmark(itemID: card.itemID, folder: folder)
+        menu.toggleBookmark(itemID: card.itemID,
+                            folder: folder,
+                            serverHint: Set(card.bookmarkFolderIDs))
       },
       onCreateBookmarkFolder: { menu.promptNewFolder(for: card.itemID) },
       onToggleWatched: canMarkWatched

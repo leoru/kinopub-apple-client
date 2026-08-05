@@ -85,6 +85,7 @@ struct HistoryView: View {
           genreLine: card.genreLine,
           countryLine: card.countryLine,
           isBookmarked: card.isBookmarked,
+          bookmarkFolderIDs: card.bookmarkFolderIDs,
           primaryAction: card.primaryAction
         )
       }

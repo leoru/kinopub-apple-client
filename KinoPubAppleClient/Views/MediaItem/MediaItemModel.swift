@@ -244,15 +244,20 @@ class MediaItemModel: ObservableObject {
   // MARK: - Actions
 
   /// Bookmark state is secondary to the page, so a failure here is logged rather
-  /// than thrown at the user over the artwork.
+  /// than thrown at the user over the artwork. Membership comes from the item
+  /// payload + local store — never `get-item-folders`.
   private func loadBookmarkState() async {
+    if let bookmarks = mediaItem.bookmarks {
+      let ids = Set(bookmarks.map(\.id))
+      folderIDsContainingItem = ids
+      BookmarkMembershipStore.shared.replace(itemID: mediaItemId, folderIDs: ids)
+    } else {
+      folderIDsContainingItem = BookmarkMembershipStore.shared.folderIDs(for: mediaItemId)
+    }
     do {
-      async let allFolders = itemsService.fetchBookmarks().items
-      async let itemFolders = itemsService.fetchItemFolders(itemId: mediaItemId).items
-      folders = try await allFolders
-      folderIDsContainingItem = Set(try await itemFolders.map(\.id))
+      folders = try await itemsService.fetchBookmarks().items
     } catch {
-      Logger.app.error("Failed to load bookmark state for \(self.mediaItemId): \(error)")
+      Logger.app.error("Failed to load bookmark folders for \(self.mediaItemId): \(error)")
     }
   }
 
@@ -386,12 +391,14 @@ class MediaItemModel: ObservableObject {
       folderIDsContainingItem.insert(folder.id)
       presentHud(systemImage: "bookmark.fill", title: "Bookmarked")
     }
+    BookmarkMembershipStore.shared.replace(itemID: mediaItemId, folderIDs: folderIDsContainingItem)
     Task {
       do {
         try await itemsService.toggleBookmark(itemId: mediaItemId, folderId: folder.id)
         contentStore.invalidate(family: .bookmarks)
       } catch {
         folderIDsContainingItem = previous
+        BookmarkMembershipStore.shared.replace(itemID: mediaItemId, folderIDs: previous)
         errorHandler.setError(error)
       }
     }
@@ -430,6 +437,7 @@ class MediaItemModel: ObservableObject {
         let folderId = try await actionsService.createBookmarkFolder(title: title)
         try await itemsService.toggleBookmark(itemId: mediaItemId, folderId: folderId)
         folderIDsContainingItem.insert(folderId)
+        BookmarkMembershipStore.shared.replace(itemID: mediaItemId, folderIDs: folderIDsContainingItem)
         folders = try await itemsService.fetchBookmarks().items
         contentStore.invalidate(family: .bookmarks)
         presentHud(systemImage: "bookmark.fill", title: "Bookmarked")

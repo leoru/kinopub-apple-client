@@ -101,9 +101,7 @@ struct MainView: View {
   private func menuEntries(for card: MediaCard,
                            surface: MediaCardContextSurface,
                            isContinueWatching: Bool) -> [MediaCardContextEntry] {
-    // Membership is cache-only here — prefetching from the provider used to fire
-    // one `get-item-folders` per visible poster and republish Home into a freeze.
-    let containing = cardMenu.membershipByItemID[card.itemID] ?? []
+    let containing = cardMenu.containingFolders(for: card)
     let folders = cardMenu.folders.map {
       MediaCardContextMenus.BookmarkFolderOption(
         id: $0.id,
@@ -130,7 +128,9 @@ struct MainView: View {
       onToggleWatchlist: card.isSeries ? { cardMenu.toggleWatchlist(card) } : nil,
       onToggleBookmarkFolder: { folderID in
         guard let folder = cardMenu.folders.first(where: { $0.id == folderID }) else { return }
-        cardMenu.toggleBookmark(itemID: card.itemID, folder: folder)
+        cardMenu.toggleBookmark(itemID: card.itemID,
+                                folder: folder,
+                                serverHint: Set(card.bookmarkFolderIDs))
       },
       onCreateBookmarkFolder: { cardMenu.promptNewFolder(for: card.itemID) },
       onToggleWatched: onToggleWatched,

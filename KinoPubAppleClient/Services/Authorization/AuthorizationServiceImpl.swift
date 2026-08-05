@@ -45,6 +45,7 @@ final class AuthorizationServiceImpl: AuthorizationService {
   
   func logout() {
     accessTokenService.clear()
+    BookmarkMembershipStore.shared.clear()
     // Do NOT clear ResponseCache — we only cache immutable reference lists
     // (genres/countries). Those never change per account on kino.pub.
   }

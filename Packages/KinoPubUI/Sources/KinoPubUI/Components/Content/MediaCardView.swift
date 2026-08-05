@@ -81,6 +81,9 @@ public struct MediaCard: Identifiable, Hashable, Codable {
   public let countryLine: String?
   /// Title sits in at least one bookmark folder (not the watchlist flag).
   public let isBookmarked: Bool
+  /// Folder ids from `MediaItem.bookmarks` when the payload carried them. Empty when
+  /// unknown — local `BookmarkMembershipStore` overlays toggles on top.
+  public let bookmarkFolderIDs: [Int]
   /// Single-click / Select target. Continue Watching uses `.play`; History stays detail for now.
   public let primaryAction: MediaCardPrimaryAction
 
@@ -145,6 +148,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
               genreLine: String? = nil,
               countryLine: String? = nil,
               isBookmarked: Bool = false,
+              bookmarkFolderIDs: [Int] = [],
               primaryAction: MediaCardPrimaryAction = .openDetail) {
     self.id = id
     self.posterURL = posterURL
@@ -177,6 +181,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     self.genreLine = genreLine
     self.countryLine = countryLine
     self.isBookmarked = isBookmarked
+    self.bookmarkFolderIDs = bookmarkFolderIDs
     self.primaryAction = primaryAction
   }
 
@@ -213,6 +218,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     genreLine = try c.decodeIfPresent(String.self, forKey: .genreLine)
     countryLine = try c.decodeIfPresent(String.self, forKey: .countryLine)
     isBookmarked = try c.decodeIfPresent(Bool.self, forKey: .isBookmarked) ?? false
+    bookmarkFolderIDs = try c.decodeIfPresent([Int].self, forKey: .bookmarkFolderIDs) ?? []
     // Old row snapshots omit this key — keep opening detail until the next CW fetch.
     primaryAction = try c.decodeIfPresent(MediaCardPrimaryAction.self, forKey: .primaryAction)
       ?? .openDetail
@@ -251,6 +257,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     try c.encodeIfPresent(genreLine, forKey: .genreLine)
     try c.encodeIfPresent(countryLine, forKey: .countryLine)
     try c.encode(isBookmarked, forKey: .isBookmarked)
+    try c.encode(bookmarkFolderIDs, forKey: .bookmarkFolderIDs)
     try c.encode(primaryAction, forKey: .primaryAction)
   }
 
@@ -260,7 +267,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     case landscapeImageURL, overlayLabel, itemID, video, season, mediaID
     case isWatched, isSeries, isInHistory, isInWatchlist, is4K, isHDR
     case isHD, is3D, hasClosedCaptions, year, durationSeconds
-    case genreLine, countryLine, isBookmarked, primaryAction
+    case genreLine, countryLine, isBookmarked, bookmarkFolderIDs, primaryAction
   }
 }
 
@@ -278,6 +285,7 @@ public extension MediaCard {
       let total = Int(item.duration.total)
       return total >= 60 ? total : nil
     }()
+    let bookmarkFolderIDs = (item.bookmarks ?? []).map(\.id)
     self.init(id: item.id,
               posterURL: item.posters.medium,
               title: item.localizedTitle,
@@ -298,7 +306,8 @@ public extension MediaCard {
               durationSeconds: durationSeconds,
               genreLine: genres.isEmpty ? nil : genres.joined(separator: ", "),
               countryLine: item.countries.first?.title,
-              isBookmarked: !(item.bookmarks ?? []).isEmpty)
+              isBookmarked: !bookmarkFolderIDs.isEmpty,
+              bookmarkFolderIDs: bookmarkFolderIDs)
   }
 }
 

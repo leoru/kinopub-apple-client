@@ -413,7 +413,8 @@ class HomeCatalog: ObservableObject {
   }
 
   private static func card(for item: MediaItem) -> MediaCard {
-    MediaCard(item)
+    BookmarkMembershipStore.shared.seed(from: item)
+    return MediaCard(item)
   }
 
   // MARK: - Collections

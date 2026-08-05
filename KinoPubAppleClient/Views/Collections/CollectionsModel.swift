@@ -106,7 +106,10 @@ class CollectionsModel: ObservableObject {
         group.addTask {
           let items = (try? await service.fetchCollection(id: collection.id).1) ?? []
           guard !items.isEmpty else { return (index, nil) }
-          let cards = items.prefix(previewCardCount).map { MediaCard($0) }
+          let cards = items.prefix(previewCardCount).map { item -> MediaCard in
+            BookmarkMembershipStore.shared.seed(from: item)
+            return MediaCard(item)
+          }
           let row = MediaRow(id: "collection-\(collection.id)",
                              title: collection.title,
                              count: collection.itemsCount.map { String($0) },
