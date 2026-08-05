@@ -364,12 +364,11 @@ public extension MediaItem {
     return parts.joined(separator: " · ")
   }
 
-  /// "2025 · 1 h 55 min · Япония" — the same line without the genres, for the item
-  /// page, where they sit in their own column beside the cast.
-  var runtimeLine: String {
-    var parts = releaseParts
-    if let country = countries.first?.title { parts.append(country) }
-    return parts.joined(separator: " · ")
+  /// "2025 · 1 h 55 min" — when and how long, nothing else. The item page's hero
+  /// metadata row carries the scores and capability chips beside it, and genres and
+  /// country sit with the cast under the synopsis instead.
+  var releaseLine: String {
+    releaseParts.joined(separator: " · ")
   }
 
   var originalTitle: String {

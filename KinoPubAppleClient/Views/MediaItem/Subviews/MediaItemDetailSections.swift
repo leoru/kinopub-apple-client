@@ -118,15 +118,16 @@ struct MediaItemRatingsSection: View {
   static let iconSize: CGFloat = 48
   static let valueFont: Font = .system(size: 48, weight: .bold, design: .rounded)
   static let titleFont: Font = .system(size: 22, weight: .semibold)
-  static let captionFont: Font = .system(size: 20, weight: .regular)
 #else
   static let spacing: CGFloat = 12
   static let tilePadding: CGFloat = 14
   static let iconSize: CGFloat = 32
   static let valueFont: Font = .system(size: 32, weight: .semibold, design: .rounded)
   static let titleFont: Font = .system(size: 14, weight: .semibold)
-  static let captionFont: Font = .system(size: 13, weight: .regular)
 #endif
+
+  /// Vote counts and source notes — the page's one running-text size.
+  static let captionFont: Font = TypeScale.detailBody
 }
 
 private struct AggregateRatingTile: View {
@@ -1933,10 +1934,6 @@ struct MediaItemInfoColumns: View {
   static let stackSpacing: CGFloat = 4
   static let footerSpacing: CGFloat = 28
   static let headerFont: Font = .system(size: 30, weight: .semibold)
-  static let captionFont: Font = .system(size: 22, weight: .regular)
-  static let valueFont: Font = .system(size: 22, weight: .semibold)
-  static let plainValueFont: Font = .system(size: 22, weight: .regular)
-  static let detailFont: Font = .system(size: 22, weight: .regular)
 #else
   static let columnSpacing: CGFloat = 28
   static let sectionSpacing: CGFloat = 16
@@ -1946,11 +1943,14 @@ struct MediaItemInfoColumns: View {
   static let stackSpacing: CGFloat = 2
   static let footerSpacing: CGFloat = 20
   static let headerFont: Font = .system(size: 18, weight: .bold)
-  static let captionFont: Font = .system(size: 13, weight: .regular)
-  static let valueFont: Font = .system(size: 13, weight: .medium)
-  static let plainValueFont: Font = .system(size: 13, weight: .regular)
-  static let detailFont: Font = .system(size: 13, weight: .regular)
 #endif
+
+  /// Captions and values differ by weight, not by size — the size is the page's one
+  /// running-text token, shared with the hero and the rating captions.
+  static let captionFont: Font = TypeScale.detailBody
+  static let valueFont: Font = TypeScale.detailBody.weight(.medium)
+  static let plainValueFont: Font = TypeScale.detailBody
+  static let detailFont: Font = TypeScale.detailBody
 }
 
 /// Rating-tile cousin for footer source chips — light plate, hover brighten, press scale.
@@ -2174,21 +2174,24 @@ struct MediaItemPlotView: View {
   static let moreOpacity: Double = 0.65
 
   /// System text styles rather than hand-picked point sizes: the synopsis sits next
-  /// to real tvOS controls and has to be on the same scale they are. A step below the
-  /// metadata line above it, and the label a step below that again.
-  static let font: Font = .caption
-  static let moreFont: Font = .caption2
+  /// to real tvOS controls and has to be on the same scale they are. The label is a
+  /// step below the paragraph.
+  static let moreFont: Font = .footnote
 
 #if os(tvOS)
   static let lineLimit = 4
-  /// Parent hero column caps width; this is the soft ceiling inside the centre column.
-  static let maxWidth: CGFloat = 560
+  /// Fills its column: the hero's written column already caps the width, and a
+  /// second, narrower ceiling here left the synopsis short of the lines beneath it.
+  static let maxWidth: CGFloat = .infinity
   static let moreTracking: CGFloat = 1
 #else
   static let lineLimit = 4
-  static let maxWidth: CGFloat = 420
+  static let maxWidth: CGFloat = .infinity
   static let moreTracking: CGFloat = 0.8
 #endif
+
+  /// Same size as the metadata line above it and the information table below it.
+  static let font: Font = TypeScale.detailBody
 }
 
 /// Anything on this page that can be opened in full: the synopsis and the info

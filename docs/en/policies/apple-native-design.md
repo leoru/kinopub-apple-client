@@ -62,6 +62,19 @@ when Instruments proves SwiftUI cannot hit acceptable focus / layout / performan
 - New screens compose atoms. Do not re-skin the same card three ways.
 - Semantic tokens (`Color.KinoPub.*`, `TypeScale`) over hard-coded greys and one-off fonts.
 
+## Type
+
+- **Always a Dynamic Type text style**, never `.system(size:)`. Vary weight and colour to build a
+  hierarchy; do not vary size by hand. `.system(size:)` survives only where a glyph has to line up
+  with fixed geometry (rating plaques, tile numerals) — not for anything that reads as text.
+- **One running-text size per page family.** `TypeScale.detailBody` (`.body`) is that size for the
+  item page: the hero metadata row, synopsis and credit lines, the vote counts under the rating
+  tiles, and every row of the information table. If a new item-page label needs body text, it takes
+  this token rather than a fifth number.
+- **Level up, not down.** Those four were hand-picked sizes between 12 and 15pt — all *below* body,
+  so prose read as a caption. When unifying sizes, unify on the system style the content deserves;
+  do not drag everything down to whatever the smallest existing label happened to be.
+
 ## Adding a component
 
 1. **Check the atoms first.** A card, badge, section header, image view, or button style probably

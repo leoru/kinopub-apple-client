@@ -151,30 +151,34 @@ extension TrailerVideoLayer: NSViewRepresentable {
   }
 }
 
+/// The `AVPlayerLayer` *is* the view's backing layer — the AppKit twin of the
+/// `layerClass` override the UIKit side uses.
+///
+/// It used to be a sublayer of a plain `CALayer`, with `layout()` copying `bounds`
+/// onto it by hand. Assigning `layer` after `wantsLayer` leaves the view host-backed
+/// rather than layer-backed, so that `layout()` did not reliably fire on resize and
+/// the video kept whatever frame it was first given — which is why aspect-fill looked
+/// like it was fitting: the layer was simply the wrong size for the hero. A backing
+/// layer tracks bounds itself, and there is nothing left to keep in sync.
 final class TrailerLayerHostView: NSView {
 
-  let playerLayer = AVPlayerLayer()
+  var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+
+  override func makeBackingLayer() -> CALayer {
+    AVPlayerLayer()
+  }
 
   init(player: AVPlayer, gravity: AVLayerVideoGravity) {
     super.init(frame: .zero)
+    wantsLayer = true
+    // Without this the layer animates its way to every new size as the window resizes.
+    layerContentsRedrawPolicy = .duringViewResize
     playerLayer.player = player
     playerLayer.videoGravity = gravity
-    wantsLayer = true
-    layer = CALayer()
-    layer?.addSublayer(playerLayer)
   }
 
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
-  }
-
-  override func layout() {
-    super.layout()
-    // Without this the layer animates its way to every new size as the window resizes.
-    CATransaction.begin()
-    CATransaction.setDisableActions(true)
-    playerLayer.frame = bounds
-    CATransaction.commit()
   }
 }
 #else
@@ -330,8 +334,40 @@ struct MediaItemHeroBackdrop: View {
 }
 #endif
 
+/// The item page's secondary actions, as menu content. Shared so the same list can be
+/// a circle in the hero row (tvOS) or a toolbar item (iPhone / Mac) without either
+/// copy drifting from the other.
+struct MediaItemOverflowMenu: View {
+
+  var isSeries: Bool
+  var isWatched: Bool
+  var isBookmarked: Bool
+  var onWatchedToggle: () -> Void
+  var onClearFromContinueWatching: () -> Void
+  var onBrowseWatchlist: (() -> Void)?
+
+  var body: some View {
+    Button(role: .destructive, action: onClearFromContinueWatching) {
+      Label("Remove from Recently Watched", systemImage: "trash")
+    }
+
+    if isWatched {
+      Button(action: onWatchedToggle) {
+        Label("Mark as New", systemImage: "eye")
+      }
+    }
+
+    if isSeries, isBookmarked, let onBrowseWatchlist {
+      Button(action: onBrowseWatchlist) {
+        Label("Browse My Watchlist", systemImage: "rectangle.grid.3x2")
+      }
+    }
+  }
+}
+
 /// Full-bleed artwork that gives way to the trailer, with the title, metadata and
-/// actions laid over it — the shape the Apple TV app uses.
+/// actions laid over it — the shape the Apple TV app uses. On iPhone the picture keeps
+/// its own 16:9 band and the chrome sits under it instead.
 struct MediaItemHeroView: View {
 
   var mediaItem: MediaItem
@@ -350,6 +386,9 @@ struct MediaItemHeroView: View {
   var folders: [Bookmark]
   var folderIDsContainingItem: Set<Int>
   var onWatchedToggle: () -> Void
+  /// Bulk form of the above: marks every episode of the season the primary button is
+  /// pointing at. Nil collapses the checkmark back to a plain single-episode toggle.
+  var onSeasonWatchedToggle: ((Season) -> Void)? = nil
   var onFolderToggle: (Bookmark) -> Void
   var onCreateFolder: ((String) -> Void)? = nil
   var onClearFromContinueWatching: () -> Void = {}
@@ -360,6 +399,9 @@ struct MediaItemHeroView: View {
   var onToggleWatchlist: (() -> Void)? = nil
   /// TMDB / Kinopoisk title logo when enrichment supplied one.
   var titleLogoURL: URL? = nil
+  /// Certification from enrichment ("TV-14", "16+"). Rendered as one more capability
+  /// chip in the metadata row — the item payload has no rating of its own.
+  var ageRating: String? = nil
   /// False until external metadata settles. While false, the title slot stays empty
   /// (optimistic: a logo is expected). Defaults to `true` so previews without the
   /// enrichment pipeline still show the lettered title.
@@ -371,6 +413,11 @@ struct MediaItemHeroView: View {
   @State private var showNewFolderAlert = false
   @State private var newFolderName = ""
 
+  /// Opt-in, off by default. Read as `@AppStorage` so flipping it in Settings redraws
+  /// the metadata row without leaving the page.
+  @AppStorage(MediaItemDisplayPreferences.showAgeRatingBadgeKey)
+  private var showsAgeRatingBadge = false
+
   @Environment(\.openURL) private var openURL
   @EnvironmentObject private var navigationState: NavigationState
 
@@ -378,10 +425,11 @@ struct MediaItemHeroView: View {
     !(mediaItem.seasons?.isEmpty ?? true)
   }
 
-  /// Checkmark marks the in-progress title/episode watched. Finished titles use More.
+  /// Films and series both get the checkmark, in progress or not started. It only
+  /// disappears once there is nothing left to mark — a finished title reverses through
+  /// Mark as New in More instead.
   private var showsWatchedButton: Bool {
-    if case .resume = mediaItem.playbackButtonContent { return true }
-    return false
+    !isWatched
   }
 
   var body: some View {
@@ -399,18 +447,25 @@ struct MediaItemHeroView: View {
       }
       .modifier(MediaCardContextMenuModifier(entries: contextMenuEntries))
 #else
+    // 16:9 is the floor rather than the height, so a narrow window or a phone grows
+    // the band instead of clipping the buttons off the top of it.
+    //
     // Backdrop stays in the ambient scheme so the bottom seam still blends into the
     // page colour; only the overlay chrome is forced dark.
     ZStack(alignment: .bottomLeading) {
-      scrollingBackdrop
-      scrollingScrim
+      Color.clear
+        .aspectRatio(16 / 9, contentMode: .fit)
+
       content
         .environment(\.colorScheme, .dark)
     }
-    // True 16:9 band sized to the content column (not intrinsic image height, not a
-    // fixed pt that ignores window width). Keeps Mac detail from going planet-sized.
-    .aspectRatio(16 / 9, contentMode: .fit)
     .frame(maxWidth: .infinity, alignment: .bottomLeading)
+    .background {
+      ZStack {
+        scrollingBackdrop
+        scrollingScrim
+      }
+    }
     .clipped()
     .background(visibilityProbe)
     .modifier(MediaCardContextMenuModifier(entries: contextMenuEntries))
@@ -575,29 +630,34 @@ struct MediaItemHeroView: View {
 
   // MARK: - Foreground
 
-  /// Wide screens (tvOS / Mac): title+actions | plot | starring.
-  /// Phone keeps a single stacked column — three columns do not fit.
+  /// Wide screens (tvOS / Mac): two columns — title + actions | everything written.
+  /// The third "starring" column is gone; its lines moved under the synopsis.
+  /// Phone keeps a single stacked column, with the metadata row above the buttons.
   private var content: some View {
 #if os(iOS)
     VStack(alignment: .leading, spacing: Self.contentSpacing) {
-      leadingColumn
-      plotColumn
-      credits
+      titleBlock
+        .heroTextShadow()
+
+      actions
+        .padding(.top, Self.actionsGap)
+
+      detailColumn
+        .padding(.top, Self.actionsGap)
     }
     .padding(.horizontal, Self.horizontalInset)
     .padding(.bottom, Self.bottomInset)
     .frame(maxWidth: .infinity, alignment: .leading)
 #else
     HStack(alignment: .bottom, spacing: Self.columnGutter) {
+      // Fixed, not proportional: the title block and the action stack are a known
+      // size, and letting them share the width evenly with the prose left the
+      // synopsis in a narrow ravine on a wide window.
       leadingColumn
-        .frame(maxWidth: Self.leadingMaxWidth, alignment: .leading)
+        .frame(width: Self.leadingWidth, alignment: .leading)
 
-      plotColumn
-        .frame(maxWidth: Self.plotMaxWidth, alignment: .leading)
-
-      Spacer(minLength: 0)
-
-      credits
+      detailColumn
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding(.horizontal, Self.horizontalInset)
     .padding(.bottom, Self.bottomInset)
@@ -605,28 +665,34 @@ struct MediaItemHeroView: View {
 #endif
   }
 
-  /// Logo / title, metadata, then the action row — left column on wide layouts.
+  /// Logo / title, then the action stack — left column on wide layouts. The metadata
+  /// row moved across to head the written column, the way the reference layout has it.
   private var leadingColumn: some View {
     VStack(alignment: .leading, spacing: Self.contentSpacing) {
-      // Shadowed as a block, with the actions left out of it: the buttons carry their
+      // Shadowed on its own, with the actions left out of it: the buttons carry their
       // own material, and a drop shadow under one that scales on focus is an extra
       // offscreen pass on every frame of the animation.
-      VStack(alignment: .leading, spacing: Self.contentSpacing) {
-        titleBlock
-        metadata
-      }
-      .heroTextShadow()
+      titleBlock
+        .heroTextShadow()
 
       // Actions sit with the title so Up from Play is a dead end → fullscreen trailer.
-      // The plot is a sibling column (or below on phone), not above the row.
+      // Everything written is the sibling column (or below on phone), not above the row.
       actions
         .padding(.top, Self.actionsGap)
     }
   }
 
-  private var plotColumn: some View {
-    MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot, focus: $focus)
-      .heroTextShadow()
+  /// Synopsis first, then who made it, then the facts. What someone is deciding on is
+  /// what the film is about — year, genres and the score are what they check after,
+  /// so they sit at the foot of the column rather than heading it.
+  private var detailColumn: some View {
+    VStack(alignment: .leading, spacing: Self.contentSpacing) {
+      MediaItemPlotView(title: mediaItem.localizedTitle, plot: mediaItem.plot, focus: $focus)
+      credits
+      metadata
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .heroTextShadow()
   }
 
   @ViewBuilder
@@ -684,19 +750,24 @@ struct MediaItemHeroView: View {
     }
   }
 
-  /// Year, runtime, country, then the scores and capability chips. One font and one
-  /// colour across the text run — chips sit beside as truthful item-level badges.
+  /// Heads the written column: the one aggregate score, when and how long, then the
+  /// capability chips. The badge is the same component the posters wear — a title
+  /// scores the same wherever it is shown, so it should not be spelled two ways.
   private var metadata: some View {
     HStack(spacing: Self.metaSpacing) {
-      Text(mediaItem.runtimeLine)
-        .lineLimit(1)
+      if let rating = Rating(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating) {
+        RatingBadgeView(rating: rating)
+      }
 
-      MediaScoresView(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating)
+      let releaseLine = mediaItem.releaseLine
+      if !releaseLine.isEmpty {
+        Text(releaseLine)
+          .lineLimit(1)
+      }
 
-      let badges = MediaCapabilityBadges.from(
-        item: mediaItem,
-        ageRating: /* filled when external metadata is wired into hero */ nil
-      )
+      // Certification only when it was asked for — see `MediaItemDisplayPreferences`.
+      let badges = MediaCapabilityBadges.from(item: mediaItem,
+                                              ageRating: showsAgeRatingBadge ? ageRating : nil)
       if !badges.isEmpty {
         MediaCapabilityBadgesView(badges: badges, mode: .detail)
       }
@@ -705,28 +776,38 @@ struct MediaItemHeroView: View {
     .foregroundStyle(Self.metaStyle)
   }
 
-  /// Genres and names in the far corner of the artwork, the block the Apple TV app
-  /// puts there: labels greyed, names picked out, and nothing competing with the
-  /// title on the other side.
+  /// Under the synopsis: what kind of thing it is and where it is from, then who is
+  /// in it. Labels greyed, names picked out. The phone has no room for a cast list
+  /// over the artwork — the detail sections below carry the full one anyway.
   @ViewBuilder
   private var credits: some View {
-    if !genreLine.isEmpty || !creditLines.isEmpty {
-      VStack(alignment: .leading, spacing: 2) {
-        if !genreLine.isEmpty {
-          Text(genreLine)
+    if !genreCountryLine.isEmpty || showsCreditNames {
+      VStack(alignment: .leading, spacing: Self.creditLineSpacing) {
+        if !genreCountryLine.isEmpty {
+          Text(genreCountryLine)
             .foregroundStyle(Color.KinoPub.subtitle)
         }
 
-        ForEach(creditLines, id: \.role) { line in
-          Text(creditLine(line))
+        if showsCreditNames {
+          ForEach(creditLines, id: \.role) { line in
+            Text(creditLine(line))
+          }
         }
       }
       .font(Self.secondaryFont)
       .multilineTextAlignment(.leading)
-      .frame(maxWidth: Self.creditsMaxWidth, alignment: .leading)
+      .frame(maxWidth: .infinity, alignment: .leading)
       .fixedSize(horizontal: false, vertical: true)
-      .heroTextShadow()
     }
+  }
+
+  /// Cast and director are wide-layout only.
+  private var showsCreditNames: Bool {
+#if os(iOS)
+    false
+#else
+    !creditLines.isEmpty
+#endif
   }
 
   /// One run of attributed text rather than two concatenated `Text`s: the styling
@@ -743,10 +824,16 @@ struct MediaItemHeroView: View {
     return label + names
   }
 
-  /// Genres carry no label — the words say what they are, and a "Genre:" in front of
-  /// them is the kind of form-field caption the Apple TV app never shows.
-  private var genreLine: String {
-    mediaItem.genres.compactMap(\.title).prefix(Self.genreLimit).joined(separator: ", ")
+  /// Genres and country carry no labels — the words say what they are, and a "Genre:"
+  /// in front of them is the kind of form-field caption the Apple TV app never shows.
+  /// Genres lead, because that is what someone is deciding on.
+  private var genreCountryLine: String {
+    var parts: [String] = []
+    let genres = mediaItem.genreNames.prefix(Self.genreLimit)
+    if !genres.isEmpty { parts.append(genres.joined(separator: ", ")) }
+    let countries = mediaItem.countryNames.prefix(Self.countryLimit)
+    if !countries.isEmpty { parts.append(countries.joined(separator: ", ")) }
+    return parts.joined(separator: " · ")
   }
 
   /// A handful of leads and whoever directed it — the whole cast is what the section
@@ -767,26 +854,42 @@ struct MediaItemHeroView: View {
     return lines
   }
 
+  /// Primary on its own row, secondaries as one row of identical circles underneath —
+  /// the shape the reference layout uses. Nothing here competes with Play for width.
   private var actions: some View {
-    HStack(spacing: MediaActionMetrics.rowSpacing) {
+    VStack(alignment: .leading, spacing: Self.actionsRowGap) {
       primaryAction
-      bookmarkButton
-      if isSeries {
-        watchlistPill
-      }
-      if showsWatchedButton {
-        watchedButton
-      }
-      moreButton
-    }
 #if os(tvOS)
-    // Dead-end Up opens the trailer; Down scrolls naturally into content below.
-    .onMoveCommand { direction in
-      if direction == .up, trailer.player != nil, trailer.isReady {
-        isTrailerFullScreen = true
+        // Dead-end Up opens the trailer; Down lands on the circles, then scrolls on
+        // into the content below. Scoped to the primary row: from the circles, Up is
+        // a real move to Play and must not be swallowed.
+        .onMoveCommand { direction in
+          if direction == .up, trailer.player != nil, trailer.isReady {
+            isTrailerFullScreen = true
+          }
+        }
+#endif
+
+      HStack(spacing: MediaActionMetrics.rowSpacing) {
+        // Three different questions, three different controls: am I following this,
+        // where have I filed it, how far did I get. They were two controls wired to
+        // the same folder menu, which made the first two indistinguishable.
+        if isSeries, onToggleWatchlist != nil {
+          watchlistButton
+        }
+        bookmarkButton
+        if showsWatchedButton {
+          watchedButton
+        }
+        if mediaItem.trailerURL != nil {
+          trailerButton
+        }
+#if os(tvOS)
+        // No toolbar on a TV — overflow stays in the row there and only there.
+        moreButton
+#endif
       }
     }
-#endif
   }
 
   /// Bookmark folders — icon only. Fills once the title is in at least one folder.
@@ -809,71 +912,91 @@ struct MediaItemHeroView: View {
     }
   }
 
-  /// Labeled save control — same bookmark-folder menu as the circle (not
-  /// `/v1/watching/togglewatchlist`: a checkmark here would collide with Mark as Watched).
-  /// // DESIGN: separate series-watchlist chrome TBD — API is `UserActionsService.toggleWatchlist`.
+  /// Follow the series — `/v1/watching/togglewatchlist`, so new episodes turn up in
+  /// Watchlist. Not bookmark folders, and not watched: `minus` rather than a second
+  /// checkmark for the active state, because the checkmark next door means something
+  /// else entirely.
   @ViewBuilder
-  private var watchlistPill: some View {
-    folderMenuLabel {
-      HStack(spacing: MediaActionMetrics.contentSpacing) {
-        Image(systemName: "plus")
-          .font(.system(size: MediaActionMetrics.iconPointSize, weight: .semibold))
-        Text("Watchlist")
-          .font(MediaActionMetrics.labelFont)
-          .lineLimit(1)
-      }
-    }
-    .mediaActionPillStyle()
-    .focused($focus, equals: .heroOther)
-    .accessibilityLabel("Watchlist")
-  }
-
-  private var watchedButton: some View {
-    Button(action: onWatchedToggle) {
-      Image(systemName: "checkmark")
+  private var watchlistButton: some View {
+    Button {
+      onToggleWatchlist?()
+    } label: {
+      Image(systemName: isInWatchlist ? "minus" : "plus")
         .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
     }
     .mediaActionCircleStyle()
     .focused($focus, equals: .heroOther)
-    .accessibilityLabel("Mark as Watched")
+    .accessibilityLabel(isInWatchlist ? "Remove from Watchlist" : "Add to Watchlist")
   }
 
-  /// Quiet overflow — no resting chrome; fill only on focus. Holds Trailer, remove
-  /// from Continue Watching, Mark as New, browse watchlist — the same extras the
-  /// Continue Watching long-press offers.
+  /// Mark as watched. A film flips straight away; a series has to be asked which —
+  /// the episode you are on, or the whole season it belongs to. Gone once everything
+  /// is watched: there is nothing left to mark, and More carries Mark as New.
+  @ViewBuilder
+  private var watchedButton: some View {
+    if let (season, episode) = mediaItem.primaryEpisode, onSeasonWatchedToggle != nil {
+      Menu {
+        Button(action: onWatchedToggle) {
+          Label("\("Mark Episode Watched".localized) · S\(season.number), E\(episode.number)",
+                systemImage: "checkmark")
+        }
+        Button {
+          onSeasonWatchedToggle?(season)
+        } label: {
+          Label("\("Mark Season Watched".localized) · \(season.number)",
+                systemImage: "checkmark.circle")
+        }
+      } label: {
+        watchedGlyph
+      }
+      .mediaActionCircleStyle()
+      .focused($focus, equals: .heroOther)
+      .accessibilityLabel("Mark as Watched")
+    } else {
+      Button(action: onWatchedToggle) {
+        watchedGlyph
+      }
+      .mediaActionCircleStyle()
+      .focused($focus, equals: .heroOther)
+      .accessibilityLabel("Mark as Watched")
+    }
+  }
+
+  private var watchedGlyph: some View {
+    Image(systemName: "checkmark")
+      .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
+  }
+
+  /// The trailer, out of the overflow menu and onto the row — one tap, same circle as
+  /// its neighbours. Only present when the item actually has one.
+  @ViewBuilder
+  private var trailerButton: some View {
+    PlayerLink(route: linkProvider.trailerPlayer(for: mediaItem), item: mediaItem, mode: .trailer) {
+      Image(systemName: "film")
+        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
+    }
+    .mediaActionCircleStyle()
+    .focused($focus, equals: .heroOther)
+    .accessibilityLabel("Trailer")
+  }
+
+  /// tvOS only: overflow as one more circle in the row, because a TV has no toolbar to
+  /// put it in. iPhone and Mac hoist the same menu into the navigation toolbar — that
+  /// is where a platform's secondary actions belong, and it buys the row a slot back.
   @ViewBuilder
   private var moreButton: some View {
     Menu {
-      if mediaItem.trailerURL != nil {
-        PlayerLink(route: linkProvider.trailerPlayer(for: mediaItem), item: mediaItem, mode: .trailer) {
-          Label("Trailer", systemImage: "film")
-        }
-      }
-
-      Button(role: .destructive, action: onClearFromContinueWatching) {
-        Label("Remove from Recently Watched", systemImage: "trash")
-      }
-
-      if isWatched {
-        Button(action: onWatchedToggle) {
-          Label("Mark as New", systemImage: "eye")
-        }
-      } else if !showsWatchedButton {
-        Button(action: onWatchedToggle) {
-          Label("Mark as Watched", systemImage: "checkmark")
-        }
-      }
-
-      if isSeries, isBookmarked, let onBrowseWatchlist {
-        Button(action: onBrowseWatchlist) {
-          Label("Browse My Watchlist", systemImage: "rectangle.grid.3x2")
-        }
-      }
+      MediaItemOverflowMenu(isSeries: isSeries,
+                            isWatched: isWatched,
+                            isBookmarked: isBookmarked,
+                            onWatchedToggle: onWatchedToggle,
+                            onClearFromContinueWatching: onClearFromContinueWatching,
+                            onBrowseWatchlist: onBrowseWatchlist)
     } label: {
       Image(systemName: "ellipsis")
         .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .bold))
     }
-    .mediaActionGhostStyle()
+    .mediaActionCircleStyle()
     .focused($focus, equals: .heroOther)
     .accessibilityLabel("More")
   }
@@ -1010,13 +1133,16 @@ struct MediaItemHeroView: View {
   /// Leads and directors named in the corner, before the list turns into a paragraph.
   static let creditNameLimit = 3
 
-  /// Genres shown beside the names; kino.pub happily returns six.
+  /// Genres shown above the names; kino.pub happily returns six.
   static let genreLimit = 3
 
-  /// Everything under the title is one size, taken from the system scale rather than
-  /// picked by hand — a bespoke 24/26/28 next to real tvOS controls reads as foreign.
-  /// 29 pt on tvOS.
-  static let secondaryFont: Font = .subheadline
+  /// Co-productions run long — two is enough to say where a title is from.
+  static let countryLimit = 2
+
+  /// Everything under the title is one size — real body text, not a caption — and it
+  /// is the same size the ratings captions and the information table use further down
+  /// the page. See `TypeScale.detailBody`, which is where that decision lives.
+  static let secondaryFont: Font = TypeScale.detailBody
 
   /// Not `text`, not `subtitle`: the row Apple puts under the title looks like primary
   /// text with the artwork faintly coming through it.
@@ -1029,14 +1155,14 @@ struct MediaItemHeroView: View {
   static let horizontalInset: CGFloat = 80
   static let bottomInset: CGFloat = 60
   static let contentSpacing: CGFloat = 12
-  static let leadingMaxWidth: CGFloat = 720
-  static let plotMaxWidth: CGFloat = 560
-  static let logoMaxWidth: CGFloat = 640
+  static let leadingWidth: CGFloat = 640
+  static let logoMaxWidth: CGFloat = 560
   static let logoMaxHeight: CGFloat = 160
   static let titleFont: Font = TypeScale.heroTitle
   static let metaSpacing: CGFloat = 20
   static let actionsGap: CGFloat = 20
-  static let creditsMaxWidth: CGFloat = 360
+  static let actionsRowGap: CGFloat = 16
+  static let creditLineSpacing: CGFloat = 4
   static let columnGutter: CGFloat = 48
 #elseif os(macOS)
   /// Preview / fallback only — live layout uses `.aspectRatio(16/9)`.
@@ -1044,14 +1170,14 @@ struct MediaItemHeroView: View {
   static let horizontalInset: CGFloat = 32
   static let bottomInset: CGFloat = 28
   static let contentSpacing: CGFloat = 8
-  static let leadingMaxWidth: CGFloat = 480
-  static let plotMaxWidth: CGFloat = 420
-  static let logoMaxWidth: CGFloat = 420
+  static let leadingWidth: CGFloat = 400
+  static let logoMaxWidth: CGFloat = 360
   static let logoMaxHeight: CGFloat = 110
   static let titleFont: Font = TypeScale.heroTitle
   static let metaSpacing: CGFloat = 12
   static let actionsGap: CGFloat = 12
-  static let creditsMaxWidth: CGFloat = 280
+  static let actionsRowGap: CGFloat = 10
+  static let creditLineSpacing: CGFloat = 3
   static let columnGutter: CGFloat = 28
 #else
   /// Preview / fallback only — live layout uses `.aspectRatio(16/9)`.
@@ -1059,14 +1185,14 @@ struct MediaItemHeroView: View {
   static let horizontalInset: CGFloat = 20
   static let bottomInset: CGFloat = 20
   static let contentSpacing: CGFloat = 8
-  static let leadingMaxWidth: CGFloat = 560
-  static let plotMaxWidth: CGFloat = 560
+  static let leadingWidth: CGFloat = 560
   static let logoMaxWidth: CGFloat = 360
   static let logoMaxHeight: CGFloat = 96
   static let titleFont: Font = TypeScale.heroTitle
   static let metaSpacing: CGFloat = 10
   static let actionsGap: CGFloat = 10
-  static let creditsMaxWidth: CGFloat = 240
+  static let actionsRowGap: CGFloat = 10
+  static let creditLineSpacing: CGFloat = 3
   static let columnGutter: CGFloat = 16
 #endif
 }

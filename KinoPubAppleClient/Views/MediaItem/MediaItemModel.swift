@@ -128,6 +128,9 @@ class MediaItemModel: ObservableObject {
         mediaItem.seasons = mediaItem.seasons?.map({ $0.mediaId = mediaId; return $0 })
         AppContext.shared.localProgressStore.cacheItem(mediaItem)
         isWatched = mediaItem.playbackAction == .playAgain
+        // Without this the hero's follow control opened as "not following" on every
+        // visit, whatever the account actually had, and the first tap unfollowed.
+        isInWatchlist = mediaItem.inWatchlist ?? mediaItem.subscribed ?? false
         seedVoteCounts()
         itemLoaded = true
         identity = MediaIdentity(mediaItem: mediaItem)
@@ -304,6 +307,41 @@ class MediaItemModel: ObservableObject {
     }
   }
 
+  /// Marks a whole season watched/unwatched at once. `/v1/watching/toggle` with a
+  /// season and no video number is the API's own bulk form, and it flips the season
+  /// to the opposite of what it mostly is — so a part-watched season completes rather
+  /// than resetting. The response carries no per-episode flags, hence the refetch.
+  func toggleWatched(season: Season) {
+    let target = season.episodes.contains { !$0.isWatched } ? 1 : 0
+    let previous = season.episodes.map(\.watched)
+    for episode in season.episodes {
+      episode.watched = target
+    }
+    mediaItem = mediaItem
+    isWatched = mediaItem.playbackAction == .playAgain
+    Task {
+      do {
+        _ = try await actionsService.toggleWatching(id: mediaItemId, video: nil, season: season.number)
+        contentStore.invalidate(family: .watch)
+        // The optimistic flip above is a guess at what a bulk toggle did; the item's
+        // own episode flags are the answer.
+        var refreshed = try await itemsService.fetchDetails(for: "\(mediaItemId)").item
+        let mediaId = refreshed.id
+        refreshed.seasons = refreshed.seasons?.map({ $0.mediaId = mediaId; return $0 })
+        mediaItem = refreshed
+        AppContext.shared.localProgressStore.cacheItem(refreshed)
+        isWatched = mediaItem.playbackAction == .playAgain
+      } catch {
+        for (episode, watched) in zip(season.episodes, previous) {
+          episode.watched = watched
+        }
+        mediaItem = mediaItem
+        isWatched = mediaItem.playbackAction == .playAgain
+        errorHandler.setError(error)
+      }
+    }
+  }
+
   /// Drops the title from history so it stops cluttering Continue Watching.
   func clearFromContinueWatching() {
     Task {
@@ -349,9 +387,9 @@ class MediaItemModel: ObservableObject {
     }
   }
 
-  // DESIGN: series `/v1/watching/togglewatchlist` is available via
-  // `actionsService.toggleWatchlist` — the context menu uses this; the hero
-  // checkmark control stays Mark as Watched.
+  /// Series follow state — `/v1/watching/togglewatchlist`, seeded from the item's own
+  /// `in_watchlist` / `subscribed` flags. Distinct from bookmark folders (a shelf you
+  /// file things on) and from watched (how far you got).
   @Published public var isInWatchlist: Bool = false
 
   func toggleWatchlist() {

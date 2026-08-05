@@ -77,23 +77,41 @@ struct MediaItemView: View {
 #if os(iOS) || os(tvOS)
       .toolbar(.hidden, for: .tabBar)
 #endif
+      // No navigation bar on this page, on either platform: the artwork runs to the
+      // top edge and the title is already spelled out in 100pt over it. What stays is
+      // the toolbar itself — Back and the overflow float over the picture.
 #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      .toolbarBackground(.hidden, for: .navigationBar)
+      .toolbarColorScheme(.dark, for: .navigationBar)
 #endif
 #if os(macOS)
       .toolbarBackground(.hidden, for: .windowToolbar)
       .toolbarColorScheme(.dark, for: .windowToolbar)
 #endif
-      .platformNavigationTitle(itemModel.itemLoaded ? itemModel.mediaItem.localizedTitle : "")
+      .platformNavigationTitle("")
+#if os(iOS) || os(macOS)
+      .toolbar {
+        ToolbarItem(placement: .primaryAction) {
+          overflowMenu
+        }
+      }
+#endif
       .task {
         itemModel.fetchData()
       }
+      // Ambient trailer is off on iPhone for now: the hero band is short there and the
+      // chrome sits on top of it, so a moving picture under the text costs legibility
+      // and battery for something barely visible. The Trailer button still plays it.
+      // // DESIGN: revisit once the phone hero has a shape that gives the picture room.
+#if !os(iOS)
       .task(id: itemModel.itemLoaded ? itemModel.mediaItem.trailerURL : nil) {
         guard itemModel.itemLoaded, let url = itemModel.mediaItem.trailerURL else { return }
         try? await Task.sleep(for: .seconds(MediaItemHeroView.trailerLeadIn))
         guard !Task.isCancelled else { return }
         trailer.start(url: url)
       }
+#endif
       .onChange(of: isHeroOnScreen) { _, onScreen in
         trailer.setActive(onScreen)
       }
@@ -108,6 +126,24 @@ struct MediaItemView: View {
 #endif
       .handleError(state: $errorHandler.state)
   }
+
+#if os(iOS) || os(macOS)
+  /// The page's secondary actions, in the one place a platform with a toolbar puts
+  /// them. Same list the tvOS hero shows in its overflow circle.
+  private var overflowMenu: some View {
+    Menu {
+      MediaItemOverflowMenu(isSeries: itemModel.mediaItem.isSeries,
+                            isWatched: itemModel.isWatched,
+                            isBookmarked: itemModel.isBookmarked,
+                            onWatchedToggle: { itemModel.toggleWatched() },
+                            onClearFromContinueWatching: { itemModel.clearFromContinueWatching() },
+                            onBrowseWatchlist: { Self.openWatchlist(navigationState) })
+    } label: {
+      Label("More", systemImage: "ellipsis")
+    }
+    .disabled(!itemModel.itemLoaded)
+  }
+#endif
 
   @ViewBuilder
   private var details: some View {
@@ -134,6 +170,7 @@ struct MediaItemView: View {
                           folders: itemModel.folders,
                           folderIDsContainingItem: itemModel.folderIDsContainingItem,
                           onWatchedToggle: { itemModel.toggleWatched() },
+                          onSeasonWatchedToggle: { itemModel.toggleWatched(season: $0) },
                           onFolderToggle: { itemModel.toggleFolder($0) },
                           onCreateFolder: { itemModel.createFolderAndAdd(named: $0) },
                           onClearFromContinueWatching: { itemModel.clearFromContinueWatching() },
@@ -141,6 +178,7 @@ struct MediaItemView: View {
                           isInWatchlist: itemModel.isInWatchlist,
                           onToggleWatchlist: { itemModel.toggleWatchlist() },
                           titleLogoURL: itemModel.externalMetadata.titleLogoURL,
+                          ageRating: itemModel.externalMetadata.ageRating,
                           externalMetadataLoaded: itemModel.externalMetadataLoaded)
 #if os(tvOS)
           .containerRelativeFrame(.vertical) { length, _ in length }

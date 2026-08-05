@@ -126,6 +126,10 @@ struct NotificationsSettingsPane: View {
 }
 
 struct DetailsSettingsPane: View {
+  /// Real and saved, unlike the demo toggles below it.
+  @AppStorage(MediaItemDisplayPreferences.showAgeRatingBadgeKey)
+  private var showAgeRatingBadge = false
+
   @State private var showCast = true
   @State private var showAwards = true
   @State private var showSimilar = true
@@ -133,6 +137,14 @@ struct DetailsSettingsPane: View {
 
   var body: some View {
     Form {
+      Section {
+        Toggle("Age rating badge", isOn: $showAgeRatingBadge)
+      } header: {
+        Text("Metadata")
+      } footer: {
+        Text("Shows the certification chip beside the year on a title's hero. The rating is always listed in the information table.")
+      }
+
       Section {
         Toggle("Cast & crew", isOn: $showCast)
         Toggle("Awards", isOn: $showAwards)

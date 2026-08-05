@@ -25,6 +25,20 @@ public enum TypeScale {
   }()
 
   public static let heroSecondary: Font = .subheadline
+
+  /// **The** running-text size on an item page. Everything that is prose or a
+  /// label-and-value pair takes this: the hero's metadata row, synopsis and credit
+  /// lines, the vote counts under the rating tiles, and every row of the information
+  /// table. They used to be four hand-picked point sizes between 12 and 15 that were
+  /// never quite the same as each other; one token means they cannot drift apart again.
+  ///
+  /// A text style rather than `.system(size:)`, so it tracks Dynamic Type. Add `.weight`
+  /// where a value needs to stand out from its caption — never a size.
+  /// It is `.body` — the platform's own running-text style — rather than a step down
+  /// from it. The old sizes were all *below* body (12–15pt on a Mac, 20–25 on a TV):
+  /// small enough that the synopsis read as a caption on the artwork instead of as the
+  /// thing you are meant to read. Levelling them meant levelling **up**.
+  public static let detailBody: Font = .body
   public static let filterControl: Font = .subheadline.weight(.semibold)
   public static let actionLabel: Font = .headline.weight(.semibold)
   public static let detailSection: Font = .title3.weight(.semibold)
