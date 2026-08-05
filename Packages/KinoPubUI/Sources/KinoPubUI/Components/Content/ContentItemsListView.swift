@@ -102,7 +102,10 @@ public struct ContentItemsListView<Header: View>: View {
 #else
                 .buttonStyle(MediaCardButtonStyle())
 #endif
-                .modifier(MediaCardContextMenuModifier(entries: contextMenuProvider?(item) ?? []))
+                .modifier(MediaCardContextMenuModifier(
+                  isEnabled: contextMenuProvider != nil,
+                  entriesProvider: { contextMenuProvider?(item) ?? [] }
+                ))
               }
             }
           }

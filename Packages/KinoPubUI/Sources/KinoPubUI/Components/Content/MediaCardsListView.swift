@@ -69,7 +69,10 @@ public struct MediaCardsListView: View {
 #else
           .buttonStyle(MediaCardButtonStyle())
 #endif
-          .modifier(MediaCardContextMenuModifier(entries: contextMenuProvider?(card) ?? []))
+          .modifier(MediaCardContextMenuModifier(
+            isEnabled: contextMenuProvider != nil,
+            entriesProvider: { contextMenuProvider?(card) ?? [] }
+          ))
         }
       }
       .safeAreaPadding(.horizontal, metrics.inset)

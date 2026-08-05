@@ -16,8 +16,13 @@ import KinoPubLogging
 final class MediaCardMenuCoordinator: ObservableObject {
 
   @Published private(set) var folders: [Bookmark] = []
-  /// Folder ids that currently contain each item — filled lazily on menu build.
-  @Published private(set) var membershipByItemID: [Int: Set<Int>] = [:]
+  /// Folder ids that currently contain each item. **Not** `@Published`: filling this
+  /// from a Home/shelf context-menu builder used to republish on every card, which
+  /// re-entered `MediaRowsView` body, re-fired `get-item-folders` for every visible
+  /// poster, and froze the Mac UI (`NavigationRequestObserver` thrash + blank artwork).
+  /// Mutated silently for cache fills; call sites that need a redraw (toggle) send
+  /// `objectWillChange` themselves via the `@Published` paths below.
+  private(set) var membershipByItemID: [Int: Set<Int>] = [:]
   /// When set, the hosting view should present the New Folder alert for this item.
   @Published var newFolderItemID: Int?
   @Published var newFolderName: String = ""
@@ -55,17 +60,19 @@ final class MediaCardMenuCoordinator: ObservableObject {
     }
   }
 
-  /// Warm membership for a card about to show a menu (non-blocking for the builder).
+  /// Warm membership for one item. Safe to call from a **menu-open** path only —
+  /// never from a SwiftUI body / `contextMenuProvider` that runs per visible card.
+  /// Writes the cache without publishing so a burst of prefetches cannot invalidate Home.
   func prefetchMembership(for itemID: Int) {
     guard membershipByItemID[itemID] == nil else { return }
     guard membershipTasks[itemID] == nil else { return }
     membershipTasks[itemID] = Task { [weak self] in
-      await self?.refreshMembership(for: itemID)
+      await self?.refreshMembership(for: itemID, publish: false)
       self?.membershipTasks[itemID] = nil
     }
   }
 
-  func refreshMembership(for itemID: Int) async {
+  func refreshMembership(for itemID: Int, publish: Bool = true) async {
     do {
       let folders = try await contentService.fetchItemFolders(itemId: itemID).items
       membershipByItemID[itemID] = Set(folders.map(\.id))
@@ -75,6 +82,7 @@ final class MediaCardMenuCoordinator: ObservableObject {
         membershipByItemID[itemID] = []
       }
     }
+    if publish { objectWillChange.send() }
   }
 
   func promptNewFolder(for itemID: Int) {
@@ -102,6 +110,7 @@ final class MediaCardMenuCoordinator: ObservableObject {
         var set = membershipByItemID[itemID] ?? []
         set.insert(folderId)
         membershipByItemID[itemID] = set
+        objectWillChange.send()
         await refreshFolders()
         contentStore.invalidate(family: .bookmarks)
       } catch {
@@ -142,12 +151,13 @@ final class MediaCardMenuCoordinator: ObservableObject {
       set.insert(folder.id)
     }
     membershipByItemID[itemID] = set
+    objectWillChange.send()
     Task {
       do {
         try await contentService.toggleBookmark(itemId: itemID, folderId: folder.id)
         contentStore.invalidate(family: .bookmarks)
       } catch {
-        await refreshMembership(for: itemID)
+        await refreshMembership(for: itemID, publish: true)
         errorHandler?.setError(error)
       }
     }

@@ -101,7 +101,8 @@ struct MainView: View {
   private func menuEntries(for card: MediaCard,
                            surface: MediaCardContextSurface,
                            isContinueWatching: Bool) -> [MediaCardContextEntry] {
-    cardMenu.prefetchMembership(for: card.itemID)
+    // Membership is cache-only here — prefetching from the provider used to fire
+    // one `get-item-folders` per visible poster and republish Home into a freeze.
     let containing = cardMenu.membershipByItemID[card.itemID] ?? []
     let folders = cardMenu.folders.map {
       MediaCardContextMenus.BookmarkFolderOption(

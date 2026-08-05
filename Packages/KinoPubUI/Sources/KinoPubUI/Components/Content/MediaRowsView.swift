@@ -146,7 +146,10 @@ public struct MediaRowsView: View {
           .buttonStyle(MediaCardButtonStyle())
 #endif
           .focused($focusedCard, equals: CardKey(row: Self.bannerRowID, card: card.id))
-          .modifier(MediaCardContextMenuModifier(entries: contextMenuProvider?(card, .banner) ?? []))
+          .modifier(MediaCardContextMenuModifier(
+            isEnabled: contextMenuProvider != nil,
+            entriesProvider: { contextMenuProvider?(card, .banner) ?? [] }
+          ))
         }
       }
       .scrollTargetLayout()
@@ -183,7 +186,10 @@ public struct MediaRowsView: View {
               .buttonStyle(MediaCardButtonStyle())
 #endif
               .focused($focusedCard, equals: CardKey(row: row.id, card: card.id))
-              .modifier(MediaCardContextMenuModifier(entries: contextMenuProvider?(card, .shelf) ?? []))
+              .modifier(MediaCardContextMenuModifier(
+                isEnabled: contextMenuProvider != nil,
+                entriesProvider: { contextMenuProvider?(card, .shelf) ?? [] }
+              ))
           }
         }
         .safeAreaPadding(.horizontal, metrics.inset)
@@ -310,25 +316,36 @@ public struct MediaCardButtonStyle: ButtonStyle {
 
 /// Applies a long-press context menu when there is something to offer; a no-op otherwise
 /// so catalog posters without actions stay clean.
+///
+/// Entries are built **inside** `contextMenu` so providers that touch coordinators
+/// don't run for every visible card on every Home body pass (that path previously
+/// stormed `get-item-folders` and froze macOS).
 public struct MediaCardContextMenuModifier: ViewModifier {
-  let entries: [MediaCardContextEntry]
+  private let isEnabled: Bool
+  private let entriesProvider: () -> [MediaCardContextEntry]
 
   public init(entries: [MediaCardContextEntry]) {
-    self.entries = entries
+    self.isEnabled = !entries.isEmpty
+    self.entriesProvider = { entries }
+  }
+
+  public init(isEnabled: Bool, entriesProvider: @escaping () -> [MediaCardContextEntry]) {
+    self.isEnabled = isEnabled
+    self.entriesProvider = entriesProvider
   }
 
   @ViewBuilder
   public func body(content: Content) -> some View {
-    if entries.isEmpty {
-      content
-    } else {
+    if isEnabled {
       content.contextMenu {
-        ForEach(entries) { entry in
+        ForEach(entriesProvider()) { entry in
           entryView(entry)
         }
         // macOS 26+/27 hide SF Symbol menu icons unless we ask for title+icon.
         .labelStyle(.titleAndIcon)
       }
+    } else {
+      content
     }
   }
 

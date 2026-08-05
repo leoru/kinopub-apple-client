@@ -383,7 +383,7 @@ struct SeasonsRailView: View {
 
   private func contextEntries(for episode: Episode, season: Season) -> [MediaCardContextEntry] {
     let card = Self.contextCard(for: episode, in: season)
-    cardMenu.prefetchMembership(for: card.itemID)
+    // Cache-only — do not prefetch from the per-episode context-menu builder.
     let containing = cardMenu.membershipByItemID[card.itemID] ?? []
     let folders = cardMenu.folders.map {
       MediaCardContextMenus.BookmarkFolderOption(

@@ -210,7 +210,9 @@ enum MediaCardContextMenus {
     includePlay: Bool = true,
     includeGoToTitle: Bool = true
   ) -> [MediaCardContextEntry] {
-    menu.prefetchMembership(for: card.itemID)
+    // Do NOT prefetch here — `contextMenuProvider` runs while laying out every
+    // visible card. Membership comes from the silent cache (filled on toggle /
+    // explicit menu-open prefetch only).
     let containing = menu.membershipByItemID[card.itemID] ?? []
     let folderOptions = menu.folders.map {
       BookmarkFolderOption(id: $0.id, title: $0.title, isContaining: containing.contains($0.id))
