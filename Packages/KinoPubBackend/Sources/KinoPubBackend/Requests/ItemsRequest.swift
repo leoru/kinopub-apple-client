@@ -43,10 +43,11 @@ public struct ItemsRequest: Endpoint {
     if let period = filter.period {
       params["period"] = period.rawValue
     }
-    // `actor` / `director`, matched on the name as it appears in the credits. Commas
+    // `cast` / `director`, matched on the name as it appears in the credits. Commas
     // and pluses are this parameter's OR and AND, so a single name goes as written.
+    // (`cast`, not the docs' `actor` — see `MediaPerson.Role.itemsQueryParameter`.)
     if let person = filter.person {
-      params[person.role.rawValue] = person.name
+      params[person.role.itemsQueryParameter] = person.name
     }
     if let page {
       params["page"] = "\(page)"

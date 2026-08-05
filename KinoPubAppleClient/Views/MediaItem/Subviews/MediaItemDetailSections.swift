@@ -598,41 +598,133 @@ struct MediaItemSimilarSection: View {
   let linkProvider: NavigationLinkProvider
   var onSectionFocused: (() -> Void)? = nil
 
+  var body: some View {
+    MediaItemPosterShelf(
+      title: "Similar",
+      items: items,
+      linkProvider: linkProvider,
+      onSectionFocused: onSectionFocused
+    )
+  }
+}
+
+// MARK: - More from director / with actor
+
+/// Role-scoped credit shelf under Related. Skeleton while the query is in flight;
+/// gone entirely when the person has nothing else (or the query failed).
+struct MediaItemPersonShelfSection: View {
+
+  let titleFormat: String
+  let person: MediaPerson?
+  let items: [MediaItem]
+  let isLoaded: Bool
+  let linkProvider: NavigationLinkProvider
+  var onSectionFocused: (() -> Void)? = nil
+
+  private var title: String {
+    guard let person else { return "" }
+    return String(format: titleFormat.localized, person.name)
+  }
+
+  var body: some View {
+    if let person {
+      if !items.isEmpty {
+        MediaItemPosterShelf(
+          title: title,
+          items: items,
+          linkProvider: linkProvider,
+          personDestination: person,
+          onSectionFocused: onSectionFocused
+        )
+      } else if !isLoaded {
+        MediaItemPosterShelfSkeleton(title: title)
+      }
+    }
+  }
+}
+
+/// Shared horizontal poster rail for Similar and the person shelves.
+/// Same sizing path as Home (`MediaRowsView` + `ShelfMetrics` +
+/// `containerRelativeFrame`) — without the column width the card stretches
+/// into a wide plate with a postage-stamp poster in the middle.
+struct MediaItemPosterShelf: View {
+
+  let title: String
+  let items: [MediaItem]
+  let linkProvider: NavigationLinkProvider
+  var personDestination: MediaPerson? = nil
+  var onSectionFocused: (() -> Void)? = nil
+
   @Environment(ErrorHandler.self) private var errorHandler
   @EnvironmentObject private var navigationState: NavigationState
   @Environment(\.openURL) private var openURL
+  @Environment(\.dynamicTypeSize) private var typeSize
   @StateObject private var cardMenu = MediaCardMenuCoordinator()
+  @State private var containerWidth: CGFloat = 1100
+
+  private var metrics: ShelfMetrics {
+    .posters(width: containerWidth, typeSize: typeSize)
+  }
 
   var body: some View {
     if !items.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
-        MediaItemSectionHeader("Similar")
+        header
+          .safeAreaPadding(.horizontal, metrics.inset)
 
         ScrollView(.horizontal, showsIndicators: false) {
-          LazyHStack(alignment: .top, spacing: Self.spacing) {
+          LazyHStack(alignment: .top, spacing: metrics.gutter) {
             ForEach(items, id: \.id) { item in
               NavigationLink(value: linkProvider.link(for: item)) {
-                MediaCardView(card: MediaCard(item), caption: Self.cardCaption)
+                MediaCardView(card: MediaCard(item), caption: MediaItemSimilarSection.cardCaption)
               }
-#if os(tvOS)
-              // Same native parallax focus effect as the catalog rows.
-              .buttonStyle(.borderless)
-              .reportMediaItemSectionFocus(onSectionFocused)
-#else
+              .containerRelativeFrame(.horizontal,
+                                      count: metrics.columns,
+                                      span: 1,
+                                      spacing: metrics.gutter)
+#if !os(tvOS)
               .buttonStyle(MediaCardButtonStyle())
+#endif
+#if os(tvOS)
+              .reportMediaItemSectionFocus(onSectionFocused)
 #endif
               .modifier(MediaCardContextMenuModifier(entries: menuEntries(for: item)))
             }
           }
-          .padding(.horizontal, MediaItemLayout.horizontalInset)
-          .padding(.vertical, Self.focusPadding)
+          .safeAreaPadding(.horizontal, metrics.inset)
+          .padding(.vertical, Metrics.focusPadding)
         }
+#if os(tvOS)
+        .buttonStyle(.borderless)
+        .scrollClipDisabled()
+        .focusSection()
+#endif
+      }
+      .onGeometryChange(for: CGFloat.self) { proxy in
+        proxy.size.width
+      } action: { width in
+        if width > 0 { containerWidth = width }
       }
       .task {
         cardMenu.bind(errorHandler: errorHandler)
         await cardMenu.refreshFolders()
       }
       .mediaCardNewFolderAlert(cardMenu)
+    }
+  }
+
+  @ViewBuilder
+  private var header: some View {
+    if let personDestination {
+      NavigationLink(value: linkProvider.person(for: personDestination)) {
+        SectionHeader(title: title, showsChevron: true)
+      }
+      .buttonStyle(PersonShelfHeaderButtonStyle())
+#if os(tvOS)
+      .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+    } else {
+      SectionHeader(title: title)
     }
   }
 
@@ -644,16 +736,79 @@ struct MediaItemSimilarSection: View {
       openURL: { openURL($0) }
     )
   }
+}
 
+/// Placeholder strip while a person shelf query is in flight — same column
+/// metrics as the real rail so it doesn't jump when content arrives.
+private struct MediaItemPosterShelfSkeleton: View {
+  let title: String
+
+  @Environment(\.dynamicTypeSize) private var typeSize
+  @State private var containerWidth: CGFloat = 1100
+
+  private var metrics: ShelfMetrics {
+    .posters(width: containerWidth, typeSize: typeSize)
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      SectionHeader(title: title)
+        .safeAreaPadding(.horizontal, metrics.inset)
+
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(alignment: .top, spacing: metrics.gutter) {
+          ForEach(0..<metrics.columns, id: \.self) { _ in
+            RoundedRectangle(cornerRadius: MediaCardView.cornerRadius, style: .continuous)
+              .fill(Color.KinoPub.selectionBackground.opacity(0.45))
+              .aspectRatio(CardAspect.poster.ratio, contentMode: .fit)
+              .containerRelativeFrame(.horizontal,
+                                      count: metrics.columns,
+                                      span: 1,
+                                      spacing: metrics.gutter)
+              .redacted(reason: .placeholder)
+          }
+        }
+        .safeAreaPadding(.horizontal, metrics.inset)
+        .padding(.vertical, Metrics.focusPadding)
+      }
+      .allowsHitTesting(false)
+      .accessibilityHidden(true)
+    }
+    .onGeometryChange(for: CGFloat.self) { proxy in
+      proxy.size.width
+    } action: { width in
+      if width > 0 { containerWidth = width }
+    }
+  }
+}
+
+/// Focus lift for the person-shelf title — mirrors `RowHeaderButtonStyle` without
+/// pulling that package-internal type into the app target.
+private struct PersonShelfHeaderButtonStyle: ButtonStyle {
+  func makeBody(configuration: ButtonStyle.Configuration) -> some View {
+    Header(configuration: configuration)
+  }
+
+  private struct Header: View {
+    let configuration: ButtonStyle.Configuration
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+      configuration.label
+        .environment(\.cardFocused, isFocused)
+        .scaleEffect(isFocused ? 1.06 : 1.0, anchor: .leading)
+        .opacity(configuration.isPressed ? 0.6 : 1)
+        .animation(.easeOut(duration: 0.18), value: isFocused)
+    }
+  }
+}
+
+extension MediaItemSimilarSection {
 #if os(tvOS)
   /// Match home: caption only while focused, so the rail stays a strip of posters.
   static let cardCaption: MediaCardCaption = .onFocus
-  static let spacing: CGFloat = 36
-  static let focusPadding: CGFloat = 32
 #else
   static let cardCaption: MediaCardCaption = .always
-  static let spacing: CGFloat = 16
-  static let focusPadding: CGFloat = 6
 #endif
 }
 

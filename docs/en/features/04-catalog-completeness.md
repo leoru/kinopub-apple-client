@@ -18,6 +18,7 @@ payload metadata — before chasing external enrichment or advanced subtitles.
 
 - [x] Similar items rail
 - [x] Cast/crew → person credits pages (kino.pub actor/director queries)
+- [x] Detail shelves: more from director / more with actor (`LibraryFilter.person`, first credit)
 - [x] Multi-country, ratings, synopsis panel, info/audio columns
 - [ ] Collections browser + collection detail UI
 - [ ] Trailers as a proper detail section (hero takeover alone is not enough)

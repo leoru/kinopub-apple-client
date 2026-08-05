@@ -235,6 +235,16 @@ struct MediaItemView: View {
       MediaItemFactsSection(facts: itemModel.externalMetadata.facts)
       MediaItemReviewsSection(reviews: itemModel.externalMetadata.reviews)
       MediaItemSimilarSection(items: itemModel.similarItems, linkProvider: itemModel.linkProvider)
+      MediaItemPersonShelfSection(titleFormat: "More from %@",
+                                  person: itemModel.primaryDirector,
+                                  items: itemModel.moreFromDirector,
+                                  isLoaded: itemModel.moreFromDirectorLoaded,
+                                  linkProvider: itemModel.linkProvider)
+      MediaItemPersonShelfSection(titleFormat: "More with %@",
+                                  person: itemModel.primaryActor,
+                                  items: itemModel.moreWithActor,
+                                  isLoaded: itemModel.moreWithActorLoaded,
+                                  linkProvider: itemModel.linkProvider)
       MediaItemInfoColumns(mediaItem: itemModel.mediaItem,
                            externalMetadata: itemModel.externalMetadata)
     }

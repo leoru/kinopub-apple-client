@@ -60,6 +60,18 @@ final class LibraryFilterTests: XCTestCase {
     ])
   }
 
+  /// Docs list `[actor]`; live mobile API filters on `cast=` (community-verified).
+  func testPersonFilterUsesCastAndDirectorQueryKeys() {
+    let actor = LibraryFilter(person: MediaPerson(name: "Крис Пратт", role: .actor))
+    XCTAssertEqual(params(actor)["cast"], "Крис Пратт")
+    XCTAssertNil(params(actor)["actor"])
+    XCTAssertNil(params(actor)["director"])
+
+    let director = LibraryFilter(person: MediaPerson(name: "Джеймс Ганн", role: .director))
+    XCTAssertEqual(params(director)["director"], "Джеймс Ганн")
+    XCTAssertNil(params(director)["cast"])
+  }
+
   func testPeriodIsSentServerSide() {
     XCTAssertEqual(params(LibraryFilter(period: .week))["period"], "week")
     XCTAssertNil(params(LibraryFilter())["period"])

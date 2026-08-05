@@ -100,7 +100,7 @@ public enum CatalogPeriod: String, CaseIterable, Identifiable, Hashable {
 /// Everything the library listing filters on. `nil` means "any".
 ///
 /// Rating / quality / AC3 facets are applied **client-side**. The mobile `/v1/items`
-/// API only honors type/genre/country/year/sort/actor/director/`period` — `imdb` /
+/// API only honors type/genre/country/year/sort/cast/director/`period` — `imdb` /
 /// `kinopoisk` / `quality` / `conditions` query params are silently ignored (verified
 /// by the dungeon-master-xx fork against the live API). Each `MediaItem` already carries
 /// `imdbRating` / `kinopoiskRating` / `quality` / `ac3`, so we filter the page locally.

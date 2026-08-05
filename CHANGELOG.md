@@ -5,6 +5,13 @@ not belong here. Detail checklists live under [`docs/en/features/`](docs/en/feat
 
 ## Unreleased
 
+### Detail — people shelves
+
+- "More from \<director\>" / "More with \<actor\>" rails under Similar on the item page. First
+  credited name only, `LibraryFilter.person` + Kinopoisk sort, skeleton while loading, hidden when
+  empty. Title taps push `PersonItemsView`. Actor queries send `cast=` (live API), not the docs'
+  `actor`.
+
 ### Detail hero
 
 - Two columns on tvOS/macOS instead of three: **title + actions** (fixed width) | **synopsis,

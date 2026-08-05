@@ -14,7 +14,6 @@ import Foundation
 public struct MediaPerson: Hashable, Identifiable {
 
   public enum Role: String, Hashable {
-    /// The `actor` and `director` parameters of `/v1/items`.
     case actor
     case director
 
@@ -22,6 +21,15 @@ public struct MediaPerson: Hashable, Identifiable {
       switch self {
       case .actor: return "Cast"
       case .director: return "Director"
+      }
+    }
+
+    /// Query key for `/v1/items`. Docs list `[actor]`, but the live mobile API
+    /// filters on `cast=` (community-verified); `director=` matches the docs.
+    public var itemsQueryParameter: String {
+      switch self {
+      case .actor: return "cast"
+      case .director: return "director"
       }
     }
   }

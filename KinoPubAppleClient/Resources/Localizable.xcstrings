@@ -4468,6 +4468,40 @@
         }
       }
     },
+    "More from %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More from %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ещё от %@"
+          }
+        }
+      }
+    },
+    "More with %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More with %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ещё с %@"
+          }
+        }
+      }
+    },
     "Movie" : {
       "extractionState" : "manual",
       "localizations" : {

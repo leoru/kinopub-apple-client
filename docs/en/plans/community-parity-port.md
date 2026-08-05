@@ -21,7 +21,7 @@ feature doc it belongs to (02 / 03 / 04) — that stays the living checklist.
 | Catalog sections | 6 content types + 5 genre presets (cartoons, cartoon series, anime, stand-up, 3D) in sidebar/tabs (`NavigationTabs.swift`) | Movies + Series tabs only |
 | Collections | Full browser + detail (`Views/Collections/`) | Home row + browser + detail ([Views/Collections/](../../../KinoPubAppleClient/Views/Collections/)); sidebar entry still open |
 | New episodes | Dedicated screen, tabs New episodes / My series, type sub-tabs (`Views/Watching/`) | Watchlist row inside Library only |
-| More from director / with actor | Two shelves on the detail page (`MediaItemView.swift:933`) | `PersonItemsView` exists, but the detail page doesn't offer the shelves |
+| More from director / with actor | Two shelves on the detail page (`MediaItemView.swift:933`) | Detail shelves landed (`MediaItemPersonShelfSection`); person-page any-credit merge still open |
 | Filters | Sheet with genre, country, year range, KP/IMDb sliders, HD/4K/AC3 toggles (`Views/Main/Filter/`) | Model has every facet; bar exposes sort/type/genre/country/year only ([LibraryFiltersBar.swift](../../../KinoPubAppleClient/Views/Search/LibraryFiltersBar.swift)) |
 | Device settings | Real form: stream type, server location, 4K/HEVC/HDR, Save (`Views/Profile/Device/`) | `@State` demo with no persistence ([PlaceholderSettingsPanes.swift:37](../../../KinoPubAppleClient/Views/Settings/Panes/PlaceholderSettingsPanes.swift)) |
 | Devices list | `DevicesView` | Service only (`ListDevicesRequest`, `RemoveDeviceRequest`) |
@@ -33,14 +33,13 @@ feature doc it belongs to (02 / 03 / 04) — that stays the living checklist.
 ## API facts worth keeping (verified by them, re-verify before load-bearing use)
 
 - `/v1/items` honors **server-side**: `type`, `genre`, `country`, `year`, `sort`, `period`,
-  `director`, actor. It **ignores** `imdb` / `kinopoisk` / `quality` / `conditions` — those stay
+  `director`, cast. It **ignores** `imdb` / `kinopoisk` / `quality` / `conditions` — those stay
   client-side facets, which is exactly what [LibraryFilter](../../../Packages/KinoPubBackend/Sources/KinoPubBackend/Models/LibraryFilter.swift) already does.
 - `genre` and `country` take **comma-separated lists**. We send a single id today.
 - `type` takes a comma-separated list too (`movie,serial`) — that's how the Anime preset spans both.
-- **Actor parameter conflict:** [docs/api/video.md](../../../../kinopub-apple-client-community/docs/api/video.md)
-  documents `[actor]`; the community client sends `cast=` and claims it was verified live. We send
-  `actor` (`MediaPerson.role.rawValue`). Verify both against live JSON before building the detail
-  shelves on top of either.
+- **Actor parameter:** docs list `[actor]`; the live mobile API filters on `cast=` (community-
+  verified). We send `cast` via `MediaPerson.Role.itemsQueryParameter` while keeping the semantic
+  role as `.actor`. `director=` matches the docs.
 - Genre-preset ids (from their live web-app capture): **cartoons** = `movie` + genre `23`,
   **cartoon series** = `serial` + genre `23`, **anime** = `movie,serial` + genre `25`,
   **stand-up** = `movie` + genre `101`, **3D** = `type=3d`.
@@ -114,12 +113,12 @@ Their version: two shelves under Related, `sort=rating-`, best-effort, hidden wh
   under it — directed *and* acted — merged into a single grid, not split into "as director" /
   "as actor" sections and not narrowed to whichever credit the user happened to tap.
 
-- [ ] Add both shelves to `MediaItemDetailSections` beside the existing Similar rail
-- [ ] Reuse `LibraryFilter.person` — no new request type needed once the `actor` vs `cast`
-      question above is settled
-- [ ] Cap to the first credited director / first billed actor (their heuristic) unless the design
+- [x] Add both shelves to `MediaItemDetailSections` beside the existing Similar rail
+- [x] Reuse `LibraryFilter.person` — query key is `cast` / `director` via
+      `MediaPerson.Role.itemsQueryParameter`
+- [x] Cap to the first credited director / first billed actor (their heuristic) unless the design
       says otherwise; title taps push `PersonItemsView`
-- [ ] Skeleton row while loading, drop the section entirely on empty — same rule as enrichment sections
+- [x] Skeleton row while loading, drop the section entirely on empty — same rule as enrichment sections
 
 ### Person page follow-through (ours, not a port)
 
@@ -241,7 +240,8 @@ they weren't; verify against current code before trusting old drafts of this sec
 2. Filter chrome (§6) — pure UI over a model that's already ported
 3. ~~Device settings + Devices (§7)~~ — landed (real Device pane, Devices list, Storage, Sections)
 4. Shelf-spec refactor + Home shelves + type/genre sections (§2, §3) — one machinery, do it once
-5. More from director / with actor (§5) — cheap once §3's filter plumbing exists
+5. ~~More from director / with actor (§5 detail shelves)~~ — landed; person-page any-credit
+   follow-through still open
 6. New episodes (§4) — section visibility (§8) also landed
 
 §9 is not in this order — the rail scroll regression jumps the queue.

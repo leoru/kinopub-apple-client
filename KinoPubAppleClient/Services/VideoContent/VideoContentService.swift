@@ -75,6 +75,15 @@ struct VideoContentServiceMock: VideoContentService {
   }
 
   func fetchItems(filter: LibraryFilter, page: Int?) async throws -> PaginatedData<MediaItem> {
+    // Person shelves on the detail page need something non-empty so previews
+    // exercise the rail instead of hiding it.
+    if filter.person != nil {
+      return PaginatedData.mock(data: [
+        MediaItem.mock(id: 201),
+        MediaItem.mock(id: 202),
+        MediaItem.mock(id: 203),
+      ])
+    }
     return PaginatedData.mock(data: [])
   }
 

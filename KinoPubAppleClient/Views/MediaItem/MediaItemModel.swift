@@ -67,6 +67,14 @@ class MediaItemModel: ObservableObject {
   /// empty when it fails — the section hides itself rather than erroring over the art.
   @Published public var similarItems: [MediaItem] = []
 
+  /// "More from <director>" — first credited director, role-scoped `/v1/items?director=`.
+  /// Empty + loaded hides the section; not-yet-loaded shows a skeleton rail.
+  @Published public var moreFromDirector: [MediaItem] = []
+  @Published public var moreFromDirectorLoaded: Bool = false
+  /// "More with <actor>" — first billed cast member, role-scoped `/v1/items?cast=`.
+  @Published public var moreWithActor: [MediaItem] = []
+  @Published public var moreWithActorLoaded: Bool = false
+
   /// All bookmark folders, and the ids of those already holding this item.
   @Published public var folders: [Bookmark] = []
   @Published public var folderIDsContainingItem: Set<Int> = []
@@ -94,6 +102,18 @@ class MediaItemModel: ObservableObject {
   private var identity: MediaIdentity?
 
   public var isBookmarked: Bool { !folderIDsContainingItem.isEmpty }
+
+  /// First credited director — drives the "More from" shelf title and its person route.
+  public var primaryDirector: MediaPerson? {
+    guard let name = mediaItem.directorNames.first else { return nil }
+    return MediaPerson(name: name, role: .director)
+  }
+
+  /// First billed cast member — drives the "More with" shelf title and its person route.
+  public var primaryActor: MediaPerson? {
+    guard let name = mediaItem.castMembers.first else { return nil }
+    return MediaPerson(name: name, role: .actor)
+  }
 
   /// - Parameter knownItem: the listing's copy of the item, where the caller has one.
   ///   Only the artwork is used from it — the page waits for the full details before
@@ -125,6 +145,10 @@ class MediaItemModel: ObservableObject {
     loadFailed = false
     loadError = nil
     externalMetadataLoaded = false
+    moreFromDirector = []
+    moreWithActor = []
+    moreFromDirectorLoaded = false
+    moreWithActorLoaded = false
     Task {
       do {
         mediaItem = try await itemsService.fetchDetails(for: "\(mediaItemId)").item
@@ -138,6 +162,9 @@ class MediaItemModel: ObservableObject {
         seedVoteCounts()
         itemLoaded = true
         identity = MediaIdentity(mediaItem: mediaItem)
+        // People shelves need credit names from the details payload — kick them
+        // off as soon as we have them, in parallel with TMDB enrichment.
+        Task { await loadPeopleShelves() }
         await loadExternalMetadata()
         // The "what's next" data lives on the latest season, not the first one —
         // and a long-running show should not fan out schedule fetches for every
@@ -150,6 +177,8 @@ class MediaItemModel: ObservableObject {
         loadFailed = true
         loadError = error
         externalMetadataLoaded = true
+        moreFromDirectorLoaded = true
+        moreWithActorLoaded = true
       }
     }
     Task {
@@ -270,6 +299,40 @@ class MediaItemModel: ObservableObject {
       Logger.app.error("Failed to load similar items for \(self.mediaItemId): \(error)")
     }
   }
+
+  /// "More from director" / "More with actor" — best-effort, same swallow-on-failure
+  /// rule as `loadSimilar`. First credited name only (community heuristic). Sorted by
+  /// Kinopoisk rating so the rail reads as a "best of" strip, not upload order.
+  /// Current title is always dropped; titles that land in both rails stay on the
+  /// director shelf only so the pair doesn't repeat the same poster twice.
+  private func loadPeopleShelves() async {
+    async let directorItems = fetchPersonShelf(person: primaryDirector)
+    async let actorItems = fetchPersonShelf(person: primaryActor)
+    let director = await directorItems
+    let actor = await actorItems
+    let directorIDs = Set(director.map(\.id))
+    moreFromDirector = director
+    moreWithActor = actor.filter { !directorIDs.contains($0.id) }
+    moreFromDirectorLoaded = true
+    moreWithActorLoaded = true
+  }
+
+  private func fetchPersonShelf(person: MediaPerson?) async -> [MediaItem] {
+    guard let person else { return [] }
+    let filter = LibraryFilter(sort: .kinopoiskRating, person: person)
+    do {
+      let items = try await itemsService.fetchItems(filter: filter, page: nil).items
+        .filter { $0.id != mediaItemId }
+      return Array(items.prefix(Self.peopleShelfLimit))
+    } catch {
+      Logger.app.error(
+        "Failed to load \(person.role.rawValue) shelf for \(person.name): \(error)"
+      )
+      return []
+    }
+  }
+
+  private static let peopleShelfLimit = 15
 
   func toggleWatched() {
     if let (season, episode) = mediaItem.primaryEpisode {
