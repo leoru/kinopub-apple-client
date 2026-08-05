@@ -17,7 +17,7 @@ struct RouteDestination: View {
   var transitionNamespace: Namespace.ID?
 
   @Environment(\.appContext) private var appContext
-  @EnvironmentObject private var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) private var errorHandler
   @EnvironmentObject private var authState: AuthState
   @EnvironmentObject private var navigationState: NavigationState
 

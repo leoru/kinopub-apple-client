@@ -10,7 +10,7 @@ import SwiftUI
 #if os(macOS)
 struct SettingsView: View {
   @Environment(\.appContext) private var appContext
-  @EnvironmentObject private var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) private var errorHandler
   @EnvironmentObject private var authState: AuthState
 
   var body: some View {
@@ -25,10 +25,12 @@ struct SettingsView: View {
 }
 
 private struct SettingsSceneHost: View {
-  @StateObject private var model: ProfileModel
+  // Eager, not lazy — see the note on `ProfileView.init` in ProfileView.swift and
+  // "Observation model" in docs/en/features/01-foundation-continuity.md.
+  @State private var model: ProfileModel
 
-  init(model: @autoclosure @escaping () -> ProfileModel) {
-    _model = StateObject(wrappedValue: model())
+  init(model: ProfileModel) {
+    _model = State(wrappedValue: model)
   }
 
   var body: some View {

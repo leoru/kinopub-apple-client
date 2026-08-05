@@ -18,7 +18,7 @@ struct PersonItemsView: View {
   private let linkProvider: NavigationLinkProvider
   private let metadataService: MetadataService
 
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @EnvironmentObject var navigationState: NavigationState
   @Environment(\.dismiss) private var dismiss
   @Environment(\.openURL) private var openURL

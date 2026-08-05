@@ -14,7 +14,7 @@ import OSLog
 /// refresh keeps the last known list instead of blanking the tab.
 struct WatchlistView: View {
   @EnvironmentObject var navigationState: NavigationState
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
   @Environment(\.openURL) private var openURL
@@ -26,6 +26,7 @@ struct WatchlistView: View {
   @State private var loadError: Error?
 
   var body: some View {
+    @Bindable var errorHandler = errorHandler
     NavigationStack(path: $navigationState.watchlistRoutes) {
       content
         .platformNavigationTitle("Watchlist")

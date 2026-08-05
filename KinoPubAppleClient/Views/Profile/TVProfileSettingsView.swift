@@ -15,7 +15,7 @@ import KinoPubUI
 
 struct TVProfileSettingsView: View {
 
-  @ObservedObject var model: ProfileModel
+  let model: ProfileModel
   let kinopoiskKeyProvider: KinopoiskKeyProvider
   @Binding var selectedLanguage: String
   @Binding var preferEnglishSubtitles: Bool

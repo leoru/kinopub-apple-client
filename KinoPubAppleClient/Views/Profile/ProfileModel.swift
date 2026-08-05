@@ -11,15 +11,16 @@ import KinoPubLogging
 import OSLog
 
 @MainActor
-class ProfileModel: ObservableObject {
-    
+@Observable
+class ProfileModel {
+
     private var userService: UserService
     private var errorHandler: ErrorHandler
     private var authState: AuthState
-    
-    @Published public var userData: UserData = UserData.mock()
-    @Published var selectedLanguage: String
-    @Published var shouldShowExitAlert: Bool = false
+
+    public var userData: UserData = UserData.mock()
+    var selectedLanguage: String
+    var shouldShowExitAlert: Bool = false
     
     let availableLanguages = ["en": "English", "lt": "Lietuvių", "ru": "Русский"]
     

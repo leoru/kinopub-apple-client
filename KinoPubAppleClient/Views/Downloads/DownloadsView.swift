@@ -13,7 +13,7 @@ import KinoPubUI
 struct DownloadsView: View {
   
   @EnvironmentObject var navigationState: NavigationState
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @Environment(\.appContext) var appContext
   @StateObject private var catalog: DownloadsCatalog
   

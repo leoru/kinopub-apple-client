@@ -30,7 +30,7 @@ enum HistoryCardLayout: String, CaseIterable, Identifiable {
 /// Viewing history as a vertical poster-column grid. Landscape tiles by default
 /// (episode still when the payload has one); macOS View menu can switch to posters.
 struct HistoryView: View {
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @EnvironmentObject var navigationState: NavigationState
   @Environment(\.appContext) var appContext
   @Environment(\.openURL) private var openURL
@@ -92,6 +92,7 @@ struct HistoryView: View {
   }
 
   var body: some View {
+    @Bindable var errorHandler = errorHandler
     Group {
       if cards.isEmpty && !isLoaded {
         LoadingIndicatorView()

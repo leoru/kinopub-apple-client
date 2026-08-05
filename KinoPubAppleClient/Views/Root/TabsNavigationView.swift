@@ -36,7 +36,7 @@ struct TabsNavigationView: View {
   @State private var compactTabTag: Int = CompactPhoneTab.home.rawValue
 #endif
   @EnvironmentObject var navigationState: NavigationState
-  @EnvironmentObject var errorHandler: ErrorHandler
+  @Environment(ErrorHandler.self) var errorHandler
   @EnvironmentObject var authState: AuthState
   /// Wired at app root. Banner chrome TBD — do not invent community tab-lock UI here.
   @EnvironmentObject var networkMonitor: NetworkMonitor
@@ -66,7 +66,7 @@ struct TabsNavigationView: View {
   var body: some View {
     modernTabs
       .environmentObject(navigationState)
-      .environmentObject(errorHandler)
+      .environment(errorHandler)
       .task { await loadSidebarChrome() }
       .onChange(of: navigationState.selectedTab) { _, newTab in
 #if os(iOS)
@@ -142,7 +142,7 @@ struct TabsNavigationView: View {
     .fullScreenCover(isPresented: $showSettings) {
       settingsContent
         .environmentObject(navigationState)
-        .environmentObject(errorHandler)
+        .environment(errorHandler)
         .environmentObject(authState)
     }
   }
