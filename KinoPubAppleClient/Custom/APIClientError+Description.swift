@@ -39,23 +39,10 @@ extension APIClientError: CustomStringConvertible {
     return false
   }
 
-  /// True only when the backend explicitly rejected the credentials: a 401 (token
-  /// died — body shape doesn't matter) or a structured `invalid_grant`/`unauthorized`
-  /// envelope. Transport failures — timeout, offline, cancelled — are not auth
-  /// failures and must never log the user out.
+  /// True only when the backend explicitly rejected the credentials. Delegates to
+  /// the backend's `isAuthRejection` so the app and the tests share one truth.
   var isFatalAuthError: Bool {
-    if case .httpStatus(let code, _) = self, code == 401 {
-      return true
-    }
-    guard case .networkError(let error) = self, let backendError = error as? BackendError else {
-      return false
-    }
-    switch backendError.errorCode {
-    case .invalidGrant, .invalidClient, .unauthorized:
-      return true
-    case .authorizationPending, .slowDown:
-      return false
-    }
+    isAuthRejection
   }
 
   /// Cancelled requests are superseded by newer ones, not failed — no error UI for them.
@@ -75,6 +62,8 @@ extension APIClientError: CustomStringConvertible {
           return "Your session has expired. Try again.".localized
         case .authorizationPending, .slowDown:
           break
+        case .unknown(let raw):
+          return backendError.errorDescription ?? raw
         }
         return backendError.errorDescription ?? backendError.errorCode.rawValue
       }

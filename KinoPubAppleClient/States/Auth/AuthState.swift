@@ -70,6 +70,9 @@ final class AuthState: ObservableObject {
   /// refresh decides: success rotates quietly, rejection brings the activation
   /// screen, a network failure falls back to the scheduled retries.
   private func handleUnauthorizedResponse() {
+    // A wave of 401s from every screen must not become a wave of refresh attempts
+    // (or log lines) — one in flight is enough.
+    guard !isRefreshing else { return }
     Logger.app.info("Content endpoint answered 401 — refreshing the token")
     guard let _: AccessToken = accessTokenService.token() else {
       userState = .unauthorized

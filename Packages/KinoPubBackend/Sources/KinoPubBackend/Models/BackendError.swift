@@ -7,12 +7,44 @@
 
 import Foundation
 
-public enum BackendErrorCode: String, Codable {
-  case authorizationPending = "authorization_pending"
-  case invalidClient = "invalid_client"
-  case invalidGrant = "invalid_grant"
-  case slowDown = "slow_down"
-  case unauthorized = "unauthorized"
+/// OAuth/kino.pub error codes. Unknown strings decode as `.unknown(raw)` rather than
+/// failing the whole envelope — a token endpoint answering with a code we haven't
+/// seen is still a rejected grant, never a decoding glitch.
+public enum BackendErrorCode: Codable, Hashable, Sendable {
+  case authorizationPending
+  case invalidClient
+  case invalidGrant
+  case slowDown
+  case unauthorized
+  case unknown(String)
+
+  public var rawValue: String {
+    switch self {
+    case .authorizationPending: return "authorization_pending"
+    case .invalidClient: return "invalid_client"
+    case .invalidGrant: return "invalid_grant"
+    case .slowDown: return "slow_down"
+    case .unauthorized: return "unauthorized"
+    case .unknown(let raw): return raw
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    let raw = try decoder.singleValueContainer().decode(String.self)
+    switch raw {
+    case "authorization_pending": self = .authorizationPending
+    case "invalid_client": self = .invalidClient
+    case "invalid_grant": self = .invalidGrant
+    case "slow_down": self = .slowDown
+    case "unauthorized": self = .unauthorized
+    default: self = .unknown(raw)
+    }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
 }
 
 public struct BackendError: Error, Codable {
