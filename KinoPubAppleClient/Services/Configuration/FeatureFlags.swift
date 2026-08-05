@@ -28,7 +28,11 @@ enum FeatureFlags {
   static let allBookmarksEnabled = false
 
   /// tvOS shelves + grids share one `TVPosterView` / `TVCardView` atom (same
-  /// `ShelfMetrics` sizing). Off until Device Hub focus validation; SwiftUI
+  /// `ShelfMetrics` sizing), drawn by a recycling `UICollectionView` rather than a
+  /// Lazy stack — lazy defers creation, it does not reuse cells. SwiftUI
   /// `MediaCardView` remains the fallback. iOS / macOS ignore this flag.
-  static let tvUIKitPosters = false
+  ///
+  /// On since 2026-08-06. **Device Hub focus validation is still outstanding** — this
+  /// was turned on to be judged on a real screen, not because that check passed.
+  static let tvUIKitPosters = true
 }
