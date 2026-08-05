@@ -77,6 +77,11 @@ not supporting it at all. See [layout-and-containers](../apple-platform/layout-a
 - [ ] Apply the `variableBlur` helper on detail / Home hero and banner overlays
 - [ ] Bring poster overlays back on tvOS behind an explicit `.hoverEffect(.highlight)`
 - [ ] Banner polish: page dots / L-R affordances only if it becomes a real carousel
+- [ ] **`HudToast` is throwaway — rewrite, do not polish.** First cut of the Glyph + Title
+  confirmation overlay (`KinoPubUI/Components/HudToast.swift`, wired from `MediaItemModel` hero
+  actions: watchlist / bookmark / watched / clear CW). Looks wrong, needs a pile of fixes
+  (sizing, material, timing, macOS plain-window path vs overlay, copy, when it fires). Treat as
+  a known bad placeholder until replaced; do not ship polish on top of it.
 
 ### Observation model
 
