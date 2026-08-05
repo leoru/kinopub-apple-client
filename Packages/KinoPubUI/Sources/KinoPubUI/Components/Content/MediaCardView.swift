@@ -7,6 +7,14 @@ import Foundation
 import SwiftUI
 import KinoPubBackend
 
+/// What a single-click / Select on the card does.
+public enum MediaCardPrimaryAction: String, Codable, Hashable, Sendable {
+  /// Push the title detail page (default catalog posters).
+  case openDetail
+  /// Fetch + open the player at the resume point (Continue Watching).
+  case play
+}
+
 /// Everything a poster card needs to draw itself, so rows can be built from any
 /// endpoint's payload rather than only from a full `MediaItem`.
 public struct MediaCard: Identifiable, Hashable, Codable {
@@ -60,6 +68,21 @@ public struct MediaCard: Identifiable, Hashable, Codable {
   /// Item-level 4K / HDR when known from the catalogue payload (not device caps).
   public let is4K: Bool
   public let isHDR: Bool
+  public let isHD: Bool
+  public let is3D: Bool
+  public let hasClosedCaptions: Bool
+  /// Release year when known from the catalogue.
+  public let year: Int?
+  /// Runtime in seconds (film total, or episode when the card is an episode still).
+  public let durationSeconds: Int?
+  /// One or two genre titles for the caption meta row.
+  public let genreLine: String?
+  /// First production country for the caption meta row.
+  public let countryLine: String?
+  /// Title sits in at least one bookmark folder (not the watchlist flag).
+  public let isBookmarked: Bool
+  /// Single-click / Select target. Continue Watching uses `.play`; History stays detail for now.
+  public let primaryAction: MediaCardPrimaryAction
 
   public var isLandscape: Bool { landscapeImageURL != nil }
 
@@ -71,6 +94,25 @@ public struct MediaCard: Identifiable, Hashable, Codable {
 
   /// Whether a long-press  can toggle watched for this card (needs a video target).
   public var canToggleWatched: Bool { video != nil }
+
+  /// Score for the plaque / caption, honouring the user's source preference.
+  public func displayRating(source: MediaCardRatingSource) -> Rating? {
+    switch source {
+    case .combined:
+      return Rating(imdb: imdbRating, kinopoisk: kinopoiskRating)
+    case .imdb:
+      return Rating(imdb: imdbRating, kinopoisk: nil)
+    case .kinopoisk:
+      return Rating(imdb: nil, kinopoisk: kinopoiskRating)
+    }
+  }
+
+  /// Compact runtime for captions when `durationSeconds` is set.
+  public var durationLabel: String? {
+    guard let durationSeconds, durationSeconds >= 60 else { return nil }
+    let label = Duration.compact(seconds: durationSeconds)
+    return label.isEmpty ? nil : label
+  }
 
   public init(id: Int,
               posterURL: String,
@@ -94,7 +136,16 @@ public struct MediaCard: Identifiable, Hashable, Codable {
               isInHistory: Bool = false,
               isInWatchlist: Bool = false,
               is4K: Bool = false,
-              isHDR: Bool = false) {
+              isHDR: Bool = false,
+              isHD: Bool = false,
+              is3D: Bool = false,
+              hasClosedCaptions: Bool = false,
+              year: Int? = nil,
+              durationSeconds: Int? = nil,
+              genreLine: String? = nil,
+              countryLine: String? = nil,
+              isBookmarked: Bool = false,
+              primaryAction: MediaCardPrimaryAction = .openDetail) {
     self.id = id
     self.posterURL = posterURL
     self.title = title
@@ -118,6 +169,98 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     self.isInWatchlist = isInWatchlist
     self.is4K = is4K
     self.isHDR = isHDR
+    self.isHD = isHD
+    self.is3D = is3D
+    self.hasClosedCaptions = hasClosedCaptions
+    self.year = year
+    self.durationSeconds = durationSeconds
+    self.genreLine = genreLine
+    self.countryLine = countryLine
+    self.isBookmarked = isBookmarked
+    self.primaryAction = primaryAction
+  }
+
+  public init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    id = try c.decode(Int.self, forKey: .id)
+    posterURL = try c.decode(String.self, forKey: .posterURL)
+    title = try c.decode(String.self, forKey: .title)
+    subtitle = try c.decodeIfPresent(String.self, forKey: .subtitle)
+    imdbRating = try c.decodeIfPresent(Double.self, forKey: .imdbRating)
+    kinopoiskRating = try c.decodeIfPresent(Double.self, forKey: .kinopoiskRating)
+    progress = try c.decodeIfPresent(Double.self, forKey: .progress)
+    badge = try c.decodeIfPresent(String.self, forKey: .badge)
+    backdropURL = try c.decodeIfPresent(String.self, forKey: .backdropURL)
+    metaLine = try c.decodeIfPresent(String.self, forKey: .metaLine)
+    overview = try c.decodeIfPresent(String.self, forKey: .overview)
+    landscapeImageURL = try c.decodeIfPresent(String.self, forKey: .landscapeImageURL)
+    overlayLabel = try c.decodeIfPresent(String.self, forKey: .overlayLabel)
+    itemID = try c.decodeIfPresent(Int.self, forKey: .itemID) ?? id
+    video = try c.decodeIfPresent(Int.self, forKey: .video)
+    season = try c.decodeIfPresent(Int.self, forKey: .season)
+    mediaID = try c.decodeIfPresent(Int.self, forKey: .mediaID)
+    isWatched = try c.decodeIfPresent(Bool.self, forKey: .isWatched) ?? false
+    isSeries = try c.decodeIfPresent(Bool.self, forKey: .isSeries) ?? false
+    isInHistory = try c.decodeIfPresent(Bool.self, forKey: .isInHistory) ?? false
+    isInWatchlist = try c.decodeIfPresent(Bool.self, forKey: .isInWatchlist) ?? false
+    is4K = try c.decodeIfPresent(Bool.self, forKey: .is4K) ?? false
+    isHDR = try c.decodeIfPresent(Bool.self, forKey: .isHDR) ?? false
+    isHD = try c.decodeIfPresent(Bool.self, forKey: .isHD) ?? false
+    is3D = try c.decodeIfPresent(Bool.self, forKey: .is3D) ?? false
+    hasClosedCaptions = try c.decodeIfPresent(Bool.self, forKey: .hasClosedCaptions) ?? false
+    year = try c.decodeIfPresent(Int.self, forKey: .year)
+    durationSeconds = try c.decodeIfPresent(Int.self, forKey: .durationSeconds)
+    genreLine = try c.decodeIfPresent(String.self, forKey: .genreLine)
+    countryLine = try c.decodeIfPresent(String.self, forKey: .countryLine)
+    isBookmarked = try c.decodeIfPresent(Bool.self, forKey: .isBookmarked) ?? false
+    // Old row snapshots omit this key — keep opening detail until the next CW fetch.
+    primaryAction = try c.decodeIfPresent(MediaCardPrimaryAction.self, forKey: .primaryAction)
+      ?? .openDetail
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var c = encoder.container(keyedBy: CodingKeys.self)
+    try c.encode(id, forKey: .id)
+    try c.encode(posterURL, forKey: .posterURL)
+    try c.encode(title, forKey: .title)
+    try c.encodeIfPresent(subtitle, forKey: .subtitle)
+    try c.encodeIfPresent(imdbRating, forKey: .imdbRating)
+    try c.encodeIfPresent(kinopoiskRating, forKey: .kinopoiskRating)
+    try c.encodeIfPresent(progress, forKey: .progress)
+    try c.encodeIfPresent(badge, forKey: .badge)
+    try c.encodeIfPresent(backdropURL, forKey: .backdropURL)
+    try c.encodeIfPresent(metaLine, forKey: .metaLine)
+    try c.encodeIfPresent(overview, forKey: .overview)
+    try c.encodeIfPresent(landscapeImageURL, forKey: .landscapeImageURL)
+    try c.encodeIfPresent(overlayLabel, forKey: .overlayLabel)
+    try c.encode(itemID, forKey: .itemID)
+    try c.encodeIfPresent(video, forKey: .video)
+    try c.encodeIfPresent(season, forKey: .season)
+    try c.encodeIfPresent(mediaID, forKey: .mediaID)
+    try c.encode(isWatched, forKey: .isWatched)
+    try c.encode(isSeries, forKey: .isSeries)
+    try c.encode(isInHistory, forKey: .isInHistory)
+    try c.encode(isInWatchlist, forKey: .isInWatchlist)
+    try c.encode(is4K, forKey: .is4K)
+    try c.encode(isHDR, forKey: .isHDR)
+    try c.encode(isHD, forKey: .isHD)
+    try c.encode(is3D, forKey: .is3D)
+    try c.encode(hasClosedCaptions, forKey: .hasClosedCaptions)
+    try c.encodeIfPresent(year, forKey: .year)
+    try c.encodeIfPresent(durationSeconds, forKey: .durationSeconds)
+    try c.encodeIfPresent(genreLine, forKey: .genreLine)
+    try c.encodeIfPresent(countryLine, forKey: .countryLine)
+    try c.encode(isBookmarked, forKey: .isBookmarked)
+    try c.encode(primaryAction, forKey: .primaryAction)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case id, posterURL, title, subtitle, imdbRating, kinopoiskRating
+    case progress, badge, backdropURL, metaLine, overview
+    case landscapeImageURL, overlayLabel, itemID, video, season, mediaID
+    case isWatched, isSeries, isInHistory, isInWatchlist, is4K, isHDR
+    case isHD, is3D, hasClosedCaptions, year, durationSeconds
+    case genreLine, countryLine, isBookmarked, primaryAction
   }
 }
 
@@ -129,6 +272,12 @@ public extension MediaCard {
     // backdropURL — HomeBanner tries wide → big → medium so a 404'd derivation still
     // paints (detail payloads often have a working `wide`; catalogue lists often don't).
     let wide = item.posters.wide.flatMap { $0.isEmpty ? nil : $0 }
+    let genres = item.genres.compactMap(\.title).prefix(2)
+    let durationSeconds: Int? = {
+      if item.isSeries { return nil }
+      let total = Int(item.duration.total)
+      return total >= 60 ? total : nil
+    }()
     self.init(id: item.id,
               posterURL: item.posters.medium,
               title: item.localizedTitle,
@@ -139,8 +288,17 @@ public extension MediaCard {
               metaLine: item.metadataLine,
               overview: item.plot,
               isSeries: item.isSeries,
+              isInWatchlist: item.inWatchlist ?? false,
               is4K: badges.is4K,
-              isHDR: badges.isHDR)
+              isHDR: badges.isHDR,
+              isHD: badges.isHD,
+              is3D: badges.is3D,
+              hasClosedCaptions: badges.hasClosedCaptions,
+              year: item.year > 0 ? item.year : nil,
+              durationSeconds: durationSeconds,
+              genreLine: genres.isEmpty ? nil : genres.joined(separator: ", "),
+              countryLine: item.countries.first?.title,
+              isBookmarked: !(item.bookmarks ?? []).isEmpty)
   }
 }
 
@@ -168,18 +326,222 @@ public struct MediaCardView: View {
 
   private let card: MediaCard
   private let caption: MediaCardCaption
+  private let playChromeStyle: LandscapePlayChromeStyle
+  /// When true, play chrome stays visible (previews / VariantGallery).
+  private let forcePlayChrome: Bool
 
-  public init(card: MediaCard, caption: MediaCardCaption = .always) {
+  public init(card: MediaCard,
+              caption: MediaCardCaption = .always,
+              playChromeStyle: LandscapePlayChromeStyle = .glass,
+              forcePlayChrome: Bool = false) {
     self.card = card
     self.caption = caption
+    self.playChromeStyle = playChromeStyle
+    self.forcePlayChrome = forcePlayChrome
   }
 
   @Environment(\.isFocused) private var cardFocused
+#if os(macOS)
+  @State private var isHovered = false
+#endif
+
+  @AppStorage(MediaCardDisplayPreferences.ratingPlacementKey)
+  private var ratingPlacementRaw = MediaCardDisplayPreferences.defaultRatingPlacement.rawValue
+  @AppStorage(MediaCardDisplayPreferences.ratingSourceKey)
+  private var ratingSourceRaw = MediaCardDisplayPreferences.defaultRatingSource.rawValue
+  @AppStorage(MediaCardDisplayPreferences.capabilityPlacementKey)
+  private var capabilityPlacementRaw = MediaCardDisplayPreferences.defaultCapabilityPlacement.rawValue
+  @AppStorage(MediaCardDisplayPreferences.show4KKey)
+  private var show4K = MediaCardDisplayPreferences.defaultShow4K
+  @AppStorage(MediaCardDisplayPreferences.showHDRKey)
+  private var showHDR = MediaCardDisplayPreferences.defaultShowHDR
+  @AppStorage(MediaCardDisplayPreferences.showHDKey)
+  private var showHD = MediaCardDisplayPreferences.defaultShowHD
+  @AppStorage(MediaCardDisplayPreferences.show3DKey)
+  private var show3D = MediaCardDisplayPreferences.defaultShow3D
+  @AppStorage(MediaCardDisplayPreferences.showCCKey)
+  private var showCC = MediaCardDisplayPreferences.defaultShowCC
+  @AppStorage(MediaCardDisplayPreferences.editorialPlacementKey)
+  private var editorialPlacementRaw = MediaCardDisplayPreferences.defaultEditorialPlacement.rawValue
+  @AppStorage(MediaCardDisplayPreferences.showOriginalTitleKey)
+  private var showOriginalTitle = MediaCardDisplayPreferences.defaultShowOriginalTitle
+  @AppStorage(MediaCardDisplayPreferences.showYearKey)
+  private var showYear = MediaCardDisplayPreferences.defaultShowYear
+  @AppStorage(MediaCardDisplayPreferences.showDurationKey)
+  private var showDuration = MediaCardDisplayPreferences.defaultShowDuration
+  @AppStorage(MediaCardDisplayPreferences.showGenreKey)
+  private var showGenre = MediaCardDisplayPreferences.defaultShowGenre
+  @AppStorage(MediaCardDisplayPreferences.showCountryKey)
+  private var showCountry = MediaCardDisplayPreferences.defaultShowCountry
+  @AppStorage(MediaCardDisplayPreferences.showBookmarkSymbolKey)
+  private var showBookmarkSymbol = MediaCardDisplayPreferences.defaultShowBookmarkSymbol
+  @AppStorage(MediaCardDisplayPreferences.progressVisibilityKey)
+  private var progressVisibilityRaw = MediaCardDisplayPreferences.defaultProgressVisibility.rawValue
+  @AppStorage(MediaCardDisplayPreferences.watchedStyleKey)
+  private var watchedStyleRaw = MediaCardDisplayPreferences.defaultWatchedStyle.rawValue
+
+  private var ratingPlacement: MediaCardChromePlacement {
+    MediaCardChromePlacement(rawValue: ratingPlacementRaw)
+      ?? MediaCardDisplayPreferences.defaultRatingPlacement
+  }
+  private var ratingSource: MediaCardRatingSource {
+    MediaCardRatingSource(rawValue: ratingSourceRaw)
+      ?? MediaCardDisplayPreferences.defaultRatingSource
+  }
+  private var capabilityPlacement: MediaCardChromePlacement {
+    MediaCardChromePlacement(rawValue: capabilityPlacementRaw)
+      ?? MediaCardDisplayPreferences.defaultCapabilityPlacement
+  }
+  private var editorialPlacement: MediaCardChromePlacement {
+    MediaCardChromePlacement(rawValue: editorialPlacementRaw)
+      ?? MediaCardDisplayPreferences.defaultEditorialPlacement
+  }
+  private var watchedStyle: MediaCardWatchedStyle {
+    MediaCardWatchedStyle(rawValue: watchedStyleRaw)
+      ?? MediaCardDisplayPreferences.defaultWatchedStyle
+  }
+  private var progressVisibility: MediaCardProgressVisibility {
+    MediaCardProgressVisibility(rawValue: progressVisibilityRaw)
+      ?? MediaCardDisplayPreferences.defaultProgressVisibility
+  }
 
   private var aspect: CardAspect { card.isLandscape ? .landscape : .poster }
 
   private var imageURL: String {
     card.landscapeImageURL ?? card.posterURL
+  }
+
+  private var playsOnSelect: Bool { card.primaryAction == .play }
+
+  private var activeRating: Rating? {
+    card.displayRating(source: ratingSource)
+  }
+
+  private var filteredCapabilityBadges: MediaCapabilityBadges {
+    MediaCapabilityBadges(
+      is4K: show4K && card.is4K,
+      isHD: showHD && card.isHD,
+      isHDR: showHDR && card.isHDR,
+      is3D: show3D && card.is3D,
+      hasClosedCaptions: showCC && card.hasClosedCaptions
+    )
+  }
+
+  private var capabilityChips: [String] {
+    var chips: [String] = []
+    let badges = filteredCapabilityBadges
+    if badges.is4K { chips.append("4K") }
+    else if badges.isHD { chips.append("HD") }
+    if badges.isHDR { chips.append("HDR") }
+    if badges.is3D { chips.append("3D") }
+    if badges.hasClosedCaptions { chips.append("CC") }
+    return chips
+  }
+
+  private var captionMetaParts: [String] {
+    var parts: [String] = []
+    // Duration lives on landscape artwork (Apple-style time chip), not in the caption.
+    if showYear, let year = card.year {
+      parts.append(String(year))
+    }
+    if showGenre, let genre = card.genreLine, !genre.isEmpty {
+      parts.append(genre)
+    }
+    if showCountry, let country = card.countryLine, !country.isEmpty {
+      parts.append(country)
+    }
+    return parts
+  }
+
+  private var captionImdb: Double? {
+    switch ratingSource {
+    case .combined, .imdb:
+      return (card.imdbRating ?? 0) > 0 ? card.imdbRating : nil
+    case .kinopoisk:
+      return nil
+    }
+  }
+
+  private var captionKinopoisk: Double? {
+    switch ratingSource {
+    case .combined, .kinopoisk:
+      return (card.kinopoiskRating ?? 0) > 0 ? card.kinopoiskRating : nil
+    case .imdb:
+      return nil
+    }
+  }
+
+  private var showsCaptionScores: Bool {
+    ratingPlacement == .inCaption && (captionImdb != nil || captionKinopoisk != nil)
+  }
+
+  private var showsPlayChrome: Bool {
+    guard playsOnSelect else { return false }
+    if forcePlayChrome { return true }
+#if os(tvOS)
+    return cardFocused
+#elseif os(macOS)
+    return isHovered
+#else
+    return true
+#endif
+  }
+
+  private var dimsWatchedArtwork: Bool {
+    !card.isLandscape && card.isWatched && watchedStyle.dimsArtwork
+  }
+
+  private var isPointerActive: Bool {
+#if os(macOS)
+    isHovered || cardFocused
+#elseif os(tvOS)
+    cardFocused
+#else
+    true
+#endif
+  }
+
+  private var showsProgressBarNow: Bool {
+    guard card.progress != nil else { return false }
+    switch progressVisibility {
+    case .always: return true
+    case .onFocusHover: return isPointerActive
+    }
+  }
+
+  private var showsBookmarkOnArtwork: Bool {
+    showBookmarkSymbol && (card.isBookmarked || card.isInWatchlist)
+  }
+
+  private var landscapeTimeBadge: LandscapeTimeBadge? {
+    guard showDuration, card.isLandscape else { return nil }
+    return LandscapeTimeBadge(
+      durationSeconds: card.durationSeconds,
+      progress: card.progress,
+      isWatched: card.isWatched
+    )
+  }
+
+  /// One caption line for landscape: "S1, E12 + 3 more", "E6 + 2 more", or either half alone.
+  private var landscapeEpisodeLine: String? {
+    guard card.isLandscape else { return nil }
+    let episode = card.overlayLabel.flatMap { $0.isEmpty ? nil : $0 }
+    let moreCount: Int? = {
+      guard let badge = card.badge else { return nil }
+      let digits = badge.filter(\.isNumber)
+      guard let value = Int(digits), value > 0 else { return nil }
+      return value
+    }()
+    switch (episode, moreCount) {
+    case (let episode?, let count?):
+      return String(format: String(localized: "%@ + %d more"), episode, count)
+    case (let episode?, nil):
+      return episode
+    case (nil, let count?):
+      return String(format: String(localized: "+ %d more"), count)
+    case (nil, nil):
+      return nil
+    }
   }
 
   public var body: some View {
@@ -193,7 +555,7 @@ public struct MediaCardView: View {
     .accessibilityElement(children: .combine)
     .accessibilityLabel(Text(accessibilityTitle))
     .accessibilityValue(Text(accessibilityValue))
-    .accessibilityHint(Text("Opens the title"))
+    .accessibilityHint(Text(playsOnSelect ? "Plays or resumes" : "Opens the title"))
   }
 
   private var accessibilityTitle: String {
@@ -221,110 +583,176 @@ public struct MediaCardView: View {
 
   @ViewBuilder
   private var artwork: some View {
-    ZStack(alignment: .bottom) {
+    ZStack {
       stillImage
 
       if card.isLandscape {
         landscapeOverlays
-      } else if let progress = card.progress {
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+      } else if showsProgressBarNow, let progress = card.progress {
         progressBar(progress)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
       }
+
+      // Top-trailing chips (4K + bookmark). Editorial +N on landscape is a caption label.
+      artworkTopTrailing
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
 
       if !card.isLandscape {
         posterOverlays
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+      }
+
+#if os(macOS)
+      // Cheap pointer affordance — dim the still, keep the glass rim on top.
+      Color.black.opacity(isHovered ? 0.22 : 0)
+        .allowsHitTesting(false)
+#endif
+
+      if showsPlayChrome {
+        LandscapePlayChromeView(style: playChromeStyle)
+          .transition(.opacity.combined(with: .scale(scale: 0.92)))
+          .allowsHitTesting(false)
       }
     }
     .aspectRatio(aspect.ratio, contentMode: .fit)
     .frame(maxWidth: .infinity)
-    .opacity(card.isWatched && !card.isLandscape ? 0.72 : 1)
+    .opacity(dimsWatchedArtwork ? 0.72 : 1)
+    .animation(.easeOut(duration: 0.2), value: showsPlayChrome)
 #if os(tvOS)
     // One composited lockup so `.borderless` lift/specular stays a single unit —
     // rating/status chips sit inside the hover group rather than as sibling images.
     .hoverEffect(.highlight)
 #else
-    .clipShape(RoundedRectangle(cornerRadius: Metrics.cardCornerRadius, style: .continuous))
+    .clipShape(Self.artworkShape)
+    .kinoGlassRim(in: Self.artworkShape)
+#if os(macOS)
+    .onHover { isHovered = $0 }
+    .animation(.easeOut(duration: 0.2), value: isHovered)
+    .pointingHandCursorOnHover()
 #endif
+#endif
+  }
+
+  private static var artworkShape: RoundedRectangle {
+    RoundedRectangle(cornerRadius: Metrics.cardCornerRadius, style: .continuous)
   }
 
   @ViewBuilder
   private var posterOverlays: some View {
     ZStack(alignment: .topLeading) {
       Color.clear
-      if let rating = card.rating {
+      if ratingPlacement == .onArtwork, let rating = activeRating {
         RatingBadgeView(rating: rating)
           .padding(3)
           .accessibilityLabel(Text("Rating \(rating.formatted)"))
       }
     }
     .overlay(alignment: .topTrailing) {
-      VStack(alignment: .trailing, spacing: 4) {
-        if let badge = card.badge {
-          Text(badge)
-            .font(.caption.weight(.bold))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(Color.KinoPub.accent, in: Capsule())
-            .foregroundStyle(.black)
-            .shadow(radius: 4)
-        }
-        if card.is4K || card.isHDR {
-          MediaCapabilityBadgesView(
-            badges: MediaCapabilityBadges(is4K: card.is4K, isHDR: card.isHDR),
-            mode: .poster
-          )
-        }
+      if !card.isLandscape, card.isWatched, watchedStyle.showsCheckmark {
+        Image(systemName: "checkmark.circle.fill")
+          .font(.caption.weight(.bold))
+          .foregroundStyle(.white)
+          .shadow(radius: 4)
+          .padding(3)
       }
-      .padding(3)
     }
+  }
+
+  /// Capability chips + optional bookmark on the artwork (bookmark is rightmost).
+  /// Landscape keeps +N out of this corner — it becomes a caption label instead.
+  private var artworkTopTrailing: some View {
+    HStack(alignment: .top, spacing: 6) {
+      if !card.isLandscape, editorialPlacement == .onArtwork, let badge = card.badge {
+        editorialBadge(badge)
+      }
+      if capabilityPlacement == .onArtwork, !capabilityChips.isEmpty {
+        capabilityBadgesRow
+      }
+      if showsBookmarkOnArtwork {
+        Image(systemName: "bookmark.fill")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(.white)
+          .shadow(color: .black.opacity(0.55), radius: 4, y: 1)
+          .accessibilityLabel(Text("Bookmarked"))
+      }
+    }
+    .padding(6)
+  }
+
+  private var capabilityBadgesRow: some View {
+    HStack(spacing: 6) {
+      ForEach(capabilityChips, id: \.self) { chip in
+        Text(chip)
+          .font(MediaCapabilityBadgesView.font)
+          .foregroundStyle(.white)
+          .padding(.horizontal, MediaCapabilityBadgesView.horizontalPadding)
+          .padding(.vertical, MediaCapabilityBadgesView.verticalPadding)
+          .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+          .accessibilityLabel(Text(chip))
+      }
+    }
+  }
+
+  private func editorialBadge(_ badge: String) -> some View {
+    Text(badge)
+      .font(.caption.weight(.bold))
+      .padding(.horizontal, 6)
+      .padding(.vertical, 3)
+      .background(Color.KinoPub.accent, in: Capsule())
+      .foregroundStyle(.black)
+      .shadow(radius: 4)
   }
 
   private var stillImage: some View {
-    AsyncImage(url: URL(string: imageURL),
-               transaction: Transaction(animation: .easeIn(duration: 0.25))) { phase in
-      if let image = phase.image {
-        image
-          .resizable()
-          .aspectRatio(contentMode: .fill)
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-          .clipped()
-          .transition(.opacity)
-      } else {
-        Color.KinoPub.placeholder
-#if os(tvOS)
-          .clipShape(RoundedRectangle(cornerRadius: Metrics.cardCornerRadius, style: .continuous))
-#endif
+    // Clear + overlay is the reliable fill: AsyncImage's ideal size otherwise
+    // letterboxes inside the 16:9 lockup.
+    Color.clear
+      .overlay {
+        AsyncImage(url: URL(string: imageURL),
+                   transaction: Transaction(animation: .easeIn(duration: 0.25))) { phase in
+          if let image = phase.image {
+            image
+              .resizable()
+              .scaledToFill()
+              .transition(.opacity)
+          } else {
+            Color.KinoPub.placeholder
+          }
+        }
       }
-    }
+      .clipped()
   }
 
-  /// Play glyph (bottom-leading) + progress pinned to the still's bottom edge.
-  /// Labels live in the caption — nothing translucent over the picture.
+  /// Progress along the bottom + time chip pinned bottom-leading (never centered).
   @ViewBuilder
   private var landscapeOverlays: some View {
     ZStack(alignment: .bottomLeading) {
-      if let progress = card.progress {
+      if showsProgressBarNow, let progress = card.progress {
         progressBar(progress)
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
       }
-
-      Image(systemName: "play.fill")
-        .font(TypeScale.cardMeta)
-        .foregroundStyle(.white)
-        .shadow(color: .black.opacity(0.55), radius: 6, y: 1)
-        .padding(12)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .overlay(alignment: .bottomLeading) {
+      if let landscapeTimeBadge {
+        landscapeTimeBadge
+          .padding(8)
+      }
     }
   }
 
   private func progressBar(_ progress: Double) -> some View {
     GeometryReader { geometry in
       ZStack(alignment: .leading) {
-        Capsule().fill(Color.black.opacity(0.55))
+        Capsule().fill(Color.black.opacity(0.45))
         Capsule()
-          .fill(Color.KinoPub.accent)
+          .fill(Color.white.opacity(0.95))
           .frame(width: geometry.size.width * min(max(progress, 0), 1))
       }
     }
-    .frame(height: Metrics.progressBarHeight)
+    .frame(height: 3)
+    .padding(.horizontal, 1)
   }
 
   // MARK: - Caption
@@ -333,19 +761,42 @@ public struct MediaCardView: View {
   /// baselines and the row does not jump as focus travels along it.
   private var captionBlock: some View {
     VStack(alignment: .center, spacing: 4) {
-      MarqueeText(
-        card.title,
-        font: TypeScale.cardTitle,
-        foreground: Color.KinoPub.text,
-        alignment: .center
-      )
+      titleRow
 
-      if card.isLandscape, let label = card.overlayLabel, !label.isEmpty {
-        Text(label)
+      // Original title is poster-only — landscape captions stay a single title line.
+      if !card.isLandscape,
+         showOriginalTitle,
+         let subtitle = card.subtitle,
+         !subtitle.isEmpty,
+         subtitle != card.title {
+        Text(subtitle)
+          .font(TypeScale.cardSubtitle)
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .lineLimit(1)
+          .multilineTextAlignment(.center)
+          .frame(maxWidth: .infinity, alignment: .center)
+      }
+
+      if card.isLandscape, let line = landscapeEpisodeLine {
+        Text(line)
           .font(TypeScale.cardMeta)
           .foregroundStyle(Color.KinoPub.subtitle)
-          .textCase(.uppercase)
           .lineLimit(1)
+          .multilineTextAlignment(.center)
+          .frame(maxWidth: .infinity, alignment: .center)
+      }
+
+      if showsCaptionScores {
+        MediaScoresView(imdb: captionImdb, kinopoisk: captionKinopoisk)
+          .font(TypeScale.cardMeta)
+          .foregroundStyle(Color.KinoPub.subtitle)
+      }
+
+      if !captionMetaParts.isEmpty {
+        Text(captionMetaParts.joined(separator: " · "))
+          .font(TypeScale.cardMeta)
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .lineLimit(2)
           .multilineTextAlignment(.center)
           .frame(maxWidth: .infinity, alignment: .center)
       }
@@ -353,6 +804,32 @@ public struct MediaCardView: View {
     .frame(maxWidth: .infinity, alignment: .center)
     .opacity(caption == .always || cardFocused ? 1 : 0)
     .animation(.easeOut(duration: 0.12), value: cardFocused)
+  }
+
+  /// Title + optional caption chips hug as one group, then the group is centered.
+  private var titleRow: some View {
+    HStack(spacing: 0) {
+      Spacer(minLength: 0)
+      HStack(spacing: 6) {
+        Text(card.title)
+          .font(TypeScale.cardTitle)
+          .foregroundStyle(Color.KinoPub.text)
+          .lineLimit(1)
+          .frame(minWidth: 0)
+
+        if !card.isLandscape, editorialPlacement == .inCaption, let badge = card.badge {
+          editorialBadge(badge)
+            .fixedSize()
+        }
+
+        if capabilityPlacement == .inCaption, !capabilityChips.isEmpty {
+          capabilityBadgesRow
+            .fixedSize()
+        }
+      }
+      Spacer(minLength: 0)
+    }
+    .accessibilityElement(children: .combine)
   }
 
   // MARK: - Legacy metrics (call sites / placeholders until fully migrated)
@@ -382,6 +859,72 @@ public struct MediaCardView: View {
 #else
     390
 #endif
+  }
+}
+
+// MARK: - Landscape play chrome
+
+/// Visual treatments for the centered play affordance on play-primary landscape cards.
+public enum LandscapePlayChromeStyle: String, CaseIterable, Sendable {
+  /// Liquid Glass circle — shipping default.
+  case glass
+  /// Translucent white plate (hero secondary circle language), no backdrop sampling.
+  case translucent
+  /// Same glass material, larger hit-looking target.
+  case glassLarge
+}
+
+/// Decorative play glyph in the middle of a landscape still. Not a Button — the
+/// parent card / link owns the action.
+public struct LandscapePlayChromeView: View {
+  public let style: LandscapePlayChromeStyle
+
+  public init(style: LandscapePlayChromeStyle = .glass) {
+    self.style = style
+  }
+
+  private var diameter: CGFloat {
+    switch style {
+    case .glass: return 52
+    case .translucent: return 52
+    case .glassLarge: return 64
+    }
+  }
+
+  private var iconSize: CGFloat {
+    switch style {
+    case .glass, .translucent: return 20
+    case .glassLarge: return 24
+    }
+  }
+
+  public var body: some View {
+    Image(systemName: "play.fill")
+      .font(.system(size: iconSize, weight: .semibold))
+      .foregroundStyle(.white)
+      .padding(.leading, 2)
+      .frame(width: diameter, height: diameter)
+      .modifier(LandscapePlayChromeBackground(style: style))
+  }
+}
+
+private struct LandscapePlayChromeBackground: ViewModifier {
+  let style: LandscapePlayChromeStyle
+
+  func body(content: Content) -> some View {
+    switch style {
+    case .glass, .glassLarge:
+      content.kinoGlass(in: Circle())
+    case .translucent:
+      content
+        .background {
+          Circle().fill(Color.white.opacity(0.22))
+        }
+        .overlay {
+          Circle()
+            .strokeBorder(Color.white.opacity(0.35), lineWidth: Metrics.hairline)
+        }
+    }
   }
 }
 
@@ -434,12 +977,66 @@ public struct MediaCardView: View {
       title: "Название эпизода подлиннее обычного",
       progress: 0.55,
       landscapeImageURL: "https://m.staticpop.net/poster/item/wide/581.jpg",
-      overlayLabel: "S1, E3 · 48 min",
-      isSeries: true
+      overlayLabel: "S1, E3",
+      isSeries: true,
+      isInWatchlist: true,
+      durationSeconds: 48 * 60,
+      primaryAction: .play
     ),
-    caption: .always
+    caption: .always,
+    forcePlayChrome: true
   )
   .frame(width: 360)
+  .padding()
+  .background(Color.black)
+  .preferredColorScheme(.dark)
+}
+
+#Preview("Landscape time states") {
+  HStack(alignment: .top, spacing: 16) {
+    MediaCardView(
+      card: MediaCard(
+        id: 1,
+        posterURL: "https://m.staticpop.net/poster/item/wide/581.jpg",
+        title: "Unwatched",
+        landscapeImageURL: "https://m.staticpop.net/poster/item/wide/581.jpg",
+        durationSeconds: 62 * 60,
+        primaryAction: .play
+      ),
+      caption: .always,
+      forcePlayChrome: true
+    )
+    .frame(width: 220)
+    MediaCardView(
+      card: MediaCard(
+        id: 2,
+        posterURL: "https://m.staticpop.net/poster/item/wide/581.jpg",
+        title: "In progress",
+        progress: 0.35,
+        landscapeImageURL: "https://m.staticpop.net/poster/item/wide/581.jpg",
+        isInWatchlist: true,
+        durationSeconds: 2 * 3600,
+        primaryAction: .play
+      ),
+      caption: .always,
+      forcePlayChrome: true
+    )
+    .frame(width: 220)
+    MediaCardView(
+      card: MediaCard(
+        id: 3,
+        posterURL: "https://m.staticpop.net/poster/item/wide/581.jpg",
+        title: "Watched",
+        progress: 1,
+        landscapeImageURL: "https://m.staticpop.net/poster/item/wide/581.jpg",
+        isWatched: true,
+        durationSeconds: 2 * 60,
+        primaryAction: .play
+      ),
+      caption: .always
+    )
+    .frame(width: 220)
+  }
   .padding()
   .background(Color.black)
   .preferredColorScheme(.dark)

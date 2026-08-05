@@ -14,6 +14,9 @@ public struct MarqueeText: View {
   private let font: Font
   private let foreground: Color
   private let alignment: Alignment
+  /// When true (default), expands to the parent's width for shelf captions.
+  /// When false, hugs the glyph width so siblings (badges) can sit flush beside it.
+  private let fillsWidth: Bool
 
   @Environment(\.isFocused) private var isFocused
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -26,12 +29,14 @@ public struct MarqueeText: View {
     _ text: String,
     font: Font = TypeScale.cardTitle,
     foreground: Color = Color.KinoPub.text,
-    alignment: Alignment = .leading
+    alignment: Alignment = .leading,
+    fillsWidth: Bool = true
   ) {
     self.text = text
     self.font = font
     self.foreground = foreground
     self.alignment = alignment
+    self.fillsWidth = fillsWidth
   }
 
   private var isTruncated: Bool {
@@ -53,7 +58,7 @@ public struct MarqueeText: View {
       }
       .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { containerWidth = $0 }
       .offset(x: offset)
-      .frame(maxWidth: .infinity, alignment: alignment)
+      .modifier(MarqueeWidthModifier(fillsWidth: fillsWidth, alignment: alignment))
       .clipped()
       .onChange(of: isFocused) { _, focused in
         runToken += 1
@@ -77,6 +82,19 @@ public struct MarqueeText: View {
       withAnimation(.linear(duration: duration)) {
         offset = -travel
       }
+    }
+  }
+}
+
+private struct MarqueeWidthModifier: ViewModifier {
+  let fillsWidth: Bool
+  let alignment: Alignment
+
+  func body(content: Content) -> some View {
+    if fillsWidth {
+      content.frame(maxWidth: .infinity, alignment: alignment)
+    } else {
+      content.fixedSize(horizontal: true, vertical: false)
     }
   }
 }

@@ -88,6 +88,9 @@ struct MainView: View {
       navigationLinkProvider: { card in
         Route.detailsById(card.id)
       },
+      onPlay: { card in
+        cardMenu.play(card) { navigationState.push($0) }
+      },
       contextMenuProvider: { card, surface in
         menuEntries(for: card, surface: surface, isContinueWatching: card.isLandscape)
       }
