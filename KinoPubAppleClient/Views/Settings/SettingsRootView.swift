@@ -127,7 +127,7 @@ struct SettingsRootView: View {
       pane(for: selectedCategory)
         .settingsMacChrome(title: selectedCategory.titleKey, isRoot: true)
     } else {
-      ContentUnavailableView("Settings", systemImage: "gearshape")
+      ContentUnavailableView("Settings", systemImage: "gear")
     }
   }
 #endif

@@ -46,7 +46,6 @@
 		CC21CEAD2AF6B61500EFCA8E /* SeasonsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21CEAC2AF6B61500EFCA8E /* SeasonsModel.swift */; };
 		CC21CEB02AF6B62200EFCA8E /* SeasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21CEAF2AF6B62200EFCA8E /* SeasonView.swift */; };
 		CC21CEB22AF6B62A00EFCA8E /* SeasonModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC21CEB12AF6B62A00EFCA8E /* SeasonModel.swift */; };
-		CC2C35DF2AFD6722009B8CF1 /* SeasonItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2C35DE2AFD6722009B8CF1 /* SeasonItemView.swift */; };
 		CC439CF52A83CC1400E00B36 /* UserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC439CF42A83CC1400E00B36 /* UserService.swift */; };
 		CC60254A2AFE7191003D8391 /* DownloadMeta.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC6025492AFE7191003D8391 /* DownloadMeta.swift */; };
 		CC60254D2AFF548B003D8391 /* UserActionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC60254C2AFF548B003D8391 /* UserActionsService.swift */; };
@@ -210,7 +209,6 @@
 		CC21CEAC2AF6B61500EFCA8E /* SeasonsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonsModel.swift; sourceTree = "<group>"; };
 		CC21CEAF2AF6B62200EFCA8E /* SeasonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonView.swift; sourceTree = "<group>"; };
 		CC21CEB12AF6B62A00EFCA8E /* SeasonModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonModel.swift; sourceTree = "<group>"; };
-		CC2C35DE2AFD6722009B8CF1 /* SeasonItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonItemView.swift; sourceTree = "<group>"; };
 		CC439CF42A83CC1400E00B36 /* UserService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserService.swift; sourceTree = "<group>"; };
 		CC6025492AFE7191003D8391 /* DownloadMeta.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadMeta.swift; sourceTree = "<group>"; };
 		CC60254C2AFF548B003D8391 /* UserActionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserActionsService.swift; sourceTree = "<group>"; };
@@ -418,7 +416,6 @@
 			children = (
 				CC21CEAF2AF6B62200EFCA8E /* SeasonView.swift */,
 				CC21CEB12AF6B62A00EFCA8E /* SeasonModel.swift */,
-				CC2C35DE2AFD6722009B8CF1 /* SeasonItemView.swift */,
 			);
 			path = Season;
 			sourceTree = "<group>";
@@ -1103,7 +1100,6 @@
 				CCF2ABB22AED37FD000448A8 /* SettingsView.swift in Sources */,
 				CC87E6372B020F730096BDC3 /* PlayerTimeObserver.swift in Sources */,
 				CC60254D2AFF548B003D8391 /* UserActionsService.swift in Sources */,
-				CC2C35DF2AFD6722009B8CF1 /* SeasonItemView.swift in Sources */,
 				CC0904832A7C353200A71F53 /* PlayerManager.swift in Sources */,
 				A1B2C3D42E5F60718293A004 /* PlaybackSession.swift in Sources */,
 				CCA100012C6F000100000001 /* SubtitlePreferences.swift in Sources */,

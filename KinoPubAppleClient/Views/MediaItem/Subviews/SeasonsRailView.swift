@@ -53,7 +53,11 @@ struct SeasonsRailView: View {
   @Environment(ErrorHandler.self) private var errorHandler
   @EnvironmentObject private var navigationState: NavigationState
   @Environment(\.openURL) private var openURL
+  @Environment(\.dynamicTypeSize) private var typeSize
   @StateObject private var cardMenu = MediaCardMenuCoordinator()
+  /// Measured rail width, so cards land on the same `ShelfMetrics` grid as every
+  /// other landscape shelf (Continue Watching, History) rather than a fixed size.
+  @State private var railWidth: CGFloat = SeasonsRailView.referenceWidth
   @State private var selectedSeasonID: Int?
   @State private var didScrollToUnseen = false
   /// True while a tab-driven scroll is in flight, so a stray episode focus update
@@ -173,6 +177,20 @@ struct SeasonsRailView: View {
     seasons.first { $0.id == selectedSeasonID } ?? seasons.first
   }
 
+  // MARK: - Metrics (shared with every other landscape shelf)
+
+  private var metrics: ShelfMetrics {
+    .landscape(width: railWidth, typeSize: typeSize)
+  }
+
+  private var cardWidth: CGFloat {
+    metrics.cardWidth(in: railWidth)
+  }
+
+  private var stillHeight: CGFloat {
+    cardWidth / CardAspect.landscape.ratio
+  }
+
   /// First unfinished playable episode walking seasons in order, else the very first rail item.
   private var firstUnseen: RailEntry? {
     entries.first {
@@ -201,6 +219,11 @@ struct SeasonsRailView: View {
         episodeRail
       }
       .animation(.easeOut(duration: 0.25), value: showsChrome)
+      .onGeometryChange(for: CGFloat.self) { proxy in
+        proxy.size.width
+      } action: { width in
+        if width > 0 { railWidth = width }
+      }
       .onAppear {
         if selectedSeasonID == nil {
           selectedSeasonID = firstUnseen?.season?.id ?? seasons.first?.id
@@ -257,7 +280,7 @@ struct SeasonsRailView: View {
           .buttonStyle(SeasonTabButtonStyle(isSelected: season.id == selectedSeason?.id))
         }
       }
-      .padding(.horizontal, Self.horizontalInset)
+      .padding(.horizontal, metrics.inset)
     }
 #if os(tvOS)
     // Full-width focus section so Up from any episode finds the tab strip; defaultFocus
@@ -272,23 +295,31 @@ struct SeasonsRailView: View {
 
   private var episodeRail: some View {
     ScrollView(.horizontal, showsIndicators: false) {
-      LazyHStack(alignment: .top, spacing: Self.cardSpacing) {
+      // Same lazy landscape strip as `MediaPosterShelf`: width from `ShelfMetrics`,
+      // vertical room for the focus lift, nothing bespoke about the cards.
+      LazyHStack(alignment: .top, spacing: metrics.gutter) {
         ForEach(entries) { entry in
           let isFocusedEpisode = focusedEpisodeID == entry.id
           railCard(for: entry)
+            .frame(width: cardWidth)
 #if os(tvOS)
             .focused($focusedEpisodeID, equals: entry.id)
+#else
+            .buttonStyle(MediaCardButtonStyle())
 #endif
             .zIndex(isFocusedEpisode ? 1 : 0)
             .id(Self.episodeAnchor(entry.id))
         }
       }
-      .padding(.vertical, Self.focusPadding)
+      .padding(.vertical, Metrics.landscapeFocusPadding)
     }
-    .contentMargins(.horizontal, Self.horizontalInset, for: .scrollContent)
+    // Content margins, not padding: `scrollTo(anchor: .leading)` would otherwise park
+    // the first episode of a season under the page inset instead of beside it.
+    .contentMargins(.horizontal, metrics.inset, for: .scrollContent)
 #if os(tvOS)
     // Focus scale needs to paint past the clip; on Mac it lets the first card
     // draw under the translucent sidebar.
+    .buttonStyle(.borderless)
     .scrollClipDisabled()
     .focusSection()
     .defaultFocus($focusedEpisodeID, firstEpisodeInSelectedSeason)
@@ -302,52 +333,42 @@ struct SeasonsRailView: View {
       PlayerLink(route: linkProvider.player(for: filled(episode, in: season)),
                  item: filled(episode, in: season),
                  mode: .media) {
-        EpisodeRailCard(
-          title: Self.displayTitle(episode: episode, schedule: schedule),
-          number: episode.number,
-          stillURL: Self.stillURL(episode: episode, schedule: schedule),
-          schedule: schedule,
-          progress: Self.progress(for: episode)
-        )
+        MediaCardView(card: Self.card(for: episode, in: season, schedule: schedule),
+                      caption: .always)
       }
-      .buttonStyle(EpisodeCardButtonStyle())
       .modifier(MediaCardContextMenuModifier(
         entries: contextEntries(for: episode, season: season)
       ))
 
-    case .playable(_, let episode, let schedule):
-      Button(action: {}) {
-        EpisodeRailCard(
-          title: Self.displayTitle(episode: episode, schedule: schedule),
-          number: episode.number,
-          stillURL: Self.stillURL(episode: episode, schedule: schedule),
-          schedule: schedule,
-          progress: nil
-        )
-      }
-      .buttonStyle(EpisodeCardButtonStyle())
-      .disabled(true)
-      .opacity(0.55)
+    case .playable(let season, let episode, let schedule):
+      // Announced but not out yet: the same card, inert and dimmed.
+      MediaCardView(card: Self.card(for: episode,
+                                    in: season,
+                                    schedule: schedule,
+                                    primaryAction: .openDetail),
+                    caption: .always)
+        .opacity(0.55)
 
     case .unavailable(_, let schedule):
-      Button(action: {}) {
-        EpisodeRailCard(
-          title: schedule.name ?? "",
-          number: schedule.episodeNumber,
-          stillURL: schedule.still,
-          schedule: schedule,
-          progress: nil
-        )
-      }
-      .buttonStyle(EpisodeCardButtonStyle())
-      .disabled(true)
-      .opacity(0.55)
+      MediaCardView(card: MediaCard(unavailableEpisodeID: entry.id,
+                                    number: schedule.episodeNumber,
+                                    title: schedule.name,
+                                    episodeLabel: Self.episodeLabel(number: schedule.episodeNumber),
+                                    dateLabel: schedule.airDate.map(Self.airDateLabel),
+                                    stillURL: schedule.still?.absoluteString),
+                    caption: .always)
+        .opacity(0.55)
 
     case .missingSeasons(let from, let to, let episodes, let firstAir, let lastAir):
-      MissingSeasonsCard(from: from, to: to, episodes: episodes, firstAir: firstAir, lastAir: lastAir)
+      MissingSeasonsCard(from: from,
+                         to: to,
+                         episodes: episodes,
+                         firstAir: firstAir,
+                         lastAir: lastAir,
+                         stillHeight: stillHeight)
 
     case .upcomingSeason(let number, let date, let poster):
-      UpcomingSeasonCard(number: number, date: date, poster: poster)
+      UpcomingSeasonCard(number: number, date: date, poster: poster, stillHeight: stillHeight)
     }
   }
 
@@ -382,7 +403,7 @@ struct SeasonsRailView: View {
   }
 
   private func contextEntries(for episode: Episode, season: Season) -> [MediaCardContextEntry] {
-    let card = Self.contextCard(for: episode, in: season)
+    let card = Self.card(for: episode, in: season, schedule: nil)
     let containing = cardMenu.containingFolders(for: card)
     let folders = cardMenu.folders.map {
       MediaCardContextMenus.BookmarkFolderOption(
@@ -419,35 +440,59 @@ struct SeasonsRailView: View {
     return episode
   }
 
+  /// The rail's card — the same landscape `MediaCard` History and Continue Watching
+  /// draw, captioned "EPISODE 9 · 5 Mar" where the poster shelves caption "S2, E5".
+  private static func card(for episode: Episode,
+                           in season: Season,
+                           schedule: EpisodeSchedule?,
+                           primaryAction: MediaCardPrimaryAction = .play) -> MediaCard {
+    MediaCard(episode: episode,
+              in: season,
+              title: displayTitle(episode: episode, schedule: schedule),
+              episodeLabel: episodeLabel(number: episode.number),
+              dateLabel: schedule?.airDate.map(airDateLabel),
+              stillURL: stillURL(episode: episode, schedule: schedule),
+              primaryAction: primaryAction)
+  }
+
   private static func displayTitle(episode: Episode, schedule: EpisodeSchedule?) -> String {
     let kino = episode.title.trimmingCharacters(in: .whitespacesAndNewlines)
     if !kino.isEmpty { return kino }
     return schedule?.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
   }
 
-  private static func stillURL(episode: Episode, schedule: EpisodeSchedule?) -> URL? {
-    if !episode.thumbnail.isEmpty, let url = URL(string: episode.thumbnail) { return url }
-    return schedule?.still
+  private static func stillURL(episode: Episode, schedule: EpisodeSchedule?) -> String? {
+    if !episode.thumbnail.isEmpty { return episode.thumbnail }
+    return schedule?.still?.absoluteString
   }
 
-  private static func progress(for episode: Episode) -> Double? {
-    guard episode.watched == 0, episode.duration > 0, episode.watching.time > 0 else { return nil }
-    return min(Double(episode.watching.time) / Double(episode.duration), 1.0)
+  private static func episodeLabel(number: Int) -> String {
+    "\("Episode".localized) \(number)"
   }
 
-  private static func contextCard(for episode: Episode, in season: Season) -> MediaCard {
-    MediaCard(id: episode.id,
-              posterURL: episode.thumbnail,
-              title: episode.fixedTitle,
-              progress: progress(for: episode),
-              landscapeImageURL: episode.thumbnail,
-              itemID: season.mediaId ?? episode.mediaId,
-              video: episode.number,
-              season: season.number,
-              mediaID: episode.id,
-              isWatched: episode.watched > 0,
-              isSeries: true)
+  /// Inside a week either way the date is relative — "in 3 days", "7 days ago", and
+  /// "tomorrow" / "yesterday" for the ends. Further out it is an absolute date **with
+  /// the year**: a rail spans seasons, so a bare "8 Jul" says nothing about which one.
+  static func airDateLabel(_ date: Date) -> String {
+    let calendar = Calendar.current
+    let days = calendar.dateComponents([.day],
+                                       from: calendar.startOfDay(for: Date()),
+                                       to: calendar.startOfDay(for: date)).day ?? 0
+    guard abs(days) > 7 else {
+      let formatter = RelativeDateTimeFormatter()
+      formatter.dateTimeStyle = .named
+      formatter.unitsStyle = .full
+      return formatter.localizedString(from: DateComponents(day: days))
+    }
+    return airDateFormatter.string(from: date)
   }
+
+  private static let airDateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.locale = .current
+    formatter.setLocalizedDateFormatFromTemplate("d MMM yyyy")
+    return formatter
+  }()
 
   private static func seasonTitle(_ season: Season) -> String {
     if season.title.isEmpty {
@@ -459,208 +504,19 @@ struct SeasonsRailView: View {
   private static func episodeAnchor(_ id: Int) -> String { "episode-\(id)" }
 
 #if os(tvOS)
-  static let horizontalInset: CGFloat = 80
-  static let cardSpacing: CGFloat = 36
   static let tabSpacing: CGFloat = 2
-  static let focusPadding: CGFloat = 32
   static let tabFont: Font = .system(size: 36, weight: .bold)
-#else
-  static let horizontalInset: CGFloat = 20
-  static let cardSpacing: CGFloat = 16
+  /// Width to lay out with until the rail has measured itself.
+  static let referenceWidth: CGFloat = 1920
+#elseif os(macOS)
   static let tabSpacing: CGFloat = 8
-  static let focusPadding: CGFloat = 6
   static let tabFont: Font = .system(size: 16, weight: .semibold)
-#endif
-}
-
-// MARK: - Episode card
-
-/// Fixed 16:9 still + permanent "EPISODE 9" label over a up-to-three-line title.
-///
-/// Ideally these would be `.fit` with every card sharing the height of the first
-/// loaded still (frame == image, no crop, no letterbox). Until that uniform-height
-/// pass exists, every card uses the same frame and `.fill`s — crop over broken layout.
-///
-/// Focus plate hugs the still + real caption (no empty 3-line slack inside the wash).
-/// A hidden scaffold still reserves the full caption height in the rail so neighbours
-/// don't reflow the section — plate and scale only wrap the content that exists.
-private struct EpisodeRailCard: View {
-
-  let title: String
-  let number: Int
-  let stillURL: URL?
-  var schedule: EpisodeSchedule? = nil
-  var progress: Double? = nil
-  @Environment(\.isFocused) private var isFocused
-
-  private var episodeNumberLabel: String {
-    if let airDate = schedule?.airDate {
-      return "\("Episode".localized) \(number) · \(Self.airDateFormatter.string(from: airDate))"
-    }
-    return "\("Episode".localized) \(number)"
-  }
-
-  private var episodeTitle: String {
-    title.trimmingCharacters(in: .whitespacesAndNewlines)
-  }
-
-  private static let airDateFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateFormat = "d MMM"
-    f.locale = .current
-    return f
-  }()
-
-  var body: some View {
-    ZStack(alignment: .topLeading) {
-      // Invisible slot: still + max caption, keeps every card the same height in the rail.
-      VStack(alignment: .leading, spacing: 2) {
-        Color.clear
-          .frame(width: Self.cardWidth, height: Self.stillHeight)
-        captionReserve
-          .padding(.horizontal, Self.captionPadding)
-          .padding(.top, Self.captionSpacing)
-          .padding(.bottom, Self.captionPadding)
-      }
-      .hidden()
-      .accessibilityHidden(true)
-
-      // Visible card: plate hugs this stack only.
-      VStack(alignment: .leading, spacing: 2) {
-        still
-        caption
-          .padding(.horizontal, Self.captionPadding)
-          .padding(.top, Self.captionSpacing)
-          .padding(.bottom, Self.captionPadding)
-      }
-      .background(
-        RoundedRectangle(cornerRadius: Self.plateRadius, style: .continuous)
-          .fill(isFocused ? Color.secondary.opacity(0.35) : Color.clear)
-      )
-      .scaleEffect(isFocused ? 1.05 : 1.0)
-      .animation(.easeOut(duration: 0.2), value: isFocused)
-    }
-    .frame(width: Self.cardWidth, alignment: .topLeading)
-  }
-
-  /// Same structure/fonts/line limits as a full caption, for the rail slot only.
-  private var captionReserve: some View {
-    VStack(alignment: .center, spacing: 6) {
-      Text(" ")
-        .font(Self.titleFont)
-        .lineLimit(1)
-        .multilineTextAlignment(.center)
-      Text("EPISODE 99")
-        .font(Self.numberFont)
-        .textCase(.uppercase)
-        .lineLimit(1)
-        .multilineTextAlignment(.center)
-    }
-    .frame(maxWidth: .infinity, alignment: .center)
-  }
-
-  @ViewBuilder
-  private var caption: some View {
-    VStack(alignment: .center, spacing: 6) {
-      if !episodeTitle.isEmpty {
-        MarqueeText(
-          episodeTitle,
-          font: Self.titleFont,
-          alignment: .center,
-          style: .title
-        )
-
-        Text(episodeNumberLabel)
-          .font(Self.numberFont)
-          .foregroundStyle(Color.secondary)
-          .textCase(.uppercase)
-          .lineLimit(1)
-          .multilineTextAlignment(.center)
-      } else {
-        MarqueeText(
-          episodeNumberLabel,
-          font: Self.titleFont,
-          alignment: .center,
-          style: .title
-        )
-      }
-    }
-    .frame(maxWidth: .infinity, alignment: .center)
-  }
-
-  private var still: some View {
-    AsyncImage(url: stillURL,
-               transaction: Transaction(animation: .easeIn(duration: 0.25))) { phase in
-      ZStack(alignment: .bottom) {
-        Group {
-          if let image = phase.image {
-            image
-              .resizable()
-              .aspectRatio(contentMode: .fill)
-              .transition(.opacity)
-          } else {
-            Color.KinoPub.placeholder
-          }
-        }
-        .frame(width: Self.cardWidth, height: Self.stillHeight)
-        .clipped()
-              .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
-
-
-        if let progress {
-          progressBar(progress)
-        }
-      }
-    }
-    .frame(width: Self.cardWidth, height: Self.stillHeight)
-//    .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
-  }
-
-  private func progressBar(_ progress: Double) -> some View {
-    GeometryReader { geometry in
-      ZStack(alignment: .leading) {
-          Capsule().fill(Color.gray.opacity(0.5))
-        Capsule()
-          .fill(Color.KinoPub.accent)
-          .frame(width: geometry.size.width * progress)
-          .shadow(radius: 8)
-      }
-    }
-    .frame(height: 10)
-    .padding(.horizontal, 0)
-    .padding(.bottom, 0)
-  }
-
-  static let titleLineLimit = 3
-
-#if os(tvOS)
-  static let cardWidth: CGFloat = 480
-  static let stillHeight: CGFloat = 270
-  static let cornerRadius: CGFloat = 18
-  static let plateRadius: CGFloat = 18
-  static let captionSpacing: CGFloat = 12
-  static let captionPadding: CGFloat = 20
-  static let numberFont: Font = .system(size: 20, weight: .bold)
-  static let titleFont: Font = .system(size: 28, weight: .semibold)
+  static let referenceWidth: CGFloat = 1100
 #else
-  static let cardWidth: CGFloat = 300
-  static let stillHeight: CGFloat = 169
-  static let cornerRadius: CGFloat = 12
-  static let plateRadius: CGFloat = 14
-  static let captionSpacing: CGFloat = 8
-  static let captionPadding: CGFloat = 8
-  static let numberFont: Font = .system(size: 11, weight: .semibold)
-  static let titleFont: Font = .system(size: 15, weight: .medium)
+  static let tabSpacing: CGFloat = 8
+  static let tabFont: Font = .system(size: 16, weight: .semibold)
+  static let referenceWidth: CGFloat = 390
 #endif
-}
-
-/// Press feedback only — focus plate and scale live on `EpisodeRailCard`.
-private struct EpisodeCardButtonStyle: ButtonStyle {
-  func makeBody(configuration: ButtonStyleConfiguration) -> some View {
-    configuration.label
-      .opacity(configuration.isPressed ? 0.92 : 1.0)
-      .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-  }
 }
 
 /// A season tab: filled when selected, outlined otherwise, and lifting on focus.
@@ -704,6 +560,8 @@ private struct MissingSeasonsCard: View {
   let episodes: Int?
   let firstAir: Date?
   let lastAir: Date?
+  /// Artwork height of the neighbouring episode cards, so the slot lines up with them.
+  let stillHeight: CGFloat
 
   private var yearsText: String? {
     guard let firstAir else { return nil }
@@ -722,22 +580,22 @@ private struct MissingSeasonsCard: View {
   var body: some View {
     VStack(spacing: 10) {
       Text(String(format: "MediaItem_SeasonsRange".localized, from, to))
-        .font(EpisodeRailCard.titleFont)
+        .font(TypeScale.cardTitle)
         .foregroundStyle(Color.KinoPub.text)
         .multilineTextAlignment(.center)
 
       if let subtitle {
         Text(subtitle)
-          .font(EpisodeRailCard.numberFont)
+          .font(TypeScale.cardMeta)
           .foregroundStyle(Color.secondary)
           .multilineTextAlignment(.center)
       }
     }
     .padding(.horizontal, 24)
-    .frame(width: EpisodeRailCard.cardWidth,
-           height: EpisodeRailCard.stillHeight + 80)
+    .frame(maxWidth: .infinity)
+    .frame(height: stillHeight)
     .background(
-      RoundedRectangle(cornerRadius: EpisodeRailCard.cornerRadius, style: .continuous)
+      RoundedRectangle(cornerRadius: Metrics.cardCornerRadius, style: .continuous)
         .fill(Color.secondary.opacity(0.18))
     )
   }
@@ -749,6 +607,8 @@ private struct UpcomingSeasonCard: View {
   let number: Int
   let date: Date
   let poster: URL?
+  /// Artwork height of the neighbouring episode cards, so the poster lines up with them.
+  let stillHeight: CGFloat
 
   private static let dateFormatter: DateFormatter = {
     let formatter = DateFormatter()
@@ -772,27 +632,28 @@ private struct UpcomingSeasonCard: View {
             Color.KinoPub.placeholder
           }
         }
-        .frame(width: EpisodeRailCard.cardWidth, height: EpisodeRailCard.stillHeight)
+        .frame(maxWidth: .infinity)
+        .frame(height: stillHeight)
         .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: EpisodeRailCard.cornerRadius, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Metrics.cardCornerRadius, style: .continuous))
       }
 
       Text(String(format: "MediaItem_SeasonSingle".localized, number))
-        .font(EpisodeRailCard.titleFont)
+        .font(TypeScale.cardTitle)
         .foregroundStyle(Color.KinoPub.text)
         .lineLimit(1)
 
       Text(String(format: "MediaItem_PremiereOn".localized, Self.dateFormatter.string(from: date)))
-        .font(EpisodeRailCard.numberFont)
+        .font(TypeScale.cardMeta)
         .foregroundStyle(Color.secondary)
         .lineLimit(2)
         .multilineTextAlignment(.center)
 
       Text(countdown)
-        .font(EpisodeRailCard.numberFont)
+        .font(TypeScale.cardMeta)
         .foregroundStyle(Color.secondary.opacity(0.7))
         .lineLimit(1)
     }
-    .frame(width: EpisodeRailCard.cardWidth, alignment: .topLeading)
+    .frame(maxWidth: .infinity, alignment: .top)
   }
 }

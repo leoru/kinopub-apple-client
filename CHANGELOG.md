@@ -5,6 +5,37 @@ not belong here. Detail checklists live under [`docs/en/features/`](docs/en/feat
 
 ## Unreleased
 
+### One landscape card
+
+- Episodes now draw `MediaCardView` — the same landscape card as Continue Watching and History.
+  `SeasonsRailView`'s private `EpisodeRailCard` / `EpisodeCardButtonStyle` and the season grid's
+  `SeasonItemView` are gone.
+- `MediaCard(episode:in:title:episodeLabel:dateLabel:stillURL:primaryAction:)` in `KinoPubUI` is the
+  single mapping (ids, resume fraction, watched flag, runtime); callers pass only the strings the
+  payload cannot compose. `MediaCard(unavailableEpisodeID:…)` covers schedule-only episodes.
+- Caption never says the same thing twice: a name that is only the episode's own number — "Эпизод 1"
+  against `Episode 1`, in any UI language — counts as no name, and the card falls back to
+  "Episode 1" as the title with the date alone underneath. Named episodes keep
+  name / "Episode 3 · Jul 22, 2026".
+- Air dates carry the **year** (a rail spans seasons, so a bare "8 Jul" says nothing), and inside a
+  week either way they are relative instead — "in 3 days", "7 days ago", "tomorrow".
+- Rail metrics come from `ShelfMetrics.landscape` + `CardAspect.landscape` against the measured
+  rail width, so episode cards sit on the same grid as every other landscape shelf instead of a
+  fixed 480/300pt. Focus is the shelves' `.borderless` lift, not a bespoke plate.
+- The rail keeps `contentMargins` (not `padding`) for its inset: `scrollTo(anchor: .leading)` on a
+  season tab would otherwise park the first episode under the page inset.
+- Play affordance is one per platform, never two: iOS/iPadOS keep the play glyph inside the time
+  chip and draw **no** centre play chrome; tvOS/macOS keep the centre glyph on focus / hover and
+  the chip is bare time. The watched checkmark stays in the chip everywhere.
+
+### iPad tab bar
+
+- Shaped like tvOS: Search glyph first, Settings **gear** last (icon-only, title kept as the
+  accessibility label), words in between. Search no longer uses `Tab(role: .search)` — that role
+  pinned it trailing next to Settings. iPhone keeps the role (bottom-bar HIG) and gets `gear` too.
+- Subscription-days badge is off the Settings tab (both iOS layouts); `subscriptionDaysBadge` is
+  gone with it. Days left still show inside Profile.
+
 ### Detail — people shelves
 
 - "More from \<director\>" / "More with \<actor\>" rails under Similar on the item page. First

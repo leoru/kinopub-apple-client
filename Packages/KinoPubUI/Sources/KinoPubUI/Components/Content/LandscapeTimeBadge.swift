@@ -46,8 +46,10 @@ public struct LandscapeTimeBadge: View {
 
   public var body: some View {
     HStack(spacing: 4) {
-      Image(systemName: iconName)
-        .font(.system(size: 9, weight: .bold))
+      if let iconName {
+        Image(systemName: iconName)
+          .font(.system(size: 9, weight: .bold))
+      }
       Text(label)
         .font(.caption2.weight(.semibold))
         .monospacedDigit()
@@ -64,10 +66,19 @@ public struct LandscapeTimeBadge: View {
     return false
   }
 
-  private var iconName: String {
+  /// Nil draws the chip as bare time. Focus and pointer platforms already put a play
+  /// glyph in the middle of the still while the card is focused / hovered, so the chip
+  /// repeating it there is one glyph too many; touch has no such state and keeps it.
+  private var iconName: String? {
     switch kind {
-    case .watched: return "checkmark"
-    case .unwatched, .inProgress: return "play.fill"
+    case .watched:
+      return "checkmark"
+    case .unwatched, .inProgress:
+#if os(tvOS) || os(macOS)
+      return nil
+#else
+      return "play.fill"
+#endif
     }
   }
 

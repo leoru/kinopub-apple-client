@@ -22,7 +22,8 @@ import AppKit
 /// - **macOS:** `.tabBarOnly`; no Settings tab (Settings window / ⌘,); no Search tab —
 ///   compact trailing toolbar search via `macToolbarSearch()` on each `NavigationStack`
 ///   (Finder/Photos). Return opens Search results. System back/forward stay leading.
-/// - **iPad:** `.tabBarOnly`; Search via `Tab(role: .search)` (trailing).
+/// - **iPad:** `.tabBarOnly`; same shape as tvOS — Search glyph **first**, Settings gear
+///   last, words in between (no `role: .search`, which would pin Search trailing).
 /// - **iPhone:** bottom tab bar; `Tab(role: .search)` pins Search trailing (HIG).
 ///
 /// PARKED (do not re-enable until locked properly per docs/WWDC): `.sidebarAdaptable`,
@@ -208,7 +209,7 @@ struct TabsNavigationView: View {
       Tab(value: NavigationTabs.settings) {
         settingsContent
       } label: {
-        tvIconTab("gearshape", label: "Settings")
+        tvIconTab("gear", label: "Settings")
       }
     }
     .tabViewStyle(.tabBarOnly)
@@ -223,9 +224,20 @@ struct TabsNavigationView: View {
 #endif
 
 #if os(iOS)
-  /// iPad top tab bar — Search pinned trailing via `.search` role.
+  /// iPad top tab bar, shaped like the tvOS one: glyph · words · glyph. Search leads
+  /// and Settings closes the bar as bare icons; the browse destinations are words.
+  ///
+  /// Search deliberately does **not** use `Tab(role: .search)` here — that role pins it
+  /// trailing, which put the two utility tabs at the same end and read as an
+  /// afterthought. iPhone keeps the role (bottom-bar HIG).
   private var padTabBar: some View {
     TabView(selection: tabSelection) {
+      Tab(value: NavigationTabs.search) {
+        searchContent
+      } label: {
+        iconTab("magnifyingglass", label: "Search")
+      }
+
       Tab("Home", systemImage: "house.fill", value: NavigationTabs.home) {
         homeContent
       }
@@ -243,15 +255,10 @@ struct TabsNavigationView: View {
       }
       .badge(libraryBadgeCount)
 
-      Tab("Settings", systemImage: "gearshape", value: NavigationTabs.settings) {
+      Tab(value: NavigationTabs.settings) {
         settingsContent
-      }
-      .badge(subscriptionDaysBadge)
-
-      Tab(value: NavigationTabs.search, role: .search) {
-        searchContent
       } label: {
-        Label("Search", systemImage: "magnifyingglass")
+        iconTab("gear", label: "Settings")
       }
     }
     .tabViewStyle(.tabBarOnly)
@@ -277,10 +284,9 @@ struct TabsNavigationView: View {
       }
       .badge(libraryBadgeCount)
 
-      Tab("Settings", systemImage: "gearshape", value: NavigationTabs.settings) {
+      Tab("Settings", systemImage: "gear", value: NavigationTabs.settings) {
         settingsContent
       }
-      .badge(subscriptionDaysBadge)
 
       Tab(value: NavigationTabs.search, role: .search) {
         searchContent
@@ -288,6 +294,13 @@ struct TabsNavigationView: View {
         Label("Search", systemImage: "magnifyingglass")
       }
     }
+  }
+
+  /// Glyph-only tab. The title still ships as the accessibility label — dropping the
+  /// text is a visual decision, not a reason for VoiceOver to announce nothing.
+  private func iconTab(_ systemImage: String, label: LocalizedStringKey) -> some View {
+    Image(systemName: systemImage)
+      .accessibilityLabel(Text(label))
   }
 #endif
 
@@ -297,11 +310,6 @@ struct TabsNavigationView: View {
     userData?.profile.name?.nilIfEmpty
       ?? userData?.username.nilIfEmpty
       ?? "Profile".localized
-  }
-
-  private var subscriptionDaysBadge: Int {
-    guard let days = userData?.subscription.days else { return 0 }
-    return max(0, Int(days.rounded(.down)))
   }
 
   private var libraryBadgeCount: Int {

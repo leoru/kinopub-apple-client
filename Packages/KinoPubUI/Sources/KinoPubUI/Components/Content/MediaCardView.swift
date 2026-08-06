@@ -517,7 +517,9 @@ public struct MediaCardView: View {
 #elseif os(macOS)
     return isHovered
 #else
-    return true
+    // Touch: the time chip's play glyph already says "this resumes". A second glyph
+    // parked in the middle of every still only covers the picture.
+    return false
 #endif
   }
 
