@@ -78,22 +78,26 @@ struct AppearanceSettingsPane: View {
         Text("Dark-only until a deliberate light-theme pass.")
       }
 
-      Section {
-        Picker("Rating", selection: $ratingPlacement) {
-          ForEach(MediaCardChromePlacement.allCases) { placement in
-            Text(LocalizedStringKey(placement.titleKey)).tag(placement.rawValue)
+      // Both controls only choose how the combined plaque is drawn — with the
+      // aggregate off there is nothing for them to place, so the section goes with it.
+      if FeatureFlags.combinedRatingEnabled {
+        Section {
+          Picker("Rating", selection: $ratingPlacement) {
+            ForEach(MediaCardChromePlacement.allCases) { placement in
+              Text(LocalizedStringKey(placement.titleKey)).tag(placement.rawValue)
+            }
           }
-        }
-        Picker("Rating source", selection: $ratingSource) {
-          ForEach(MediaCardRatingSource.allCases) { source in
-            Text(LocalizedStringKey(source.titleKey)).tag(source.rawValue)
+          Picker("Rating source", selection: $ratingSource) {
+            ForEach(MediaCardRatingSource.allCases) { source in
+              Text(LocalizedStringKey(source.titleKey)).tag(source.rawValue)
+            }
           }
+          .disabled(ratingPlacement == MediaCardChromePlacement.hidden.rawValue)
+        } header: {
+          Text("Poster score")
+        } footer: {
+          Text("On poster uses the coloured plaque. Under title shows IMDb / Kinopoisk logos separately.")
         }
-        .disabled(ratingPlacement == MediaCardChromePlacement.hidden.rawValue)
-      } header: {
-        Text("Poster score")
-      } footer: {
-        Text("On poster uses the coloured plaque. Under title shows IMDb / Kinopoisk logos separately.")
       }
 
       Section {

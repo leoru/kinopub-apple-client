@@ -6,16 +6,35 @@
 import Foundation
 import SwiftUI
 
+/// Our own averaged score: the poster plaque, the hero pill, the detail "Rating"
+/// tile, and the card Rating placement / source settings that drive them.
+///
+/// Off while the aggregate is being reworked — until then IMDb and Kinopoisk show
+/// only under their own logos, never folded into one number. An off flag hides the
+/// settings too, so nothing points at chrome that cannot appear.
+public enum RatingFeature {
+  public static let combinedEnabled = false
+}
+
 /// A single score combining the IMDb and Kinopoisk ratings.
 public struct Rating {
   public let value: Double
 
-  /// Averages the two sources when both are present, otherwise takes whichever one
-  /// has a score. Zero means "not rated" in the API, so it counts as missing.
-  public init?(imdb: Double?, kinopoisk: Double?) {
-    let scores = [imdb, kinopoisk].compactMap { $0 }.filter { $0 > 0 }
-    guard !scores.isEmpty else { return nil }
-    value = scores.reduce(0, +) / Double(scores.count)
+  /// Combines the two sources, **weighted by how many people voted**. 6.0 from 4,867
+  /// voters next to 1.0 from 7 is a 6.0 title, not the 3.5 a plain mean of the two
+  /// numbers would print. A source that reports no count still counts, but as a single
+  /// vote, so it can never outweigh a real audience. Zero means "not rated" in the API,
+  /// so it counts as missing.
+  public init?(imdb: Double?,
+               imdbVotes: Int? = nil,
+               kinopoisk: Double?,
+               kinopoiskVotes: Int? = nil) {
+    let sources = [(imdb ?? 0, imdbVotes ?? 0), (kinopoisk ?? 0, kinopoiskVotes ?? 0)]
+      .filter { $0.0 > 0 }
+      .map { (score: $0.0, weight: Double(max($0.1, 1))) }
+    guard !sources.isEmpty else { return nil }
+    let total = sources.reduce(0) { $0 + $1.weight }
+    value = sources.reduce(0) { $0 + $1.score * $1.weight } / total
   }
 
   public enum Tier {
@@ -35,7 +54,7 @@ public struct Rating {
     switch rounded {
     case 8...: return .awarded
     case 7..<8: return .good
-    case 5..<7: return .average
+    case 6..<7: return .average
     default: return .poor
     }
   }

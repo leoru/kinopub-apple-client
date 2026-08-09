@@ -7,6 +7,27 @@ final class RatingTests: XCTestCase {
     XCTAssertEqual(Rating(imdb: 8.0, kinopoisk: 7.0)?.value ?? 0, 7.5, accuracy: 0.001)
   }
 
+  /// 6.0 from 4,867 voters next to 1.0 from 7 is a 6.0 title. A plain mean printed 3.5.
+  func testWeightsSourcesByVoteCount() {
+    let rating = Rating(imdb: 6.0, imdbVotes: 4_867, kinopoisk: 1.0, kinopoiskVotes: 7)
+    XCTAssertEqual(rating?.value ?? 0, 5.993, accuracy: 0.001)
+    XCTAssertEqual(rating?.formatted, "6.0")
+  }
+
+  /// A source that reports no count still counts — as one vote, so it cannot outweigh
+  /// a real audience, and two countless sources still average evenly.
+  func testMissingVoteCountsWeighAsOne() {
+    XCTAssertEqual(Rating(imdb: 9.0, imdbVotes: 1_000, kinopoisk: 4.0)?.value ?? 0,
+                   8.995, accuracy: 0.001)
+    XCTAssertEqual(Rating(imdb: 8.0, kinopoisk: 7.0)?.value ?? 0, 7.5, accuracy: 0.001)
+  }
+
+  /// Votes on an unrated source are not a score: they must not enter the average.
+  func testVotesWithoutAScoreAreIgnored() {
+    XCTAssertEqual(Rating(imdb: 7.4, imdbVotes: 300, kinopoisk: 0, kinopoiskVotes: 90_000)?.value ?? 0,
+                   7.4, accuracy: 0.001)
+  }
+
   func testUsesTheOnlyRatedSource() {
     XCTAssertEqual(Rating(imdb: 7.4, kinopoisk: nil)?.value ?? 0, 7.4, accuracy: 0.001)
     XCTAssertEqual(Rating(imdb: nil, kinopoisk: 6.2)?.value ?? 0, 6.2, accuracy: 0.001)
