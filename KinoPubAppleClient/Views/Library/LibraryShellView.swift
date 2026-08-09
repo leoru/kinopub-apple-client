@@ -38,10 +38,22 @@ struct LibraryShellView: View {
     // field get pushed into the detail half and the traffic lights end up sitting on
     // the sidebar. Here the sidebar is content — the chrome spans the full width above
     // it — which is also why there is no collapse control left to remove.
-    HStack(spacing: 0) {
-      sidebar
-      detail
-        .frame(maxWidth: .infinity)
+    //
+    // The stack wraps sidebar AND detail together, not just detail: every other tab's
+    // `NavigationStack` spans its whole content area, so a pushed title's detail page
+    // covers the full tab. A stack scoped to only the detail pane would leave that
+    // pane's width beside a sidebar that never goes anywhere — section switching is
+    // separate state (`model.selection`), not a stack push, so it is unaffected by
+    // where the stack sits.
+    NavigationStack(path: $navigationState.libraryRoutes) {
+      HStack(spacing: 0) {
+        sidebar
+        detail
+          .frame(maxWidth: .infinity)
+      }
+      .navigationDestination(for: Route.self) { route in
+        RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
+      }
     }
     .task {
       cardMenu.bind(errorHandler: errorHandler)
@@ -176,23 +188,20 @@ struct LibraryShellView: View {
   private var detail: some View {
     if model.selection == .downloads {
       // Downloads brings its own stack and its own route list — local files, not a
-      // card grid, so it does not go through `LibrarySectionCatalog`.
+      // card grid, so it does not go through `LibrarySectionCatalog`. That inner stack
+      // is still scoped to this pane (unchanged) — nothing downloads pushes today is
+      // the kind of full-bleed page that needs to cover the sidebar.
       DownloadsView(catalog: DownloadsCatalog(downloadsDatabase: appContext.downloadedFilesDatabase,
                                               downloadManager: appContext.downloadManager))
     } else {
-      NavigationStack(path: $navigationState.libraryRoutes) {
-        sectionContent
-          .platformNavigationTitle(model.title(for: model.selection))
+      sectionContent
+        .platformNavigationTitle(model.title(for: model.selection))
 #if os(macOS)
-          .macToolbarSearch()
+        .macToolbarSearch()
 #endif
 #if os(tvOS)
-          .focusSection()
+        .focusSection()
 #endif
-          .navigationDestination(for: Route.self) { route in
-            RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
-          }
-      }
     }
   }
 
