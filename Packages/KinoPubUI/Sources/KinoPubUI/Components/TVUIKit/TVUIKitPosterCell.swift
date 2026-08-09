@@ -32,8 +32,6 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
   private var posterHeightConstraint: NSLayoutConstraint!
   private var progressFillWidth: NSLayoutConstraint!
 
-  public var contextMenuEntries: (() -> [MediaCardContextEntry])?
-
   public override init(frame: CGRect) {
     super.init(frame: frame)
     setUp()
@@ -130,8 +128,6 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
       captionLabel.trailingAnchor.constraint(equalTo: posterView.trailingAnchor),
       captionLabel.heightAnchor.constraint(lessThanOrEqualToConstant: TVUIKitPosterMetrics.captionHeight)
     ])
-
-    contentView.addInteraction(UIContextMenuInteraction(delegate: self))
   }
 
   public func configure(card: MediaCard, size: CGSize) {
@@ -211,7 +207,6 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
     bottomInfoBlur?.isHidden = true
     watchedGlyph.isHidden = true
     captionLabel.alpha = 0
-    contextMenuEntries = nil
     resetStaleFocusAppearance()
   }
 
@@ -248,17 +243,5 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
   }
 
   public override var canBecomeFocused: Bool { true }
-}
-
-extension TVUIKitPosterCell: UIContextMenuInteractionDelegate {
-  public func contextMenuInteraction(
-    _ interaction: UIContextMenuInteraction,
-    configurationForMenuAtLocation location: CGPoint
-  ) -> UIContextMenuConfiguration? {
-    guard let entries = contextMenuEntries?(), !entries.isEmpty else { return nil }
-    return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
-      TVUIKitContextMenuBuilder.menu(from: entries)
-    }
-  }
 }
 #endif

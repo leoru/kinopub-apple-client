@@ -30,8 +30,6 @@ public final class TVUIKitContinueWatchingCell: UICollectionViewCell {
   private var progressFillWidth: NSLayoutConstraint!
   private var tileWidth: CGFloat = 357
 
-  public var contextMenuEntries: (() -> [MediaCardContextEntry])?
-
   public override init(frame: CGRect) {
     super.init(frame: frame)
     setUp()
@@ -125,8 +123,6 @@ public final class TVUIKitContinueWatchingCell: UICollectionViewCell {
       titleLabel.trailingAnchor.constraint(equalTo: card.contentView.trailingAnchor, constant: -16),
       titleLabel.bottomAnchor.constraint(equalTo: metaLabel.topAnchor, constant: -4)
     ])
-
-    contentView.addInteraction(UIContextMenuInteraction(delegate: self))
   }
 
   public override func layoutSubviews() {
@@ -194,21 +190,8 @@ public final class TVUIKitContinueWatchingCell: UICollectionViewCell {
     titleLabel.text = nil
     metaLabel.text = nil
     progressTrack.isHidden = true
-    contextMenuEntries = nil
   }
 
   public override var canBecomeFocused: Bool { true }
-}
-
-extension TVUIKitContinueWatchingCell: UIContextMenuInteractionDelegate {
-  public func contextMenuInteraction(
-    _ interaction: UIContextMenuInteraction,
-    configurationForMenuAtLocation location: CGPoint
-  ) -> UIContextMenuConfiguration? {
-    guard let entries = contextMenuEntries?(), !entries.isEmpty else { return nil }
-    return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
-      TVUIKitContextMenuBuilder.menu(from: entries)
-    }
-  }
 }
 #endif

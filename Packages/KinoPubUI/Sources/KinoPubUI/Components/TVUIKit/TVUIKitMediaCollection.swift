@@ -195,7 +195,6 @@ extension TVUIKitMediaCollectionController: UICollectionViewDataSource, UICollec
         for: indexPath
       ) as! TVUIKitContinueWatchingCell
       cell.configure(card: card, size: tileSize)
-      cell.contextMenuEntries = { [weak self] in self?.contextMenuProvider?(card) ?? [] }
       return cell
     }
 
@@ -204,7 +203,6 @@ extension TVUIKitMediaCollectionController: UICollectionViewDataSource, UICollec
       for: indexPath
     ) as! TVUIKitPosterCell
     cell.configure(card: card, size: tileSize)
-    cell.contextMenuEntries = { [weak self] in self?.contextMenuProvider?(card) ?? [] }
     return cell
   }
 
@@ -218,6 +216,51 @@ extension TVUIKitMediaCollectionController: UICollectionViewDataSource, UICollec
     forItemAt indexPath: IndexPath
   ) {
     onNearEnd?(cards[indexPath.item])
+  }
+
+  // MARK: - Context menu
+  //
+  // tvOS routes the long-press-Select gesture to the *focused* view and up its
+  // responder chain, so an interaction installed on a cell's `contentView` (a
+  // descendant of the focus item) never fires. The collection view's own delegate
+  // hook is the path UIKit wires to the focus engine — and on tvOS only the
+  // `…ForItemsAt indexPaths:` variant exists; the single-indexPath one is
+  // `API_UNAVAILABLE(tvos)`.
+
+  public func collectionView(
+    _ collectionView: UICollectionView,
+    contextMenuConfigurationForItemsAt indexPaths: [IndexPath],
+    point: CGPoint
+  ) -> UIContextMenuConfiguration? {
+    guard let indexPath = indexPaths.first,
+          cards.indices.contains(indexPath.item),
+          let entries = contextMenuProvider?(cards[indexPath.item]),
+          !entries.isEmpty
+    else { return nil }
+
+    return UIContextMenuConfiguration(identifier: indexPath as NSIndexPath, previewProvider: nil) { _ in
+      TVUIKitContextMenuBuilder.menu(from: entries)
+    }
+  }
+
+  public func collectionView(
+    _ collectionView: UICollectionView,
+    willEndContextMenuInteractionWith configuration: UIContextMenuConfiguration,
+    animator: (any UIContextMenuInteractionAnimating)?
+  ) {
+    // Same TVPosterView stranding as after a focus change — the lifted poster can
+    // stay enlarged once the menu's preview hands the cell back.
+    let reset: () -> Void = { [weak self] in
+      guard let self else { return }
+      collectionView.visibleCells
+        .compactMap { $0 as? TVUIKitPosterCell }
+        .forEach { $0.resetStaleFocusAppearance() }
+    }
+    if let animator {
+      animator.addCompletion(reset)
+    } else {
+      reset()
+    }
   }
 }
 #endif
