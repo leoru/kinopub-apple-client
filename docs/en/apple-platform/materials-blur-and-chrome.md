@@ -31,6 +31,13 @@
 - **Private `CAFilter` `variableBlur`** (thin in-repo helper) for Music/Journal-style progressive blur
   over **static** hero / banner art. Metal `ProgressiveBlur` path removed.
 - **tvOS + macOS:** no variable blur over **video**. **iOS + iPadOS:** blur OK over video too.
+- **A blur that has to follow a scroll is a scrubbed material, not `.blur(radius:)`.** `.blur`
+  filters an already-rendered frame; a `UIVisualEffectView` driven by a **paused**
+  `UIViewPropertyAnimator` (`startAnimation()` → `pauseAnimation()`, then set `fractionComplete`)
+  is the sanctioned way to interpolate a material, and `alpha` on an effect view is not a
+  substitute. tvOS detail hero only — on iOS the nav bar's own material already does this job, and
+  on macOS a scrubbed blur fights the fixed-toolbar convention. See
+  [detail-page-choreography](../plans/detail-page-choreography.md).
 - Hero Play CTAs are **not** `.glassProminent` — white pill + translucent circles.
 - **`backgroundExtensionEffect` as shell chrome is banned** (Home / page / under
   `TabView(.sidebarAdaptable)`). Sidebars **displace** content — there is nothing to bleed under.

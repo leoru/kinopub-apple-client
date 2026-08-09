@@ -16,6 +16,8 @@ How agents approach work in this repo. Authority and preservation rules live in
 5. **Verify by risk** — see tiers below. Be honest when verification is deferred.
 6. **Docs** — update the feature doc checklist / validation notes after acceptance. Touch README
    only for macro-stage or public-capability changes. Append notable facts to `CHANGELOG.md`.
+   **Update the plan itself as you go** — check boxes when landed, dated notes when reverted. A
+   plan mid-execution that isn't updated is exactly as useless as no plan.
 
 ## Borrow before build
 

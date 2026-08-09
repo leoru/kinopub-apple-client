@@ -226,14 +226,21 @@ struct MediaItemHeroBackdrop: View {
   @ObservedObject var trailer: TrailerPreviewModel
   var isHeroOnScreen: Bool
 
-  /// 0 = hero sharp; 1 = below-fold wash. Focus flips this; Phase 2 may also scrub via scroll.
-  var washProgress: CGFloat = 0
-
+  /// 0 = hero sharp; 1 = below-fold wash. **Section state, not scroll offset.**
+  ///
+  /// This used to be scrubbed per-frame from the scroll offset (`offset / 600`), which
+  /// made the blur a function of how far the page happened to scroll — and the page only
+  /// scrolls as far as it needs to reveal the next focusable thing. A tall season rail
+  /// forced a long scroll and a full wash; a short ratings row (a movie's first section)
+  /// forced a short one and almost none. That is why the blur looked "tied to episodes"
+  /// and why it arrived in visible steps. It also re-ran this whole page's body on every
+  /// scroll frame, re-rendering every shelf underneath.
+  ///
+  /// Now it is binary and driven by whether focus is in the hero section, animated once
+  /// by the `.animation(value: isHeroOnScreen)` below — one clock, one transition, the
+  /// same state whichever section you came from and whatever the content happens to be.
   private var effectiveWash: CGFloat {
-    // While hero owns focus, keep the sharp still regardless of leftover scroll
-    // offset (Up lands on Play before the scroll settles).
-    if isHeroOnScreen { return 0 }
-    return max(washProgress, 1)
+    isHeroOnScreen ? 0 : 1
   }
 
   var body: some View {
@@ -263,12 +270,12 @@ struct MediaItemHeroBackdrop: View {
         .opacity(1 - effectiveWash)
 
       bottomScrim
+      titleScrim
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .clipped()
     .ignoresSafeArea()
     .animation(.easeOut(duration: 0.35), value: isHeroOnScreen)
-    .animation(.easeOut(duration: 0.35), value: washProgress)
   }
 
   /// Scale is derived from the real container so a portrait buffer still covers
@@ -328,7 +335,10 @@ struct MediaItemHeroBackdrop: View {
   }
 
   /// Soft shade under the title and buttons. Stronger under the material wash so
-  /// section text sits cleanly.
+  /// section text sits cleanly. Full width: unlike a narrow single-column hero, our
+  /// tvOS/macOS text runs the whole bottom edge (title + actions on the leading side,
+  /// synopsis / credits / metadata filling the trailing side — `MediaItemHeroView.content`),
+  /// so the right column needs the same floor as the left, not a lighter one.
   private var bottomScrim: some View {
     let bottom = 0.35 + (0.25 * effectiveWash)
     return LinearGradient(stops: [
@@ -337,6 +347,26 @@ struct MediaItemHeroBackdrop: View {
       .init(color: .black.opacity(0.3 + 0.1 * effectiveWash), location: 0.38),
       .init(color: .black.opacity(bottom), location: 1)
     ], startPoint: .top, endPoint: .bottom)
+  }
+
+  /// Extra contrast anchored where the title actually sits (bottom-leading — Rivulet's
+  /// diagonal scrim, adapted). Their version can fade all the way to clear at the
+  /// opposite corner because their text is a single narrow left-hand column; ours runs
+  /// full width, so `bottomScrim` above still has to hold the floor for the trailing
+  /// (right) side on its own. This only ADDS weight over the title block itself — the
+  /// largest, least-shadowed element (a title-logo image has no `heroTextShadow()` of
+  /// its own) — and is gone by the time it reaches the trailing edge.
+  /// Values are Rivulet's, measured rather than guessed: their `ScrimGradientView` is
+  /// `0.92 → 0.55 → clear` at stops `0 / 0.45 / 1`, bottom-leading → top-trailing. Ours
+  /// shipped at `0.5 → 0.18 → clear` on `0 / 0.5 / 1` — roughly **half** the darkness at
+  /// the anchor and a **third** at the midpoint, which over a bright backdrop reads as
+  /// no scrim at all. It was never missing, just far too weak to see. Matched now.
+  private var titleScrim: some View {
+    LinearGradient(stops: [
+      .init(color: .black.opacity(min(1, 0.92 + 0.08 * effectiveWash)), location: 0),
+      .init(color: .black.opacity(0.55), location: 0.45),
+      .init(color: .clear, location: 1)
+    ], startPoint: .bottomLeading, endPoint: .topTrailing)
   }
 
   /// Portrait small, rasterised once. Scale is computed at layout time to cover
@@ -392,8 +422,6 @@ struct MediaItemHeroView: View {
   /// Drives trailer pause / the blurred still on the pinned backdrop. The hero never
   /// leaves the hierarchy on scroll, so this is measured rather than `onDisappear`.
   @Binding var isHeroOnScreen: Bool
-  /// 0…1 scroll wash (tvOS). Chrome fades faster than the backdrop material (Rivulet).
-  var washProgress: CGFloat = 0
   var linkProvider: NavigationLinkProvider
   var isWatched: Bool
   var isBookmarked: Bool
@@ -446,12 +474,16 @@ struct MediaItemHeroView: View {
     !isWatched
   }
 
-  /// Fade title/actions with scroll for polish — never hard-zero. Opacity 0 on the
+  /// Fade title/actions when focus leaves the hero — never hard-zero. Opacity 0 on the
   /// whole hero dropped Play/More from the focus graph, so Up from seasons could
   /// not return (Rivulet keeps a focusable return path; we keep the buttons alive).
+  ///
+  /// Keyed to the same section state as `MediaItemHeroBackdrop.effectiveWash`, so chrome
+  /// and backdrop can never disagree — they previously did, because this read the raw
+  /// per-frame scroll value while the backdrop read a guarded one.
   private var chromeAlpha: CGFloat {
 #if os(tvOS)
-    max(0.35, 1 - min(1, washProgress * 2.6))
+    isHeroOnScreen ? 1 : 0.35
 #else
     1
 #endif
@@ -777,13 +809,21 @@ struct MediaItemHeroView: View {
     }
   }
 
-  /// Heads the written column: the one aggregate score, when and how long, then the
-  /// capability chips. The badge is the same component the posters wear — a title
+  /// Heads the written column: the score, when and how long, then the capability
+  /// chips. Whatever is drawn here is the same component the posters wear — a title
   /// scores the same wherever it is shown, so it should not be spelled two ways.
   private var metadata: some View {
     HStack(spacing: Self.metaSpacing) {
-      if let rating = Rating(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating) {
-        RatingBadgeView(rating: rating)
+      if FeatureFlags.combinedRatingEnabled {
+        if let rating = Rating(imdb: mediaItem.imdbRating,
+                               imdbVotes: mediaItem.imdbVotes,
+                               kinopoisk: mediaItem.kinopoiskRating,
+                               kinopoiskVotes: mediaItem.kinopoiskVotes) {
+          RatingBadgeView(rating: rating)
+        }
+      } else {
+        // No aggregate: each score keeps its own logo rather than becoming one number.
+        MediaScoresView(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating)
       }
 
       let releaseLine = mediaItem.releaseLine
@@ -927,7 +967,7 @@ struct MediaItemHeroView: View {
         .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
     }
     .mediaActionCircleStyle()
-    .focused($focus, equals: .heroOther)
+    .focused($focus, equals: .bookmark)
     .accessibilityLabel("Bookmarks")
     .alert("New Folder", isPresented: $showNewFolderAlert) {
       TextField("Folder name", text: $newFolderName)
@@ -952,7 +992,7 @@ struct MediaItemHeroView: View {
         .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
     }
     .mediaActionCircleStyle()
-    .focused($focus, equals: .heroOther)
+    .focused($focus, equals: .watchlist)
     .accessibilityLabel(isInWatchlist ? "Remove from Watchlist" : "Add to Watchlist")
   }
 
@@ -977,14 +1017,14 @@ struct MediaItemHeroView: View {
         watchedGlyph
       }
       .mediaActionCircleStyle()
-      .focused($focus, equals: .heroOther)
+      .focused($focus, equals: .watched)
       .accessibilityLabel("Mark as Watched")
     } else {
       Button(action: onWatchedToggle) {
         watchedGlyph
       }
       .mediaActionCircleStyle()
-      .focused($focus, equals: .heroOther)
+      .focused($focus, equals: .watched)
       .accessibilityLabel("Mark as Watched")
     }
   }
@@ -1003,7 +1043,7 @@ struct MediaItemHeroView: View {
         .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
     }
     .mediaActionCircleStyle()
-    .focused($focus, equals: .heroOther)
+    .focused($focus, equals: .trailer)
     .accessibilityLabel("Trailer")
   }
 
@@ -1024,7 +1064,7 @@ struct MediaItemHeroView: View {
         .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .bold))
     }
     .mediaActionCircleStyle()
-    .focused($focus, equals: .heroOther)
+    .focused($focus, equals: .more)
     .accessibilityLabel("More")
   }
 
@@ -1226,10 +1266,14 @@ struct MediaItemHeroView: View {
 
 private extension View {
 
-  /// Legibility that costs the picture nothing: the shade sits where the letters are
-  /// instead of over the whole frame, so the trailer stays readable behind the text.
+  /// Was a per-glyph drop shadow; removed 2026-08-09 (real cost, `.shadow` forces an
+  /// offscreen pass on every focus/wash animation tick this text rides). Legibility now
+  /// has to come from contrast — `bottomScrim` / `titleScrim` under the text — rather
+  /// than a shadow chasing the letters. Placeholder kept so call sites don't need
+  /// touching again once that contrast pass lands; see
+  /// `docs/en/plans/detail-page-choreography.md`.
   func heroTextShadow() -> some View {
-    shadow(color: .black.opacity(0.8), radius: 22, y: 6)
+    self
   }
 }
 

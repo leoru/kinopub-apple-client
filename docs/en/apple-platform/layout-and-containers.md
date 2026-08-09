@@ -16,6 +16,11 @@
 ## Project decisions
 
 - Poster and landscape cards share one sizing model via `ShelfMetrics` / proportional columns (D2).
+- `ShelfMetrics` reads the **container** width, never the screen — but on tvOS the column count
+  comes from a target card width (`tvCardWidth` / `tvLandscapeCardWidth`), not from the shared
+  width table. Width alone cannot classify a canvas: 1500pt is a Mac window wanting eight columns
+  and also the tvOS Library grid beside its 420pt sidebar, still read from a sofa. A narrower TV
+  container gets fewer cards, never smaller ones.
 - Home banner: contained 16:9 cards (~2 columns on wide), full width on phone; view-aligned snap.
 - Detail: one vertical `ScrollView` (hero + content). The old offset slideshow / focus-bridge detail
   model is **superseded**.

@@ -419,7 +419,10 @@ public struct MediaCardView: View {
       ?? MediaCardDisplayPreferences.defaultRatingPlacement
   }
   private var ratingSource: MediaCardRatingSource {
-    MediaCardRatingSource(rawValue: ratingSourceRaw)
+    // With the aggregate off there is no source picker in Settings either, so every
+    // card shows whatever it has, each score under its own logo.
+    guard RatingFeature.combinedEnabled else { return .combined }
+    return MediaCardRatingSource(rawValue: ratingSourceRaw)
       ?? MediaCardDisplayPreferences.defaultRatingSource
   }
   private var capabilityPlacement: MediaCardChromePlacement {
@@ -506,7 +509,11 @@ public struct MediaCardView: View {
   }
 
   private var showsCaptionScores: Bool {
-    ratingPlacement == .inCaption && (captionImdb != nil || captionKinopoisk != nil)
+    guard captionImdb != nil || captionKinopoisk != nil else { return false }
+    // Labelled scores are the only rating a card has while the aggregate is off —
+    // they are not the "Under title" branch of a setting that is no longer shown.
+    guard RatingFeature.combinedEnabled else { return true }
+    return ratingPlacement == .inCaption
   }
 
   private var showsPlayChrome: Bool {
@@ -686,7 +693,7 @@ public struct MediaCardView: View {
   private var posterOverlays: some View {
     ZStack(alignment: .topLeading) {
       Color.clear
-      if ratingPlacement == .onArtwork, let rating = activeRating {
+      if RatingFeature.combinedEnabled, ratingPlacement == .onArtwork, let rating = activeRating {
         RatingBadgeView(rating: rating)
           .padding(3)
           .accessibilityLabel(Text("Rating \(rating.formatted)"))
@@ -697,7 +704,11 @@ public struct MediaCardView: View {
         Image(systemName: "checkmark.circle.fill")
           .font(.caption.weight(.bold))
           .foregroundStyle(.white)
+#if !os(tvOS)
+          // Per-card shadow, rendered on every visible watched glyph in a shelf —
+          // measurable tvOS shelf-scroll cost for a barely-visible glow. Off there.
           .shadow(radius: 4)
+#endif
           .padding(3)
       }
     }
@@ -717,7 +728,9 @@ public struct MediaCardView: View {
         Image(systemName: "bookmark.fill")
           .font(.caption.weight(.semibold))
           .foregroundStyle(.white)
+#if !os(tvOS)
           .shadow(color: .black.opacity(0.55), radius: 4, y: 1)
+#endif
           .accessibilityLabel(Text("Bookmarked"))
       }
     }
@@ -745,7 +758,9 @@ public struct MediaCardView: View {
       .padding(.vertical, 3)
       .background(Color.KinoPub.accent, in: Capsule())
       .foregroundStyle(.black)
+#if !os(tvOS)
       .shadow(radius: 4)
+#endif
   }
 
   private var stillImage: some View {

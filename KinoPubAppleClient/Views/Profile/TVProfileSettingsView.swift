@@ -106,6 +106,8 @@ struct TVProfileSettingsView: View {
       StreamSurveyView()
     case .typeStyles:
       SystemTypeStylesCatalogView()
+    case .tvUIKitGallery:
+      TVUIKitComponentGalleryView()
 #endif
     }
   }
@@ -229,6 +231,14 @@ struct TVProfileSettingsView: View {
         path.append(SettingsRoute.typeStyles)
       } label: {
         SettingsPillLabel(title: "Type Styles", showsChevron: true)
+      }
+      .buttonStyle(SettingsPillButtonStyle())
+      .focused($focusedItem, equals: .diagnostics)
+
+      Button {
+        path.append(SettingsRoute.tvUIKitGallery)
+      } label: {
+        SettingsPillLabel(title: "TVUIKit Gallery", showsChevron: true)
       }
       .buttonStyle(SettingsPillButtonStyle())
       .focused($focusedItem, equals: .diagnostics)
@@ -378,6 +388,7 @@ private enum SettingsRoute: Hashable {
 #if DEBUG
   case streamSurvey
   case typeStyles
+  case tvUIKitGallery
 #endif
 }
 

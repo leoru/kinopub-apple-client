@@ -160,13 +160,15 @@ public struct HomeBannerCardView: View {
     .aspectRatio(CardAspect.poster.ratio, contentMode: .fit)
     .frame(height: height)
     .overlay(alignment: .topLeading) {
-      if let rating = card.rating {
+      if RatingFeature.combinedEnabled, let rating = card.rating {
         RatingBadgeView(rating: rating)
           .padding(4)
       }
     }
     .clipShape(RoundedRectangle(cornerRadius: Self.posterCornerRadius, style: .continuous))
+#if !os(tvOS)
     .shadow(color: .black.opacity(0.45), radius: 10, y: 4)
+#endif
   }
 
 #if os(tvOS)

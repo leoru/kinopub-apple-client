@@ -155,7 +155,9 @@ private struct MediaActionPillChrome<Content: View>: View {
           .opacity(showsProminentChrome ? 0 : 1)
       }
       .clipShape(Capsule(style: .continuous))
+#if !os(tvOS)
       .shadow(color: .black.opacity(showsProminentChrome ? 0.35 : 0.2), radius: 8, y: 4)
+#endif
       .scaleEffect(scale)
       .animation(.spring(response: 0.25, dampingFraction: 0.8), value: showsProminentChrome)
       .animation(.easeOut(duration: 0.15), value: isHovered)
@@ -212,7 +214,9 @@ private struct MediaActionCircleChrome<Content: View>: View {
           .opacity(showsProminentChrome ? 0 : 1)
       }
       .clipShape(Circle())
+#if !os(tvOS)
       .shadow(color: .black.opacity(0.25), radius: 8, y: 2)
+#endif
       .scaleEffect(scale)
       .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isFocused)
       .animation(.easeOut(duration: 0.15), value: isHovered)

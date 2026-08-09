@@ -101,10 +101,6 @@
 		CCA100012C6F000100000C05 /* BookmarkFolderTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C06 /* BookmarkFolderTabView.swift */; };
 		CCA100012C6F000100000C07 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C08 /* LibraryView.swift */; };
 		CCA100012C6F000100000C09 /* PersonalLibraryCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C0A /* PersonalLibraryCatalog.swift */; };
-		CCA1000131000002 /* LibrarySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000001 /* LibrarySection.swift */; };
-		CCA1000131000004 /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000003 /* LibraryModel.swift */; };
-		CCA1000131000006 /* LibrarySectionCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000005 /* LibrarySectionCatalog.swift */; };
-		CCA1000131000008 /* LibraryShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000007 /* LibraryShellView.swift */; };
 		CCA100012D0001 /* HLSManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0002 /* HLSManifest.swift */; };
 		CCA100012D0003 /* StreamSurvey.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0004 /* StreamSurvey.swift */; };
 		CCA100012D0005 /* StreamSurveyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012D0006 /* StreamSurveyView.swift */; };
@@ -113,6 +109,11 @@
 		CCA100012E1002 /* UILabRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1001 /* UILabRoot.swift */; };
 		CCA100012E1005 /* UILabSearchToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1004 /* UILabSearchToolbar.swift */; };
 		CCA100012E1007 /* SystemTypeStylesCatalogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1006 /* SystemTypeStylesCatalogView.swift */; };
+		CCA100012E1009 /* TVUIKitComponentGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1008 /* TVUIKitComponentGalleryView.swift */; };
+		CCA1000131000002 /* LibrarySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000001 /* LibrarySection.swift */; };
+		CCA1000131000004 /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000003 /* LibraryModel.swift */; };
+		CCA1000131000006 /* LibrarySectionCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000005 /* LibrarySectionCatalog.swift */; };
+		CCA1000131000008 /* LibraryShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000007 /* LibraryShellView.swift */; };
 		CCA200012D001001 /* KinoPubMetadata in Frameworks */ = {isa = PBXBuildFile; productRef = CCA200012D001002 /* KinoPubMetadata */; };
 		CCA200012D001010 /* DataSourcesAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA200012D001011 /* DataSourcesAttributionView.swift */; };
 		CCC70B8A2A7FC15F00274E5F /* BookmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC70B892A7FC15F00274E5F /* BookmarkView.swift */; };
@@ -264,10 +265,6 @@
 		CCA100012C6F000100000C06 /* BookmarkFolderTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkFolderTabView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C08 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C0A /* PersonalLibraryCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalLibraryCatalog.swift; sourceTree = "<group>"; };
-		CCA1000131000001 /* LibrarySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySection.swift; sourceTree = "<group>"; };
-		CCA1000131000003 /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
-		CCA1000131000005 /* LibrarySectionCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySectionCatalog.swift; sourceTree = "<group>"; };
-		CCA1000131000007 /* LibraryShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryShellView.swift; sourceTree = "<group>"; };
 		CCA100012D0002 /* HLSManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSManifest.swift; sourceTree = "<group>"; };
 		CCA100012D0004 /* StreamSurvey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurvey.swift; sourceTree = "<group>"; };
 		CCA100012D0006 /* StreamSurveyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSurveyView.swift; sourceTree = "<group>"; };
@@ -276,6 +273,11 @@
 		CCA100012E1001 /* UILabRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UILabRoot.swift; sourceTree = "<group>"; };
 		CCA100012E1004 /* UILabSearchToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UILabSearchToolbar.swift; sourceTree = "<group>"; };
 		CCA100012E1006 /* SystemTypeStylesCatalogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemTypeStylesCatalogView.swift; sourceTree = "<group>"; };
+		CCA100012E1008 /* TVUIKitComponentGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVUIKitComponentGalleryView.swift; sourceTree = "<group>"; };
+		CCA1000131000001 /* LibrarySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySection.swift; sourceTree = "<group>"; };
+		CCA1000131000003 /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
+		CCA1000131000005 /* LibrarySectionCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySectionCatalog.swift; sourceTree = "<group>"; };
+		CCA1000131000007 /* LibraryShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryShellView.swift; sourceTree = "<group>"; };
 		CCA200012D001003 /* KinoPubMetadata */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = KinoPubMetadata; path = Packages/KinoPubMetadata; sourceTree = "<group>"; };
 		CCA200012D001011 /* DataSourcesAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSourcesAttributionView.swift; sourceTree = "<group>"; };
 		CCC70B892A7FC15F00274E5F /* BookmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkView.swift; sourceTree = "<group>"; };
@@ -344,7 +346,6 @@
 			children = (
 				AAA67574E8F59DCCBF4B88BF /* BookmarkMembershipStore.swift */,
 			);
-			name = Bookmarks;
 			path = Bookmarks;
 			sourceTree = "<group>";
 		};
@@ -373,7 +374,6 @@
 				A10A0594FE3A3EF35AA32EDD /* CollectionDetailModel.swift */,
 				A5945A0BAD187210B5696B83 /* CollectionDetailView.swift */,
 			);
-			name = Collections;
 			path = Collections;
 			sourceTree = "<group>";
 		};
@@ -662,16 +662,9 @@
 				CCA100012E1001 /* UILabRoot.swift */,
 				CCA100012E1004 /* UILabSearchToolbar.swift */,
 				CCA100012E1006 /* SystemTypeStylesCatalogView.swift */,
+				CCA100012E1008 /* TVUIKitComponentGalleryView.swift */,
 			);
 			path = UILab;
-			sourceTree = "<group>";
-		};
-		CCA5023B2AF24FB400B18283 /* macOS */ = {
-			isa = PBXGroup;
-			children = (
-				CCF2ABB02AED37F2000448A8 /* Settings */,
-			);
-			path = macOS;
 			sourceTree = "<group>";
 		};
 		CCA1000131000010 /* Library */ = {
@@ -683,6 +676,14 @@
 				CCA1000131000007 /* LibraryShellView.swift */,
 			);
 			path = Library;
+			sourceTree = "<group>";
+		};
+		CCA5023B2AF24FB400B18283 /* macOS */ = {
+			isa = PBXGroup;
+			children = (
+				CCF2ABB02AED37F2000448A8 /* Settings */,
+			);
+			path = macOS;
 			sourceTree = "<group>";
 		};
 		CCC70B862A7FBF5300274E5F /* List */ = {
@@ -998,7 +999,7 @@
 			packageReferences = (
 				CCF388332A71C83500242581 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				CC7FCE922A730DA400DFC0A9 /* XCRemoteSwiftPackageReference "PopupView" */,
-				CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */,
+				CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */,
 			);
 			productRefGroup = CC88E1E22A6586E600E9387F /* Products */;
 			projectDirPath = "";
@@ -1064,6 +1065,7 @@
 				CCA100012E1002 /* UILabRoot.swift in Sources */,
 				CCA100012E1005 /* UILabSearchToolbar.swift in Sources */,
 				CCA100012E1007 /* SystemTypeStylesCatalogView.swift in Sources */,
+				CCA100012E1009 /* TVUIKitComponentGalleryView.swift in Sources */,
 				CCA100012D0010 /* TVProfileSettingsView.swift in Sources */,
 				CCA200012D001010 /* DataSourcesAttributionView.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* ProfileView.swift in Sources */,
@@ -1302,8 +1304,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
-				CODE_SIGN_ENTITLEMENTS = KinoPubAppleClient/Resources/KinoPubAppleClient-Debug.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "KinoPubAppleClient/Resources/KinoPubAppleClient-Debug.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -1351,6 +1354,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = KinoPubAppleClient/Resources/KinoPubAppleClient.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -1424,7 +1428,7 @@
 				minimumVersion = 2.6.0;
 			};
 		};
-		CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */ = {
+		CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ashleymills/Reachability.swift";
 			requirement = {
@@ -1466,7 +1470,7 @@
 		};
 		CC8202FF2A8657BA0041079A /* Reachability */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability.swift" */;
+			package = CC8202FE2A8657BA0041079A /* XCRemoteSwiftPackageReference "Reachability" */;
 			productName = Reachability;
 		};
 		CCA200012D001002 /* KinoPubMetadata */ = {

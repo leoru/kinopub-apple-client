@@ -262,6 +262,9 @@ struct TabsNavigationView: View {
       }
     }
     .tabViewStyle(.tabBarOnly)
+    // Always visible for now (2026-08-09) — the system's scroll-driven minimize was
+    // reading as random fade in/out. Revisit once detail-page choreography settles.
+    .tabBarMinimizeBehavior(.never)
   }
 
   /// iPhone bottom bar — content tabs + pinned trailing Search (`Tab(role: .search)`).
@@ -294,6 +297,8 @@ struct TabsNavigationView: View {
         Label("Search", systemImage: "magnifyingglass")
       }
     }
+    // Always visible for now (2026-08-09) — see `padTabBar`.
+    .tabBarMinimizeBehavior(.never)
   }
 
   /// Glyph-only tab. The title still ships as the accessibility label — dropping the

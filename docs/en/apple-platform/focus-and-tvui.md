@@ -7,8 +7,30 @@
 - System focus highlight attaches to the first `Image` in a button label by default. `AsyncImage`
   alone often **does not** get it — add explicit `.hoverEffect(.highlight)` (and usually
   `.buttonStyle(.borderless)` for poster lockups).
+- **For a focusable *container* on tvOS, reach for `.buttonStyle(.card)` first and write no focus
+  code at all.** Apple's own `DestinationVideo` sample does exactly
+  `var buttonStyle: some PrimitiveButtonStyle { #if os(tvOS) .card #else .plain #endif }` on every
+  card in the app, applies it once to the enclosing stack, and fences `.hoverEffect()` to
+  iOS/visionOS. Focus scale, highlight, lift and parallax are system-owned. Everything focusable
+  there is a `Button` or `NavigationLink` — including things that are really just focus stops.
+- **Corollary, learned the hard way 2026-08-09 (twice): `.hoverEffect(.highlight)` is for controls
+  whose label *is* the image.** On a control labelled `icon + text` (rating tiles, vote pills) it
+  does the literal thing — scales and shadows the icon alone while the container sits still. The
+  hand-rolled `scaleEffect` + `brightness` replacement that followed was functionally right but read
+  as non-native; `.card` is the answer, and it makes both the custom style and the row's manual
+  focus padding unnecessary. Do not stack `hoverEffect` / `scaleEffect` / `isFocused` branches on
+  top of `.card`.
 - One focus owner per interactive zone. Prefer layout-driven focus (`focusSection`, `defaultFocus`)
   over hybrid bridges. Avoid `.defaultFocus(..., .userInitiated)` unless you understand the reset.
+- **Never bind two sibling views to the same `@FocusState` equals-value.** `.focused($x, equals:
+  .same)` on multiple views is ambiguous — the engine can't resolve which one is actually focused.
+  Found on-device 2026-08-09 costing a real regression: six `MediaItemHeroView` buttons shared one
+  case (`heroOther`), and focus froze dead on Play — not just "couldn't reach that group," genuinely
+  stuck, Right and Down both no-ops, on movies with full metadata as much as sparse ones. Menu even
+  closed the app instead of popping, because the confused focus state broke the NavigationStack's
+  back-context too. One case per focusable view. If it's flagged as a "someday" cleanup item
+  somewhere, fix it on sight instead — this one sat in a checklist and cost a misdiagnosed detour
+  before anyone traced it. See [detail-page-choreography](../plans/detail-page-choreography.md).
 - Simulator focus/remote is provisional; Device Hub hosts the window — there is no separate
   Simulator.app on current Xcode. Escape ≠ Menu.
 
@@ -65,6 +87,18 @@ Where it is genuinely worth the bridge:
 - Detail below-fold wash: section focus forces full wash; scroll offset scrubs
   `.regularMaterial` over the poster wash and fades hero chrome faster (`1 - min(1, p·2.6)`).
   No vertical `.viewAligned` on the detail `ScrollView` (it fought section focus).
+- **A screen must never be able to lose its way out.** Three rules, from a one-way trap observed in
+  the reference app (empty below-fold + hero already made non-focusable = no Up, no exit):
+  1. Do not enter a "scrolled past the hero" state until at least one focusable row exists below.
+  2. Do not drop the hero's focusability until focus has actually landed below it. Fading chrome is
+     not the same as removing it — `MediaItemHeroView.chromeAlpha` keeps a 0.35 floor precisely so
+     Play/More stay in the focus graph.
+  3. Empty and error states are **focusable sections with a Retry control**, never an empty list.
+     An empty list is a focus dead end on tvOS, not just a blank area.
+- Focus moves inside a hero must not scroll the page. Hero chrome belongs **outside** the scrolling
+  container; when it sits inside one, every focus change triggers scroll-to-visible and the page
+  jitters as the user moves between Play / Watched / More. See
+  [detail-page-choreography](../plans/detail-page-choreography.md).
 - Top Shelf is a **later platform-completeness** item — before advanced subtitles, after core catalog
   / shell work. **Needs validation** on entitlement / extension packaging when implemented.
 

@@ -1801,9 +1801,6 @@
         }
       }
     },
-    "EPISODE 99" : {
-
-    },
     "Facts" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3322,6 +3319,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Следующая серия"
+          }
+        }
+      }
+    },
+    "MediaItem_NotEnoughRatings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not enough ratings yet"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kol kas per mažai įvertinimų"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пока недостаточно оценок"
           }
         }
       }

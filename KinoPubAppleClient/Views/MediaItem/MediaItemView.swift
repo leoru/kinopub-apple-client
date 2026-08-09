@@ -12,11 +12,18 @@ import KinoPubBackend
 import KinoPubKit
 import KinoPubMetadata
 
-/// Focus targets owned by the hero. Play is separate so `defaultFocus` still lands
-/// on it; everything else shares `heroOther`.
+/// Focus targets owned by the hero. One case per button — SIX of them used to share
+/// `heroOther`, which is why tvOS focus froze dead on Play: with multiple sibling
+/// views bound to the same `@FocusState` equals-value, the engine has no way to
+/// resolve which one is actually focused, and directional moves in and out of the
+/// group (including Right into the row, and Down past it) simply stop resolving.
 enum MediaItemFocusTarget: Hashable {
   case play
-  case heroOther
+  case watchlist
+  case bookmark
+  case watched
+  case trailer
+  case more
   case plot
 }
 
@@ -31,9 +38,6 @@ struct MediaItemView: View {
   /// False once focus has left the hero — on tvOS fades the pinned wide still
   /// down to the blurred poster wash; on macOS also pauses the ambient trailer.
   @State private var isHeroOnScreen = true
-  /// Scroll-driven wash scrub (0 at hero rest → 1 below fold). Focus still forces
-  /// full wash via `isHeroOnScreen`; this intensifies the material as you scroll.
-  @State private var washProgress: CGFloat = 0
   @FocusState private var focus: MediaItemFocusTarget?
 #if os(macOS)
   /// The one-player rule (`PlaybackSession`) only covers the real film/trailer player.
@@ -78,9 +82,10 @@ struct MediaItemView: View {
 #else
       .ignoresSafeArea(edges: [.top, .horizontal])
 #endif
-#if os(iOS) || os(tvOS)
-      .toolbar(.hidden, for: .tabBar)
-#endif
+      // Tabs stay visible over the detail page for now (2026-08-09): the hide-on-enter
+      // here plus the system's own tab-bar minimize timing was reading as "tabs fade in
+      // and out in random places." Revisit properly later; until then, always-on beats
+      // unpredictable. See `docs/en/plans/detail-page-choreography.md`.
       // No navigation bar on this page, on either platform: the artwork runs to the
       // top edge and the title is already spelled out in 100pt over it. What stays is
       // the toolbar itself — Back and the overflow float over the picture.
@@ -121,11 +126,13 @@ struct MediaItemView: View {
         trailer.setActive(onScreen)
       }
 #if os(tvOS)
+      // Focus landing on ANY hero control means "the hero section is current" — the
+      // section is the unit, not the individual button. Sections below report the
+      // opposite through `leaveHero`. Those two writers are the whole wash state.
       .onChange(of: focus) { _, target in
         switch target {
-        case .play, .heroOther, .plot:
+        case .play, .watchlist, .bookmark, .watched, .trailer, .more, .plot:
           isHeroOnScreen = true
-          washProgress = 0
         case .none:
           break
         }
@@ -174,6 +181,17 @@ struct MediaItemView: View {
 
   /// Single native vertical scroll: hero + content in one focus graph. Layout-driven
   /// scrolling replaces the old offset slideshow and invisible focus bridges.
+  ///
+  /// Phase 1 of `docs/en/plans/detail-page-choreography.md` tried pulling the hero
+  /// out of this `ScrollView` into a fixed `ZStack` layer, to stop focus moves among
+  /// Play / Watched / Watchlist from nudging the scroll offset. **Reverted** —
+  /// on-device it broke tvOS spatial focus across the ZStack/ScrollView sibling
+  /// boundary outright: focus could not leave Play at all, Down only worked when a
+  /// season rail happened to be the first section, Up never worked, Menu closed the
+  /// app instead of popping, and the permanently-present hero visually collided with
+  /// section content that was never tall enough to fully cover it. See the plan for
+  /// the full account before attempting this again — it needs a design that doesn't
+  /// split hero and scroll into ZStack siblings.
   private var scrollDetails: some View {
     ScrollView(.vertical) {
       VStack(alignment: .leading, spacing: MediaItemLayout.sectionSpacing) {
@@ -181,7 +199,6 @@ struct MediaItemView: View {
                           focus: $focus,
                           trailer: trailer,
                           isHeroOnScreen: $isHeroOnScreen,
-                          washProgress: washProgress,
                           linkProvider: itemModel.linkProvider,
                           isWatched: itemModel.isWatched,
                           isBookmarked: itemModel.isBookmarked,
@@ -208,20 +225,15 @@ struct MediaItemView: View {
       .padding(.bottom, MediaItemLayout.bottomPadding)
     }
     .coordinateSpace(name: MediaItemLayout.scrollSpace)
-#if os(tvOS)
-    // No `.viewAligned` on the vertical detail scroll — it fought section focus
-    // and pinned a full-viewport hero so the info panel never settled on screen.
-    // Home banners keep viewAligned on their own horizontal rails.
-    .onScrollGeometryChange(for: CGFloat.self) { geo in
-      geo.contentOffset.y + geo.contentInsets.top
-    } action: { _, offset in
-      // Rivulet uses ~600pt reserve; map into 0…1 for material scrub.
-      let progress = min(max(offset / Self.washScrollDistance, 0), 1)
-      if abs(progress - washProgress) > 0.01 {
-        washProgress = progress
-      }
-    }
-#endif
+    // No `.viewAligned` on the vertical detail scroll — it fought section focus and
+    // pinned a full-viewport hero so the info panel never settled on screen. Home
+    // banners keep viewAligned on their own horizontal rails.
+    //
+    // No `onScrollGeometryChange` either, deliberately: driving the wash from scroll
+    // offset re-ran this body on every scroll frame, which re-rendered every shelf
+    // below — including each `TVUIKitMediaCollection`'s `updateUIViewController`. The
+    // wash is section state now (`isHeroOnScreen`), so nothing here needs per-frame
+    // work. See `docs/en/plans/detail-page-choreography.md`.
   }
 
   /// Fired when any below-hero section takes focus — flips the backdrop wash.
@@ -229,10 +241,58 @@ struct MediaItemView: View {
     { isHeroOnScreen = false }
   }
 
+  /// Real seasons, or — under `FeatureFlags.fakeSeasonsOnMovies` — a fabricated one for
+  /// titles that have none. **Temporary diagnostic, delete with the flag.**
+  private var seasonsForDisplay: [Season]? {
+    if let real = itemModel.mediaItem.seasons, !real.isEmpty { return real }
+    guard FeatureFlags.fakeSeasonsOnMovies, itemModel.itemLoaded else { return nil }
+    return Self.probeSeason(for: itemModel.mediaItem).map { [$0] }
+  }
+
+  /// One season of six unplayable episodes reusing the title's own artwork, so the rail
+  /// renders at realistic size. **Temporary diagnostic, delete with the flag.**
+  ///
+  /// `EpisodeWatching` / `SeasonWatching` are `Codable` structs whose memberwise init is
+  /// internal to `KinoPubBackend`, so they are decoded from literals here rather than
+  /// widening those models' API for a throwaway probe.
+  private static func probeSeason(for item: MediaItem) -> Season? {
+    func decoded<T: Decodable>(_ json: String) -> T? {
+      try? JSONDecoder().decode(T.self, from: Data(json.utf8))
+    }
+    guard let seasonWatching: SeasonWatching = decoded(#"{"status":-1}"#) else { return nil }
+
+    let still = item.posters.wideURL ?? item.posters.medium
+    let episodes: [Episode] = (1...6).compactMap { number in
+      // Two watched, one mid-progress, rest fresh — enough states to see the rail's chrome.
+      let status = number <= 2 ? 1 : -1
+      let time = number == 3 ? 600 : 0
+      guard let watching: EpisodeWatching = decoded(#"{"status":\#(status),"time":\#(time)}"#)
+      else { return nil }
+      return Episode(id: item.id * 1000 + number,
+                     title: "Probe episode \(number)",
+                     thumbnail: still,
+                     duration: 60 * 42,
+                     tracks: 1,
+                     number: number,
+                     ac3: 0,
+                     audios: [],
+                     watched: number <= 2 ? 1 : 0,
+                     watching: watching,
+                     subtitles: [],
+                     files: [])
+    }
+    guard !episodes.isEmpty else { return nil }
+    return Season(id: item.id * 1000,
+                  title: "Probe season",
+                  number: 1,
+                  watching: seasonWatching,
+                  episodes: episodes)
+  }
+
   @ViewBuilder
   private var contentSections: some View {
     VStack(alignment: .leading, spacing: MediaItemLayout.sectionSpacing) {
-      if let seasons = itemModel.mediaItem.seasons, !seasons.isEmpty {
+      if let seasons = seasonsForDisplay, !seasons.isEmpty {
         SeasonsRailView(seasons: seasons,
                         linkProvider: itemModel.linkProvider,
                         seriesTitle: itemModel.mediaItem.localizedTitle,
@@ -259,15 +319,19 @@ struct MediaItemView: View {
                                     myVote: itemModel.myVote,
                                     onVote: { itemModel.vote(up: $0) },
                                     onSectionFocused: leaveHero)
+        .detailFocusSection()
       MediaItemCastSection(mediaItem: itemModel.mediaItem,
                            linkProvider: itemModel.linkProvider,
                            externalMetadata: itemModel.externalMetadata,
                            externalMetadataLoaded: itemModel.externalMetadataLoaded,
                            onSectionFocused: leaveHero)
+        .detailFocusSection()
       MediaItemAwardsSection(awards: itemModel.externalMetadata.awards,
                              onSectionFocused: leaveHero)
+        .detailFocusSection()
       MediaItemPhotosSection(stills: itemModel.externalMetadata.stills,
                              onSectionFocused: leaveHero)
+        .detailFocusSection()
 #if !os(tvOS)
       MediaItemFactsSection(facts: itemModel.externalMetadata.facts,
                             onSectionFocused: leaveHero)
@@ -277,21 +341,25 @@ struct MediaItemView: View {
       MediaItemSimilarSection(items: itemModel.similarItems,
                               linkProvider: itemModel.linkProvider,
                               onSectionFocused: leaveHero)
+        .detailFocusSection()
       MediaItemPersonShelfSection(titleFormat: "More from %@",
                                   person: itemModel.primaryDirector,
                                   items: itemModel.moreFromDirector,
                                   isLoaded: itemModel.moreFromDirectorLoaded,
                                   linkProvider: itemModel.linkProvider,
                                   onSectionFocused: leaveHero)
+        .detailFocusSection()
       MediaItemPersonShelfSection(titleFormat: "More with %@",
                                   person: itemModel.primaryActor,
                                   items: itemModel.moreWithActor,
                                   isLoaded: itemModel.moreWithActorLoaded,
                                   linkProvider: itemModel.linkProvider,
                                   onSectionFocused: leaveHero)
+        .detailFocusSection()
       MediaItemInfoColumns(mediaItem: itemModel.mediaItem,
                            externalMetadata: itemModel.externalMetadata,
                            onSectionFocused: leaveHero)
+        .detailFocusSection()
     }
   }
 
@@ -301,8 +369,7 @@ struct MediaItemView: View {
     if itemModel.itemLoaded {
       MediaItemHeroBackdrop(mediaItem: itemModel.mediaItem,
                             trailer: trailer,
-                            isHeroOnScreen: isHeroOnScreen,
-                            washProgress: washProgress)
+                            isHeroOnScreen: isHeroOnScreen)
     } else {
       ambientBackground
     }
@@ -345,8 +412,6 @@ struct MediaItemView: View {
   private static let ambientBuffer = CGSize(width: 160, height: 90)
   private static let ambientBlur: CGFloat = 10
   private static let ambientScale: CGFloat = 14
-  /// Rivulet-style reserve distance for wash scrub (~600pt).
-  private static let washScrollDistance: CGFloat = 600
 
   private static func openWatchlist(_ navigationState: NavigationState) {
 #if os(macOS)
@@ -381,6 +446,25 @@ extension View {
   }
 }
 #endif
+
+extension View {
+  /// One focus section per detail-page content section, so Up/Down travels
+  /// section-to-section instead of creeping element-by-element, and a section holds
+  /// focus internally while you move across it. The hero is the same shape one level
+  /// up — a full-viewport `focusSection` — which is what lets "the hero is current" be
+  /// a single state rather than something inferred per button.
+  ///
+  /// Only applied to sections that do not already declare their own: the ratings row
+  /// and `SeasonsRailView` build theirs internally, and nesting would fight them.
+  @ViewBuilder
+  func detailFocusSection() -> some View {
+#if os(tvOS)
+    focusSection()
+#else
+    self
+#endif
+  }
+}
 
 struct MediaItemView_Previews: PreviewProvider {
   struct Preview: View {

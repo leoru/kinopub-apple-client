@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import KinoPubUI
 
 /// Single source of truth for user-facing surfaces that are compiled but not yet
 /// ready to ship. Flip one flag instead of scattering per-view checks.
@@ -35,4 +36,28 @@ enum FeatureFlags {
   /// On since 2026-08-06. **Device Hub focus validation is still outstanding** — this
   /// was turned on to be judged on a real screen, not because that check passed.
   static let tvUIKitPosters = true
+
+  /// Our own combined IMDb + Kinopoisk score: poster plaque, hero pill, the detail
+  /// "Rating" tile, and the card Rating placement / source settings. Off — IMDb and
+  /// Kinopoisk show only under their own logos meanwhile.
+  ///
+  /// The value itself lives in `KinoPubUI.RatingFeature` because card chrome reads it
+  /// from inside the package. This is the app-side alias, not a second switch.
+  static var combinedRatingEnabled: Bool { RatingFeature.combinedEnabled }
+
+  /// **TEMPORARY DIAGNOSTIC — DELETE ME.** Synthesises a fake season of episodes onto
+  /// *movies*, so the detail page's season rail renders for a title that has none.
+  ///
+  /// Exists to test one specific hypothesis: that the hero blur / scroll choreography
+  /// only behaves because a season rail happens to be the first section below the hero,
+  /// and falls apart for movies where it is absent. Comparing a movie with and without
+  /// this flag isolates "is it the content or the choreography".
+  ///
+  /// The fabricated episodes are **not playable** (no `files`) — this is a layout and
+  /// focus probe, nothing else. DEBUG-only so it cannot reach a shipping build.
+#if DEBUG
+  static let fakeSeasonsOnMovies = true
+#else
+  static let fakeSeasonsOnMovies = false
+#endif
 }

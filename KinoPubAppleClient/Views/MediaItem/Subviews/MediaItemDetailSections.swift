@@ -32,12 +32,18 @@ struct MediaItemRatingsSection: View {
   fileprivate struct Score: Identifiable {
     let id: String
     let logo: MediaScoreLogo.Source
-    let value: Double
+    /// Nil when the source has voters but has not published a score yet — Kinopoisk
+    /// counts votes long before it prints a number.
+    let value: Double?
     let votes: Int?
   }
 
   private var aggregate: Rating? {
-    Rating(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating)
+    guard FeatureFlags.combinedRatingEnabled else { return nil }
+    return Rating(imdb: mediaItem.imdbRating,
+                  imdbVotes: mediaItem.imdbVotes,
+                  kinopoisk: mediaItem.kinopoiskRating,
+                  kinopoiskVotes: mediaItem.kinopoiskVotes)
   }
 
   private var aggregateVotes: Int {
@@ -48,14 +54,26 @@ struct MediaItemRatingsSection: View {
   }
 
   private var scores: [Score] {
-    var result: [Score] = []
-    if let imdb = mediaItem.imdbRating, imdb > 0 {
-      result.append(Score(id: "IMDb", logo: .imdb, value: imdb, votes: mediaItem.imdbVotes))
-    }
-    if let kp = mediaItem.kinopoiskRating, kp > 0 {
-      result.append(Score(id: "Кинопоиск", logo: .kinopoisk, value: kp, votes: mediaItem.kinopoiskVotes))
-    }
-    return result
+    [
+      Self.score(id: "IMDb", logo: .imdb, value: mediaItem.imdbRating, votes: mediaItem.imdbVotes),
+      Self.score(id: "Кинопоиск",
+                 logo: .kinopoisk,
+                 value: mediaItem.kinopoiskRating,
+                 votes: mediaItem.kinopoiskVotes)
+    ].compactMap { $0 }
+  }
+
+  /// A source earns a tile once it has *either* a score or voters. Votes without a
+  /// score is Kinopoisk's "недостаточно оценок" state — worth showing as a dash and a
+  /// note rather than pretending the source has nothing.
+  private static func score(id: String,
+                            logo: MediaScoreLogo.Source,
+                            value: Double?,
+                            votes: Int?) -> Score? {
+    let isRated = (value ?? 0) > 0
+    let hasVoters = (votes ?? 0) > 0
+    guard isRated || hasVoters else { return nil }
+    return Score(id: id, logo: logo, value: isRated ? value : nil, votes: votes)
   }
 
   private var hasContent: Bool {
@@ -70,27 +88,42 @@ struct MediaItemRatingsSection: View {
             .transition(.opacity)
         }
 
-        HStack(alignment: .top, spacing: Self.spacing) {
-          if let aggregate {
-            AggregateRatingTile(rating: aggregate,
-                                votes: aggregateVotes,
-                                onSectionFocused: onSectionFocused,
-                                pageEntryFocus: pageEntryFocus)
+        // Tiles keep their natural width and the row scrolls, like every other
+        // section — squeezing three of them into the page width wrapped "Кинопоиск"
+        // mid-word and split the view count across two lines.
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(alignment: .top, spacing: Self.spacing) {
+            if let aggregate {
+              AggregateRatingTile(rating: aggregate,
+                                  votes: aggregateVotes,
+                                  onSectionFocused: onSectionFocused,
+                                  pageEntryFocus: pageEntryFocus)
+            }
+            ForEach(Array(scores.enumerated()), id: \.element.id) { index, score in
+              RatingTile(score: score,
+                         url: scoreURL(score),
+                         openURL: openURL,
+                         onSectionFocused: onSectionFocused,
+                         pageEntryFocus: aggregate == nil && index == 0 ? pageEntryFocus : nil)
+            }
+            if mediaItem.views > 0 {
+              ViewsRatingTile(views: mediaItem.views,
+                              onSectionFocused: onSectionFocused,
+                              pageEntryFocus: aggregate == nil && scores.isEmpty ? pageEntryFocus : nil)
+            }
           }
-          ForEach(Array(scores.enumerated()), id: \.element.id) { index, score in
-            RatingTile(score: score,
-                       url: scoreURL(score),
-                       openURL: openURL,
-                       onSectionFocused: onSectionFocused,
-                       pageEntryFocus: aggregate == nil && index == 0 ? pageEntryFocus : nil)
-          }
-          if mediaItem.views > 0 {
-            ViewsRatingTile(views: mediaItem.views,
-                            onSectionFocused: onSectionFocused,
-                            pageEntryFocus: aggregate == nil && scores.isEmpty ? pageEntryFocus : nil)
-          }
+          .padding(.horizontal, MediaItemLayout.horizontalInset)
+#if os(tvOS)
+          // Slack for the focus-scale grow, so a focused tile is not clipped by the
+          // section above/below it.
+          .padding(.vertical, DetailTileStyle.focusPadding)
+#endif
         }
-        .padding(.horizontal, MediaItemLayout.horizontalInset)
+        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+#if os(tvOS)
+        .scrollClipDisabled()
+        .focusSection()
+#endif
       }
       .animation(.easeOut(duration: 0.35), value: showsHeader)
     }
@@ -138,12 +171,16 @@ private struct AggregateRatingTile: View {
   @Environment(\.colorScheme) private var colorScheme
 
   var body: some View {
-    content
 #if os(tvOS)
-      // Focus stop for the rail — no press chrome, the tile is not an action.
-      .focusable(true)
+    // A focus stop rather than an action, but it is still a `Button` — that is how the
+    // system card style is reached, and how Apple's own sample makes everything
+    // focusable. Selecting it deliberately does nothing (yet).
+    Button {} label: { content }
+      .buttonStyle(DetailTileStyle.buttonStyle)
       .modifier(OptionalPageEntryFocus(binding: pageEntryFocus))
       .reportMediaItemSectionFocus(onSectionFocused)
+#else
+    content
 #endif
   }
 
@@ -196,14 +233,13 @@ private struct RatingTile: View {
     } label: {
       tileContent
     }
-    .buttonStyle(RatingTileButtonStyle())
-#if !os(tvOS)
-    .onHover { isHovered = $0 }
-    .pointingHandCursorOnHover(enabled: isLink)
-#endif
+    .buttonStyle(DetailTileStyle.buttonStyle)
 #if os(tvOS)
     .modifier(OptionalPageEntryFocus(binding: pageEntryFocus))
     .reportMediaItemSectionFocus(onSectionFocused)
+#else
+    .onHover { isHovered = $0 }
+    .pointingHandCursorOnHover(enabled: isLink)
 #endif
   }
 
@@ -212,7 +248,7 @@ private struct RatingTile: View {
       MediaScoreLogo(score.logo, height: MediaItemRatingsSection.iconSize, style: .color)
         .frame(width: MediaItemRatingsSection.iconSize, height: MediaItemRatingsSection.iconSize)
 
-      Text(String(format: "%.1f", score.value))
+      Text(score.value.map { String(format: "%.1f", $0) } ?? "—")
         .font(MediaItemRatingsSection.valueFont)
         // .monospacedDigit()
         .foregroundStyle(Color.KinoPub.subtitle)
@@ -228,7 +264,14 @@ private struct RatingTile: View {
               .foregroundStyle(Color.KinoPub.subtitle)
           }
         }
-        if let votes = score.votes, votes > 0 {
+        // Voters but no score yet — say so the way the source itself does, rather
+        // than printing a count next to a dash and leaving it unexplained.
+        if score.value == nil {
+          Text("MediaItem_NotEnoughRatings")
+            .font(MediaItemRatingsSection.captionFont)
+            .foregroundStyle(Color.KinoPub.subtitle)
+            .fixedSize(horizontal: false, vertical: true)
+        } else if let votes = score.votes, votes > 0 {
           Text("\(votes.formatted(.number.grouping(.automatic))) \("votes".localized)")
             .font(MediaItemRatingsSection.captionFont)
             .foregroundStyle(Color.KinoPub.subtitle)
@@ -251,6 +294,19 @@ private struct ViewsRatingTile: View {
   var pageEntryFocus: FocusState<MediaItemFocusTarget?>.Binding? = nil
 
   var body: some View {
+#if os(tvOS)
+    // Same as `AggregateRatingTile`: a focus stop expressed as a `Button` so it can wear
+    // the system card style.
+    Button {} label: { content }
+      .buttonStyle(DetailTileStyle.buttonStyle)
+      .modifier(OptionalPageEntryFocus(binding: pageEntryFocus))
+      .reportMediaItemSectionFocus(onSectionFocused)
+#else
+    content
+#endif
+  }
+
+  private var content: some View {
     HStack(alignment: .center, spacing: 10) {
       Text(views.formatted(.number.grouping(.automatic)))
         .font(MediaItemRatingsSection.valueFont)
@@ -268,11 +324,6 @@ private struct ViewsRatingTile: View {
       }
     }
     .padding(MediaItemRatingsSection.tilePadding)
-#if os(tvOS)
-    .focusable(true)
-    .modifier(OptionalPageEntryFocus(binding: pageEntryFocus))
-    .reportMediaItemSectionFocus(onSectionFocused)
-#endif
   }
 }
 
@@ -283,6 +334,34 @@ private struct RatingTileButtonStyle: ButtonStyle {
       .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
       .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
   }
+}
+
+/// The detail page's tile-shaped controls (rating tiles, vote pills) on tvOS.
+///
+/// **`.card` and nothing else.** This is the system card style — Apple's own `DestinationVideo`
+/// sample applies exactly `#if os(tvOS) .card #else .plain` to every focusable card in the app and
+/// adds no focus code of its own (`.hoverEffect()` there is fenced to iOS/visionOS). Focus scale,
+/// highlight, lift and parallax are all system-owned; hand-rolling them is what produced the two
+/// bugs before this: `.hoverEffect(.highlight)` lit up the icon alone (the tvOS highlight attaches
+/// to the first `Image` in the label), and the custom `scaleEffect`/`brightness` replacement that
+/// followed was correct-ish but visibly not native.
+///
+/// Do not add `hoverEffect`, `scaleEffect`, `brightness` or `isFocused` branches on top of this.
+enum DetailTileStyle {
+  static var buttonStyle: some PrimitiveButtonStyle {
+#if os(tvOS)
+    .card
+#else
+    .plain
+#endif
+  }
+
+  /// Slack a row reserves so the card's focus lift is not clipped by its neighbours.
+#if os(tvOS)
+  static let focusPadding: CGFloat = 24
+#else
+  static let focusPadding: CGFloat = 0
+#endif
 }
 
 #if os(tvOS)
@@ -571,9 +650,14 @@ private struct PortraitButtonStyle: ButtonStyle {
     var body: some View {
       configuration.label
         .scaleEffect(isFocused ? 1.05 : (configuration.isPressed ? 0.96 : 1.0))
+#if !os(tvOS)
+        // Radius (not just opacity) changes with focus — SwiftUI has to re-render the
+        // shadow's blur every tick, on every cast/crew circle in the row. Off on tvOS,
+        // where this style backs a `LazyHGrid` of many simultaneously-visible circles.
         .shadow(color: .black.opacity(isFocused ? 0.45 : (isHovered ? 0.2 : 0)),
                 radius: isFocused ? 14 : 8,
                 y: isFocused ? 6 : 2)
+#endif
         .animation(.easeOut(duration: 0.18), value: isFocused)
         .animation(.easeOut(duration: 0.15), value: isHovered)
         .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
@@ -878,6 +962,10 @@ struct MediaItemCommunityVoteSection: View {
       voteButton(up: false)
     }
     .padding(.horizontal, MediaItemLayout.horizontalInset)
+#if os(tvOS)
+    // Slack for the focus-scale grow, same as the ratings row above.
+    .padding(.vertical, DetailTileStyle.focusPadding)
+#endif
   }
 
   private func voteButton(up: Bool) -> some View {
@@ -907,7 +995,7 @@ struct MediaItemCommunityVoteSection: View {
         in: Capsule(style: .continuous)
       )
     }
-    .buttonStyle(.borderless)
+    .buttonStyle(DetailTileStyle.buttonStyle)
     .disabled(myVote != .none && !active)
     .accessibilityLabel(up ? "Like" : "Dislike")
 #if os(tvOS)
@@ -2113,7 +2201,7 @@ struct MediaItemPlotView: View {
         paragraph(showsMore: true)
       }
       .buttonStyle(ExpandableButtonStyle())
-      .focused($focus, equals: .heroOther)
+      .focused($focus, equals: .plot)
       .sheet(isPresented: $showsFullText) {
         plotSheet
       }

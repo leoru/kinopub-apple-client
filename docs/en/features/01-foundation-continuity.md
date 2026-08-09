@@ -59,13 +59,22 @@ not supporting it at all. See [layout-and-containers](../apple-platform/layout-a
 
 - [x] tvOS detail ambient trailer off — still + `topGradient` / `bottomScrim` + blurred poster wash
   (ambient trailer later with a dedicated hero pass; Trailer button / real player unchanged)
-- [x] tvOS detail wash rewired: section focus + scroll progress scrub a cheap `.regularMaterial`
-  veil; hero chrome fades faster than the wash (Rivulet-style). Facts/Reviews hidden on tvOS;
-  metadata-debug footer removed; Info block sits on a material panel
+- [x] tvOS detail wash rewired: section focus flips a cheap `.regularMaterial` veil; hero chrome
+  fades faster than the wash (Rivulet-style). Facts/Reviews hidden on tvOS; metadata-debug footer
+  removed; Info block sits on a material panel.
+  **Correction (2026-08-09): the scroll-progress *scrub* half hadn't shipped — fixed same day.**
+  `washProgress` was computed and passed, but `MediaItemHeroView.effectiveWash` returned
+  `max(washProgress, 1)` — always 1 — so the veil was a binary flip on `isHeroOnScreen`. Now returns
+  `washProgress` directly. Not yet confirmed on-device (no remote-input path from this environment);
+  see phase 0 of [detail-page-choreography](../plans/detail-page-choreography.md)
+- [ ] Detail page choreography: hero out of the scroll, scrubbed material, overlay title logo,
+  sections as data — [detail-page-choreography](../plans/detail-page-choreography.md)
 - [ ] tvOS TVUIKit posters (`FeatureFlags.tvUIKitPosters`) — one shared collection for Home shelves
   and catalog grids; **Device Hub focus validation pending** before flipping the flag on
   (Up/Down between rails, overlay scale sync, Select / context menu, grid scroll / pagination)
-- [ ] `MediaItemHeroView` — four buttons share `.focused($focus, equals: .heroOther)`
+- [x] `MediaItemHeroView` shared-focus fix (2026-08-09) — turned out to be six buttons, not four,
+  and turned out to freeze tvOS focus dead rather than just being untidy. See
+  [detail-page-choreography](../plans/detail-page-choreography.md) for the on-device evidence.
 - [ ] `MediaItemView` two-slide `.offset(y:)` + `.clipped()` "slideshow"
 - [ ] `TabsNavigationView` — 630 lines across three near-identical platform trees
 - [ ] Detail hero height → `containerRelativeFrame(.vertical)` instead of hard-coded values
