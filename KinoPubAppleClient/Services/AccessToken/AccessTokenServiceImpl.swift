@@ -9,7 +9,7 @@ import Foundation
 import KinoPubBackend
 
 extension Key where Value: Token {
-  static var token: Key { .init(rawValue: "com.kunst.kinopub.token") }
+  static var token: Key { .init(rawValue: "com.soda.kinopub.token") }
 }
 
 #if DEBUG && (targetEnvironment(simulator) || os(macOS))

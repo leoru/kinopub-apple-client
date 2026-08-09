@@ -6,10 +6,10 @@
 import Foundation
 import KinoPubMetadata
 
-/// Separate Keychain service from `"com.kunst.kinopub"` — this key isn't
+/// Separate Keychain service from `"com.soda.kinopub"` — this key isn't
 /// kino.pub-session-scoped, so `KeychainStorageImpl.clear()` on logout must not
 /// wipe it. See the isolated-storage note in the Kinopoisk integration plan.
-private let kinopoiskKeychainService = "com.kunst.kinopub.kinopoisk"
+private let kinopoiskKeychainService = "com.soda.kinopub.kinopoisk"
 
 extension Key where Value == String {
   static var kinopoiskAPIKey: Key<String> { .init(rawValue: "apiKey") }

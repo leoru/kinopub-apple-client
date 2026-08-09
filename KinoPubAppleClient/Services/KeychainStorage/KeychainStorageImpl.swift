@@ -16,7 +16,7 @@ final class KeychainStorageImpl: KeychainStorage {
     return Keychain(service: service)
   }()
 
-  init(service: String = "com.kunst.kinopub") {
+  init(service: String = "com.soda.kinopub") {
     self.service = service
   }
 

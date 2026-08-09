@@ -16,7 +16,7 @@ final class BookmarkMembershipStore {
 
   static let shared = BookmarkMembershipStore()
 
-  private let defaultsKey = "com.kunst.kinopub.bookmarkMembership"
+  private let defaultsKey = "com.soda.kinopub.bookmarkMembership"
   private let lock = NSLock()
   /// itemID → folderIDs. Absent key = "never touched locally, trust the card/payload hint".
   private var map: [Int: Set<Int>] = [:]
