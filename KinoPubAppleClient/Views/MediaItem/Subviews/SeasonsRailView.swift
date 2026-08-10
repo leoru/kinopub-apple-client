@@ -40,6 +40,8 @@ struct SeasonsRailView: View {
   /// park focus on the selected season tab so Play cannot reclaim the remote.
   var pageEntryToken: Int = 0
 #endif
+  /// Pressing an unaired episode — the page turns this into a toast.
+  var onUnavailableSelected: ((String) -> Void)? = nil
   var onHide: ((Episode, Season) -> Void)?
   var onToggleWatched: ((Episode, Season) -> Void)?
   /// Full TMDB season schedules keyed by season number — used to date kino episodes
@@ -201,11 +203,17 @@ struct SeasonsRailView: View {
   }
 
   /// First unfinished playable episode walking seasons in order, else the very first rail item.
+  /// First unfinished episode that is actually **watchable** — an unaired one is
+  /// skipped. Landing the opening scroll on a future episode put the rail somewhere
+  /// with nothing playable to the left of it and no visible context, which reads as
+  /// the rail being broken rather than as "you're up to date".
   private var firstUnseen: RailEntry? {
     entries.first {
-      if case .playable(_, let episode, _) = $0 { return episode.watched == 0 }
-      return false
-    } ?? entries.first
+      guard case .playable(_, let episode, let schedule) = $0 else { return false }
+      return episode.watched == 0 && schedule?.isUpcoming != true
+    }
+    ?? entries.last { $0.isPlayable }
+    ?? entries.first
   }
 
   /// Episode to land on when Down crosses from the season tabs into the rail — the
@@ -348,6 +356,25 @@ struct SeasonsRailView: View {
 #endif
   }
 
+  /// A dimmed but focusable card for something that has not aired. Uses the stock
+  /// card style so the focus treatment is the platform's, not ours.
+  private func unavailableCard<Content: View>(
+    message: String,
+    @ViewBuilder content: () -> Content
+  ) -> some View {
+    Button {
+      onUnavailableSelected?(message)
+    } label: {
+      content().opacity(0.55)
+    }
+    .buttonStyle(DetailTileStyle.buttonStyle)
+  }
+
+  private static func unavailableMessage(date: Date?) -> String {
+    guard let date else { return "MediaItem_NotAvailableYet".localized }
+    return String(format: "MediaItem_AirsOn".localized, airDateLabel(date))
+  }
+
   @ViewBuilder
   private func railCard(for entry: RailEntry) -> some View {
     switch entry {
@@ -363,23 +390,31 @@ struct SeasonsRailView: View {
       ))
 
     case .playable(let season, let episode, let schedule):
-      // Announced but not out yet: the same card, inert and dimmed.
-      MediaCardView(card: Self.card(for: episode,
-                                    in: season,
-                                    schedule: schedule,
-                                    primaryAction: .openDetail),
-                    caption: .always)
-        .opacity(0.55)
+      // Announced but not out yet. Dimmed, but still a real control: on tvOS a
+      // non-focusable card is a wall — the remote cannot travel past it, so the whole
+      // tail of the rail becomes unreachable. Pressing it says when it airs.
+      unavailableCard(
+        message: Self.unavailableMessage(date: schedule?.airDate)
+      ) {
+        MediaCardView(card: Self.card(for: episode,
+                                      in: season,
+                                      schedule: schedule,
+                                      primaryAction: .openDetail),
+                      caption: .always)
+      }
 
     case .unavailable(_, let schedule):
-      MediaCardView(card: MediaCard(unavailableEpisodeID: entry.id,
-                                    number: schedule.episodeNumber,
-                                    title: schedule.name,
-                                    episodeLabel: Self.episodeLabel(number: schedule.episodeNumber),
-                                    dateLabel: schedule.airDate.map(Self.airDateLabel),
-                                    stillURL: schedule.still?.absoluteString),
-                    caption: .always)
-        .opacity(0.55)
+      unavailableCard(
+        message: Self.unavailableMessage(date: schedule.airDate)
+      ) {
+        MediaCardView(card: MediaCard(unavailableEpisodeID: entry.id,
+                                      number: schedule.episodeNumber,
+                                      title: schedule.name,
+                                      episodeLabel: Self.episodeLabel(number: schedule.episodeNumber),
+                                      dateLabel: schedule.airDate.map(Self.airDateLabel),
+                                      stillURL: schedule.still?.absoluteString),
+                      caption: .always)
+      }
 
     case .missingSeasons(let from, let to, let episodes, let firstAir, let lastAir):
       MissingSeasonsCard(from: from,

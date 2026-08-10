@@ -385,6 +385,9 @@ struct MediaItemView: View {
                         seriesTitle: itemModel.mediaItem.localizedTitle,
                         showsChrome: true,
                         onSectionFocused: leaveHero,
+                        onUnavailableSelected: { message in
+                          itemModel.hudToast = HudToast(systemImage: "clock", title: message)
+                        },
                         onHide: { episode, season in
                           itemModel.hide(episode: episode, season: season)
                         },
@@ -581,12 +584,10 @@ private struct MediaItemTitleLogoHeader: View {
         Color.clear
       }
       .frame(maxWidth: Self.logoMaxWidth, maxHeight: Self.logoMaxHeight, alignment: .center)
-    } else {
-      Text(title)
-            .font(.title)
-            .foregroundStyle(Color.KinoPub.text)
-        .lineLimit(1)
     }
+    // No lettered fallback. Spelling the title out here reads as a caption stuck to
+    // the top of the page rather than as the title bar this is meant to be — artwork
+    // for every title is the plan instead.
   }
 
   /// Independent of `MediaItemHeroBackdrop`, which is a fixed full-screen layer behind
