@@ -16,7 +16,7 @@ public enum TypeScale {
 
   public static let heroTitle: Font = {
 #if os(tvOS)
-    .largeTitle.bold()
+    .title.bold()
 #elseif os(macOS)
     .title.bold()
 #else
@@ -24,7 +24,14 @@ public enum TypeScale {
 #endif
   }()
 
-  public static let heroSecondary: Font = .subheadline
+  public static let heroSecondary: Font = {
+#if os(tvOS)
+        .body
+#else
+        .subheadline
+#endif
+    }()
+    
 
   /// **The** running-text size on an item page. Everything that is prose or a
   /// label-and-value pair takes this: the hero's metadata row, synopsis and credit
@@ -38,7 +45,13 @@ public enum TypeScale {
   /// from it. The old sizes were all *below* body (12–15pt on a Mac, 20–25 on a TV):
   /// small enough that the synopsis read as a caption on the artwork instead of as the
   /// thing you are meant to read. Levelling them meant levelling **up**.
-  public static let detailBody: Font = .body
+    public static let detailBody: Font = {
+#if os(tvOS)
+        .footnote
+#else
+        .body
+#endif
+    }()
   public static let filterControl: Font = .subheadline.weight(.semibold)
   public static let actionLabel: Font = .headline.weight(.semibold)
   public static let detailSection: Font = .title3.weight(.semibold)
@@ -51,9 +64,9 @@ public enum TypeScale {
   /// instead of sitting still while the rest of the badge scales around it.
   public static let ratingBadge: Font = {
 #if os(tvOS)
-    .caption2.weight(.bold)
+      .system(.caption2, design: .rounded, weight: .heavy)
 #else
-    .footnote.weight(.bold)
+      .system(.footnote, design: .rounded, weight: .heavy)
 #endif
   }()
 
@@ -62,9 +75,11 @@ public enum TypeScale {
   /// as `ratingBadge`.
   public static let ratingAggregate: Font = {
 #if os(tvOS)
-    .title3.weight(.bold)
+      .system(.title3, design: .rounded, weight: .heavy)
+
 #else
-    .title.weight(.bold)
+      .system(.title, design: .rounded, weight: .heavy)
+
 #endif
   }()
 }

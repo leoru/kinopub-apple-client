@@ -136,7 +136,7 @@ struct TrailerVideoLayer {
   let player: AVPlayer
   /// `.resizeAspectFill` behind the title so the trailer fills the hero; the
   /// full-screen presentation asks for `.resizeAspect` so nothing is cropped away.
-  var gravity: AVLayerVideoGravity = .resizeAspectFill
+    var gravity: AVLayerVideoGravity = .resizeAspect
 }
 
 #if os(macOS)
@@ -215,8 +215,15 @@ final class TrailerLayerHostView: UIView {
 #if os(tvOS)
 /// Full-screen stack pinned behind the detail `ScrollView` — the Apple TV shape.
 ///
-/// A blurred `/poster/item/small` wash is always there (cheap, rasterised once).
-/// Sharp wide art sits on top and fades out when focus leaves the hero.
+/// One wide still, blurred **as a material** when focus leaves the hero — not a
+/// second, different asset (a downsampled poster) cross-fading in underneath. The
+/// two-asset version this replaced showed visibly disagreeing colors while washing
+/// (blurring a different picture than the sharp one) and paid for a full-screen
+/// `.regularMaterial` pass every frame because its opacity was animated directly —
+/// materials don't have an animatable intensity, so fading one by `opacity` is
+/// exactly the antipattern that produces this. `MediaItemHeroMaterialBackdrop`
+/// below drops to UIKit for that one transition (`UIVisualEffectView.effect` swap,
+/// which UIKit interpolates correctly) while everything else here stays SwiftUI.
 /// Ambient trailer is intentionally off (policy: no blur-over-video; scrims +
 /// still until a dedicated hero pass). `trailer` is kept for a later pass /
 /// Up-to-fullscreen when ambient returns.
@@ -224,7 +231,10 @@ struct MediaItemHeroBackdrop: View {
 
   var mediaItem: MediaItem
   @ObservedObject var trailer: TrailerPreviewModel
-  var isHeroOnScreen: Bool
+  /// Read directly from `phase` inside this view's own `body` (never pre-extracted by
+  /// the caller) — that is what makes `MediaItemHeroPhase` changes re-render only this
+  /// view instead of the whole page. See `MediaItemHeroPhase`.
+  var phase: MediaItemHeroPhase
 
   /// 0 = hero sharp; 1 = below-fold wash. **Section state, not scroll offset.**
   ///
@@ -236,46 +246,39 @@ struct MediaItemHeroBackdrop: View {
   /// and why it arrived in visible steps. It also re-ran this whole page's body on every
   /// scroll frame, re-rendering every shelf underneath.
   ///
-  /// Now it is binary and driven by whether focus is in the hero section, animated once
-  /// by the `.animation(value: isHeroOnScreen)` below — one clock, one transition, the
-  /// same state whichever section you came from and whatever the content happens to be.
+  /// Now it is binary and driven by whether focus is in the hero section — the SwiftUI
+  /// gradient layers below still key off it directly; the material wash itself is driven
+  /// by the same `isHeroOnScreen` passed straight into the UIKit representable, which
+  /// owns its own transition timing.
   private var effectiveWash: CGFloat {
-    isHeroOnScreen ? 0 : 1
+    phase.isHeroOnScreen ? 0 : 1
   }
 
   var body: some View {
     ZStack {
       Color.KinoPub.background
 
-      // Always-on cheap wash from the *small* poster (120×180 raster). Do not
-      // `drawingGroup`+scale a full-bleed buffer — that path + eager Home shelves
-      // was blowing past 1.5GB (CVPixelBuffer -6680).
-      blurredPoster
+      // Loading placeholder only now — a cheap blurred wash from the *small* poster
+      // (120×180 raster) shown until the real wide still decodes. Once the material
+      // backdrop below has an image it paints over this opaquely for the rest of the
+      // page's life; this never doubles as the "washed" state itself anymore. Do not
+      // `drawingGroup`+scale a full-bleed buffer — that path + eager Home shelves was
+      // blowing past 1.5GB (CVPixelBuffer -6680).
+//      blurredPoster
 
-      // Drop the wide still from the tree once washed off — AsyncImage keeps the
-      // decoded 1080/4K buffer alive at opacity 0 otherwise.
-      if effectiveWash < 0.98 {
-        heroStill
-          .opacity(1 - effectiveWash)
-      }
+      MediaItemHeroMaterialBackdrop(url: URL(string: heroStillURL), isWashed: !phase.isHeroOnScreen)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-      if effectiveWash > 0.01 {
-        Rectangle()
-          .fill(.regularMaterial)
-          .opacity(0.55 * effectiveWash)
-          .allowsHitTesting(false)
-      }
+//      topGradient
+//        .opacity(1 - effectiveWash)
 
-      topGradient
-        .opacity(1 - effectiveWash)
-
-      bottomScrim
-      titleScrim
+//      bottomScrim
+//      titleScrim
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .clipped()
     .ignoresSafeArea()
-    .animation(.easeOut(duration: 0.35), value: isHeroOnScreen)
+    .animation(.easeOut(duration: 0.35), value: phase.isHeroOnScreen)
   }
 
   /// Scale is derived from the real container so a portrait buffer still covers
@@ -303,24 +306,9 @@ struct MediaItemHeroBackdrop: View {
     }
   }
 
-  private var heroStill: some View {
+  private var heroStillURL: String {
     // Prefer `/wide/` when present; fall back to `medium` rather than `big` so we
     // don't decode a multi‑MB 4K poster into a full-screen layer on the simulator.
-    AsyncImage(url: URL(string: heroStillURL),
-               transaction: Transaction(animation: .easeIn(duration: 0.3))) { phase in
-      if let image = phase.image {
-        image
-          .resizable()
-          .aspectRatio(contentMode: .fill)
-          .transition(.opacity)
-      } else {
-        Color.clear
-      }
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-  }
-
-  private var heroStillURL: String {
     mediaItem.posters.wideURL ?? mediaItem.posters.medium
   }
 
@@ -374,7 +362,97 @@ struct MediaItemHeroBackdrop: View {
   private static let blurBuffer = CGSize(width: 120, height: 180)
   private static let blurRadius: CGFloat = 12
 }
-#endif
+
+/// Single wide still + a real `UIVisualEffectView` blur toggled on top of it.
+///
+/// This exists because SwiftUI has no animatable "material intensity" — `.blur()` is
+/// a rendered-frame filter, and `.regularMaterial` has to be either mounted or not; the
+/// old code fudged a transition by animating that material's `.opacity()`, which does
+/// not fade the blur itself, just draws the same full-strength `UIVisualEffectView`
+/// gradually more transparent while still paying its per-frame cost underneath. UIKit's
+/// `UIVisualEffectView.effect` is the actual lever — assigning it inside `UIView.animate`
+/// cross-fades the blur honestly, and the view can be dropped from the layer tree
+/// entirely (not just mounted at alpha 0) whenever it isn't needed.
+///
+/// One `UIImageView` backs both the sharp and washed states — never a second asset —
+/// so there is nothing for the blur to disagree in color with.
+struct MediaItemHeroMaterialBackdrop: UIViewRepresentable {
+  var url: URL?
+  var isWashed: Bool
+
+  func makeUIView(context: Context) -> HeroMaterialBackdropView {
+    HeroMaterialBackdropView()
+  }
+
+  func updateUIView(_ view: HeroMaterialBackdropView, context: Context) {
+    view.configure(url: url, washed: isWashed)
+  }
+}
+
+final class HeroMaterialBackdropView: UIView {
+  private let imageView = UIImageView()
+  private let blurView = UIVisualEffectView(effect: nil)
+  private var loadedURL: URL?
+  private var loadTask: Task<Void, Never>?
+  private var appliedWash = false
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    imageView.contentMode = .scaleAspectFill
+    imageView.clipsToBounds = true
+    imageView.alpha = 0
+    addSubview(imageView)
+
+    blurView.translatesAutoresizingMaskIntoConstraints = false
+    addSubview(blurView)
+    NSLayoutConstraint.activate([
+      blurView.topAnchor.constraint(equalTo: topAnchor),
+      blurView.bottomAnchor.constraint(equalTo: bottomAnchor),
+      blurView.leadingAnchor.constraint(equalTo: leadingAnchor),
+      blurView.trailingAnchor.constraint(equalTo: trailingAnchor)
+    ])
+  }
+
+  @available(*, unavailable)
+  required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    imageView.frame = bounds
+  }
+
+  func configure(url: URL?, washed: Bool) {
+    if url != loadedURL {
+      loadedURL = url
+      loadTask?.cancel()
+      imageView.image = nil
+      imageView.alpha = 0
+      if let url {
+        loadTask = Task { [weak self] in
+          guard let image = await TVUIKitRemoteImage.load(url: url) else { return }
+          guard let self, !Task.isCancelled, self.loadedURL == url else { return }
+          self.imageView.image = image
+          UIView.animate(withDuration: 0.3) { self.imageView.alpha = 1 }
+        }
+      }
+    }
+
+    guard washed != appliedWash else { return }
+    appliedWash = washed
+    UIView.animate(withDuration: 0.35, delay: 0, options: .curveEaseOut) {
+      // `.dark` rather than an adaptive `.systemMaterial`: the page forces `.dark`
+      // colorScheme throughout, and tvOS doesn't expose the fixed-dark system
+      // materials (`.systemMaterialDark` etc. are `@available(tvOS, unavailable)`) —
+      // `.dark` is tvOS's own fixed-appearance blur style.
+      self.blurView.effect = washed ? UIBlurEffect(style: .dark) : nil
+    }
+  }
+
+  deinit {
+    loadTask?.cancel()
+  }
+}
+#endif // SEEMS VERY RESOURCEFUL FOR WHAT?? I
 
 /// The item page's secondary actions, as menu content. Shared so the same list can be
 /// a circle in the hero row (tvOS) or a toolbar item (iPhone / Mac) without either
@@ -421,7 +499,9 @@ struct MediaItemHeroView: View {
   @ObservedObject var trailer: TrailerPreviewModel
   /// Drives trailer pause / the blurred still on the pinned backdrop. The hero never
   /// leaves the hierarchy on scroll, so this is measured rather than `onDisappear`.
-  @Binding var isHeroOnScreen: Bool
+  /// Read/written directly through `phase` inside this view's own `body` — never
+  /// pre-extracted by the caller. See `MediaItemHeroPhase`.
+  var phase: MediaItemHeroPhase
   var linkProvider: NavigationLinkProvider
   var isWatched: Bool
   var isBookmarked: Bool
@@ -483,13 +563,25 @@ struct MediaItemHeroView: View {
   /// per-frame scroll value while the backdrop read a guarded one.
   private var chromeAlpha: CGFloat {
 #if os(tvOS)
-    isHeroOnScreen ? 1 : 0.35
+    phase.isHeroOnScreen ? 1 : 0.35
 #else
     1
 #endif
   }
 
   var body: some View {
+    platformBody
+      // Moved down from the page level: this is the one view that already reads
+      // `phase.isHeroOnScreen` in its own body (via `chromeAlpha`/`visibilityProbe`),
+      // so adding the trailer side effect here costs nothing extra structurally —
+      // doing it at `MediaItemView` would have re-coupled the page's body to the value.
+      .onChange(of: phase.isHeroOnScreen) { _, onScreen in
+        trailer.setActive(onScreen)
+      }
+  }
+
+  @ViewBuilder
+  private var platformBody: some View {
 #if os(tvOS)
     // Fills the hero slideshow slide; bottom-aligned over the pinned backdrop.
     // Force dark so `Color.primary` / scores / plot stay light over the artwork —
@@ -538,8 +630,7 @@ struct MediaItemHeroView: View {
       posterURL: mediaItem.posters.medium,
       title: mediaItem.localizedTitle,
       subtitle: mediaItem.originalTitle,
-      imdbRating: mediaItem.imdbRating,
-      kinopoiskRating: mediaItem.kinopoiskRating,
+      scores: MediaScores(mediaItem),
       backdropURL: mediaItem.posters.wideURL ?? mediaItem.posters.big,
       metaLine: mediaItem.metadataLine,
       overview: mediaItem.plot,
@@ -632,7 +723,7 @@ struct MediaItemHeroView: View {
       let frame = proxy.frame(in: .named(MediaItemLayout.scrollSpace))
       Color.clear
         .onChange(of: frame.minY >= -Self.onScreenSlop) { _, onScreen in
-          isHeroOnScreen = onScreen
+          phase.isHeroOnScreen = onScreen
         }
     }
   }
@@ -815,15 +906,12 @@ struct MediaItemHeroView: View {
   private var metadata: some View {
     HStack(spacing: Self.metaSpacing) {
       if FeatureFlags.combinedRatingEnabled {
-        if let rating = Rating(imdb: mediaItem.imdbRating,
-                               imdbVotes: mediaItem.imdbVotes,
-                               kinopoisk: mediaItem.kinopoiskRating,
-                               kinopoiskVotes: mediaItem.kinopoiskVotes) {
+        if let rating = MediaScores(mediaItem).aggregate {
           RatingBadgeView(rating: rating)
         }
       } else {
         // No aggregate: each score keeps its own logo rather than becoming one number.
-        MediaScoresView(imdb: mediaItem.imdbRating, kinopoisk: mediaItem.kinopoiskRating)
+        MediaScoresView(MediaScores(mediaItem))
       }
 
       let releaseLine = mediaItem.releaseLine
@@ -886,7 +974,7 @@ struct MediaItemHeroView: View {
 
     var names = AttributedString(line.names)
     names.foregroundColor = Color.KinoPub.text
-    names.font = Self.secondaryFont.weight(.semibold)
+    names.font = Self.secondaryFont.weight(.medium)
 
     return label + names
   }
@@ -1191,11 +1279,11 @@ struct MediaItemHeroView: View {
 
   // MARK: - Metrics
 
-  /// Seconds of artwork before the trailer takes over.
+  /// Seconds of artwork before the trailer takes over.????? it must start no sooner than this interval after open - but only if the player is ready and asset can play while in hero focus
   static let trailerLeadIn: Double = 2
   /// Non-tvOS only: fade as soon as the hero has scrolled up at all. The old
   /// half-height threshold left the trailer running under the first section below.
-  static let onScreenSlop: CGFloat = 8
+  static let onScreenSlop: CGFloat = 150
 
   /// Leads and directors named in the corner, before the list turns into a paragraph.
   static let creditNameLimit = 3
@@ -1223,8 +1311,8 @@ struct MediaItemHeroView: View {
   static let bottomInset: CGFloat = 60
   static let contentSpacing: CGFloat = 12
   static let leadingWidth: CGFloat = 640
-  static let logoMaxWidth: CGFloat = 560
-  static let logoMaxHeight: CGFloat = 160
+  static let logoMaxWidth: CGFloat = 640
+  static let logoMaxHeight: CGFloat = 220
   static let titleFont: Font = TypeScale.heroTitle
   static let metaSpacing: CGFloat = 20
   static let actionsGap: CGFloat = 20
@@ -1282,14 +1370,14 @@ private struct MediaItemHeroPreview: View {
   @FocusState private var focus: MediaItemFocusTarget?
   @StateObject private var trailer = TrailerPreviewModel()
   @StateObject private var navigationState = NavigationState()
-  @State private var isHeroOnScreen = true
+  @State private var heroPhase = MediaItemHeroPhase()
 
   var body: some View {
     MediaItemHeroView(
       mediaItem: MediaItem.mock(),
       focus: $focus,
       trailer: trailer,
-      isHeroOnScreen: $isHeroOnScreen,
+      phase: heroPhase,
       linkProvider: AppRoutesLinkProvider(),
       isWatched: false,
       isBookmarked: true,
@@ -1302,7 +1390,7 @@ private struct MediaItemHeroPreview: View {
     .environmentObject(navigationState)
     .aspectRatio(16 / 9, contentMode: .fit)
     .frame(maxWidth: 960)
-    .background(Color.black)
+//    .background(Color.black)
     .preferredColorScheme(.dark)
   }
 }

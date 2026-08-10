@@ -89,6 +89,9 @@ struct SettingsRootView: View {
             case .typeStyles:
               SystemTypeStylesCatalogView()
                 .settingsMacChrome(title: "Type Styles", isRoot: false)
+            case .libraryLab:
+              LibrarySidebarLabView()
+                .settingsMacChrome(title: "Library Sidebar Lab", isRoot: false)
 #endif
             }
           }
@@ -184,6 +187,8 @@ struct SettingsRootView: View {
             UILabRoot(initialChrome: chrome)
           case .typeStyles:
             SystemTypeStylesCatalogView()
+          case .libraryLab:
+            LibrarySidebarLabView()
 #endif
           }
         }

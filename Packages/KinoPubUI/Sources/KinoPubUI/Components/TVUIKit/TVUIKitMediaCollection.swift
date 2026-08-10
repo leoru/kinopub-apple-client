@@ -172,6 +172,9 @@ public final class TVUIKitMediaCollectionController: UIViewController {
 
     collectionView.alwaysBounceHorizontal = axis == .horizontal
     collectionView.alwaysBounceVertical = axis == .vertical
+    // Names this rail in the focus trace — otherwise every collection logs as the
+    // bare class name and the rails are indistinguishable.
+    collectionView.accessibilityIdentifier = sectionName
 
     if cardsChanged || layoutChanged {
       collectionView.reloadData()
@@ -208,6 +211,51 @@ extension TVUIKitMediaCollectionController: UICollectionViewDataSource, UICollec
 
   public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
     onSelect?(cards[indexPath.item])
+  }
+
+  public func collectionView(_ collectionView: UICollectionView,
+                             didUpdateFocusIn context: UICollectionViewFocusUpdateContext,
+                             with coordinator: UIFocusAnimationCoordinator) {
+    guard FocusLog.isEnabled else { return }
+    let name: (IndexPath?) -> String? = { [weak self] path in
+      guard let self, let path, self.cards.indices.contains(path.item) else { return nil }
+      return self.cards[path.item].title
+    }
+    let focused = name(context.nextFocusedIndexPath)
+    FocusLog.engine(section: sectionName,
+                    from: name(context.previouslyFocusedIndexPath),
+                    to: focused)
+
+    // Checked after the focus animation, not during it: mid-transition a cell
+    // legitimately still carries the appearance it is animating out of.
+    coordinator.addCoordinatedAnimations(nil) { [weak self] in
+      guard let self else { return }
+      var scaled: [String] = []
+      var motionOnly: [String] = []
+      for cell in collectionView.visibleCells where !cell.isFocused {
+        guard let path = collectionView.indexPath(for: cell),
+              self.cards.indices.contains(path.item) else { continue }
+        let residue = cell.focusAppearanceResidue
+        let title = self.cards[path.item].title
+        if residue.scaled {
+          scaled.append(title)
+        } else if residue.motion {
+          motionOnly.append(title)
+        }
+      }
+      FocusLog.stranded(section: self.sectionName,
+                        focused: focused,
+                        scaled: scaled,
+                        motionOnly: motionOnly)
+    }
+  }
+
+  /// Best label available for the trace — these collections are handed cards, not a
+  /// row title, so the first card stands in for "which rail is this".
+  private var sectionName: String {
+    let kind = isLandscape ? "landscape-rail" : "poster-rail"
+    guard let first = cards.first?.title else { return kind }
+    return "\(kind)(\(first))"
   }
 
   public func collectionView(

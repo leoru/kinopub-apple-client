@@ -16,6 +16,7 @@ enum SettingsDetailRoute: Hashable {
   /// Opens the in-process UI lab (iOS). macOS uses `openWindow` instead.
   case uiLab(UILabChrome)
   case typeStyles
+  case libraryLab
 #endif
 }
 #endif

@@ -40,26 +40,21 @@ struct MediaItemRatingsSection: View {
 
   private var aggregate: Rating? {
     guard FeatureFlags.combinedRatingEnabled else { return nil }
-    return Rating(imdb: mediaItem.imdbRating,
-                  imdbVotes: mediaItem.imdbVotes,
-                  kinopoisk: mediaItem.kinopoiskRating,
-                  kinopoiskVotes: mediaItem.kinopoiskVotes)
+    return MediaScores(mediaItem).aggregate
   }
 
   private var aggregateVotes: Int {
-    [mediaItem.imdbVotes, mediaItem.kinopoiskVotes]
-      .compactMap { $0 }
-      .filter { $0 > 0 }
-      .reduce(0, +)
+    MediaScores(mediaItem).totalVotes
   }
 
   private var scores: [Score] {
-    [
-      Self.score(id: "IMDb", logo: .imdb, value: mediaItem.imdbRating, votes: mediaItem.imdbVotes),
+    let bundle = MediaScores(mediaItem)
+    return [
+      Self.score(id: "IMDb", logo: .imdb, value: bundle.imdb, votes: bundle.imdbVotes),
       Self.score(id: "Кинопоиск",
                  logo: .kinopoisk,
-                 value: mediaItem.kinopoiskRating,
-                 votes: mediaItem.kinopoiskVotes)
+                 value: bundle.kinopoisk,
+                 votes: bundle.kinopoiskVotes)
     ].compactMap { $0 }
   }
 
@@ -122,7 +117,7 @@ struct MediaItemRatingsSection: View {
         .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
 #if os(tvOS)
         .scrollClipDisabled()
-        .focusSection()
+//        .focusSection()
 #endif
       }
       .animation(.easeOut(duration: 0.35), value: showsHeader)
@@ -150,17 +145,19 @@ struct MediaItemRatingsSection: View {
   static let tilePadding: CGFloat = 24
   static let iconSize: CGFloat = 48
   static let valueFont: Font = .system(size: 48, weight: .bold, design: .rounded)
-  static let titleFont: Font = .system(size: 22, weight: .semibold)
+  static let titleFont: Font = TypeScale.detailBody
+static let captionFont: Font = .caption
 #else
   static let spacing: CGFloat = 12
   static let tilePadding: CGFloat = 14
   static let iconSize: CGFloat = 32
   static let valueFont: Font = .system(size: 32, weight: .semibold, design: .rounded)
   static let titleFont: Font = .system(size: 14, weight: .semibold)
+    static let captionFont: Font = TypeScale.detailBody
+
 #endif
 
   /// Vote counts and source notes — the page's one running-text size.
-  static let captionFont: Font = TypeScale.detailBody
 }
 
 private struct AggregateRatingTile: View {
@@ -205,15 +202,15 @@ private struct AggregateRatingTile: View {
           Text("\(votes.formatted(.number.grouping(.automatic))) \("votes".localized)")
             .font(MediaItemRatingsSection.captionFont)
             .foregroundStyle(Color.KinoPub.subtitle)
-            .fixedSize(horizontal: false, vertical: true)
+//            .(horizontal: , vertical: true)
         }
       }
     }
     .padding(MediaItemRatingsSection.tilePadding)
-    .background(
-      Color.KinoPub.selectionBackground.opacity(0.5),
-      in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-    )
+//    .background(
+//      Color.KinoPub.selectionBackground.opacity(0.5),
+//      in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+//    )
   }
 }
 
@@ -280,11 +277,11 @@ private struct RatingTile: View {
       }
     }
     .padding(MediaItemRatingsSection.tilePadding)
-    .background(
-      Color.KinoPub.selectionBackground.opacity(isLink && isHovered ? 0.72 : 0.5),
-      in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-    )
-    .animation(.easeOut(duration: 0.15), value: isHovered)
+//    .background(
+//      Color.KinoPub.selectionBackground.opacity(isLink && isHovered ? 0.72 : 0.5),
+//      in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+//    )
+//    .animation(.easeOut(duration: 0.15), value: isHovered)
   }
 }
 
@@ -295,7 +292,7 @@ private struct ViewsRatingTile: View {
 
   var body: some View {
 #if os(tvOS)
-    // Same as `AggregateRatingTile`: a focus stop expressed as a `Button` so it can wear
+    // Same as `AggregateRatingTile`: a focus stop expressed as a `Button` so it can wear <<<< it must be interactive and all platforms as well not just here
     // the system card style.
     Button {} label: { content }
       .buttonStyle(DetailTileStyle.buttonStyle)
@@ -394,6 +391,12 @@ struct MediaItemCastSection: View {
   var externalMetadataLoaded: Bool = true
   var onSectionFocused: (() -> Void)? = nil
 
+#if os(tvOS)
+  /// The UIKit rail can't use a SwiftUI `NavigationLink`, so selection is pushed
+  /// through the same environment hook `MediaPosterShelf`'s TVUIKit rails use.
+  @Environment(\.mediaNavigation) private var mediaNavigation
+#endif
+
   /// Pushbr is a last resort after TMDB has had a chance — or immediately when
   /// there is no IMDb id and metadata will never arrive.
   private var allowPushbrFallback: Bool {
@@ -425,27 +428,87 @@ struct MediaItemCastSection: View {
   var body: some View {
     if !people.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
-        MediaItemSectionHeader("Cast and crew", count: "\(people.count)")
+        MediaItemSectionHeader("Cast & Crew")
 
-        ScrollView(.horizontal, showsIndicators: false) {
-          LazyHStack(alignment: .top, spacing: Self.spacing) {
-            ForEach(people, id: \.person.id) { entry in
-              NavigationLink(value: linkProvider.person(for: entry.person)) {
-                CastPortraitView(person: entry.person, member: entry.member)
-              }
-              .mediaZoomSource(id: "person-\(entry.person.id)")
-              .buttonStyle(PortraitButtonStyle())
 #if os(tvOS)
-              .reportMediaItemSectionFocus(onSectionFocused)
+        monogramRail
+#else
+        portraitRail
 #endif
-            }
-          }
-          .padding(.horizontal, MediaItemLayout.horizontalInset)
-          .padding(.vertical, Self.focusPadding)
-        }
       }
     }
   }
+
+#if os(tvOS)
+  /// System `TVMonogramContentConfiguration` circles — the round person treatment
+  /// Apple's own tvOS apps use, and the shape TVUIKit draws for people. Replaces a
+  /// hand-rolled rounded-rect avatar + `PortraitButtonStyle` (manual `scaleEffect`,
+  /// and — until the 2026-08-09 shadow pass — a focus-animated `shadow` radius on
+  /// every visible circle). The system cell owns its focus motion, so there is no
+  /// custom focus code left on this rail at all.
+  ///
+  /// Two things the SwiftUI rail had and this does not: `mediaZoomSource` (the zoom
+  /// transition is a SwiftUI-`NavigationLink` affordance with no UIKit-cell analog
+  /// here) and per-card `reportMediaItemSectionFocus`; the wash now flips from this
+  /// section's own `.detailFocusSection()` wrapper at the page level instead.
+  private var monogramRail: some View {
+    TVUIKitPersonCollection(
+      people: people.map { entry in
+        TVUIKitPerson(id: entry.person.id,
+                      name: entry.person.name,
+                      nameComponents: Self.nameComponents(from: entry.person.name),
+                      caption: Self.caption(for: entry),
+                      photoURL: entry.person.photoURL)
+      },
+      onSelect: { person in
+        guard let entry = people.first(where: { $0.person.id == person.id }) else { return }
+        mediaNavigation?(linkProvider.person(for: entry.person))
+      },
+      onCellFocused: onSectionFocused
+    )
+    .frame(height: TVUIKitPersonCollectionController.railHeight)
+//    .focusSection()
+  }
+
+  /// Character when TMDB has one, else the credit role — same rule as
+  /// `CastPortraitView.subtitleLabel`, which still backs the non-tvOS rail.
+  private static func caption(for entry: (person: MediaPerson, member: CastMember)) -> String {
+    if let character = entry.member.character?.trimmingCharacters(in: .whitespacesAndNewlines),
+       !character.isEmpty {
+      return character
+    }
+    return entry.person.role.titleKey.localized
+  }
+
+  /// kino.pub credits are one flat string, so the split is positional: first word is
+  /// the given name, the rest the family name. `TVMonogramContentConfiguration` uses
+  /// these only to compose the initials it draws when there is no photo.
+  private static func nameComponents(from name: String) -> PersonNameComponents {
+    var components = PersonNameComponents()
+    let parts = name.split(separator: " ", omittingEmptySubsequences: true)
+    components.givenName = parts.first.map(String.init)
+    if parts.count > 1 {
+      components.familyName = parts.dropFirst().joined(separator: " ")
+    }
+    return components
+  }
+#else
+  private var portraitRail: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      LazyHStack(alignment: .top, spacing: Self.spacing) {
+        ForEach(people, id: \.person.id) { entry in
+          NavigationLink(value: linkProvider.person(for: entry.person)) {
+            CastPortraitView(person: entry.person, member: entry.member)
+          }
+          .mediaZoomSource(id: "person-\(entry.person.id)")
+          .buttonStyle(PortraitButtonStyle())
+        }
+      }
+      .padding(.horizontal, MediaItemLayout.horizontalInset)
+      .padding(.vertical, Self.focusPadding)
+    }
+  }
+#endif
 
 #if os(tvOS)
   static let spacing: CGFloat = 28
@@ -552,7 +615,7 @@ struct CastAvatarView: View {
         )
       Text(Self.initials(of: name))
         .font(Self.initialsFont)
-        .foregroundStyle(Color.KinoPub.text)
+        .foregroundStyle(Color.KinoPub.subtitle)
     }
   }
 
@@ -669,120 +732,87 @@ private struct PortraitButtonStyle: ButtonStyle {
   }
 }
 
-// MARK: - Similar
+// MARK: - Related rows (Similar / More from director / More with actor)
 
-/// "More like this": the related items kino.pub returns for this one, drawn with the
-/// same poster cards and horizontal rail as the home rows. Each card leads to that
-/// item's own page, which is also what makes the rail reachable on tvOS — a scroll
-/// view moves by focus, so plain artwork past the right edge would strand the user.
-/// The whole section is absent until there is something to show.
-struct MediaItemSimilarSection: View {
+/// The related-item shelves, unified: one `[MediaRow]` (built by
+/// `MediaItemModel.relatedRows`) rendered through the exact same `MediaPosterShelf`
+/// Home's rows use, sharing ONE `@FocusState` across all of them — a card focused in
+/// "Similar" and one focused in "More from <director>" now behave exactly like two
+/// rows on the Home screen, restoring focus the same way, instead of being three
+/// independently-wired shelves each with its own focus/menu state (which is what
+/// this replaces — see `MediaItemPosterShelf`'s prior per-instance
+/// `MediaCardMenuCoordinator`, now owned once by the page and passed in).
+///
+/// Deliberately does NOT use `KinoPubUI`'s `MediaRowsView`: that component wraps its
+/// own vertical `ScrollView`, built to be an entire page's content (Home, Library,
+/// Bookmarks), not a fragment embedded in another page. Nesting a second vertical
+/// `ScrollView` inside this page's own would double up scroll/focus capture on tvOS
+/// — the same class of bug that broke navigation when phase 1 of
+/// `docs/en/plans/detail-page-choreography.md` pulled the hero into a `ZStack`
+/// sibling. This reproduces `MediaRowsView`'s per-row rendering and shared
+/// `@FocusState` directly, without its outer scroll container.
+struct MediaItemRelatedRowsSection: View {
 
-  let items: [MediaItem]
+  let rows: [MediaRow]
+  let relatedItem: (Int) -> MediaItem?
   let linkProvider: NavigationLinkProvider
-  var onSectionFocused: (() -> Void)? = nil
-
-  var body: some View {
-    MediaItemPosterShelf(
-      title: "Similar",
-      items: items,
-      linkProvider: linkProvider,
-      onSectionFocused: onSectionFocused
-    )
-  }
-}
-
-// MARK: - More from director / with actor
-
-/// Role-scoped credit shelf under Related. Skeleton while the query is in flight;
-/// gone entirely when the person has nothing else (or the query failed).
-struct MediaItemPersonShelfSection: View {
-
-  let titleFormat: String
-  let person: MediaPerson?
-  let items: [MediaItem]
-  let isLoaded: Bool
-  let linkProvider: NavigationLinkProvider
-  var onSectionFocused: (() -> Void)? = nil
-
-  private var title: String {
-    guard let person else { return "" }
-    return String(format: titleFormat.localized, person.name)
-  }
-
-  var body: some View {
-    if let person {
-      if !items.isEmpty {
-        MediaItemPosterShelf(
-          title: title,
-          items: items,
-          linkProvider: linkProvider,
-          personDestination: person,
-          onSectionFocused: onSectionFocused
-        )
-      } else if !isLoaded {
-        MediaItemPosterShelfSkeleton(title: title)
-      }
-    }
-  }
-}
-
-/// Shared horizontal poster rail for Similar and the person shelves —
-/// same `MediaPosterShelf` as Home Hot Movies / Hot Series.
-struct MediaItemPosterShelf: View {
-
-  let title: String
-  let items: [MediaItem]
-  let linkProvider: NavigationLinkProvider
-  var personDestination: MediaPerson? = nil
+  let cardMenu: MediaCardMenuCoordinator
+  /// Titles for shelves still loading — same skeleton, now interleaved in this one
+  /// section instead of belonging to whichever standalone section it used to sit in.
+  var pendingShelves: [String] = []
   var onSectionFocused: (() -> Void)? = nil
 
   @Environment(ErrorHandler.self) private var errorHandler
   @EnvironmentObject private var navigationState: NavigationState
   @Environment(\.openURL) private var openURL
-  @StateObject private var cardMenu = MediaCardMenuCoordinator()
 
-  private var cards: [MediaCard] {
-    items.map(MediaCard.init)
+  private struct CardKey: Hashable {
+    let row: String
+    let card: Int
   }
 
-  private var destination: (any Hashable)? {
-    personDestination.map { linkProvider.person(for: $0) }
-  }
+  @FocusState private var focusedCard: CardKey?
 
   var body: some View {
-    if !items.isEmpty {
-      MediaPosterShelf(
-        title: title,
-        cards: cards,
-        destination: destination,
-        navigationLinkProvider: { card in
-          if let item = items.first(where: { $0.id == card.id }) {
-            return linkProvider.link(for: item)
-          }
-          return linkProvider.link(for: items[0])
-        },
-        contextMenuProvider: { card in
-          guard let item = items.first(where: { $0.id == card.id }) else { return [] }
-          return menuEntries(for: item)
-        },
-        onCardFocused: onSectionFocused
-      )
+    if !rows.isEmpty || !pendingShelves.isEmpty {
+      VStack(alignment: .leading, spacing: MediaItemLayout.sectionSpacing) {
+        ForEach(rows) { row in
+          MediaPosterShelf(
+            title: row.title,
+            count: row.count,
+            cards: row.cards,
+            destination: row.destination,
+            navigationLinkProvider: { card in
+              if let item = relatedItem(card.id) {
+                return linkProvider.link(for: item)
+              }
+              // Defensive fallback only — every card here was built from an item in
+              // `rows`, so the lookup above always succeeds in practice.
+              return Route.detailsById(card.id)
+            },
+            contextMenuProvider: { card in
+              MediaCardContextMenus.entries(for: card,
+                                            surface: .shelf,
+                                            menu: cardMenu,
+                                            pushRoute: { navigationState.push($0) },
+                                            openURL: { openURL($0) })
+            },
+            focusedCard: $focusedCard,
+            focusKey: { CardKey(row: row.id, card: $0.id) },
+            onCardFocused: onSectionFocused
+          )
+        }
+
+        ForEach(pendingShelves, id: \.self) { title in
+          MediaItemPosterShelfSkeleton(title: title)
+        }
+      }
       .task {
         cardMenu.bind(errorHandler: errorHandler)
         await cardMenu.refreshFolders()
       }
       .mediaCardNewFolderAlert(cardMenu)
     }
-  }
-
-  private func menuEntries(for item: MediaItem) -> [MediaCardContextEntry] {
-    MediaCardContextMenus.entries(
-      for: item,
-      menu: cardMenu,
-      pushRoute: { navigationState.push($0) },
-      openURL: { openURL($0) }
-    )
   }
 }
 
@@ -1187,53 +1217,57 @@ struct MediaItemInfoColumns: View {
     return languages
   }
 
-  private var informationSections: [InfoSection] {
-    var sections: [InfoSection] = []
-
-    var typeValues: [InfoValue] = [
+  /// The strip above the table: what this title **is** and where it comes from —
+  /// type, country, genre. These are the only information values that ever led
+  /// somewhere (a filtered search), and as table rows they were both buried and, on
+  /// tvOS, a row of individually-focusable links the remote had to crawl through one
+  /// at a time. As tags they read as one breadcrumb-ish line and are a single focus
+  /// group. Studios / production companies belong here too when we carry them.
+  ///
+  /// Values with no filter (a subtype kino.pub has no query for) still render — as
+  /// plain, unfocusable capsules — so the line reads the same whether or not every
+  /// tag happens to be actionable.
+  private var tagValues: [InfoValue] {
+    var tags: [InfoValue] = [
       InfoValue(id: "type",
                 title: mediaItem.contentTypeTitleKey.localized,
                 filter: mediaItem.contentTypeFilter.map { LibraryFilter(contentType: $0) })
     ]
     if let subtypeKey = mediaItem.contentSubtypeTitleKey {
-      typeValues.append(InfoValue(id: "subtype", title: subtypeKey.localized))
+      tags.append(InfoValue(id: "subtype", title: subtypeKey.localized))
     } else if let raw = mediaItem.contentSubtypeRaw {
-      typeValues.append(InfoValue(id: "subtype", title: raw))
+      tags.append(InfoValue(id: "subtype", title: raw))
     }
-    sections.append(InfoSection(id: "type", caption: "MediaItem_Type", values: typeValues))
+
+    tags.append(contentsOf: mediaItem.countries
+      .filter { !$0.title.isEmpty }
+      .map {
+        InfoValue(id: "country-\($0.id)",
+                  title: $0.title,
+                  filter: LibraryFilter(countryID: $0.id))
+      })
+
+    tags.append(contentsOf: mediaItem.genres.compactMap { genre -> InfoValue? in
+      guard let title = genre.title, !title.isEmpty else { return nil }
+      return InfoValue(id: "genre-\(genre.id)",
+                       title: title,
+                       filter: LibraryFilter(genreID: genre.id))
+    })
+
+    return tags
+  }
+
+  /// Everything about *this release* that is not a date and not a tag. With type /
+  /// country / genre gone to `tagValues`, nothing left in the table navigates — the
+  /// whole block is now read-only text, which is why it no longer takes focus at all.
+  private var detailsCardSections: [InfoSection] {
+    var sections: [InfoSection] = []
 
     if let aka = mediaItem.alsoKnownAsTitle {
       sections.append(InfoSection(id: "aka",
                                   caption: "MediaItem_AlsoKnownAs",
                                   values: [InfoValue(id: "aka", title: aka)]))
     }
-
-    let countries = mediaItem.countries
-      .filter { !$0.title.isEmpty }
-      .map {
-        InfoValue(id: "country-\($0.id)",
-                  title: $0.title,
-                  filter: LibraryFilter(countryID: $0.id))
-      }
-    if !countries.isEmpty {
-      let caption = countries.count == 1
-        ? "MediaItem_CountryOfOrigin"
-        : "MediaItem_CountriesOfOrigin"
-      sections.append(InfoSection(id: "country", caption: caption, values: countries))
-    }
-
-    let genres = mediaItem.genres.compactMap { genre -> InfoValue? in
-      guard let title = genre.title, !title.isEmpty else { return nil }
-      return InfoValue(id: "genre-\(genre.id)",
-                       title: title,
-                       filter: LibraryFilter(genreID: genre.id))
-    }
-    if !genres.isEmpty {
-      let caption = genres.count == 1 ? "MediaItem_Genre" : "MediaItem_Genres"
-      sections.append(InfoSection(id: "genre", caption: caption, values: genres))
-    }
-
-    sections.append(contentsOf: releaseSections)
 
     let duration = mediaItem.displayDuration
     if !duration.isEmpty {
@@ -1265,6 +1299,8 @@ struct MediaItemInfoColumns: View {
     if mediaItem.poorQuality {
       flagValues.append(InfoValue(id: "poor", title: "MediaItem_PoorQuality".localized))
     }
+    sections.append(contentsOf: volumeSections)
+
     if !flagValues.isEmpty {
       sections.append(InfoSection(id: "flags",
                                   caption: "MediaItem_Flags",
@@ -1274,9 +1310,35 @@ struct MediaItemInfoColumns: View {
     return sections
   }
 
-  /// Release / expected release / season premiere / status / totals — the date-driven
-  /// block fed by TMDB air dates, with kino.pub's year as the final fallback.
-  private var releaseSections: [InfoSection] {
+  /// The table as cards rather than three long columns. Grouping is by the question
+  /// each answers — when it came out, what this release is, how it plays — so a
+  /// glance lands on the one that matters instead of scanning a wall of label/value
+  /// pairs. Empty groups drop out entirely; languages is its own card below because
+  /// it owns expansion state the others do not have.
+  private var infoCards: [InfoCard] {
+    var cards: [InfoCard] = []
+    if !releaseCardSections.isEmpty {
+      cards.append(InfoCard(id: "release", title: "MediaItem_Release", sections: releaseCardSections))
+    }
+    if !detailsCardSections.isEmpty {
+      cards.append(InfoCard(id: "details", title: "Information", sections: detailsCardSections))
+    }
+    if !technicalSections.isEmpty {
+      cards.append(InfoCard(id: "technical", title: "MediaItem_Technical", sections: technicalSections))
+    }
+    return cards
+  }
+
+  private struct InfoCard: Identifiable {
+    let id: String
+    let title: LocalizedStringKey
+    let sections: [InfoSection]
+  }
+
+  /// Release / expected release / season premiere / status — the date-driven block
+  /// fed by TMDB air dates, with kino.pub's year as the final fallback. Season and
+  /// episode totals moved to `volumeSections`.
+  private var releaseCardSections: [InfoSection] {
     var sections: [InfoSection] = []
     let meta = externalMetadata
 
@@ -1308,6 +1370,15 @@ struct MediaItemInfoColumns: View {
       sections.append(InfoSection(id: "status", caption: "MediaItem_Status",
                                   values: [InfoValue(id: "status", title: statusKey.localized)]))
     }
+
+    return sections
+  }
+
+  /// How much of the show exists and how much of it is here — series only. Split out
+  /// of the release block: "18 seasons, 386 episodes" answers *how much is there*,
+  /// not *when it came out*, and reads better next to the runtime than under a date.
+  private var volumeSections: [InfoSection] {
+    var sections: [InfoSection] = []
 
     if let totals = totalExistsText {
       sections.append(InfoSection(id: "total-exists", caption: "MediaItem_TotalExists",
@@ -1524,23 +1595,36 @@ struct MediaItemInfoColumns: View {
     mediaItem.subtitleLanguageGroups(preferredLanguages: preferredLanguages)
   }
 
-  private var showsLanguagesColumn: Bool {
+  private var showsLanguagesCard: Bool {
     !audioGroups.isEmpty || !subtitleGroups.isEmpty
   }
 
-  private var showsTechnicalColumn: Bool {
-    !technicalSections.isEmpty
+  @AppStorage(MediaItemAboutLayout.storageKey)
+  private var layoutRaw = MediaItemAboutLayout.tiers.rawValue
+
+  private var layout: MediaItemAboutLayout {
+    MediaItemAboutLayout(rawValue: layoutRaw) ?? .tiers
   }
 
   var body: some View {
     VStack(alignment: .leading, spacing: Self.footerSpacing) {
-      ViewThatFits(in: .horizontal) {
-        HStack(alignment: .top, spacing: Self.columnSpacing) {
-          columnViews
-        }
-        VStack(alignment: .leading, spacing: Self.columnSpacing) {
-          columnViews
-        }
+#if DEBUG
+      // Cycles the four candidate compositions in place, so they can be compared on a
+      // real title instead of in the abstract. Goes away with the losing three.
+      AboutLayoutSwitcher(layout: layout) { next in
+        layoutRaw = next.rawValue
+      }
+#endif
+
+      if !tagValues.isEmpty {
+        TagStrip(values: tagValues, onSectionFocused: onSectionFocused)
+      }
+
+      switch layout {
+      case .appleShape: AboutLayoutAppleShape(content: aboutContent)
+      case .legend: AboutLayoutLegend(content: aboutContent)
+      case .tiers: AboutLayoutTiers(content: aboutContent)
+      case .specSheet: AboutLayoutSpecSheet(content: aboutContent)
       }
 
       InfoFooter(mediaItem: mediaItem,
@@ -1550,84 +1634,232 @@ struct MediaItemInfoColumns: View {
                  debugLog: externalMetadata.debugLog,
                  onSectionFocused: onSectionFocused)
     }
-#if os(tvOS)
-    // One panel band at the bottom of the page — cheap material over the wash.
-    .padding(.horizontal, 36)
-    .padding(.vertical, 28)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background {
-      RoundedRectangle(cornerRadius: 28, style: .continuous)
-        .fill(.regularMaterial)
-        .opacity(0.72)
-    }
     .padding(.horizontal, MediaItemLayout.horizontalInset)
-#else
-    .padding(.horizontal, MediaItemLayout.horizontalInset)
-#endif
   }
 
-  @ViewBuilder
-  private var columnViews: some View {
-    InformationColumn(title: "Information",
-                      sections: informationSections,
-                      onSectionFocused: onSectionFocused)
-    if showsLanguagesColumn {
-      LanguagesColumn(audioGroups: audioGroups,
-                      subtitleGroups: subtitleGroups,
-                      preferredLanguages: preferredLanguages,
-                      onSectionFocused: onSectionFocused)
+  /// One value the four layouts share, so switching between them can only change the
+  /// composition — never which facts are on screen.
+  private var aboutContent: MediaItemAboutContent {
+    MediaItemAboutContent(
+      synopsis: mediaItem.plot.isEmpty ? nil : mediaItem.plot,
+      title: mediaItem.localizedTitle,
+      primaryGenre: mediaItem.genres.compactMap(\.title).first,
+      ageRating: externalMetadata.ageRating,
+      advisories: advisories,
+      tags: tagValues,
+      releaseSections: releaseCardSections,
+      detailSections: detailsCardSections,
+      technicalSections: technicalSections,
+      badges: aboutBadges,
+      languageSummary: languageSummary,
+      subtitleNames: subtitleGroups.map(\.name)
+    )
+  }
+
+  private var advisories: [String] {
+    var result: [String] = []
+    if mediaItem.advert { result.append("MediaItem_ContainsAds".localized) }
+    if mediaItem.poorQuality { result.append("MediaItem_PoorQuality".localized) }
+    return result
+  }
+
+  /// The legend. Only badges we can actually justify from the payload — kino.pub
+  /// carries no HDR / Dolby Vision flag, so those are absent rather than guessed.
+  private var aboutBadges: [MediaItemAboutContent.AboutBadge] {
+    var badges: [MediaItemAboutContent.AboutBadge] = []
+
+    if let quality = mediaItem.qualityDisplay {
+      badges.append(.init(id: "quality",
+                          short: quality,
+                          name: "MediaItem_VideoQuality".localized,
+                          explanation: "MediaItem_LegendQuality".localized,
+                          isProminent: true))
     }
-    if showsTechnicalColumn {
-      InformationColumn(title: "MediaItem_Technical",
-                        sections: technicalSections,
-                        onSectionFocused: onSectionFocused)
+    if let ac3 = mediaItem.ac3, ac3 > 0 {
+      badges.append(.init(id: "ac3",
+                          short: "AC3",
+                          name: "MediaItem_AudioCodec".localized,
+                          explanation: "MediaItem_LegendAC3".localized))
+    }
+    if !subtitleGroups.isEmpty {
+      badges.append(.init(id: "cc",
+                          short: "CC",
+                          name: "Subtitles".localized,
+                          explanation: "MediaItem_LegendCC".localized))
+    }
+    if mediaItem.detailAudioTracks.contains(where: \.isAudioDescription) {
+      badges.append(.init(id: "ad",
+                          short: "AD",
+                          name: "MediaItem_LegendADName".localized,
+                          explanation: "MediaItem_LegendAD".localized))
+    }
+    if let rating = externalMetadata.ageRating, !rating.isEmpty {
+      badges.append(.init(id: "age",
+                          short: rating,
+                          name: "MediaItem_AgeRating".localized,
+                          explanation: "MediaItem_LegendAgeRating".localized))
+    }
+    return badges
+  }
+
+  /// The viewer's own languages, in the order the system ranks them, each showing the
+  /// best dub it has — "can I watch this", answered in two lines instead of a wall of
+  /// every localization. Falls back to English, then to whatever the first (original)
+  /// track is, when none of the preferred languages are present at all.
+  private var languageSummary: [MediaItemAboutContent.LanguageLine] {
+    var ordered: [MediaLanguageGroup] = []
+    for key in preferredLanguages.map(SubtitleTracks.languageKey) {
+      guard !ordered.contains(where: { $0.key == key }),
+            let match = audioGroups.first(where: { $0.key == key }) else { continue }
+      ordered.append(match)
+    }
+    if ordered.isEmpty {
+      if let english = audioGroups.first(where: { $0.key == "en" }) {
+        ordered.append(english)
+      } else if let first = audioGroups.first {
+        ordered.append(first)
+      }
+    }
+
+    let subtitleKeys = Set(subtitleGroups.map(\.key))
+    return ordered.prefix(3).map { group in
+      MediaItemAboutContent.LanguageLine(
+        id: group.key,
+        language: group.name,
+        best: group.detailLines.first,
+        hasSubtitles: subtitleKeys.contains(group.key),
+        extraCount: max(0, group.detailLines.count - 1)
+      )
     }
   }
 
-  private enum ValueStyle {
-    case primary
-    case note
-  }
+  // MARK: Tags
 
-  private struct InfoValue: Identifiable {
-    let id: String
-    let title: String
-    /// When set, the value opens Search with this filter.
-    var filter: LibraryFilter? = nil
-    var style: ValueStyle = .primary
-  }
-
-  private struct InfoSection: Identifiable {
-    let id: String
-    let caption: String
+  /// Type · country · genre as one line of capsules, above the table. Each tag that
+  /// has a filter opens Search on it — the same destination the table rows used to
+  /// have, but reachable in one place instead of scattered through three columns.
+  private struct TagStrip: View {
     let values: [InfoValue]
-  }
-
-  // MARK: Information / Technical
-
-  private struct InformationColumn: View {
-    let title: LocalizedStringKey
-    let sections: [InfoSection]
     var onSectionFocused: (() -> Void)? = nil
     @EnvironmentObject var navigationState: NavigationState
-    @State private var hoveredValueID: String?
+
+    var body: some View {
+      // Wraps rather than scrolls: the whole set should be readable at a glance, and
+      // a horizontally-scrolling strip would put tags off-screen with no hint.
+      FlowLayout(spacing: MediaItemInfoColumns.tagSpacing) {
+        ForEach(values) { value in
+          if let filter = value.filter {
+            Button {
+              navigationState.openSearch(filter: filter, title: value.title)
+            } label: {
+              TagCapsule(title: value.title)
+            }
+            .buttonStyle(DetailTileStyle.buttonStyle)
+          } else {
+            // No query behind it — reads the same, simply isn't a control.
+            TagCapsule(title: value.title)
+          }
+        }
+      }
+#if os(tvOS)
+      .reportMediaItemSectionFocus(onSectionFocused)
+//      .focusSection()
+#endif
+    }
+  }
+
+  /// Left-aligned wrapping row. SwiftUI has no built-in flow container — `HStack`
+  /// would run off the edge and `LazyVGrid` would force a fixed column width that a
+  /// mix of "USA" and "Science Fiction" cannot share.
+  private struct FlowLayout: Layout {
+    var spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+      let maxWidth = proposal.width ?? .infinity
+      var rowWidth: CGFloat = 0
+      var rowHeight: CGFloat = 0
+      var totalHeight: CGFloat = 0
+      var widest: CGFloat = 0
+
+      for subview in subviews {
+        let size = subview.sizeThatFits(.unspecified)
+        if rowWidth > 0, rowWidth + spacing + size.width > maxWidth {
+          widest = max(widest, rowWidth)
+          totalHeight += rowHeight + spacing
+          rowWidth = size.width
+          rowHeight = size.height
+        } else {
+          rowWidth += rowWidth > 0 ? spacing + size.width : size.width
+          rowHeight = max(rowHeight, size.height)
+        }
+      }
+      widest = max(widest, rowWidth)
+      totalHeight += rowHeight
+      return CGSize(width: min(widest, maxWidth), height: totalHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect,
+                       proposal: ProposedViewSize,
+                       subviews: Subviews,
+                       cache: inout ()) {
+      var x = bounds.minX
+      var y = bounds.minY
+      var rowHeight: CGFloat = 0
+
+      for subview in subviews {
+        let size = subview.sizeThatFits(.unspecified)
+        if x > bounds.minX, x + size.width > bounds.maxX {
+          x = bounds.minX
+          y += rowHeight + spacing
+          rowHeight = 0
+        }
+        subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+        x += size.width + spacing
+        rowHeight = max(rowHeight, size.height)
+      }
+    }
+  }
+
+  private struct TagCapsule: View {
+    let title: String
+
+    var body: some View {
+      Text(title)
+        .font(MediaItemInfoColumns.valueFont)
+        .foregroundStyle(Color.KinoPub.text)
+        .padding(.horizontal, MediaItemInfoColumns.tagHorizontalPadding)
+        .padding(.vertical, MediaItemInfoColumns.tagVerticalPadding)
+        .background(Capsule().fill(.thinMaterial))
+    }
+  }
+
+  // MARK: Information cards
+
+  /// One card of the information table. Purely presentational: with type / country /
+  /// genre moved to `TagStrip`, nothing in here navigates, so it takes no focus and
+  /// the remote skips straight past the whole block.
+  private struct InfoCardView: View {
+    let title: LocalizedStringKey
+    let sections: [InfoSection]
 
     var body: some View {
       VStack(alignment: .leading, spacing: MediaItemInfoColumns.sectionSpacing) {
         Text(title)
-          .font(MediaItemInfoColumns.headerFont)
-          .foregroundStyle(Color.KinoPub.text)
+          .font(MediaItemInfoColumns.cardTitleFont)
+          .foregroundStyle(.secondary)
 
         ForEach(sections) { section in
           sectionBlock(section)
         }
       }
-      // Equal share of the row — the columns fill the page width instead of
-      // stacking to the left at a fixed width.
+      .padding(MediaItemInfoColumns.cardPadding)
+      // Equal share of the row — cards fill the page width instead of stacking to
+      // the left at a fixed width.
       .frame(maxWidth: .infinity, alignment: .leading)
-#if os(tvOS)
-      .reportMediaItemSectionFocus(onSectionFocused)
-#endif
+      .background {
+        RoundedRectangle(cornerRadius: MediaItemInfoColumns.cardCornerRadius, style: .continuous)
+          .fill(.thinMaterial)
+      }
     }
 
     @ViewBuilder
@@ -1638,82 +1870,27 @@ struct MediaItemInfoColumns: View {
           .foregroundStyle(Color.KinoPub.subtitle)
 
         ForEach(section.values) { value in
-          if let filter = value.filter {
-            Button {
-              navigationState.openSearch(filter: filter, title: value.title)
-            } label: {
-              Text(value.title)
-                .font(MediaItemInfoColumns.valueFont)
-                .foregroundStyle(Color.KinoPub.text)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-            .buttonStyle(InfoLinkButtonStyle(showsChevron: hoveredValueID == value.id))
-#if os(macOS)
-            .onHover { hovering in
-              hoveredValueID = hovering ? value.id : nil
-              if hovering {
-                NSCursor.pointingHand.push()
-              } else {
-                NSCursor.pop()
-              }
-            }
-#elseif os(iOS)
-            .onHover { hovering in
-              hoveredValueID = hovering ? value.id : nil
-            }
-#endif
-#if os(tvOS)
-            .reportMediaItemSectionFocus(onSectionFocused)
-#endif
-          } else {
-            Text(value.title)
-              .font(value.style == .note
-                    ? MediaItemInfoColumns.captionFont
-                    : MediaItemInfoColumns.plainValueFont)
-              .foregroundStyle(value.style == .note
-                               ? Color.KinoPub.subtitle
-                               : Color.KinoPub.text)
-              .fixedSize(horizontal: false, vertical: true)
-          }
+          Text(value.title)
+            .font(value.style == .note
+                  ? MediaItemInfoColumns.captionFont
+                  : MediaItemInfoColumns.plainValueFont)
+            .foregroundStyle(value.style == .note
+                             ? Color.KinoPub.subtitle
+                             : Color.KinoPub.text)
+            .fixedSize(horizontal: false, vertical: true)
         }
       }
-    }
-  }
-
-  /// Hover / focus: opacity 0.8 and a trailing chevron on the value itself.
-  private struct InfoLinkButtonStyle: ButtonStyle {
-    var showsChevron: Bool
-
-    func makeBody(configuration: ButtonStyle.Configuration) -> some View {
-      InfoLinkLabel(configuration: configuration, showsChevron: showsChevron)
-    }
-  }
-
-  private struct InfoLinkLabel: View {
-    let configuration: ButtonStyle.Configuration
-    let showsChevron: Bool
-    @Environment(\.isFocused) private var isFocused
-
-    private var active: Bool { showsChevron || isFocused }
-
-    var body: some View {
-      HStack(spacing: 6) {
-        configuration.label
-          .opacity(active ? 0.8 : 1)
-        if active {
-          Image(systemName: "chevron.right")
-            .font(MediaItemInfoColumns.captionFont)
-            .foregroundStyle(Color.KinoPub.subtitle.opacity(0.85))
-            .transition(.opacity)
-        }
-      }
-      .animation(.easeOut(duration: 0.18), value: active)
     }
   }
 
   // MARK: Languages
 
-  private struct LanguagesColumn: View {
+  /// Audio and subtitles, shortest-useful-answer first: per language only the **best**
+  /// dub available (`AudioTracks` orders kinds DUB → MVO → DVO → VO → AVO → Orig, so
+  /// that is simply the first summary line), with the rest folded into a "+N" until
+  /// the card is opened. A title with a proper dub and eight single-voice
+  /// localizations should say "Russian · Dubbed", not list all nine.
+  private struct LanguagesCard: View {
     let audioGroups: [MediaLanguageGroup]
     let subtitleGroups: [MediaLanguageGroup]
     let preferredLanguages: [String]
@@ -1721,6 +1898,9 @@ struct MediaItemInfoColumns: View {
 
     @State private var showsAllAudio = false
     @State private var showsAllSubtitles = false
+
+    /// Expanding shows every language *and* every dub kind within each language.
+    private var isExpanded: Bool { showsAllAudio && showsAllSubtitles }
 
     private var collapsedAudio: (visible: [MediaLanguageGroup], hiddenCount: Int) {
       LanguageListVisibility.partition(audioGroups, preferredLanguages: preferredLanguages)
@@ -1738,9 +1918,16 @@ struct MediaItemInfoColumns: View {
       showsAllSubtitles ? (subtitleGroups, 0) : collapsedSubtitles
     }
 
+    /// Dub kinds hidden by the collapsed view, across every visible language.
+    private var hiddenKindCount: Int {
+      audioPartition.visible.reduce(0) { $0 + max(0, $1.detailLines.count - 1) }
+    }
+
     private var canExpand: Bool {
-      (!showsAllAudio && collapsedAudio.hiddenCount >= 2)
-        || (!showsAllSubtitles && collapsedSubtitles.hiddenCount >= 2)
+      guard !isExpanded else { return false }
+      return collapsedAudio.hiddenCount >= 2
+        || collapsedSubtitles.hiddenCount >= 2
+        || hiddenKindCount > 0
     }
 
     var body: some View {
@@ -1751,8 +1938,8 @@ struct MediaItemInfoColumns: View {
       } label: {
         VStack(alignment: .leading, spacing: MediaItemInfoColumns.sectionSpacing) {
           Text("Languages")
-            .font(MediaItemInfoColumns.headerFont)
-            .foregroundStyle(Color.KinoPub.text)
+            .font(MediaItemInfoColumns.cardTitleFont)
+            .foregroundStyle(.secondary)
 
           if !audioGroups.isEmpty {
             audioSection(groups: audioPartition.visible,
@@ -1764,7 +1951,12 @@ struct MediaItemInfoColumns: View {
               .padding(.top, MediaItemInfoColumns.subtitleExtraTop)
           }
         }
+        .padding(MediaItemInfoColumns.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+          RoundedRectangle(cornerRadius: MediaItemInfoColumns.cardCornerRadius, style: .continuous)
+            .fill(.thinMaterial)
+        }
       }
       .buttonStyle(ExpandableButtonStyle(showsPointerHighlight: false))
 #if os(tvOS)
@@ -1781,11 +1973,14 @@ struct MediaItemInfoColumns: View {
 
         VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageGroupSpacing) {
           ForEach(groups) { group in
+            // Collapsed: the best kind only (the list is already ranked, so that is
+            // line 0). Expanded: every kind this language has.
+            let lines = isExpanded ? group.detailLines : Array(group.detailLines.prefix(1))
             VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageNameToKindSpacing) {
               Text(group.name)
                 .font(MediaItemInfoColumns.valueFont)
                 .foregroundStyle(Color.KinoPub.text)
-              ForEach(Array(group.detailLines.enumerated()), id: \.offset) { _, line in
+              ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 Text(line)
                   .font(MediaItemInfoColumns.detailFont)
                   .foregroundStyle(Color.KinoPub.text)
@@ -1795,8 +1990,11 @@ struct MediaItemInfoColumns: View {
           }
         }
 
-        if moreCount >= 2 {
-          moreLabel(moreCount)
+        // One count for both kinds of "there is more here" — extra languages and the
+        // extra dubs folded away inside the ones on screen.
+        let hidden = moreCount + hiddenKindCount
+        if hidden > 0, !isExpanded {
+          moreLabel(hidden)
         }
       }
     }
@@ -2026,7 +2224,11 @@ struct MediaItemInfoColumns: View {
   static let subtitleExtraTop: CGFloat = 8
   static let stackSpacing: CGFloat = 4
   static let footerSpacing: CGFloat = 28
-  static let headerFont: Font = .system(size: 30, weight: .semibold)
+  static let cardPadding: CGFloat = 32
+  static let cardCornerRadius: CGFloat = 24
+  static let tagSpacing: CGFloat = 12
+  static let tagHorizontalPadding: CGFloat = 22
+  static let tagVerticalPadding: CGFloat = 12
 #else
   static let columnSpacing: CGFloat = 28
   static let sectionSpacing: CGFloat = 16
@@ -2035,8 +2237,19 @@ struct MediaItemInfoColumns: View {
   static let subtitleExtraTop: CGFloat = 8
   static let stackSpacing: CGFloat = 2
   static let footerSpacing: CGFloat = 20
-  static let headerFont: Font = .system(size: 18, weight: .bold)
+  static let cardPadding: CGFloat = 16
+  static let cardCornerRadius: CGFloat = 14
+  static let tagSpacing: CGFloat = 8
+  static let tagHorizontalPadding: CGFloat = 12
+  static let tagVerticalPadding: CGFloat = 6
 #endif
+
+  /// Card titles inside the information table. Deliberately **not** `SectionHeader`:
+  /// that is the page's *section* header — the thing that can carry a count, a
+  /// chevron and a `NavigationLink` to a whole screen. What is inside the table is
+  /// table chrome, and borrowing the section header here would advertise an
+  /// affordance these titles do not have.
+  static let cardTitleFont: Font = TypeScale.detailSection
 
   /// Captions and values differ by weight, not by size — the size is the page's one
   /// running-text token, shared with the hero and the rating captions.
@@ -2099,22 +2312,32 @@ enum MediaItemLayout {
   /// they sit relative to what is on screen — see `MediaItemHeroView.visibilityProbe`.
   static let scrollSpace = "MediaItemScroll"
 
+  // No `headerFont` here (nor on `MediaItemInfoColumns`): every section title on this
+  // page goes through `SectionHeader`, which owns the font and the vibrant-secondary
+  // treatment. Both constants were three hand-picked point sizes that had already
+  // drifted from `TypeScale.rowHeader` — the token the shared header actually uses.
+
+  /// The page's two resting scroll positions — see `MediaItemHeroScrollDriver`.
+  static let heroAnchor = "MediaItemHero"
+  static let sectionsAnchor = "MediaItemSections"
+
 #if os(tvOS)
   static let horizontalInset: CGFloat = 80
   static let sectionSpacing: CGFloat = 44
   /// Clears focus lift under the info panel + safe area.
   static let bottomPadding: CGFloat = 120
-  static let headerFont: Font = .system(size: 32, weight: .semibold)
+  /// How much of the first section stays visible under the hero at rest. The hero is
+  /// laid out at `viewportHeight - heroPeek`, so this single number decides both the
+  /// "there is more below" affordance and where the sections state lands.
+  static let heroPeek: CGFloat = 190
 #elseif os(macOS)
   static let horizontalInset: CGFloat = 32
   static let sectionSpacing: CGFloat = 28
   static let bottomPadding: CGFloat = sectionSpacing
-  static let headerFont: Font = .system(size: 22, weight: .semibold)
 #else
   static let horizontalInset: CGFloat = 20
   static let sectionSpacing: CGFloat = 24
   static let bottomPadding: CGFloat = sectionSpacing
-  static let headerFont: Font = .system(size: 20, weight: .semibold)
 #endif
 }
 
@@ -2188,7 +2411,7 @@ struct MediaItemPlotView: View {
     } label: {
       paragraph(showsMore: isTruncated)
     }
-    .buttonStyle(ExpandableButtonStyle())
+    .buttonStyle(.card)
     .focused($focus, equals: .plot)
     .sheet(isPresented: $showsFullText) {
       plotSheet
@@ -2215,7 +2438,7 @@ struct MediaItemPlotView: View {
     MediaItemDetailSheet(title: Text(title)) {
       Text(plot)
         .font(MediaItemSheetLayout.bodyFont)
-        .foregroundStyle(Color.white)
+        .foregroundStyle(Color.KinoPub.text)
         .multilineTextAlignment(.leading)
     }
   }
@@ -2224,7 +2447,7 @@ struct MediaItemPlotView: View {
     HStack(alignment: .lastTextBaseline, spacing: 14) {
       Text(plot)
         .font(Self.font)
-        .foregroundStyle(Color.white)
+        .foregroundStyle(Color.KinoPub.text)
         .lineLimit(Self.lineLimit)
         .multilineTextAlignment(.leading)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2259,9 +2482,6 @@ struct MediaItemPlotView: View {
         Text("More")
           .font(Self.moreFont.weight(.semibold))
           .textCase(.uppercase)
-          .tracking(Self.moreTracking)
-          .opacity(Self.moreOpacity)
-          .fixedSize()
           .accessibilityHidden(true)
       }
     }
@@ -2276,7 +2496,7 @@ struct MediaItemPlotView: View {
   static let moreFont: Font = .footnote
 
 #if os(tvOS)
-  static let lineLimit = 4
+  static let lineLimit = 5
   /// Fills its column: the hero's written column already caps the width, and a
   /// second, narrower ceiling here left the synopsis short of the lines beneath it.
   static let maxWidth: CGFloat = .infinity
@@ -2327,22 +2547,23 @@ private struct ExpandableButtonStyle: ButtonStyle {
         // At rest this is a step down from the title, not the full 40% fade of the
         // subtitle colour: the synopsis sits over artwork now, and at 0.6 it went
         // soft against a bright frame.
-        .foregroundStyle(isHighlighted ? Color.KinoPub.text : Color.KinoPub.text.opacity(0.8))
+//        .foregroundStyle(isHighlighted ? Color.KinoPub.text : Color.KinoPub.subtitle)
         // Inset whether or not it is focused and then pulled back out again: making
         // the padding appear on focus kept the frame the same width and re-wrapped
         // the paragraph inside it. The highlight bleeds into the surrounding gaps
         // instead, which is what it does on tvOS anyway.
         .padding(.horizontal, Self.horizontalInset)
         .padding(.vertical, Self.verticalInset)
-        .background(
-          RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(Color.KinoPub.selectionBackground.opacity(isHighlighted ? 0.85 : 0))
-        )
+//        .background(
+//          RoundedRectangle(cornerRadius: 12, style: .continuous)
+//            .fill(Color.KinoPub.selectionBackground.opacity(isHighlighted ? 0.85 : 0))
+//        )
         .padding(.horizontal, -Self.horizontalInset)
         .padding(.vertical, -Self.verticalInset)
-        .scaleEffect(configuration.isPressed && showsPointerHighlight ? 0.98 : 1.0)
-        .animation(.easeOut(duration: 0.15), value: isHighlighted)
-        .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
+        .buttonStyle(.card)
+//        .scaleEffect(configuration.isPressed && showsPointerHighlight ? 0.98 : 1.0)
+//        .animation(.easeOut(duration: 0.15), value: isHighlighted)
+//        .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
 #if !os(tvOS)
         .onHover { if showsPointerHighlight { isHovered = $0 } }
         .pointingHandCursorOnHover(enabled: showsPointerHighlight)
@@ -2428,8 +2649,8 @@ private struct PlotPreviewHost: View {
       focus: $focus
     )
     .padding()
-    .frame(maxWidth: 560, alignment: .leading)
-    .background(Color.black)
+    .frame(maxWidth: 960, alignment: .leading)
+//    .background(Color.black)
     .preferredColorScheme(.dark)
   }
 }
@@ -2440,8 +2661,13 @@ private struct PlotPreviewHost: View {
 
 #Preview("Hero badge strip") {
   HStack(spacing: 16) {
-    Text("2023 · 2 h 30 min · США")
+    Text("2023,  South Korea")
+
     MediaScoresView(imdb: 8.1, kinopoisk: 8.3)
+   // (countK) after score
+//      Text("2h 51m")
+      Text("Comedy,  Drama")
+
     MediaCapabilityBadgesView(
       badges: MediaCapabilityBadges(
         is4K: true,
@@ -2452,11 +2678,12 @@ private struct PlotPreviewHost: View {
       ),
       mode: .detail
     )
+
   }
   .font(.subheadline)
-  .foregroundStyle(.white.opacity(0.85))
+//  .foregroundStyle(.white.opacity(0.85))
   .padding()
-  .background(Color.black)
+//  .background(Color.black)
   .preferredColorScheme(.dark)
 }
 #endif

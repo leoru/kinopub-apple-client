@@ -115,6 +115,56 @@ class MediaItemModel: ObservableObject {
     return MediaPerson(name: name, role: .actor)
   }
 
+  /// Similar + person-credit shelves as one data-driven list — the same `MediaRow`
+  /// shape `MediaRowsView` renders on Home, so the detail page's related rows go
+  /// through the identical rendering + cross-row focus-memory mechanism instead of
+  /// being three independently-wired shelves (see `MediaItemRelatedRowsSection`).
+  /// A row is only included once its query has actually returned something; the
+  /// still-loading state is `pendingRelatedShelfTitles` below, kept separate because
+  /// `MediaRow` has no notion of "loading."
+  public var relatedRows: [MediaRow] {
+    var rows: [MediaRow] = []
+    if !similarItems.isEmpty {
+      rows.append(MediaRow(id: "similar", title: "Similar".localized, cards: similarItems.map(MediaCard.init)))
+    }
+    // `destination` on the person rows is what makes their header navigate to that
+    // person's page — the shelves' one route to it besides a cast circle.
+    if let director = primaryDirector, !moreFromDirector.isEmpty {
+      rows.append(MediaRow(id: "director-\(director.id)",
+                           title: String(format: "More from %@".localized, director.name),
+                           cards: moreFromDirector.map(MediaCard.init),
+                           destination: linkProvider.person(for: director)))
+    }
+    if let actor = primaryActor, !moreWithActor.isEmpty {
+      rows.append(MediaRow(id: "actor-\(actor.id)",
+                           title: String(format: "More with %@".localized, actor.name),
+                           cards: moreWithActor.map(MediaCard.init),
+                           destination: linkProvider.person(for: actor)))
+    }
+    return rows
+  }
+
+  /// Titles for person shelves still in flight — rendered as skeleton rails
+  /// alongside `relatedRows` until their query resolves one way or the other.
+  public var pendingRelatedShelfTitles: [String] {
+    var titles: [String] = []
+    if let director = primaryDirector, moreFromDirector.isEmpty, !moreFromDirectorLoaded {
+      titles.append(String(format: "More from %@".localized, director.name))
+    }
+    if let actor = primaryActor, moreWithActor.isEmpty, !moreWithActorLoaded {
+      titles.append(String(format: "More with %@".localized, actor.name))
+    }
+    return titles
+  }
+
+  /// A related row's card back to its source item — `MediaCard` alone doesn't carry
+  /// the full `MediaItem` payload `NavigationLinkProvider.link(for:)` needs.
+  public func relatedItem(forCardID id: Int) -> MediaItem? {
+    similarItems.first(where: { $0.id == id })
+      ?? moreFromDirector.first(where: { $0.id == id })
+      ?? moreWithActor.first(where: { $0.id == id })
+  }
+
   /// - Parameter knownItem: the listing's copy of the item, where the caller has one.
   ///   Only the artwork is used from it — the page waits for the full details before
   ///   drawing anything else, so a stale title or missing seasons can't leak through.

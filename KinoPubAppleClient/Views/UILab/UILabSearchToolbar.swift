@@ -514,7 +514,7 @@ private struct UILabGlassChipStyle: ViewModifier {
     Group {
       if isProminent {
         content
-          .buttonStyle(.glassProminent)
+          .buttonStyle(.glass)
           .tint(Color.KinoPub.accent)
       } else {
         content

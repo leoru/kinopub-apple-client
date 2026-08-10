@@ -7,6 +7,7 @@
 
 import SwiftUI
 import KinoPubKit
+import KinoPubUI
 
 enum WindowSize {
   static let macos = CGSize(width: 960, height: 580)
@@ -20,13 +21,13 @@ enum WindowSize {
 struct KinoPubAppleClientApp: App {
   
   @StateObject var navigationState = NavigationState()
-  @State var errorHandler = ErrorHandler()
+  @State private var errorHandler = ErrorHandler()
   @StateObject var networkMonitor = NetworkMonitor()
   @StateObject var authState = AuthState(authService: AppContext.shared.authService,
                                          accessTokenService: AppContext.shared.accessTokenService)
   
 #if os(macOS)
-  @State var windowSettings = WindowSettings()
+  @State private var windowSettings = WindowSettings()
   @AppStorage(HistoryCardLayout.storageKey) private var historyCardLayout: String = HistoryCardLayout.landscape.rawValue
 #endif
   
@@ -40,6 +41,10 @@ struct KinoPubAppleClientApp: App {
 
   init() {
     HLSAudioLabeler.removeLegacyTemporaryFiles()
+#if os(tvOS) && DEBUG
+    // One observer under both SwiftUI and UIKit — see `FocusLog.startGlobalTrace`.
+    MainActor.assumeIsolated { FocusLog.startGlobalTrace() }
+#endif
   }
 
   var body: some Scene {

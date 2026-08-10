@@ -89,6 +89,7 @@
 		CCA100012C6F000100000401 /* SeasonsRailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000402 /* SeasonsRailView.swift */; };
 		CCA100012C6F000100000501 /* CatalogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000502 /* CatalogView.swift */; };
 		CCA100012C6F000100000601 /* MediaItemDetailSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000602 /* MediaItemDetailSections.swift */; };
+		CCA100012C6F000100000B03 /* MediaItemAboutLayouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000B04 /* MediaItemAboutLayouts.swift */; };
 		CCA100012C6F000100000701 /* LibraryCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000702 /* LibraryCatalog.swift */; };
 		CCA100012C6F000100000703 /* LibraryFiltersBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000704 /* LibraryFiltersBar.swift */; };
 		CCA100012C6F000100000901 /* PersonItemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000902 /* PersonItemsView.swift */; };
@@ -110,6 +111,7 @@
 		CCA100012E1005 /* UILabSearchToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1004 /* UILabSearchToolbar.swift */; };
 		CCA100012E1007 /* SystemTypeStylesCatalogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1006 /* SystemTypeStylesCatalogView.swift */; };
 		CCA100012E1009 /* TVUIKitComponentGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E1008 /* TVUIKitComponentGalleryView.swift */; };
+		CCA100012E100B /* LibrarySidebarLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012E100A /* LibrarySidebarLabView.swift */; };
 		CCA1000131000002 /* LibrarySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000001 /* LibrarySection.swift */; };
 		CCA1000131000004 /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000003 /* LibraryModel.swift */; };
 		CCA1000131000006 /* LibrarySectionCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA1000131000005 /* LibrarySectionCatalog.swift */; };
@@ -253,6 +255,7 @@
 		CCA100012C6F000100000402 /* SeasonsRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonsRailView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000502 /* CatalogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000602 /* MediaItemDetailSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDetailSections.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000B04 /* MediaItemAboutLayouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemAboutLayouts.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000702 /* LibraryCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryCatalog.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000704 /* LibraryFiltersBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFiltersBar.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000902 /* PersonItemsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonItemsView.swift; sourceTree = "<group>"; };
@@ -274,6 +277,7 @@
 		CCA100012E1004 /* UILabSearchToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UILabSearchToolbar.swift; sourceTree = "<group>"; };
 		CCA100012E1006 /* SystemTypeStylesCatalogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemTypeStylesCatalogView.swift; sourceTree = "<group>"; };
 		CCA100012E1008 /* TVUIKitComponentGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVUIKitComponentGalleryView.swift; sourceTree = "<group>"; };
+		CCA100012E100A /* LibrarySidebarLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySidebarLabView.swift; sourceTree = "<group>"; };
 		CCA1000131000001 /* LibrarySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySection.swift; sourceTree = "<group>"; };
 		CCA1000131000003 /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		CCA1000131000005 /* LibrarySectionCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySectionCatalog.swift; sourceTree = "<group>"; };
@@ -390,6 +394,7 @@
 			children = (
 				CCA100012C6F000100000402 /* SeasonsRailView.swift */,
 				CCA100012C6F000100000602 /* MediaItemDetailSections.swift */,
+				CCA100012C6F000100000B04 /* MediaItemAboutLayouts.swift */,
 				CCA100012C6F000100000302 /* MediaItemHeroView.swift */,
 			);
 			path = Subviews;
@@ -663,6 +668,7 @@
 				CCA100012E1004 /* UILabSearchToolbar.swift */,
 				CCA100012E1006 /* SystemTypeStylesCatalogView.swift */,
 				CCA100012E1008 /* TVUIKitComponentGalleryView.swift */,
+				CCA100012E100A /* LibrarySidebarLabView.swift */,
 			);
 			path = UILab;
 			sourceTree = "<group>";
@@ -980,7 +986,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1430;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					CC88E1E02A6586E600E9387F = {
 						CreatedOnToolsVersion = 14.3.1;
@@ -1066,6 +1072,7 @@
 				CCA100012E1005 /* UILabSearchToolbar.swift in Sources */,
 				CCA100012E1007 /* SystemTypeStylesCatalogView.swift in Sources */,
 				CCA100012E1009 /* TVUIKitComponentGalleryView.swift in Sources */,
+				CCA100012E100B /* LibrarySidebarLabView.swift in Sources */,
 				CCA100012D0010 /* TVProfileSettingsView.swift in Sources */,
 				CCA200012D001010 /* DataSourcesAttributionView.swift in Sources */,
 				CC71E6F82A6C0626004AFB3F /* ProfileView.swift in Sources */,
@@ -1113,6 +1120,7 @@
 				CCA100012C6F000100000401 /* SeasonsRailView.swift in Sources */,
 				CCA100012C6F000100000501 /* CatalogView.swift in Sources */,
 				CCA100012C6F000100000601 /* MediaItemDetailSections.swift in Sources */,
+				CCA100012C6F000100000B03 /* MediaItemAboutLayouts.swift in Sources */,
 				CCA100012C6F000100000701 /* LibraryCatalog.swift in Sources */,
 				CCA100012C6F000100000901 /* PersonItemsView.swift in Sources */,
 				CCA100012C6F000100000A01 /* MediaCardContextMenus.swift in Sources */,
@@ -1214,6 +1222,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = Z2PQ733PSP;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -1236,6 +1245,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				TVOS_DEPLOYMENT_TARGET = 26.0;
@@ -1278,6 +1288,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = Z2PQ733PSP;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -1293,6 +1304,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				TVOS_DEPLOYMENT_TARGET = 26.0;
@@ -1311,7 +1323,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = Z2PQ733PSP;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1359,7 +1370,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = Z2PQ733PSP;
 				"ENABLE_DEBUG_DYLIB[sdk=macosx*]" = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;

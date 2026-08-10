@@ -282,4 +282,14 @@ private struct UILabPlaceholderPage: View {
   }
 }
 
+#Preview("UI Lab") {
+  UILabRoot()
+}
+
+#if os(macOS)
+#Preview("UI Lab — Adaptable Sidebar") {
+  UILabRoot(initialChrome: .adaptableSidebar)
+}
+#endif
+
 #endif

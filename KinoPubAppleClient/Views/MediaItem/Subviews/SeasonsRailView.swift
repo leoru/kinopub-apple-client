@@ -59,6 +59,15 @@ struct SeasonsRailView: View {
   /// other landscape shelf (Continue Watching, History) rather than a fixed size.
   @State private var railWidth: CGFloat = SeasonsRailView.referenceWidth
   @State private var selectedSeasonID: Int?
+  /// The episode `defaultFocus`/scroll should land on for the *currently selected*
+  /// season. Regressed in `38c6d07` ("Episodes and seasons rail"): the original
+  /// `c1bd46f` scrolled straight to the first-unseen episode's own anchor; that commit
+  /// routed the initial jump through `selectSeason`, which only ever knew "that
+  /// season's first episode" — so resuming a show mid-season correctly picked the right
+  /// *season* tab but always landed on its episode 1. Tracked separately from
+  /// `selectedSeasonID` because manual tab clicks/switches still want "season's first
+  /// episode" (unchanged), only the initial resume jump wants the specific episode.
+  @State private var seasonEntryEpisodeID: Int?
   @State private var didScrollToUnseen = false
   /// True while a tab-driven scroll is in flight, so a stray episode focus update
   /// doesn't yank the selected tab back mid-jump.
@@ -199,8 +208,12 @@ struct SeasonsRailView: View {
     } ?? entries.first
   }
 
-  /// Episode to land on when Down crosses from the season tabs into the rail.
+  /// Episode to land on when Down crosses from the season tabs into the rail — the
+  /// tracked resume/entry episode when there is one, else that season's first.
   private var firstEpisodeInSelectedSeason: Int? {
+    if let seasonEntryEpisodeID, entries.contains(where: { $0.id == seasonEntryEpisodeID }) {
+      return seasonEntryEpisodeID
+    }
     if let selectedSeasonID,
        let first = entries.first(where: { $0.season?.id == selectedSeasonID }) {
       return first.id
@@ -374,12 +387,17 @@ struct SeasonsRailView: View {
 
   /// Selects a season and scrolls the episode rail to its first episode. Used by tab
   /// focus, tab activation, and the initial jump to the first unfinished episode.
-  private func selectSeason(_ seasonID: Int, proxy: ScrollViewProxy, animated: Bool) {
+  /// - Parameter entryEpisodeID: the specific episode to land the rail on. Defaults to
+  ///   that season's first episode — correct for a manual tab click/switch. Only the
+  ///   initial resume jump (`scrollToFirstUnseen`) passes a specific target here.
+  private func selectSeason(_ seasonID: Int, entryEpisodeID: Int? = nil, proxy: ScrollViewProxy, animated: Bool) {
     guard let season = seasons.first(where: { $0.id == seasonID }),
           let first = entries.first(where: { $0.season?.id == seasonID }) else { return }
+    let target = entryEpisodeID.flatMap { id in entries.first(where: { $0.id == id }) } ?? first
     selectedSeasonID = seasonID
+    seasonEntryEpisodeID = target.id
     onSeasonVisible?(season.number)
-    let anchor = Self.episodeAnchor(first.id)
+    let anchor = Self.episodeAnchor(target.id)
     isScrollingFromTab = true
     if animated {
       withAnimation(.easeOut(duration: 0.2)) {
@@ -399,7 +417,8 @@ struct SeasonsRailView: View {
     didScrollToUnseen = true
     try? await Task.sleep(for: .milliseconds(120))
     guard !Task.isCancelled else { return }
-    selectSeason(season.id, proxy: proxy, animated: false)
+    // The specific resume episode, not just its season — see `seasonEntryEpisodeID`.
+    selectSeason(season.id, entryEpisodeID: target.id, proxy: proxy, animated: false)
   }
 
   private func contextEntries(for episode: Episode, season: Season) -> [MediaCardContextEntry] {

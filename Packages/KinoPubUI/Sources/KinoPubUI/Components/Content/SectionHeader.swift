@@ -42,20 +42,29 @@ public struct SectionHeader: View {
 
   public var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 8) {
+      // `.secondary` the *hierarchical shape style*, not `Color.secondary`. They
+      // resolve to the same colour over an opaque background, but only the shape
+      // style gets the system's vibrancy treatment when the header sits over a
+      // `Material` — which is what makes it read as part of the material rather than
+      // painted on top of it. Section headers were `Color.KinoPub.text`
+      // (= `Color.primary`, i.e. plain white in this app's forced-dark chrome), which
+      // is the weight a *title* carries, not a section label.
       title
         .font(TypeScale.rowHeader)
-        .foregroundStyle(Color.KinoPub.text)
+        .foregroundStyle(.secondary)
 
       if let count, !count.isEmpty {
+        // A step below the title so the two stay distinguishable now that the title
+        // is itself secondary.
         Text(count)
           .font(TypeScale.rowCount)
-          .foregroundStyle(Color.KinoPub.subtitle)
+          .foregroundStyle(.tertiary)
       }
 
       if showsChevron {
         Image(systemName: "chevron.forward")
           .font(TypeScale.rowChevron)
-          .foregroundStyle(Color.KinoPub.subtitle)
+          .foregroundStyle(.tertiary)
           .opacity(chevronOpacity)
       }
     }

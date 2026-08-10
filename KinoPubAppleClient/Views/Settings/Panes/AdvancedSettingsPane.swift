@@ -37,6 +37,7 @@ struct AdvancedSettingsPane: View {
         NavigationLink("UI Lab — Adaptable Sidebar", value: SettingsDetailRoute.uiLab(.adaptableSidebar))
         NavigationLink("UI Lab — Navigation Split", value: SettingsDetailRoute.uiLab(.navigationSplit))
 #endif
+        NavigationLink("UI Lab — Library Sidebar", value: SettingsDetailRoute.libraryLab)
       } header: {
         Text("UI Lab")
       } footer: {
