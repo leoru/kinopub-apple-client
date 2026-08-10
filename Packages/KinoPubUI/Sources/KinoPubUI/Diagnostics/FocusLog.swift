@@ -78,6 +78,55 @@ public enum FocusLog {
     }
   }
 
+  /// What a rail actually occupies versus what it paints into.
+  ///
+  /// This exists for one specific unanswerable question: cells at the leading and
+  /// trailing edge look clipped, and a sliver of the next card does not load until
+  /// focus enters its rail. Both are what you see when a collection view's `bounds` are
+  /// narrower than the area its content is painted into (`clipsToBounds` is off on all
+  /// of ours) — UIKit only builds cells that intersect `bounds`, so anything drawn
+  /// beyond them is real estate the data source never hears about. Printing bounds,
+  /// insets and the visible index range says whether that is what is happening, instead
+  /// of us reasoning about it from a screenshot.
+  @MainActor
+  public static func railGeometry(_ collection: UICollectionView, section: String) {
+    guard isEnabled else { return }
+    let visible = collection.indexPathsForVisibleItems.map(\.item).sorted()
+    let range = visible.isEmpty ? "none" : "\(visible.first!)…\(visible.last!) (\(visible.count))"
+    let window = collection.window?.bounds.width ?? -1
+    logger.info(
+      """
+      ▦ RAIL \(section, privacy: .public): bounds \(Int(collection.bounds.width), privacy: .public)\
+      ×\(Int(collection.bounds.height), privacy: .public), content \
+      \(Int(collection.contentSize.width), privacy: .public), inset \
+      \(Int(collection.adjustedContentInset.left), privacy: .public)/\
+      \(Int(collection.adjustedContentInset.right), privacy: .public), safeArea \
+      \(Int(collection.safeAreaInsets.left), privacy: .public)/\
+      \(Int(collection.safeAreaInsets.right), privacy: .public), window \
+      \(Int(window), privacy: .public), visible \(range, privacy: .public)
+      """
+    )
+  }
+
+  /// A rail moving itself, and whether it animated. The distinction is the whole point:
+  /// an animated scroll on *arrival* is the "page draws, then visibly slides right"
+  /// artefact — the rail should already be where it belongs when it appears, and only
+  /// animate when the user asked it to move (picking another season tab).
+  public static func railScroll(section: String, toIndex: Int, of count: Int, animated: Bool) {
+    guard isEnabled else { return }
+    logger.info(
+      "→ SCROLL \(section, privacy: .public): item \(toIndex, privacy: .public)/\(count, privacy: .public) \(animated ? "animated" : "jump", privacy: .public)"
+    )
+  }
+
+  /// A season tab taking focus or being picked, and what it asked the rail to do.
+  public static func seasonTab(_ title: String, entryItem: Int?, animated: Bool) {
+    guard isEnabled else { return }
+    logger.info(
+      "◧ SEASON \(title, privacy: .public) → entry \(entryItem.map(String.init) ?? "—", privacy: .public) \(animated ? "animated" : "jump", privacy: .public)"
+    )
+  }
+
   /// A section reporting that focus entered it, for the coarse "where am I" trace.
   public static func enteredSection(_ section: String) {
     guard isEnabled else { return }

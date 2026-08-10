@@ -22,6 +22,9 @@ struct PersonItemsView: View {
   @EnvironmentObject var navigationState: NavigationState
   @Environment(\.dismiss) private var dismiss
   @Environment(\.openURL) private var openURL
+  /// The margin the credits grid below actually landed on. Padding this page's hero and
+  /// section header by a constant of their own is what put them off the first column.
+  @Environment(\.shelfGridInset) private var gridInset
   @StateObject private var catalog: LibraryCatalog
   @StateObject private var cardMenu = MediaCardMenuCoordinator()
   @State private var personMetadata = PersonMetadata()
@@ -98,14 +101,21 @@ struct PersonItemsView: View {
 
   private var hero: some View {
     HStack(alignment: .top, spacing: Self.heroSpacing) {
-      CastAvatarView(
-        name: person.name,
-        // Prefer the rail URL already on screen — upgrading w185 → w342 only
-        // swaps the cache key and blinks the avatar for a sharper copy.
-        photoURL: person.photoURL
-          ?? personMetadata.photo
-          ?? ActorImageProvider.photoURL(for: person.name)
-      )
+      // Prefer the rail URL already on screen — upgrading w185 → w342 only
+      // swaps the cache key and blinks the avatar for a sharper copy.
+      let photoURL = person.photoURL
+        ?? personMetadata.photo
+        ?? ActorImageProvider.photoURL(for: person.name)
+#if os(tvOS)
+      // The same circle the cast rail draws. A face selected from a round lockup must
+      // not arrive as a rectangle on the page it opens.
+      TVUIKitPersonAvatar(name: person.name,
+                          photoURL: photoURL,
+                          diameter: Self.avatarDiameter)
+        .frame(width: Self.avatarDiameter, height: Self.avatarDiameter)
+#else
+      CastAvatarView(name: person.name, photoURL: photoURL)
+#endif
 
       VStack(alignment: .leading, spacing: 8) {
         Text(person.name)
@@ -128,7 +138,7 @@ struct PersonItemsView: View {
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }
-    .padding(.horizontal, Self.horizontalInset)
+    .padding(.horizontal, gridInset)
     .padding(.top, Self.verticalPadding)
     .padding(.bottom, 8)
   }
@@ -182,7 +192,7 @@ struct PersonItemsView: View {
       LibrarySortMenu(catalog: catalog)
         .font(LibraryFiltersBar.font)
     }
-    .padding(.horizontal, Self.horizontalInset)
+    .padding(.horizontal, gridInset)
     .padding(.vertical, Self.verticalPadding)
   }
 
@@ -210,7 +220,8 @@ struct PersonItemsView: View {
 
 #if os(tvOS)
   static let heroSpacing: CGFloat = 28
-  static let horizontalInset: CGFloat = 80
+  /// A hero reads larger than a rail entry; the rail's circle is 168.
+  static let avatarDiameter: CGFloat = 220
   static let verticalPadding: CGFloat = 16
   static let bioPreviewLimit = 220
   static let nameFont: Font = .system(size: 44, weight: .bold)
@@ -220,7 +231,6 @@ struct PersonItemsView: View {
   static let sectionFont: Font = .system(size: 28, weight: .semibold)
 #else
   static let heroSpacing: CGFloat = 16
-  static let horizontalInset: CGFloat = 16
   static let verticalPadding: CGFloat = 8
   static let bioPreviewLimit = 160
   static let nameFont: Font = .system(size: 24, weight: .bold)

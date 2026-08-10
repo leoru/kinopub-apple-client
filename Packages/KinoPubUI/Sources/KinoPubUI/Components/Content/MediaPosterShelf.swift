@@ -28,6 +28,11 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
   @Environment(\.usesTVUIKitPosters) private var usesTVUIKitPosters
   @Environment(\.mediaNavigation) private var mediaNavigation
   @State private var containerWidth: CGFloat = 1920
+  /// The container's own horizontal safe-area inset. Zero on a screen that already
+  /// sits inside the safe area; the overscan margin on one that ignores it (the detail
+  /// page does, horizontally). `ShelfMetrics` takes the larger of this and its own
+  /// design margin, so the header and the rail always share one number.
+  @State private var containerSafeArea: CGFloat = 0
 
   public init(
     title: String,
@@ -65,8 +70,8 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
 
   private var metrics: ShelfMetrics {
     isLandscape
-      ? .landscape(width: containerWidth, typeSize: typeSize)
-      : .posters(width: containerWidth, typeSize: typeSize)
+      ? .landscape(width: containerWidth, typeSize: typeSize, safeArea: containerSafeArea)
+      : .posters(width: containerWidth, typeSize: typeSize, safeArea: containerSafeArea)
   }
 
   private var railFocusPadding: CGFloat {
@@ -88,10 +93,14 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
       swiftUIRail
 #endif
     }
-    .onGeometryChange(for: CGFloat.self) { proxy in
-      proxy.size.width
-    } action: { width in
-      if width > 0 { containerWidth = width }
+    .onGeometryChange(for: ShelfGeometry.self) { proxy in
+      ShelfGeometry(
+        width: proxy.size.width,
+        safeArea: max(proxy.safeAreaInsets.leading, proxy.safeAreaInsets.trailing)
+      )
+    } action: { geometry in
+      if geometry.width > 0 { containerWidth = geometry.width }
+      containerSafeArea = max(0, geometry.safeArea)
     }
   }
 
@@ -143,6 +152,7 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
       cards: cards,
       axis: .horizontal,
       containerWidth: containerWidth,
+      safeArea: containerSafeArea,
       typeSize: typeSize,
       onSelect: { card in open(card) },
       contextMenuProvider: contextMenuProvider
@@ -150,7 +160,8 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     .frame(height: TVUIKitPosterMetrics.railHeight(
       isLandscape: isLandscape,
       containerWidth: containerWidth,
-      typeSize: typeSize
+      typeSize: typeSize,
+      safeArea: containerSafeArea
     ))
     .focusSection()
   }

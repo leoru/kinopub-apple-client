@@ -386,9 +386,6 @@ struct MediaItemCastSection: View {
   let mediaItem: MediaItem
   let linkProvider: NavigationLinkProvider
   var externalMetadata: TitleMetadata = TitleMetadata()
-  /// When false and the title has an IMDb id, skip the pushbr CDN fallback so we
-  /// don't paint one URL and then swap it for TMDB (AsyncImage flash / initials blink).
-  var externalMetadataLoaded: Bool = true
   var onSectionFocused: (() -> Void)? = nil
 
 #if os(tvOS)
@@ -397,10 +394,21 @@ struct MediaItemCastSection: View {
   @Environment(\.mediaNavigation) private var mediaNavigation
 #endif
 
-  /// Pushbr is a last resort after TMDB has had a chance — or immediately when
-  /// there is no IMDb id and metadata will never arrive.
-  private var allowPushbrFallback: Bool {
-    externalMetadataLoaded || mediaItem.imdb == nil
+  /// Pushbr is not a last resort here, it is the *working* source, and waiting on TMDB
+  /// before asking for it left every face a monogram.
+  ///
+  /// `TitleMetadata.enrich` matches credits by normalized name, and normalizing only
+  /// folds diacritics — kino.pub returns "Реми Безансон" where TMDB returns
+  /// "Rémi Bezançon", so the two never meet and `photo` stays nil however many photos
+  /// the payload carried. Pushbr is keyed by the MD5 of the *kino.pub* name, which is
+  /// exactly what we hold, so it resolves on the first frame with no metadata at all.
+  /// This is what the person page has always done — see `PersonItemsView.hero`.
+  ///
+  /// The old ordering existed to avoid painting pushbr and then swapping to a sharper
+  /// TMDB copy. That swap is now free: `TVUIKitRemoteImage` keeps both decoded, so the
+  /// upgrade is a repaint rather than a blink back to initials.
+  private func photoURL(for member: CastMember) -> URL? {
+    member.photo ?? ActorImageProvider.photoURL(for: member.name)
   }
 
   private var people: [(person: MediaPerson, member: CastMember)] {
@@ -409,18 +417,20 @@ struct MediaItemCastSection: View {
       roleDepartment: "Directing",
       from: externalMetadata
     ).map {
-      let photo = $0.photo
-        ?? (allowPushbrFallback ? ActorImageProvider.photoURL(for: $0.name) : nil)
-      return (MediaPerson(name: $0.name, role: .director, photoURL: photo, tmdbPersonId: $0.tmdbPersonId), $0)
+      (MediaPerson(name: $0.name,
+                   role: .director,
+                   photoURL: photoURL(for: $0),
+                   tmdbPersonId: $0.tmdbPersonId), $0)
     }
     let actors = TitleMetadata.enrich(
       names: mediaItem.castMembers,
       roleDepartment: "Acting",
       from: externalMetadata
     ).map {
-      let photo = $0.photo
-        ?? (allowPushbrFallback ? ActorImageProvider.photoURL(for: $0.name) : nil)
-      return (MediaPerson(name: $0.name, role: .actor, photoURL: photo, tmdbPersonId: $0.tmdbPersonId), $0)
+      (MediaPerson(name: $0.name,
+                   role: .actor,
+                   photoURL: photoURL(for: $0),
+                   tmdbPersonId: $0.tmdbPersonId), $0)
     }
     return directors + actors
   }
@@ -456,7 +466,7 @@ struct MediaItemCastSection: View {
       people: people.map { entry in
         TVUIKitPerson(id: entry.person.id,
                       name: entry.person.name,
-                      nameComponents: Self.nameComponents(from: entry.person.name),
+                      nameComponents: TVUIKitPerson.nameComponents(from: entry.person.name),
                       caption: Self.caption(for: entry),
                       photoURL: entry.person.photoURL)
       },
@@ -480,18 +490,6 @@ struct MediaItemCastSection: View {
     return entry.person.role.titleKey.localized
   }
 
-  /// kino.pub credits are one flat string, so the split is positional: first word is
-  /// the given name, the rest the family name. `TVMonogramContentConfiguration` uses
-  /// these only to compose the initials it draws when there is no photo.
-  private static func nameComponents(from name: String) -> PersonNameComponents {
-    var components = PersonNameComponents()
-    let parts = name.split(separator: " ", omittingEmptySubsequences: true)
-    components.givenName = parts.first.map(String.init)
-    if parts.count > 1 {
-      components.familyName = parts.dropFirst().joined(separator: " ")
-    }
-    return components
-  }
 #else
   private var portraitRail: some View {
     ScrollView(.horizontal, showsIndicators: false) {

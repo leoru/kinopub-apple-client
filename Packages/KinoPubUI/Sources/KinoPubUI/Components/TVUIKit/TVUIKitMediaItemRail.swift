@@ -82,21 +82,22 @@ public enum TVUIKitMediaItemStatus: Equatable {
     }
   }
 
-  /// Top-leading badge text, for the two states that need one of their own instead of
-  /// the corner going to a capability badge (4K / HDR / LIVE). Named distinctly from
-  /// `TVUIKitMediaItem.badgeText` (the capability badge) so a call site reading either
-  /// name says which one it means.
-  var stateBadgeText: String? {
-    switch self {
-    case .watched: String(localized: "TVMediaItem_Watched")
-    case .upcoming(let dateText): dateText
-    case .ready, .inProgress, .unavailable: nil
-    }
+  /// An announced episode's date, drawn by the **system** badge — the same corner chip
+  /// 4K and HDR use, which is what it is: a fact about the item, in the platform's own
+  /// treatment. The one thing lost by going through `configuration.badgeText` is the
+  /// clock glyph: that API takes a `String`, so an SF Symbol cannot ride along with it.
+  var systemBadgeText: String? {
+    if case .upcoming(let dateText) = self { return dateText }
+    return nil
   }
 
-  var badgeShowsClock: Bool {
-    if case .upcoming = self { return true }
-    return false
+  /// "Watched" stays on our overlay: it is a fact about *you*, not about the item, and
+  /// it is paired with the scrim and the checkmark that the system badge knows nothing
+  /// about. Named distinctly from `TVUIKitMediaItem.badgeText` (the capability badge) so
+  /// a call site reading either name says which one it means.
+  var overlayBadgeText: String? {
+    if case .watched = self { return String(localized: "TVMediaItem_Watched") }
+    return nil
   }
 
   /// Watched tiles sit back so the unwatched ones beside them read first.
@@ -115,6 +116,16 @@ public struct TVUIKitMediaItem: Identifiable, Equatable {
   public let symbol: String?
   /// The line under the tile — always visible: a movie's title, or "S2, E11 · Show".
   public let caption: String?
+  /// A second line under the tile, for the metadata a title needs beyond its name —
+  /// year, country, genre, episode count, an episode's own synopsis. Maps to the
+  /// configuration's `secondaryText`.
+  ///
+  /// **Left nil in the app until it is judged on a screen.** The gallery's "Caption
+  /// lines" row exists to find out where the system actually places it: if it lands
+  /// below the tile it is the second line we want, and if it lands over the artwork's
+  /// bottom-leading corner it collides with our glyph + time chip and the second line
+  /// has to come from somewhere else. Do not ship it on a guess.
+  public let subcaption: String?
   public let status: TVUIKitMediaItemStatus
   /// Chip text beside the glyph, inside the artwork — runtime, or time left.
   public let timeLabel: String?
@@ -127,6 +138,7 @@ public struct TVUIKitMediaItem: Identifiable, Equatable {
               tint: UIColor? = nil,
               symbol: String? = nil,
               caption: String? = nil,
+              subcaption: String? = nil,
               status: TVUIKitMediaItemStatus = .ready,
               timeLabel: String? = nil,
               badgeText: String? = nil,
@@ -136,6 +148,7 @@ public struct TVUIKitMediaItem: Identifiable, Equatable {
     self.tint = tint
     self.symbol = symbol
     self.caption = caption
+    self.subcaption = subcaption
     self.status = status
     self.timeLabel = timeLabel
     self.badgeText = badgeText
@@ -160,7 +173,8 @@ public extension TVUIKitMediaItem {
     let status = Self.status(for: card)
     self.init(id: card.id,
               imageURL: URL(string: art),
-              caption: Self.caption(for: card),
+              caption: TVUIKitCardText.primary(for: card),
+              subcaption: TVUIKitCardText.secondary(for: card),
               status: status,
               timeLabel: Self.timeLabel(for: card, status: status),
               badgeText: Self.badgeText(for: card))
@@ -177,17 +191,6 @@ public extension TVUIKitMediaItem {
       return .inProgress(progress)
     }
     return .ready
-  }
-
-  /// The name: a movie's title alone, or "S2, E11" ahead of the show's title for an
-  /// episode. `overlayLabel` already carries the season/episode piece (History and
-  /// Continue Watching both format it identically); this only decides whether the
-  /// title rides along with it.
-  static func caption(for card: MediaCard) -> String? {
-    if let overlay = card.overlayLabel, !overlay.isEmpty {
-      return card.title.isEmpty ? overlay : "\(overlay) · \(card.title)"
-    }
-    return card.title.isEmpty ? nil : card.title
   }
 
   /// The runtime, for the statuses that show one (`TVUIKitMediaItemStatus.showsRuntime`
@@ -216,39 +219,60 @@ public extension TVUIKitMediaItem {
 public struct TVUIKitMediaItemRail: UIViewControllerRepresentable {
   private let items: [TVUIKitMediaItem]
   private let contentInset: CGFloat
+  private let entryItemID: Int?
+  private let animatesEntryScroll: Bool
   private let onSelect: (Int) -> Void
   private let onNearEnd: ((Int) -> Void)?
+  private let onFocusedItem: ((Int) -> Void)?
   private let contextMenuProvider: ((Int) -> [MediaCardContextEntry])?
 
   /// - Parameters:
   ///   - contentInset: leading/trailing inset, so the rail lines up with the section
   ///     header above it. Vertical spacing stays the system's.
+  ///   - entryItemID: where the rail should sit and where focus should land when it
+  ///     arrives — the resume episode, or the first episode of a season the user just
+  ///     picked. Changing it scrolls the rail; it is *not* a focus binding, because the
+  ///     focus engine owns focus once the rail has it.
+  ///   - onFocusedItem: which item the engine focused, so a caller can follow it (the
+  ///     season tabs track the episode you are standing on).
   ///   - onSelect / onNearEnd / contextMenuProvider: all keyed by `TVUIKitMediaItem.id`.
   public init(items: [TVUIKitMediaItem],
               contentInset: CGFloat = 0,
+              entryItemID: Int? = nil,
+              animatesEntryScroll: Bool = true,
               onSelect: @escaping (Int) -> Void,
               onNearEnd: ((Int) -> Void)? = nil,
+              onFocusedItem: ((Int) -> Void)? = nil,
               contextMenuProvider: ((Int) -> [MediaCardContextEntry])? = nil) {
     self.items = items
     self.contentInset = contentInset
+    self.entryItemID = entryItemID
+    self.animatesEntryScroll = animatesEntryScroll
     self.onSelect = onSelect
     self.onNearEnd = onNearEnd
+    self.onFocusedItem = onFocusedItem
     self.contextMenuProvider = contextMenuProvider
   }
 
   public func makeUIViewController(context: Context) -> TVUIKitMediaItemRailController {
     let controller = TVUIKitMediaItemRailController(contentInset: contentInset)
     controller.apply(items: items,
+                     entryItemID: entryItemID,
+                     animatesEntryScroll: animatesEntryScroll,
                      onSelect: onSelect,
                      onNearEnd: onNearEnd,
+                     onFocusedItem: onFocusedItem,
                      contextMenuProvider: contextMenuProvider)
     return controller
   }
 
   public func updateUIViewController(_ controller: TVUIKitMediaItemRailController, context: Context) {
     controller.apply(items: items,
+                     entryItemID: entryItemID,
+                     animatesEntryScroll: animatesEntryScroll,
                      onSelect: onSelect,
                      onNearEnd: onNearEnd,
+                     onFocusedItem: onFocusedItem,
                      contextMenuProvider: contextMenuProvider)
   }
 
@@ -380,8 +404,10 @@ public final class TVUIKitMediaItemRailController: UIViewController {
   private var items: [TVUIKitMediaItem] = []
   private let contentInset: CGFloat
 
+  private var entryItemID: Int?
   private var onSelect: ((Int) -> Void)?
   private var onNearEnd: ((Int) -> Void)?
+  private var onFocusedItem: ((Int) -> Void)?
   private var contextMenuProvider: ((Int) -> [MediaCardContextEntry])?
 
   private lazy var collectionView: UICollectionView = {
@@ -397,6 +423,7 @@ public final class TVUIKitMediaItemRailController: UIViewController {
     view.showsVerticalScrollIndicator = false
     view.dataSource = self
     view.delegate = self
+    view.prefetchDataSource = self
     view.register(TVUIKitMediaItemCell.self, forCellWithReuseIdentifier: TVUIKitMediaItemCell.reuseID)
     return view
   }()
@@ -407,6 +434,13 @@ public final class TVUIKitMediaItemRailController: UIViewController {
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+  /// Reported once per layout pass so the "edge cells are clipped / the next card only
+  /// loads on focus" question has measurements behind it rather than screenshots.
+  public override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    FocusLog.railGeometry(collectionView, section: "wide-rail")
+  }
 
   public override func viewDidLoad() {
     super.viewDidLoad()
@@ -423,15 +457,49 @@ public final class TVUIKitMediaItemRailController: UIViewController {
   }
 
   func apply(items: [TVUIKitMediaItem],
+             entryItemID: Int?,
+             animatesEntryScroll: Bool,
              onSelect: @escaping (Int) -> Void,
              onNearEnd: ((Int) -> Void)?,
+             onFocusedItem: ((Int) -> Void)?,
              contextMenuProvider: ((Int) -> [MediaCardContextEntry])?) {
     let changed = self.items != items
+    let entryMoved = self.entryItemID != entryItemID
     self.items = items
+    self.entryItemID = entryItemID
     self.onSelect = onSelect
     self.onNearEnd = onNearEnd
+    self.onFocusedItem = onFocusedItem
     self.contextMenuProvider = contextMenuProvider
     if changed { collectionView.reloadData() }
+    if changed || entryMoved { scrollToEntry(animated: animatesEntryScroll && !changed) }
+  }
+
+  private func index(of id: Int?) -> Int? {
+    guard let id else { return nil }
+    return items.firstIndex { $0.id == id }
+  }
+
+  /// Park the rail on its entry item. Scrolling only — focus is asked for through
+  /// `indexPathForPreferredFocusedView`, which is the hook the engine consults when it
+  /// enters this rail; moving focus from here instead would fight it.
+  private func scrollToEntry(animated: Bool) {
+    guard let index = index(of: entryItemID) else { return }
+    let path = IndexPath(item: index, section: 0)
+    // After a reload the layout has no attributes yet, so the scroll has to wait a
+    // pass or it silently no-ops on the first appearance — the case that matters most.
+    collectionView.layoutIfNeeded()
+    guard collectionView.numberOfItems(inSection: 0) > index else { return }
+    FocusLog.railScroll(section: "wide-rail", toIndex: index, of: items.count, animated: animated)
+    collectionView.scrollToItem(at: path, at: .left, animated: animated)
+  }
+}
+
+extension TVUIKitMediaItemRailController: UICollectionViewDataSourcePrefetching {
+  public func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+    TVUIKitRemoteImage.prefetch(indexPaths.compactMap { path in
+      items.indices.contains(path.item) ? items[path.item].imageURL : nil
+    })
   }
 }
 
@@ -454,6 +522,29 @@ extension TVUIKitMediaItemRailController: UICollectionViewDataSource, UICollecti
   public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
     guard items.indices.contains(indexPath.item) else { return }
     onSelect?(items[indexPath.item].id)
+  }
+
+  /// Where focus lands when the engine enters this rail. This is the native hook for
+  /// "start here" — the alternative is pushing focus programmatically from outside,
+  /// which fights the engine and loses.
+  public func indexPathForPreferredFocusedView(in collectionView: UICollectionView) -> IndexPath? {
+    guard let index = index(of: entryItemID) else { return nil }
+    return IndexPath(item: index, section: 0)
+  }
+
+  public func collectionView(_ collectionView: UICollectionView,
+                             didUpdateFocusIn context: UICollectionViewFocusUpdateContext,
+                             with coordinator: UIFocusAnimationCoordinator) {
+    let name: (IndexPath?) -> String? = { [weak self] path in
+      guard let self, let path, self.items.indices.contains(path.item) else { return nil }
+      return self.items[path.item].caption
+    }
+    FocusLog.engine(section: "wide-rail",
+                    from: name(context.previouslyFocusedIndexPath),
+                    to: name(context.nextFocusedIndexPath))
+
+    guard let path = context.nextFocusedIndexPath, items.indices.contains(path.item) else { return }
+    onFocusedItem?(items[path.item].id)
   }
 
   public func collectionView(_ collectionView: UICollectionView,
@@ -515,15 +606,20 @@ final class TVUIKitMediaItemCell: UICollectionViewCell {
     config.image = artwork ?? fallbackImage(for: item)
     // `text` is the line *under* the tile, always visible.
     config.text = item.caption
-    // `secondaryText` is not a second caption line — the system draws it *over* the
-    // artwork's bottom-leading corner, which is where our glyph + time chip lives.
-    config.secondaryText = nil
+    // The second (and last) line. Apple's own sample puts "S1, E1" here beneath the
+    // title, which is the shape we want; two lines is the agreed ceiling, so anything
+    // more goes *into* this line rather than under it.
+    config.secondaryText = item.subcaption
     // Shown immediately, not gated by focus — an idle rail should already tell you
     // what is worth resuming.
     config.playbackProgress = Float(item.status.progress)
-    // The state badge (Watched / upcoming date) and the capability badge (4K / HDR /
-    // LIVE) share the same top-leading corner — only one can show. The state wins.
-    if item.status.stateBadgeText == nil, let badge = item.badgeText, !badge.isEmpty {
+    // One corner, one chip. An announced date outranks a capability badge — 4K on
+    // something you cannot watch yet is not the useful fact — and both go through the
+    // system's own badge rather than a second one of ours.
+    if let upcoming = item.status.systemBadgeText {
+      config.badgeText = upcoming
+      config.badgeProperties = .default()
+    } else if item.status.overlayBadgeText == nil, let badge = item.badgeText, !badge.isEmpty {
       config.badgeText = badge
       config.badgeProperties = item.badgeIsLive ? .liveContent() : .default()
     }
@@ -543,7 +639,19 @@ final class TVUIKitMediaItemCell: UICollectionViewCell {
     imageTask?.cancel()
     imageTask = nil
     loadedURL = nil
-    guard let url = item.imageURL else { return }
+    guard let url = item.imageURL else {
+      ArtworkLog.skipped(by: "wide", reason: "no artwork URL")
+      return
+    }
+    // Already decoded — take it now so a recycled tile never shows the tint fallback
+    // in place of art it had a moment ago.
+    if let hit = TVUIKitRemoteImage.cached(url: url) {
+      artwork = hit
+      loadedURL = url
+      ArtworkLog.servedFromMemory(url, by: "wide")
+      return
+    }
+    ArtworkLog.requested(url, by: "wide")
     imageTask = Task { [weak self] in
       let image = await TVUIKitRemoteImage.load(url: url)
       guard let self, !Task.isCancelled, self.item?.imageURL == url else { return }
@@ -618,14 +726,14 @@ final class TVUIKitMediaItemOverlayView: UIView {
     glyphView.tintColor = .white
     glyphView.contentMode = .scaleAspectFit
     glyphView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 20, weight: .bold)
-    Self.applyLegibilityShadow(to: glyphView.layer)
+    TVUIKitChromeSupport.applyLegibilityShadow(to: glyphView.layer)
     addSubview(glyphView)
 
     runtimeLabel.translatesAutoresizingMaskIntoConstraints = false
     runtimeLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 19, weight: .semibold)
     runtimeLabel.textColor = .white
     runtimeLabel.textAlignment = .right
-    Self.applyLegibilityShadow(to: runtimeLabel.layer)
+    TVUIKitChromeSupport.applyLegibilityShadow(to: runtimeLabel.layer)
     addSubview(runtimeLabel)
 
     // A real pill, unlike the bottom corner — this is a badge (Watched / a release
@@ -704,13 +812,12 @@ final class TVUIKitMediaItemOverlayView: UIView {
     runtimeLabel.text = timeLabel
     runtimeLabel.isHidden = !showsRuntime
 
-    if let text = status.stateBadgeText {
+    if let text = status.overlayBadgeText {
       badge.isHidden = false
       badgeLabel.text = text
-      let showsIcon = status.badgeShowsClock
-      badgeIcon.isHidden = !showsIcon
-      badgeIcon.image = showsIcon ? UIImage(systemName: "clock") : nil
-      badgeIconWidth.constant = showsIcon ? Self.badgeIconSize : 0
+      badgeIcon.isHidden = true
+      badgeIcon.image = nil
+      badgeIconWidth.constant = 0
     } else {
       badge.isHidden = true
     }
@@ -718,11 +825,5 @@ final class TVUIKitMediaItemOverlayView: UIView {
     gradientLayer.isHidden = !(glyph != nil || showsRuntime)
   }
 
-  private static func applyLegibilityShadow(to layer: CALayer) {
-    layer.shadowColor = UIColor.black.cgColor
-    layer.shadowOpacity = 0.9
-    layer.shadowRadius = 5
-    layer.shadowOffset = .zero
-  }
 }
 #endif

@@ -48,8 +48,17 @@ public struct ContentItemsListView<Header: View>: View {
   }
 
   private var gridColumns: [GridItem] {
-    Array(
-      repeating: GridItem(.flexible(), spacing: metrics.gutter, alignment: .top),
+#if os(tvOS)
+    // Pinned, not flexible: a poster is the same size in this grid as in every rail,
+    // and the leftover becomes slack rather than quietly resizing the artwork per
+    // screen. Flexible columns are still right everywhere else, where the card is
+    // meant to track the container.
+    let size = GridItem.Size.fixed(metrics.cardWidth(in: containerWidth))
+#else
+    let size = GridItem.Size.flexible()
+#endif
+    return Array(
+      repeating: GridItem(size, spacing: metrics.gutter, alignment: .top),
       count: metrics.columns
     )
   }
@@ -104,7 +113,7 @@ public struct ContentItemsListView<Header: View>: View {
             placeholderCard
           }
         }
-        .safeAreaPadding(.horizontal, metrics.inset)
+        .safeAreaPadding(.horizontal, metrics.gridInset(in: containerWidth))
         .padding(.vertical, Metrics.focusPadding)
       } else {
         TVUIKitMediaCollection(
@@ -134,6 +143,9 @@ public struct ContentItemsListView<Header: View>: View {
         }
       }
     }
+    // Headers are supplied by callers; publishing the grid's own margin is what stops
+    // each of them padding by a number of its own and landing off the first column.
+    .environment(\.shelfGridInset, metrics.gridInset(in: containerWidth))
     .onGeometryChange(for: CGFloat.self) { proxy in
       proxy.size.width
     } action: { width in
@@ -179,7 +191,7 @@ public struct ContentItemsListView<Header: View>: View {
               }
             }
           }
-          .safeAreaPadding(.horizontal, metrics.inset)
+          .safeAreaPadding(.horizontal, metrics.gridInset(in: containerWidth))
           .padding(.vertical, Metrics.focusPadding)
 
           if paginationError, let onRetryPagination {
@@ -188,6 +200,9 @@ public struct ContentItemsListView<Header: View>: View {
         }
       }
     }
+    // Headers are supplied by callers; publishing the grid's own margin is what stops
+    // each of them padding by a number of its own and landing off the first column.
+    .environment(\.shelfGridInset, metrics.gridInset(in: containerWidth))
     .onGeometryChange(for: CGFloat.self) { proxy in
       proxy.size.width
     } action: { width in
@@ -265,7 +280,7 @@ public extension ContentItemsListView where Header == EmptyView {
 struct ContentItemsListView_Previews: PreviewProvider {
 
   struct Preview: View {
-    @State var items: [MediaItem] = [MediaItem.mock()]
+    @State private var items: [MediaItem] = [MediaItem.mock()]
 
     var body: some View {
       ContentItemsListView(items: $items, onLoadMoreContent: { _ in

@@ -10,6 +10,18 @@ import UIKit
 import SwiftUI
 import KinoPubUI
 
+public enum TVUIKitChromeSupport {
+  /// A drop shadow instead of a pill behind small white chrome over artwork. Used by
+  /// every glyph and chip we draw on a tile, so they carry the same weight — a second
+  /// copy of these numbers is how two tiles start looking subtly different.
+  public static func applyLegibilityShadow(to layer: CALayer) {
+    layer.shadowColor = UIColor.black.cgColor
+    layer.shadowOpacity = 0.9
+    layer.shadowRadius = 5
+    layer.shadowOffset = .zero
+  }
+}
+
 /// Bottom-quarter blur with a soft top fade (Rivulet / ATV+ legibility band).
 @MainActor
 public final class TVUIKitBottomInfoBlurView: UIView {

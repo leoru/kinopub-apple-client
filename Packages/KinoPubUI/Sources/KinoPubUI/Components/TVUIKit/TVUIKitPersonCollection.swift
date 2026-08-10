@@ -34,6 +34,21 @@ public struct TVUIKitPerson: Identifiable, Hashable {
     self.caption = caption
     self.photoURL = photoURL
   }
+
+  /// kino.pub credits are one flat string, so the split is positional: first word is
+  /// the given name, the rest the family name. `TVMonogramContentConfiguration` uses
+  /// these only to compose the initials it draws when there is no photo — which is why
+  /// the rail and the person page must parse a name the same way, or the same person
+  /// gets different initials on two screens.
+  public static func nameComponents(from name: String) -> PersonNameComponents {
+    var components = PersonNameComponents()
+    let parts = name.split(separator: " ", omittingEmptySubsequences: true)
+    components.givenName = parts.first.map(String.init)
+    if parts.count > 1 {
+      components.familyName = parts.dropFirst().joined(separator: " ")
+    }
+    return components
+  }
 }
 
 public struct TVUIKitPersonCollection: UIViewControllerRepresentable {
@@ -85,9 +100,9 @@ public final class TVUIKitPersonCollectionController: UIViewController {
     layout.minimumLineSpacing = Self.spacing
     layout.minimumInteritemSpacing = Self.spacing
     layout.itemSize = Self.itemSize
-    layout.sectionInset = UIEdgeInsets(top: Metrics.focusPadding,
+    layout.sectionInset = UIEdgeInsets(top: Self.focusRoom,
                                        left: Self.inset,
-                                       bottom: Metrics.focusPadding,
+                                       bottom: Self.focusRoom,
                                        right: Self.inset)
     let view = UICollectionView(frame: .zero, collectionViewLayout: layout)
     view.backgroundColor = .clear
@@ -96,10 +111,18 @@ public final class TVUIKitPersonCollectionController: UIViewController {
     view.clipsToBounds = false
     view.dataSource = self
     view.delegate = self
+    view.prefetchDataSource = self
     view.register(TVUIKitPersonCell.self, forCellWithReuseIdentifier: TVUIKitPersonCell.reuseID)
     view.accessibilityIdentifier = "cast-rail"
     return view
   }()
+
+  /// Reported once per layout pass so the "edge cells are clipped / the next card only
+  /// loads on focus" question has measurements behind it rather than screenshots.
+  public override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    FocusLog.railGeometry(collectionView, section: "cast-rail")
+  }
 
   public override func viewDidLoad() {
     super.viewDidLoad()
@@ -134,10 +157,24 @@ public final class TVUIKitPersonCollectionController: UIViewController {
   /// tvOS landscape/poster rail metrics rather than the DEBUG gallery's own numbers.
   static let circleDiameter: CGFloat = 168
   static let itemSize = CGSize(width: circleDiameter + 32, height: circleDiameter + 96)
-  static let spacing: CGFloat = 28
+  /// Spacing and focus room from the same rule the poster rails use: a focused circle
+  /// grows into its neighbour's half of the gap, so a constant that looks right at rest
+  /// has the avatars overlapping the moment one of them lights up.
+  static var spacing: CGFloat { ShelfMetrics.tvGutter(cardWidth: itemSize.width) }
+  static var focusRoom: CGFloat {
+    TVUIKitPosterMetrics.focusGrowthPadding(tileHeight: itemSize.height)
+  }
   static let inset: CGFloat = 80
   /// Item plus the focus-lift room the section insets reserve above and below.
-  public static var railHeight: CGFloat { itemSize.height + Metrics.focusPadding * 2 }
+  public static var railHeight: CGFloat { itemSize.height + focusRoom * 2 }
+}
+
+extension TVUIKitPersonCollectionController: UICollectionViewDataSourcePrefetching {
+  public func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+    TVUIKitRemoteImage.prefetch(indexPaths.compactMap { path in
+      people.indices.contains(path.item) ? people[path.item].photoURL : nil
+    })
+  }
 }
 
 extension TVUIKitPersonCollectionController: UICollectionViewDataSource, UICollectionViewDelegate {
@@ -207,23 +244,29 @@ final class TVUIKitPersonCell: UICollectionViewCell {
   private var currentURL: URL?
 
   func configure(person: TVUIKitPerson) {
+    imageTask?.cancel()
+    imageTask = nil
+    currentURL = person.photoURL
+
     var config = TVMonogramContentConfiguration.cell()
     config.text = person.name
     config.secondaryText = person.caption
     config.personNameComponents = person.nameComponents
+    // Decoded art up front. The monogram is the *fallback* for someone we have no
+    // portrait of — a recycled cell must not flash initials over a face that was on
+    // screen a moment ago, which is what rebuilding the configuration empty did.
+    config.image = TVUIKitRemoteImage.cached(url: person.photoURL)
     contentConfiguration = config
 
-    imageTask?.cancel()
     guard let url = person.photoURL else {
-      currentURL = nil
+      ArtworkLog.skipped(by: "cast/\(person.name)", reason: "no photo URL")
       return
     }
-    if currentURL == url {
-      // Same photo as last time this cell was configured (list scrolled and back) —
-      // the content configuration was just rebuilt above without it; nothing to fetch.
+    if config.image != nil {
+      ArtworkLog.servedFromMemory(url, by: "cast/\(person.name)")
       return
     }
-    currentURL = url
+    ArtworkLog.requested(url, by: "cast/\(person.name)")
     imageTask = Task { [weak self] in
       let image = await TVUIKitRemoteImage.load(url: url)
       await MainActor.run {

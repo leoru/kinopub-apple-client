@@ -19,6 +19,10 @@ public struct TVUIKitMediaCollection: UIViewControllerRepresentable {
   public let cards: [MediaCard]
   public let axis: TVUIKitCollectionAxis
   public let containerWidth: CGFloat
+  /// The container's own horizontal safe-area inset, when it measured one — see
+  /// `ShelfMetrics.posters(width:typeSize:safeArea:)`. Passing the same value the
+  /// caller used for its section header keeps the header and the tiles on one margin.
+  public let safeArea: CGFloat
   public let typeSize: DynamicTypeSize
   public let onSelect: (MediaCard) -> Void
   public let onNearEnd: ((MediaCard) -> Void)?
@@ -27,6 +31,7 @@ public struct TVUIKitMediaCollection: UIViewControllerRepresentable {
   public init(cards: [MediaCard],
               axis: TVUIKitCollectionAxis,
               containerWidth: CGFloat,
+              safeArea: CGFloat = 0,
               typeSize: DynamicTypeSize = .large,
               onSelect: @escaping (MediaCard) -> Void,
               onNearEnd: ((MediaCard) -> Void)? = nil,
@@ -34,6 +39,7 @@ public struct TVUIKitMediaCollection: UIViewControllerRepresentable {
     self.cards = cards
     self.axis = axis
     self.containerWidth = containerWidth
+    self.safeArea = safeArea
     self.typeSize = typeSize
     self.onSelect = onSelect
     self.onNearEnd = onNearEnd
@@ -45,6 +51,7 @@ public struct TVUIKitMediaCollection: UIViewControllerRepresentable {
     vc.apply(cards: cards,
              axis: axis,
              containerWidth: containerWidth,
+             safeArea: safeArea,
              typeSize: typeSize,
              onSelect: onSelect,
              onNearEnd: onNearEnd,
@@ -56,6 +63,7 @@ public struct TVUIKitMediaCollection: UIViewControllerRepresentable {
     vc.apply(cards: cards,
              axis: axis,
              containerWidth: containerWidth,
+             safeArea: safeArea,
              typeSize: typeSize,
              onSelect: onSelect,
              onNearEnd: onNearEnd,
@@ -90,6 +98,7 @@ public final class TVUIKitMediaCollectionController: UIViewController {
     view.clipsToBounds = false
     view.dataSource = self
     view.delegate = self
+    view.prefetchDataSource = self
     view.register(TVUIKitPosterCell.self, forCellWithReuseIdentifier: TVUIKitPosterCell.reuseID)
     view.register(
       TVUIKitContinueWatchingCell.self,
@@ -97,6 +106,13 @@ public final class TVUIKitMediaCollectionController: UIViewController {
     )
     return view
   }()
+
+  /// Reported once per layout pass so the "edge cells are clipped / the next card only
+  /// loads on focus" question has measurements behind it rather than screenshots.
+  public override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    FocusLog.railGeometry(collectionView, section: sectionName)
+  }
 
   public override func viewDidLoad() {
     super.viewDidLoad()
@@ -115,6 +131,7 @@ public final class TVUIKitMediaCollectionController: UIViewController {
   func apply(cards: [MediaCard],
              axis: TVUIKitCollectionAxis,
              containerWidth: CGFloat,
+             safeArea: CGFloat,
              typeSize: DynamicTypeSize,
              onSelect: @escaping (MediaCard) -> Void,
              onNearEnd: ((MediaCard) -> Void)?,
@@ -124,15 +141,17 @@ public final class TVUIKitMediaCollectionController: UIViewController {
     let metrics = TVUIKitPosterMetrics.shelfMetrics(
       isLandscape: landscape,
       containerWidth: width,
-      typeSize: typeSize
+      typeSize: typeSize,
+      safeArea: safeArea
     )
     let tile = landscape
-      ? TVUIKitPosterMetrics.landscapeSize(containerWidth: width, typeSize: typeSize)
-      : TVUIKitPosterMetrics.posterSize(containerWidth: width, typeSize: typeSize)
+      ? TVUIKitPosterMetrics.landscapeSize(containerWidth: width, typeSize: typeSize, safeArea: safeArea)
+      : TVUIKitPosterMetrics.posterSize(containerWidth: width, typeSize: typeSize, safeArea: safeArea)
     let item = TVUIKitPosterMetrics.itemSize(
       isLandscape: landscape,
       containerWidth: width,
-      typeSize: typeSize
+      typeSize: typeSize,
+      safeArea: safeArea
     )
 
     let cardsChanged = self.cards.map(\.id) != cards.map(\.id)
@@ -161,12 +180,24 @@ public final class TVUIKitMediaCollectionController: UIViewController {
       layout.scrollDirection = axis == .horizontal ? .horizontal : .vertical
       layout.minimumLineSpacing = gutter
       layout.minimumInteritemSpacing = gutter
-      layout.sectionInset = UIEdgeInsets(
-        top: landscape ? Metrics.landscapeFocusPadding : Metrics.focusPadding,
-        left: inset,
-        bottom: landscape ? Metrics.landscapeFocusPadding : Metrics.focusPadding,
-        right: inset
+      // Focus room derived from the tile, not a constant: a 435pt-tall poster and a
+      // 198pt-tall landscape still grow by different amounts, and reserving the same
+      // strip for both is how rows ended up touching when one of them lit up.
+      let focusRoom = TVUIKitPosterMetrics.sectionFocusPadding(
+        isLandscape: landscape,
+        containerWidth: width,
+        typeSize: typeSize,
+        safeArea: safeArea
       )
+      // A pinned card width leaves a remainder at the end of a row. In a shelf it just
+      // scrolls away; in a grid it would sit as a hole against the trailing edge, so
+      // the grid takes it as symmetric margin and stays centred — through the same
+      // `gridInset` a section header above it must use, or the two visibly disagree.
+      let sideInset = axis == .vertical ? metrics.gridInset(in: width) : inset
+      layout.sectionInset = UIEdgeInsets(top: focusRoom,
+                                         left: sideInset,
+                                         bottom: focusRoom,
+                                         right: sideInset)
       layout.itemSize = item
     }
 
@@ -179,6 +210,23 @@ public final class TVUIKitMediaCollectionController: UIViewController {
     if cardsChanged || layoutChanged {
       collectionView.reloadData()
     }
+  }
+}
+
+extension TVUIKitMediaCollectionController: UICollectionViewDataSourcePrefetching {
+  /// The URL the cell for this card will actually ask for — the two cells disagree,
+  /// and prefetching the other one warms the wrong entry.
+  private func artworkURL(for card: MediaCard) -> URL? {
+    let string = isLandscape
+      ? (card.landscapeImageURL ?? card.backdropURL ?? card.posterURL)
+      : card.posterURL
+    return URL(string: string)
+  }
+
+  public func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+    TVUIKitRemoteImage.prefetch(indexPaths.compactMap { path in
+      cards.indices.contains(path.item) ? artworkURL(for: cards[path.item]) : nil
+    })
   }
 }
 

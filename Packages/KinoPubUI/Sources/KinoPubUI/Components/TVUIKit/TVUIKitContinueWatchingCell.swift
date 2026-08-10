@@ -163,18 +163,23 @@ public final class TVUIKitContinueWatchingCell: UICollectionViewCell {
 
   private func loadImage(from url: URL?) {
     imageTask?.cancel()
+    imageTask = nil
+    currentURL = url
     guard let url else {
       artworkImageView.image = nil
-      currentURL = nil
       placeholderView.isHidden = false
+      ArtworkLog.skipped(by: "landscape", reason: "no artwork URL")
       return
     }
-    if currentURL == url, artworkImageView.image != nil {
+    if let hit = TVUIKitRemoteImage.cached(url: url) {
+      artworkImageView.image = hit
       placeholderView.isHidden = true
+      ArtworkLog.servedFromMemory(url, by: "landscape")
       return
     }
-    currentURL = url
+    artworkImageView.image = nil
     placeholderView.isHidden = false
+    ArtworkLog.requested(url, by: "landscape")
     imageTask = Task { [weak self] in
       let image = await TVUIKitRemoteImage.load(url: url)
       await MainActor.run {

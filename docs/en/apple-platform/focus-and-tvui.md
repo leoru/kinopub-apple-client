@@ -55,24 +55,31 @@ A Home shelf is the same poster grid scrolled sideways — not a second card com
 | `TVLockupView` (+ `TVLockupViewComponent`) | tvOS 12 | Header / footer that move on focus; `updateAppearanceForLockupViewState:` pushes `.focused` / `.highlighted` into subviews |
 | `TVCardView` | tvOS 12 | Floating card lockup; contents respond to focus as one unit |
 | `TVCaptionButtonView` | tvOS 12 | Button + caption, knock-out effect, `motionDirection` |
-| `TVMediaItemContentConfiguration` | tvOS 15 | The TV-app media cell: image, text, secondaryText, **`playbackProgress`**, **`badgeText` / `badgeProperties`** (incl. `liveContentBadgeProperties`), `overlayView`, `focusedFrameGuide`, `+wideCellConfiguration` |
+| `TVMediaItemContentConfiguration` | tvOS 15 | The TV-app media cell: image, text, secondaryText, **`playbackProgress`**, **`badgeText` / `badgeProperties`** (incl. `liveContentBadgeProperties`), `overlayView`, `focusedFrameGuide`, `textProperties` / `secondaryTextProperties` (font, color, `transform`). **`+wideCellConfiguration` is the only factory — 16:9, no poster variant exists.** |
+| `NSCollectionLayoutSection.orthogonalLayoutSectionForMediaItems` | tvOS 15 | The system's own rail for those cells — item size, gutters, insets, focus room. Use it instead of tuning a flow layout by hand. |
+| `TVMonogramContentConfiguration` | tvOS 15 | Person cell: circle, focus motion, localized initials from `personNameComponents` **when `image` is nil**. `+cellConfiguration` is the only factory; `textProperties` / `secondaryTextProperties` (font, color) are the only styling knobs. |
 | `TVCollectionViewFullScreenLayout` | tvOS 13 | Full-screen paging layout: `parallaxFactor`, `maskAmount`, `contentBleed`, `cornerRadius`, and `willCenterCellAtIndexPath:` / `didCenterCellAtIndexPath:` delegate callbacks |
-| `TVMonogramView`, `TVDigitEntryViewController` | tvOS 12 | Person monogram; PIN entry |
+| `TVMonogramView`, `TVDigitEntryViewController` | tvOS 12 | Older person monogram view; PIN entry |
 
 Cost, stated honestly: all of it is UIKit. `TVMediaItemContentConfiguration` implies a
-`UICollectionView` rail rather than a SwiftUI `LazyHStack`, and any bridge risks the
-"one focus owner per zone" rule above. Do **not** read this table as a mandate to port every rail.
+`UICollectionView` rail rather than a SwiftUI `LazyHStack`, and every extra bridge is another
+focus owner — which is the argument for **one** collection with several sections per page region,
+not for staying in SwiftUI.
 
-Where it is genuinely worth the bridge:
+**Superseding the earlier "do not port every rail" line (user decision, 2026-08-10):** on tvOS,
+person / wide-16:9 / poster tiles come from the three system cells, and rails come from
+`orthogonalLayoutSectionForMediaItems`. The standard, the rules that follow from it, and the
+list of places still deviating live in
+[component-catalogue → the tvOS cell standard](../policies/component-catalogue.md#the-tvos-cell-standard).
 
-- **Poster shelves and poster grids** — one `TVUIKitMediaCollection` + `TVUIKitPosterCell`
-  (horizontal or vertical). Shipping path behind the flag above.
+Still open on top of that standard:
+
 - **`TVCollectionViewFullScreenLayout` for an autoplay hero.** `didCenterCellAtIndexPath:` is a
   system-provided "this card settled in the centre" hook — exactly the trigger a Netflix-style
   autoplaying hero needs, without hand-rolling centre detection, debounce, and fast-scroll
   cancellation. **Needs validation** before committing.
-- SwiftUI `.borderless` + `.hoverEffect(.highlight)` remains the fallback (and the path on
-  iOS/macOS). Detail / person rails that are not the shared poster atom stay SwiftUI until ported.
+- SwiftUI `.borderless` + `.hoverEffect(.highlight)` remains the path on iOS/macOS, and the
+  fallback for tvOS surfaces that are not one of the three cells (buttons, tabs, chrome).
 
 ## Project decisions
 

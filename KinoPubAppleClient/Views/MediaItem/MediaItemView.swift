@@ -413,7 +413,6 @@ struct MediaItemView: View {
       MediaItemCastSection(mediaItem: itemModel.mediaItem,
                            linkProvider: itemModel.linkProvider,
                            externalMetadata: itemModel.externalMetadata,
-                           externalMetadataLoaded: itemModel.externalMetadataLoaded,
                            onSectionFocused: leaveHero)
         .detailFocusSection("cast")
       MediaItemAwardsSection(awards: itemModel.externalMetadata.awards,
@@ -528,9 +527,21 @@ private struct MediaItemFoldSnappingBehavior: ScrollTargetBehavior {
     // — it is already peeking under the hero — so every crossing landed inside the
     // leave-it-be zone and never snapped. Sections further down (ratings, cast) did
     // snap, which is exactly how this was spotted.
-    let destination: CGFloat = aboveFold ? 0 : showcaseHeight
-    FocusLog.snapped(from: target.rect.origin.y, to: destination, aboveFold: aboveFold)
-    target.rect.origin.y = destination
+    if aboveFold {
+      FocusLog.snapped(from: target.rect.origin.y, to: 0, aboveFold: true)
+      target.rect.origin.y = 0
+      return
+    }
+
+    // The two resting positions govern **the fold**, not the whole page. Applied to
+    // every scroll below it, this pinned the page at `showcaseHeight` forever: focus
+    // moved to the cast rail, the snap yanked the offset from 1295 back to 816, the
+    // rail left the screen and focus bounced straight back out — so nothing below the
+    // vote buttons was reachable at all. Once the page has travelled past the first
+    // section, the focus engine's own target is the correct one.
+    guard target.rect.origin.y < showcaseHeight else { return }
+    FocusLog.snapped(from: target.rect.origin.y, to: showcaseHeight, aboveFold: false)
+    target.rect.origin.y = showcaseHeight
   }
 }
 

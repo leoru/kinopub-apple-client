@@ -30,6 +30,10 @@ struct TVUIKitComponentGalleryView: View {
           TVUIKitMediaItemRail(items: GalleryContent.episodeStates, contentInset: 60, onSelect: { _ in })
         }
 
+        section("Caption lines", note: "Two lines is the ceiling, and this row is where to check the second one lands somewhere clean. Tile 1 is title-only (the old look, kept for comparison). Tile 2 adds the metadata line, tile 3 adds a badge over it, tile 4 pairs it with a progress bar and our bottom-leading glyph — that last one is the collision to look for. If `secondaryText` draws over the artwork rather than under it, the wide tile falls back to packing everything into one line; the poster cell already does its two lines with its own labels, because TVPosterView's built-in ones crop 2:3 art.") {
+          TVUIKitMediaItemRail(items: GalleryContent.captionLines, contentInset: 60, onSelect: { _ in })
+        }
+
         section("Badges", note: "badgeText is a corner chip, not a spec sheet — one token. kino.pub's \"+10 new episodes\" counter deliberately does not feed it.") {
           TVUIKitMediaItemRail(items: GalleryContent.badgeStates, contentInset: 60, onSelect: { _ in })
         }
@@ -264,6 +268,24 @@ private enum GalleryContent {
     TVUIKitMediaItem(id: 6, tint: .systemGray, symbol: "calendar",
                      caption: "S1 E6 · Futurama",
                      status: .upcoming("Mar 13, 2026"))
+  ]
+
+  static let captionLines: [TVUIKitMediaItem] = [
+    TVUIKitMediaItem(id: 501, tint: .systemTeal, symbol: "film",
+                     caption: "Blade Runner 2049",
+                     status: .ready, timeLabel: "2h 44m"),
+    TVUIKitMediaItem(id: 502, tint: .systemBlue, symbol: "film",
+                     caption: "Blade Runner 2049",
+                     subcaption: "2017 · USA · Sci-Fi",
+                     status: .ready, timeLabel: "2h 44m"),
+    TVUIKitMediaItem(id: 503, tint: .systemIndigo, symbol: "4k.tv",
+                     caption: "Blade Runner 2049",
+                     subcaption: "2017 · USA · Sci-Fi",
+                     status: .ready, timeLabel: "2h 44m", badgeText: "4K"),
+    TVUIKitMediaItem(id: 504, tint: .systemOrange, symbol: "film",
+                     caption: "S2 E11 · Severance",
+                     subcaption: "Mark takes the elevator down one more time.",
+                     status: .inProgress(0.4))
   ]
 
   static let badgeStates: [TVUIKitMediaItem] = [
