@@ -147,7 +147,11 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
       return
     }
     progressTrack.isHidden = false
-    ensureBottomInfoBlur().isHidden = false
+    // Blur band commented out 2026-08-09: it is our invention, not TVUIKit's, and behind
+    // a bare progress track (no label) it reads as a smudge rather than a legibility
+    // treatment. `ensureBottomInfoBlur()` and `TVUIKitBottomInfoBlurView` are still here
+    // — put this line back if the bar turns out to need a floor over pale artwork.
+    // ensureBottomInfoBlur().isHidden = false
     let trackWidth = max(tileWidth - 32, 1)
     progressFillWidth.constant = trackWidth * CGFloat(progress)
   }

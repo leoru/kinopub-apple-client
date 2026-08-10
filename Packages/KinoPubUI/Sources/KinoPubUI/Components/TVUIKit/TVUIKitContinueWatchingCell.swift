@@ -55,6 +55,11 @@ public final class TVUIKitContinueWatchingCell: UICollectionViewCell {
 
     bottomInfoBlur.translatesAutoresizingMaskIntoConstraints = false
     card.contentView.addSubview(bottomInfoBlur)
+    // Commented out 2026-08-09 alongside the poster cell's band — same call. This cell
+    // now only backs landscape *grids*; the shelves moved to `TVUIKitMediaItemRail`,
+    // where the legibility treatment is the system's. Flip back to `false` if titles
+    // over pale stills turn out to need the floor here.
+    bottomInfoBlur.isHidden = true
 
     titleLabel.translatesAutoresizingMaskIntoConstraints = false
     titleLabel.font = .preferredFont(forTextStyle: .headline)

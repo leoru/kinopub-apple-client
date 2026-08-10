@@ -5,6 +5,92 @@ not belong here. Detail checklists live under [`docs/en/features/`](docs/en/feat
 
 ## Unreleased
 
+### tvOS wide rails are system media items
+
+- **Every 16:9 horizontal rail now draws with `TVMediaItemContentConfiguration.wideCell()`, laid out
+  by `NSCollectionLayoutSection.orthogonalLayoutSectionForMediaItems()`** — new
+  `TVUIKitMediaItemRail` in KinoPubUI. The hand-built landscape tile (artwork + gradient legibility
+  band + title + meta + progress track, all stacked by hand in `TVUIKitContinueWatchingCell`) is
+  gone from the shelf path: text, secondary line, badge, and progress bar are configuration
+  properties, so the focus motion, band, badge shape, and bar are all system-owned.
+  `MediaPosterShelf` routes landscape cards there; Continue Watching is the first surface on it.
+- **Posters stay on `TVPosterView`.** The media-item configuration ships a 16:9
+  `wideCellConfiguration` only — there is no 2:3 variant, so `TVUIKitPosterCell` /
+  `TVUIKitMediaCollection` remain the poster and vertical-grid path (including landscape *grids*,
+  which the orthogonal section cannot express).
+- **`text` and `secondaryText` are not two stacked lines under the tile** — measured on device, not
+  read off the header: `text` renders centred *below* the artwork, `secondaryText` renders *over* the
+  artwork's bottom-leading corner. They are different surfaces; setting both put `secondaryText`
+  straight through our own chip in that corner (caught it live — a card's own title, rendered by the
+  system in caps, drawn on top of our "▶ 1h 52m"). We use `text` only, and leave `secondaryText` nil.
+- **One look, not a set of options.** First pass shipped a knobs struct (scale / progress-on-focus /
+  center-glyph / title-on-focus) with an A/B gallery bench to compare them — reasonable for exploring,
+  wrong for shipping: no product requirement asked for options, and the result read as "a UI ideas
+  page," not a component. `TVUIKitMediaItemRailStyle` is gone; the rail has exactly one behaviour now.
+- **Under the tile: the name, always visible, not focus-gated.** A movie's own title, or "S2, E11 ·
+  Show" for an episode — built from `overlayLabel` (already formatted "S2, E11" by both History and
+  Continue Watching) plus `title`. Earlier this said "state, never the name" and showed a generic
+  "Continue" placeholder instead — wrong: the artwork's own baked-in title text is not the same
+  surface as the caption below the tile, so putting the real name there is not a duplicate.
+- **Inside the artwork: the bar and the runtime are mutually exclusive, both shown immediately —
+  never gated by focus.** Went through two readings before landing here. First pass showed "56m left"
+  unconditionally beside the glyph; second pass hid all text until focus (bar-only at rest). Landed
+  on: `TVUIKitMediaItemStatus.showsRuntime` is true for `.ready`/`.watched`, false for `.inProgress`
+  (the bar already says "how far along" — showing both is redundant) and `.upcoming` (nothing is
+  known yet). Whichever one applies shows immediately. The glyph (bottom-leading) and the runtime
+  (bottom-trailing) are on opposite corners of the same row, not a shared pill — no black background
+  behind either; a drop shadow (`applyLegibilityShadow`) carries contrast instead, the same technique
+  system text over artwork uses elsewhere. Declined: having the bar itself visually displace the
+  glyph/runtime as it fills — the system draws its bar in a separate layer we cannot hook into, so
+  that would need custom position math tied to `progress`, exactly the bespoke logic this rail is
+  trying to avoid. **No SF Symbol floats over the middle of the tile on focus** — that shipped in the
+  first pass and reads as homemade; removed.
+- **A top-leading badge carries "Watched" and an upcoming release date** — `TVUIKitMediaItemStatus
+  .stateBadgeText` / `.badgeShowsClock`. Unlike the bottom-corner glyph/runtime, this one *does* sit
+  on a pill (`badge` in the overlay): it is a badge, the same kind of chrome as the 4K/HDR capability
+  badge it replaces for exactly these two states — the corner has room for one, and the state wins
+  (`updateConfiguration` suppresses `config.badgeText` whenever `status.stateBadgeText != nil`). The
+  system's own badge is text-only (`TVMediaItemContentBadgeProperties` has no icon slot), so the clock
+  glyph on an upcoming tile is ours, not the system's — this is the one place in the rail that is
+  deliberately custom rather than system-drawn, because the system genuinely cannot do it.
+- **Progress is never a series completion ratio.** `TVUIKitMediaItem.status(for:)` returns `.ready`
+  for any `isSeries` card with no `video` pinned to it, regardless of what `progress` holds — e.g.
+  `WatchingItem.progress` (`LibrarySectionCatalog.card(for:isSeries:)`) is `watched episodes / total`,
+  not a resume point, and must never paint a bar even if such a card is ever routed through this rail.
+- **`TVMediaItemContentConfiguration.overlayView`** carries what the configuration has no property
+  for: a light bottom-up gradient (so the glyph/runtime read over any artwork — this replaces the
+  commented-out `TVUIKitBottomInfoBlurView` for this rail specifically), the glyph, the runtime, the
+  state badge, and the watched scrim. One view per cell, mutated in place; the configuration is
+  rebuilt every state change and would otherwise rebuild the overlay with it.
+- **Status drives the glyph** (`TVUIKitMediaItemStatus`): ready/in-progress/watched → play or
+  checkmark, unavailable/upcoming → **no glyph at all** — nothing to select. A missing episode is
+  signalled by the absent glyph and the caption, not by fading or disabling the tile.
+- `TVUIKitMediaItem.badgeText` is one capability token — 4K, else HDR. `MediaCard.badge` deliberately
+  does **not** feed it: on Home it carries kino.pub's "+10 new episodes" counter, which is noise in a
+  corner chip.
+- Sizing is **measured, then scaled**: `orthogonalLayoutSectionForMediaItems()` cannot be resized — it
+  exposes neither its group nor its item — so `TVUIKitMediaItemMetrics` probes what it lays out at a
+  given width (tile size, gap, vertical padding) with a throwaway collection view and rebuilds an
+  equivalent section at a fixed `TVUIKitMediaItemMetrics.scale` (1.18). The system row reads small in
+  our shelves; the tile keeps Apple's proportions. The rail reports its height through `sizeThatFits`
+  — callers must not pin a `.frame(height:)` on top of it.
+- `TVUIKitTileArtwork` draws flat-tint + SF Symbol artwork for tiles with no photograph (genres /
+  categories, and the panel shown while a still is in flight). Colour is FNV-hashed from the name so
+  a genre keeps its colour across launches — `String.hashValue` is seeded per process.
+
+### TVUIKit gallery
+
+- Rows were cropped because each lockup sat inside a hand-picked SwiftUI `.frame`. A `TVLockupView`
+  keeps laying its content out at its own `contentSize` when the outer control is stretched, so the
+  content ended up in a corner of an oversized box. Every representable now sets `contentSize` and
+  answers `sizeThatFits` from `systemLayoutSizeFitting`; the rows dropped their frames and turned
+  off scroll clipping so the focus lift is not sheared at the row edges.
+- The media-items section is the shipping `TVUIKitMediaItemRail`, one row per episode state (ready /
+  in progress / watched / not on kino.pub / upcoming), plus a genre-tile row on the same component.
+  The earlier A/B variants (tile scale, progress-on-focus, centred play glyph) are gone along with
+  the style knobs they compared — see above. Monogram cells were sized to the 160pt circle alone,
+  which clipped the two labels the system stacks under it.
+
 ### Detail page
 
 - **Library sidebar (macOS + tvOS) no longer traps a title's detail page beside itself.**

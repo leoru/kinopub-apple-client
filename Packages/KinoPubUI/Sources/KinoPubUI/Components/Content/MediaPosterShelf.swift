@@ -97,6 +97,14 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
 
   @ViewBuilder
   private var header: some View {
+#if os(tvOS)
+    // Never a link on tvOS. A navigating section header is an iOS/macOS affordance:
+    // on a remote it becomes one more focus stop above every single row, which the
+    // user has to travel through on the way down the page, and which no Apple tvOS
+    // app has. "See all" belongs in the row itself — a trailing card — not in its
+    // title. See `docs/en/plans/detail-page-choreography.md` phase 6.
+    SectionHeader(title: title, count: count, showsChevron: false)
+#else
     if let destination {
       NavigationLink(value: destination) {
         SectionHeader(title: title, count: count, showsChevron: true)
@@ -105,10 +113,32 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     } else {
       SectionHeader(title: title, count: count, showsChevron: false)
     }
+#endif
   }
 
 #if os(tvOS)
+  /// Wide rails ride the system's media-item cell; posters stay on `TVPosterView`
+  /// (`TVMediaItemContentConfiguration` ships a 16:9 `wideCell()` only).
+  @ViewBuilder
   private var tvUIKitRail: some View {
+    if isLandscape {
+      TVUIKitMediaItemRail(
+        items: cards.map(TVUIKitMediaItem.init(card:)),
+        contentInset: metrics.inset,
+        onSelect: { id in
+          if let card = cards.first(where: { $0.id == id }) { open(card) }
+        },
+        contextMenuProvider: contextMenuProvider.map { provider in
+          { id in cards.first(where: { $0.id == id }).map(provider) ?? [] }
+        }
+      )
+      .focusSection()
+    } else {
+      tvUIKitPosterRail
+    }
+  }
+
+  private var tvUIKitPosterRail: some View {
     TVUIKitMediaCollection(
       cards: cards,
       axis: .horizontal,

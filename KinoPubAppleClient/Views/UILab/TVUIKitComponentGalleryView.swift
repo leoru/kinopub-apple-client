@@ -26,66 +26,53 @@ struct TVUIKitComponentGalleryView: View {
       VStack(alignment: .leading, spacing: 56) {
         header
 
-        section("Media items — badges & progress", note: "TVMediaItemContentConfiguration, .wideCellConfiguration(), NSCollectionLayoutSection.orthogonalLayoutSectionForMediaItems(). Same API `TVUIKitMediaCollection` could ride instead of hand-rolled cells.") {
-          MediaItemGalleryRow()
-            .frame(height: 260)
+        section("Episode states", note: "The shipping TVUIKitMediaItemRail, one look, one tile per state — including two upcoming tiles to compare a relative date badge against an absolute one. Under the tile: the name, always visible. In the artwork: progress bar OR runtime bottom-trailing, never both, never gated by focus — the bar already says \"how far in\", so the two are mutually exclusive. A bare glyph sits bottom-leading (no pill, a drop shadow carries it). Watched and upcoming get a top-leading badge instead of the corner glyph telling the whole story; a missing episode simply has no glyph at all — no fade, no disable.") {
+          TVUIKitMediaItemRail(items: GalleryContent.episodeStates, contentInset: 60, onSelect: { _ in })
         }
 
-        section("Posters", note: "TVPosterView — what our TVUIKitPosterCell wraps. Optimal focusSizeIncrease is computed from the image; we don't set our own.") {
-          ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 40) {
-              ForEach(GalleryContent.posters) { item in
-                TVPosterViewRepresentable(item: item)
-                  .frame(width: 260, height: 390)
-              }
+        section("Badges", note: "badgeText is a corner chip, not a spec sheet — one token. kino.pub's \"+10 new episodes\" counter deliberately does not feed it.") {
+          TVUIKitMediaItemRail(items: GalleryContent.badgeStates, contentInset: 60, onSelect: { _ in })
+        }
+
+        section("Genre tiles", note: "The same media-item cell with no photograph: a flat tint plus an SF Symbol, colour derived from the genre name so it is stable across launches. Caption only — no glyph, no chip, no progress.") {
+          TVUIKitMediaItemRail(items: GalleryContent.genreItems, contentInset: 60, onSelect: { _ in })
+        }
+
+        section("Posters", note: "TVPosterView — what our TVUIKitPosterCell wraps. Optimal focusSizeIncrease is computed from the image; we don't set our own. Each view sizes itself from its contentSize; SwiftUI must not pin a frame on it or the lockup renders inside a stretched box.") {
+          lockupRow {
+            ForEach(GalleryContent.posters) { item in
+              TVPosterViewRepresentable(item: item)
             }
-            .padding(.horizontal, 60)
-            .padding(.vertical, 40)
           }
         }
 
         section("Cards", note: "TVCardView — a floating lockup. Custom content goes in .contentView; the system handles the focus motion for everything inside it as one unit.") {
-          ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 40) {
-              ForEach(GalleryContent.cards) { item in
-                TVCardViewRepresentable(item: item)
-                  .frame(width: 320, height: 200)
-              }
+          lockupRow {
+            ForEach(GalleryContent.cards) { item in
+              TVCardViewRepresentable(item: item)
             }
-            .padding(.horizontal, 60)
-            .padding(.vertical, 40)
           }
         }
 
         section("Caption buttons", note: "TVCaptionButtonView — a button-shaped lockup with a title/subtitle footer. The system adds a knock-out floating effect on focus.") {
-          ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 40) {
-              ForEach(GalleryContent.captionButtons) { item in
-                TVCaptionButtonViewRepresentable(item: item)
-                  .frame(width: 240, height: 240)
-              }
+          lockupRow {
+            ForEach(GalleryContent.captionButtons) { item in
+              TVCaptionButtonViewRepresentable(item: item)
             }
-            .padding(.horizontal, 60)
-            .padding(.vertical, 40)
           }
         }
 
         section("Bare lockups (header + footer)", note: "TVLockupView with no specialization — plain colored contentView plus TVLockupHeaderFooterView above and below. This is the primitive the specialized views (poster, card, caption button) are all built from.") {
-          ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 40) {
-              ForEach(GalleryContent.lockups) { item in
-                TVLockupViewRepresentable(item: item)
-                  .frame(width: 260, height: 260)
-              }
+          lockupRow {
+            ForEach(GalleryContent.lockups) { item in
+              TVLockupViewRepresentable(item: item)
             }
-            .padding(.horizontal, 60)
-            .padding(.vertical, 40)
           }
         }
 
         section("Monograms", note: "TVMonogramContentConfiguration — person initials composed by the system from personNameComponents when no image is set. A wide row of many, to see how the focus engine behaves with a lot of same-size, same-shape neighbors.") {
           MonogramGalleryRow()
-            .frame(height: 200)
+            .frame(height: MonogramGalleryRow.rowHeight)
         }
 
         fullScreenLayoutSection
@@ -121,6 +108,22 @@ struct TVUIKitComponentGalleryView: View {
         .frame(maxWidth: 900, alignment: .leading)
     }
     .padding(.horizontal, 60)
+  }
+
+  /// A row of self-sizing lockups. No `.frame` on the items — a `TVLockupView` lays out
+  /// from its own `contentSize`, so forcing a SwiftUI frame stretches the outer control
+  /// and leaves the real content sitting in a corner of an over-large box. The scroll
+  /// view also has to stop clipping, or the focus lift is sheared off at the row edges.
+  @ViewBuilder
+  private func lockupRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(alignment: .center, spacing: 40) {
+        content()
+      }
+      .padding(.horizontal, 60)
+      .padding(.vertical, 40)
+    }
+    .scrollClipDisabled()
   }
 
   @ViewBuilder
@@ -201,8 +204,7 @@ struct TVUIKitComponentGalleryView: View {
   private func comparisonRow(_ items: [GalleryItem]) -> some View {
     HStack(spacing: 24) {
       ForEach(items) { item in
-        TVCardViewRepresentable(item: item)
-          .frame(width: 220, height: 140)
+        TVCardViewRepresentable(item: item, contentSize: CGSize(width: 220, height: 140))
       }
     }
   }
@@ -238,10 +240,51 @@ private enum GalleryContent {
     GalleryItem(id: 200 + i, title: "Bottom \(i + 1)", subtitle: nil, symbol: "arrow.down", tint: palette[(i + 2) % palette.count])
   }
 
-  static let palette: [UIColor] = [
-    .systemRed, .systemOrange, .systemYellow, .systemGreen,
-    .systemTeal, .systemBlue, .systemIndigo, .systemPurple, .systemPink
+  static let palette: [UIColor] = TVUIKitTileArtwork.palette
+
+  /// One tile per state a rail of episodes actually contains. Caption is exactly what
+  /// ships: "S# E# · Show" for an episode, the bare title for a movie. No network
+  /// behind any of them — flat tint artwork, so this page stays pure layout.
+  static let episodeStates: [TVUIKitMediaItem] = [
+    TVUIKitMediaItem(id: 1, tint: .systemTeal, symbol: "film",
+                     caption: "S1 E1 · Futurama",
+                     status: .ready, timeLabel: "22m"),
+    TVUIKitMediaItem(id: 2, tint: .systemBlue, symbol: "film",
+                     caption: "S1 E2 · Futurama",
+                     status: .inProgress(0.35)),
+    TVUIKitMediaItem(id: 3, tint: .systemIndigo, symbol: "film",
+                     caption: "S1 E3 · Futurama",
+                     status: .watched, timeLabel: "22m"),
+    TVUIKitMediaItem(id: 4, tint: .systemGray, symbol: "film",
+                     caption: "S1 E4 · Futurama",
+                     status: .unavailable),
+    TVUIKitMediaItem(id: 5, tint: .systemGray, symbol: "calendar",
+                     caption: "S1 E5 · Futurama",
+                     status: .upcoming("in 3 days")),
+    TVUIKitMediaItem(id: 6, tint: .systemGray, symbol: "calendar",
+                     caption: "S1 E6 · Futurama",
+                     status: .upcoming("Mar 13, 2026"))
   ]
+
+  static let badgeStates: [TVUIKitMediaItem] = [
+    TVUIKitMediaItem(id: 301, tint: .systemBlue, symbol: "film",
+                     caption: "Arrival", status: .ready, timeLabel: "1h 56m"),
+    TVUIKitMediaItem(id: 302, tint: .systemIndigo, symbol: "4k.tv",
+                     caption: "Dune", status: .ready, timeLabel: "2h 35m", badgeText: "4K"),
+    TVUIKitMediaItem(id: 303, tint: .systemOrange, symbol: "sun.max",
+                     caption: "Chernobyl", status: .inProgress(0.55), badgeText: "HDR"),
+    TVUIKitMediaItem(id: 304, tint: .systemRed, symbol: "dot.radiowaves.left.and.right",
+                     caption: "Channel One", status: .ready,
+                     badgeText: "LIVE", badgeIsLive: true)
+  ]
+
+  static let genreItems: [TVUIKitMediaItem] = [
+    ("Action", "flame"), ("Comedy", "theatermasks"), ("Drama", "drop"),
+    ("Sci-Fi", "sparkles"), ("Documentary", "globe"), ("Horror", "moon.stars"),
+    ("Animation", "pawprint"), ("Thriller", "bolt")
+  ].enumerated().map { index, entry in
+    TVUIKitMediaItem(id: 400 + index, genre: entry.0, symbol: entry.1)
+  }
 
   /// Synchronous solid-color image so every component has real artwork to focus-scale
   /// without a network fetch — this page is meant to be pure layout, no loading state.
@@ -259,6 +302,24 @@ private enum GalleryContent {
   }
 }
 
+// MARK: - Self-sizing
+
+/// Every lockup here reports the size it actually wants, so SwiftUI proposes that
+/// instead of stretching the control to fill a hand-picked frame — a stretched
+/// `TVLockupView` keeps laying its content out at `contentSize` and leaves the rest of
+/// the box empty, which is what made these rows look cropped.
+///
+/// `contentSize` alone is not the answer: the header/footer and the focus headroom sit
+/// outside it, so the view is asked what it actually wants. The fallback covers a
+/// lockup that reports nothing rather than collapsing the tile to a hairline.
+private extension UIViewRepresentable where UIViewType: TVLockupView {
+  func lockupSize(_ view: UIViewType, fallback: CGSize) -> CGSize {
+    let fitted = view.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+    guard fitted.width > 1, fitted.height > 1 else { return fallback }
+    return fitted
+  }
+}
+
 // MARK: - TVPosterView
 
 private struct TVPosterViewRepresentable: UIViewRepresentable {
@@ -268,19 +329,27 @@ private struct TVPosterViewRepresentable: UIViewRepresentable {
     let view = TVPosterView(image: GalleryContent.image(tint: item.tint, symbol: item.symbol, size: CGSize(width: 520, height: 780)))
     view.title = item.title
     view.subtitle = item.subtitle
+    // Without this the poster's natural size is the image's own 520×780.
+    view.contentSize = CGSize(width: 260, height: 390)
     return view
   }
 
   func updateUIView(_ view: TVPosterView, context: Context) {}
+
+  func sizeThatFits(_ proposal: ProposedViewSize, uiView: TVPosterView, context: Context) -> CGSize? {
+    lockupSize(uiView, fallback: CGSize(width: 260, height: 440))
+  }
 }
 
 // MARK: - TVCardView
 
 private struct TVCardViewRepresentable: UIViewRepresentable {
   let item: GalleryItem
+  var contentSize = CGSize(width: 320, height: 200)
 
   func makeUIView(context: Context) -> TVCardView {
     let card = TVCardView()
+    card.contentSize = contentSize
     let imageView = UIImageView(image: GalleryContent.image(tint: item.tint, symbol: item.symbol, size: CGSize(width: 640, height: 400)))
     imageView.contentMode = .scaleAspectFill
     imageView.clipsToBounds = true
@@ -300,6 +369,10 @@ private struct TVCardViewRepresentable: UIViewRepresentable {
   }
 
   func updateUIView(_ view: TVCardView, context: Context) {}
+
+  func sizeThatFits(_ proposal: ProposedViewSize, uiView: TVCardView, context: Context) -> CGSize? {
+    lockupSize(uiView, fallback: CGSize(width: contentSize.width, height: contentSize.height + 50))
+  }
 }
 
 // MARK: - TVCaptionButtonView
@@ -312,10 +385,15 @@ private struct TVCaptionButtonViewRepresentable: UIViewRepresentable {
     button.contentImage = UIImage(systemName: item.symbol)?.withRenderingMode(.alwaysTemplate)
     button.title = item.title
     button.subtitle = item.subtitle
+    button.contentSize = CGSize(width: 240, height: 160)
     return button
   }
 
   func updateUIView(_ view: TVCaptionButtonView, context: Context) {}
+
+  func sizeThatFits(_ proposal: ProposedViewSize, uiView: TVCaptionButtonView, context: Context) -> CGSize? {
+    lockupSize(uiView, fallback: CGSize(width: 240, height: 250))
+  }
 }
 
 // MARK: - Bare TVLockupView
@@ -365,77 +443,23 @@ private struct TVLockupViewRepresentable: UIViewRepresentable {
   }
 
   func updateUIView(_ view: TVLockupView, context: Context) {}
-}
 
-// MARK: - TVMediaItemContentConfiguration row (needs a real UICollectionView)
-
-/// `TVMediaItemContentConfiguration` backs a collection-view cell's `contentConfiguration`
-/// — it is not a standalone focusable view, so unlike the lockup-family views above this
-/// one genuinely needs a `UICollectionView` host. Uses the system's own
-/// `orthogonalLayoutSectionForMediaItems()` rather than hand-rolled sizing.
-private struct MediaItemGalleryRow: UIViewControllerRepresentable {
-  func makeUIViewController(context: Context) -> UICollectionViewController {
-    let layout = UICollectionViewCompositionalLayout { _, _ in
-      .orthogonalLayoutSectionForMediaItems()
-    }
-    let controller = UICollectionViewController(collectionViewLayout: layout)
-    controller.collectionView.backgroundColor = .clear
-    let registration = UICollectionView.CellRegistration<UICollectionViewCell, Int> { cell, _, index in
-      var config = TVMediaItemContentConfiguration.wideCell()
-      let entry = Self.entries[index % Self.entries.count]
-      config.image = GalleryContent.image(tint: entry.tint, symbol: entry.symbol, size: CGSize(width: 640, height: 360))
-      config.text = entry.title
-      config.secondaryText = entry.subtitle
-      config.playbackProgress = entry.progress
-      if let badgeText = entry.badgeText {
-        config.badgeText = badgeText
-        config.badgeProperties = entry.badgeProperties
-      }
-      cell.contentConfiguration = config
-    }
-    let dataSource = UICollectionViewDiffableDataSource<Int, Int>(collectionView: controller.collectionView) { collectionView, indexPath, item in
-      collectionView.dequeueConfiguredReusableCell(using: registration, for: indexPath, item: item)
-    }
-    var snapshot = NSDiffableDataSourceSnapshot<Int, Int>()
-    snapshot.appendSections([0])
-    snapshot.appendItems(Array(0..<Self.entries.count))
-    dataSource.apply(snapshot, animatingDifferences: false)
-    context.coordinator.dataSource = dataSource
-    return controller
+  func sizeThatFits(_ proposal: ProposedViewSize, uiView: TVLockupView, context: Context) -> CGSize? {
+    lockupSize(uiView, fallback: CGSize(width: 220, height: 240))
   }
-
-  func updateUIViewController(_ controller: UICollectionViewController, context: Context) {}
-
-  func makeCoordinator() -> Coordinator { Coordinator() }
-  final class Coordinator {
-    var dataSource: UICollectionViewDiffableDataSource<Int, Int>?
-  }
-
-  private struct Entry {
-    let title: String
-    let subtitle: String
-    let symbol: String
-    let tint: UIColor
-    let progress: Float
-    let badgeText: String?
-    let badgeProperties: TVMediaItemContentConfiguration.BadgeProperties
-  }
-
-  private static let entries: [Entry] = [
-    Entry(title: "No badge, no progress", subtitle: "Baseline", symbol: "film", tint: .systemBlue, progress: 0, badgeText: nil, badgeProperties: .default()),
-    Entry(title: "4K badge", subtitle: "Default badge style", symbol: "4k.tv", tint: .systemIndigo, progress: 0, badgeText: "4K", badgeProperties: .default()),
-    Entry(title: "30% watched", subtitle: "playbackProgress = 0.3", symbol: "play.circle", tint: .systemTeal, progress: 0.3, badgeText: nil, badgeProperties: .default()),
-    Entry(title: "LIVE badge", subtitle: "liveContentBadgeProperties", symbol: "dot.radiowaves.left.and.right", tint: .systemRed, progress: 0.7, badgeText: "LIVE", badgeProperties: .liveContent()),
-    Entry(title: "Fully watched", subtitle: "playbackProgress = 1.0", symbol: "checkmark.circle", tint: .systemGreen, progress: 1.0, badgeText: nil, badgeProperties: .default()),
-    Entry(title: "HDR badge", subtitle: "Default badge style", symbol: "sun.max", tint: .systemOrange, progress: 0.55, badgeText: "HDR", badgeProperties: .default())
-  ]
 }
 
 // MARK: - TVMonogramContentConfiguration row
 
 private struct MonogramGalleryRow: UIViewControllerRepresentable {
+  /// The circle is 160, but the cell also stacks `text` + `secondaryText` under it and
+  /// grows on focus — sizing the item to the circle alone clips both.
+  static let itemHeight: CGFloat = 260
+  static let rowHeight: CGFloat = itemHeight + 40
+
   func makeUIViewController(context: Context) -> UICollectionViewController {
-    let itemSize = NSCollectionLayoutSize(widthDimension: .absolute(160), heightDimension: .absolute(160))
+    let itemSize = NSCollectionLayoutSize(widthDimension: .absolute(160),
+                                          heightDimension: .absolute(Self.itemHeight))
     let item = NSCollectionLayoutItem(layoutSize: itemSize)
     let group = NSCollectionLayoutGroup.horizontal(layoutSize: itemSize, subitems: [item])
     let section = NSCollectionLayoutSection(group: group)
