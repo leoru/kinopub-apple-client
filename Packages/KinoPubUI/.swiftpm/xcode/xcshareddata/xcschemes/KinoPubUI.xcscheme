@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1500"
+   LastUpgradeVersion = "2700"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -41,8 +41,6 @@
          </TestableReference>
       </Testables>
    </TestAction>
-   <!-- Library scheme: no app runnable. Previews host in the package itself —
-        required when the app target opts out of ENABLE_DEBUG_DYLIB on macOS. -->
    <LaunchAction
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"

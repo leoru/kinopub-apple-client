@@ -588,3 +588,91 @@ the SDK directly (`swiftc -typecheck`) rather than guessing through full app reb
 
 Compiles on tvOS + macOS. **Not run** — the user is testing locally and asked not to launch the
 simulator this pass.
+
+---
+
+## 2026-08-10 — the fold was rebuilt on Apple's guidance, and it is still wrong
+
+Second day on this page. Apple's tvOS layout guide ("Show content above and below the
+fold") turned out to describe almost exactly this screen, and we had hand-rolled four
+things it documents. Those were replaced (see below). **The fold still does not work,
+and the reason is a mistake in how I read the guide** — recorded here in full so the
+next session starts from the correct diagnosis rather than from "it's done".
+
+### What was replaced with the documented mechanism
+
+| Hand-rolled | Replaced by | Deleted |
+| --- | --- | --- |
+| `isHeroOnScreen` inferred from per-section focus reporters | `.onScrollVisibilityChange(threshold: 0.5)` on the hero | `leaveHero` writes, second writer |
+| `scrollTo` driver on two anchors | custom `ScrollTargetBehavior` (`MediaItemFoldSnappingBehavior`) | `MediaItemHeroScrollDriver` |
+| `UIVisualEffectView` bridge for the wash | `.regularMaterial` masked by a `LinearGradient`, stop opacities animate | `MediaItemHeroMaterialBackdrop`, `HeroMaterialBackdropView` |
+| `ExpandableButtonStyle` (custom focus/hover) | `.card` via `DetailTileStyle.buttonStyle` | `ExpandableButtonStyle`, `ExpandableLabel` |
+
+Hero is now `containerRelativeFrame(.vertical, alignment: .topLeading) { l, _ in l * 0.8 }`
+with a full-width `.focusSection()` — the guide names that focus section explicitly:
+without it "moving focus up from the right side of the shelves below might fail, or
+might jump all the way to the tab bar", which is verbatim the Up-from-sections bug this
+page carried for weeks.
+
+Also corrected: I had claimed SwiftUI cannot animate a material and moved it to UIKit.
+It can — you animate the **mask** in front of the material, not the material. Never
+fade a material with `.opacity()`; that draws the full-strength effect
+semi-transparently instead of weakening it.
+
+### The mistake: the snap does not apply to focus-driven movement
+
+`ScrollTargetBehavior.updateTarget` is consulted when a scroll has a *target* — swipe
+deceleration, programmatic `scrollTo`. Apple's fold-snapping sample is for a landing
+page that the user **swipes**. This page does not move by swiping: it moves because
+the **focus engine** scrolls just far enough to reveal whatever element took focus.
+That path never asks the behaviour anything, so nothing snaps.
+
+Observed consequence, on device:
+
+- Focusing the season tab flips the fold flag (`onScrollVisibilityChange` fires on any
+  scroll, including a 50pt nudge), so the backdrop darkens and blurs…
+- …but **the page does not move**. The hero neither lifts nor leaves. Nothing below
+  rises. Two states exist for the *background* and not for the *layout*.
+- The overlay title logo rides the same flag, so it appears instantly on that same
+  micro-scroll — far too early.
+
+This is the same conclusion the plan already reached about Rivulet and then filed
+under "not ported": they set `isScrollEnabled = false` and drive `contentOffset` from
+a `CADisplayLink` **because the focus engine's own scroll animator has to be replaced,
+not corrected**. I read that as heavyweight and proposed a lighter version; the light
+version leaves the engine in charge, which is the whole problem. Plozz reaches the
+same shape from the other side: its hero recede is an explicit point value
+(`recedeLift`) passed in and animated by the view itself, with a note that the offset
+must be applied *before* `.ignoresSafeArea()` or the safe-area breakout silently
+cancels it.
+
+**So: the fold needs a deterministic position driver.** The page knows both numbers
+(0 and the hero height); on a polarity change it must set the offset itself rather
+than ask the engine to reveal something. Re-file the "hand-driven scroll" line in this
+plan from *rejected* to *required*.
+
+### Shelf semantics — separate bugs, none of them caused by the fold
+
+Reported on device, all correct, none fixed:
+
+- **A shelf's header appears on focus.** Apple TV shows a slice of the shelf peeking
+  with no title; the title arrives when the shelf takes focus. Ours shows the title
+  permanently. `SeasonsRailView` already has `showsChrome` for exactly this and is
+  passed `true` unconditionally.
+- **One season → the tab strip must not be focusable at all.** Down from the hero
+  should land on an episode. Even with twenty seasons, the tabs are reached **only**
+  by pressing Up from an episode — never on the way down.
+- **The selected season tab stays lit after focus leaves.** Not stranded focus:
+  `SeasonTabButtonStyle` colours its text on `isSelected || isFocused` while only the
+  plate depends on `isFocused`, so the selected tab is permanently bright and reads as
+  still-focused. Selection must be quieter than focus.
+
+These three are independent of the fold and can be fixed first; they account for much
+of the "everything is dark but focused and it's mush" impression.
+
+### Order for the next session
+
+1. Shelf semantics (three items above) — cheap, independent, removes most of the noise.
+2. Deterministic fold driver — replace the engine's scroll rather than correct it.
+3. Only then re-judge the overlay logo timing, which is downstream of 2.
+

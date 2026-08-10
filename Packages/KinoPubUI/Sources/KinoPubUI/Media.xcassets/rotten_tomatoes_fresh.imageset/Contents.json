@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "rotten_tomatoes_critic.svg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

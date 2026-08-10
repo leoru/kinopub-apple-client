@@ -1958,7 +1958,7 @@ struct MediaItemInfoColumns: View {
             .fill(.thinMaterial)
         }
       }
-      .buttonStyle(ExpandableButtonStyle(showsPointerHighlight: false))
+      .buttonStyle(DetailTileStyle.buttonStyle)
 #if os(tvOS)
       .reportMediaItemSectionFocus(onSectionFocused)
 #endif
@@ -2317,19 +2317,17 @@ enum MediaItemLayout {
   // treatment. Both constants were three hand-picked point sizes that had already
   // drifted from `TypeScale.rowHeader` — the token the shared header actually uses.
 
-  /// The page's two resting scroll positions — see `MediaItemHeroScrollDriver`.
-  static let heroAnchor = "MediaItemHero"
-  static let sectionsAnchor = "MediaItemSections"
-
 #if os(tvOS)
   static let horizontalInset: CGFloat = 80
   static let sectionSpacing: CGFloat = 44
   /// Clears focus lift under the info panel + safe area.
   static let bottomPadding: CGFloat = 120
-  /// How much of the first section stays visible under the hero at rest. The hero is
-  /// laid out at `viewportHeight - heroPeek`, so this single number decides both the
-  /// "there is more below" affordance and where the sections state lands.
-  static let heroPeek: CGFloat = 190
+  /// Share of the viewport the hero occupies at rest — the remainder is the peek of
+  /// the first section that says "there is more below". Expressed as a fraction, not
+  /// a point inset, because that is the form Apple's tvOS layout guidance uses for a
+  /// showcase header, and because it holds on any screen height rather than being
+  /// tuned for one.
+  static let heroFraction: CGFloat = 0.8
 #elseif os(macOS)
   static let horizontalInset: CGFloat = 32
   static let sectionSpacing: CGFloat = 28
@@ -2423,7 +2421,7 @@ struct MediaItemPlotView: View {
       } label: {
         paragraph(showsMore: true)
       }
-      .buttonStyle(ExpandableButtonStyle())
+      .buttonStyle(DetailTileStyle.buttonStyle)
       .focused($focus, equals: .plot)
       .sheet(isPresented: $showsFullText) {
         plotSheet
@@ -2433,7 +2431,6 @@ struct MediaItemPlotView: View {
     }
 #endif
   }
-
   private var plotSheet: some View {
     MediaItemDetailSheet(title: Text(title)) {
       Text(plot)
@@ -2511,179 +2508,110 @@ struct MediaItemPlotView: View {
   static let font: Font = TypeScale.detailBody
 }
 
-/// Anything on this page that can be opened in full: the synopsis and the info
-/// columns. Secondary at rest so it sits behind the title and buttons, solid and
-/// backed once focused (or hovered on pointer platforms) so it reads as the control
-/// it is. Text that sets its own colour — the columns do — keeps it and picks up
-/// only the highlight.
-///
-/// Pass `showsPointerHighlight: false` for Information/Languages blocks whose
-/// *inner* rows are already links — a whole-column hover plate would mislead.
-private struct ExpandableButtonStyle: ButtonStyle {
-  var showsPointerHighlight: Bool = true
-
-  func makeBody(configuration: ButtonStyleConfiguration) -> some View {
-    // Not named `Body`: that collides with `ButtonStyle.Body`.
-    ExpandableLabel(configuration: configuration,
-                    showsPointerHighlight: showsPointerHighlight)
-  }
-
-  private struct ExpandableLabel: View {
-    let configuration: ButtonStyleConfiguration
-    let showsPointerHighlight: Bool
-    @Environment(\.isFocused) private var isFocused
-    @State private var isHovered = false
-
-    private var isHighlighted: Bool {
-#if os(tvOS)
-      isFocused
-#else
-      isFocused || (showsPointerHighlight && isHovered)
-#endif
-    }
-
-    var body: some View {
-      configuration.label
-        // At rest this is a step down from the title, not the full 40% fade of the
-        // subtitle colour: the synopsis sits over artwork now, and at 0.6 it went
-        // soft against a bright frame.
-//        .foregroundStyle(isHighlighted ? Color.KinoPub.text : Color.KinoPub.subtitle)
-        // Inset whether or not it is focused and then pulled back out again: making
-        // the padding appear on focus kept the frame the same width and re-wrapped
-        // the paragraph inside it. The highlight bleeds into the surrounding gaps
-        // instead, which is what it does on tvOS anyway.
-        .padding(.horizontal, Self.horizontalInset)
-        .padding(.vertical, Self.verticalInset)
-//        .background(
-//          RoundedRectangle(cornerRadius: 12, style: .continuous)
-//            .fill(Color.KinoPub.selectionBackground.opacity(isHighlighted ? 0.85 : 0))
-//        )
-        .padding(.horizontal, -Self.horizontalInset)
-        .padding(.vertical, -Self.verticalInset)
-        .buttonStyle(.card)
-//        .scaleEffect(configuration.isPressed && showsPointerHighlight ? 0.98 : 1.0)
-//        .animation(.easeOut(duration: 0.15), value: isHighlighted)
-//        .animation(.spring(response: 0.15, dampingFraction: 0.9), value: configuration.isPressed)
-#if !os(tvOS)
-        .onHover { if showsPointerHighlight { isHovered = $0 } }
-        .pointingHandCursorOnHover(enabled: showsPointerHighlight)
-#endif
-    }
-
-#if os(tvOS)
-    static let horizontalInset: CGFloat = 16
-    static let verticalInset: CGFloat = 8
-#else
-    static let horizontalInset: CGFloat = 10
-    static let verticalInset: CGFloat = 6
-#endif
-  }
-}
-
-
 /// Whatever was clipped on the page, presented over it in full: the synopsis, or a
 /// column with its lists unclamped.
-private struct MediaItemDetailSheet<Content: View>: View {
-
-  let title: Text
-  @ViewBuilder let content: () -> Content
-
-  @Environment(\.dismiss) private var dismiss
-
-  var body: some View {
-    ZStack {
-      Color.KinoPub.background.ignoresSafeArea()
-
-      ScrollView(.vertical) {
-        VStack(alignment: .leading, spacing: 24) {
-          title
-            .font(MediaItemSheetLayout.titleFont)
-            .foregroundStyle(Color.KinoPub.text)
-
-          content()
-
+        private struct MediaItemDetailSheet<Content: View>: View {
+            
+            let title: Text
+            @ViewBuilder let content: () -> Content
+            
+            @Environment(\.dismiss) private var dismiss
+            
+            var body: some View {
+                ZStack {
+                    Color.KinoPub.background.ignoresSafeArea()
+                    
+                    ScrollView(.vertical) {
+                        VStack(alignment: .leading, spacing: 24) {
+                            title
+                                .font(MediaItemSheetLayout.titleFont)
+                                .foregroundStyle(Color.KinoPub.text)
+                            
+                            content()
+                            
 #if !os(tvOS)
-          Button("Close") { dismiss() }
-            .buttonStyle(.bordered)
+                            Button("Close") { dismiss() }
+                                .buttonStyle(.bordered)
+#endif
+                        }
+                        .frame(maxWidth: MediaItemSheetLayout.maxWidth, alignment: .leading)
+                        .padding(MediaItemSheetLayout.padding)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    // Nothing in here is a control, and on tvOS a scroll view with nothing
+                    // focusable inside it will not move. This lets the remote pan it directly.
+#if os(tvOS)
+                    .focusable()
+#endif
+                }
+            }
+        }
+        
+        /// Its own type because the sheet is generic over its content, and generic types
+        /// cannot hold static storage.
+        private enum MediaItemSheetLayout {
+#if os(tvOS)
+            static let titleFont: Font = .system(size: 48, weight: .bold)
+            static let bodyFont: Font = .system(size: 30, weight: .regular)
+            static let captionFont: Font = .system(size: 28, weight: .regular)
+            static let maxWidth: CGFloat = 1200
+            static let padding: CGFloat = 80
+#else
+            static let titleFont: Font = .system(size: 26, weight: .bold)
+            static let bodyFont: Font = .system(size: 16, weight: .regular)
+            static let captionFont: Font = .system(size: 14, weight: .regular)
+            static let maxWidth: CGFloat = 640
+            static let padding: CGFloat = 24
 #endif
         }
-        .frame(maxWidth: MediaItemSheetLayout.maxWidth, alignment: .leading)
-        .padding(MediaItemSheetLayout.padding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-      }
-      // Nothing in here is a control, and on tvOS a scroll view with nothing
-      // focusable inside it will not move. This lets the remote pan it directly.
-#if os(tvOS)
-      .focusable()
-#endif
-    }
-  }
-}
-
-/// Its own type because the sheet is generic over its content, and generic types
-/// cannot hold static storage.
-private enum MediaItemSheetLayout {
-#if os(tvOS)
-  static let titleFont: Font = .system(size: 48, weight: .bold)
-  static let bodyFont: Font = .system(size: 30, weight: .regular)
-  static let captionFont: Font = .system(size: 28, weight: .regular)
-  static let maxWidth: CGFloat = 1200
-  static let padding: CGFloat = 80
-#else
-  static let titleFont: Font = .system(size: 26, weight: .bold)
-  static let bodyFont: Font = .system(size: 16, weight: .regular)
-  static let captionFont: Font = .system(size: 14, weight: .regular)
-  static let maxWidth: CGFloat = 640
-  static let padding: CGFloat = 24
-#endif
-}
-
+        
 #if DEBUG
-private struct PlotPreviewHost: View {
-  @FocusState private var focus: MediaItemFocusTarget?
-
-  var body: some View {
-    MediaItemPlotView(
-      title: "Стражи Галактики",
-      plot: MediaItem.mock().plot,
-      focus: $focus
-    )
-    .padding()
-    .frame(maxWidth: 960, alignment: .leading)
-//    .background(Color.black)
-    .preferredColorScheme(.dark)
-  }
-}
-
-#Preview("Synopsis More") {
-  PlotPreviewHost()
-}
-
-#Preview("Hero badge strip") {
-  HStack(spacing: 16) {
-    Text("2023,  South Korea")
-
-    MediaScoresView(imdb: 8.1, kinopoisk: 8.3)
-   // (countK) after score
-//      Text("2h 51m")
-      Text("Comedy,  Drama")
-
-    MediaCapabilityBadgesView(
-      badges: MediaCapabilityBadges(
-        is4K: true,
-        isHDR: true,
-        ageRating: "16+",
-        hasClosedCaptions: true,
-        audioChannelHint: "DD"
-      ),
-      mode: .detail
-    )
-
-  }
-  .font(.subheadline)
-//  .foregroundStyle(.white.opacity(0.85))
-  .padding()
-//  .background(Color.black)
-  .preferredColorScheme(.dark)
-}
+        private struct PlotPreviewHost: View {
+            @FocusState private var focus: MediaItemFocusTarget?
+            
+            var body: some View {
+                MediaItemPlotView(
+                    title: "Стражи Галактики",
+                    plot: MediaItem.mock().plot,
+                    focus: $focus
+                )
+                .padding()
+                .frame(maxWidth: 960, alignment: .leading)
+                //    .background(Color.black)
+                .preferredColorScheme(.dark)
+            }
+        }
+        
+        #Preview("Synopsis More") {
+            PlotPreviewHost()
+        }
+        
+        #Preview("Hero badge strip") {
+            HStack(spacing: 16) {
+                Text("2023,  South Korea")
+                
+                MediaScoresView(imdb: 8.1, kinopoisk: 8.3)
+                // (countK) after score
+                //      Text("2h 51m")
+                Text("Comedy,  Drama")
+                
+                MediaCapabilityBadgesView(
+                    badges: MediaCapabilityBadges(
+                        is4K: true,
+                        isHDR: true,
+                        ageRating: "16+",
+                        hasClosedCaptions: true,
+                        audioChannelHint: "DD"
+                    ),
+                    mode: .detail
+                )
+                
+            }
+            .font(.subheadline)
+            //  .foregroundStyle(.white.opacity(0.85))
+            .padding()
+            //  .background(Color.black)
+            .preferredColorScheme(.dark)
+        }
+        
 #endif

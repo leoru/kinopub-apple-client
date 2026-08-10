@@ -4,7 +4,7 @@ extension String {
   /// Kinopoisk serves .gif placeholders (no-poster.gif, no_actor.gif and friends)
   /// for people/titles with no photo — treat those as "no photo" so a TMDB photo
   /// or the initials avatar wins instead of the stock grey dummy.
-  var isKinopoiskPlaceholderImage: Bool {
+  var isKinopoiskPlaceholderImage: Bool { // LOL it resolves AFTER querying - each url is identical but it may provide a redirect to gif placeholder
     contains("no-poster") || contains("no_actor") || contains("noposter") || hasSuffix(".gif")
   }
 

@@ -58,6 +58,8 @@ struct MediaItemView: View {
   /// See `MediaItemHeroPhase` for why this is a `@State`-held reference type and
   /// not a plain `@State private var isHeroOnScreen: Bool`.
   @State private var heroPhase = MediaItemHeroPhase()
+  /// Measured hero height — the one number the fold snap needs.
+  @State private var showcaseHeight: CGFloat = 0
   @FocusState private var focus: MediaItemFocusTarget?
   /// Owns folder state + context-menu wiring for the related-item rows (Similar /
   /// More from Director / More with Actor) as ONE coordinator shared across all of
@@ -164,12 +166,9 @@ struct MediaItemView: View {
         FocusLog.moved(section: "hero",
                        element: target.map { "\($0)" } ?? "none",
                        focused: target != nil)
-        switch target {
-        case .play, .watchlist, .bookmark, .watched, .trailer, .more, .plot:
-          heroPhase.isHeroOnScreen = true
-        case .none:
-          break
-        }
+        // No fold write here — see `leaveHero`. The fold has one writer,
+        // `onScrollVisibilityChange` on the hero; focus landing on a hero control
+        // scrolls the page back up on its own and the scroll view reports that.
       }
 #endif
       .onDisappear {
@@ -227,19 +226,6 @@ struct MediaItemView: View {
   /// the full account before attempting this again — it needs a design that doesn't
   /// split hero and scroll into ZStack siblings.
   private var scrollDetails: some View {
-    ScrollViewReader { proxy in
-      scrollBody
-#if os(tvOS)
-        // Invisible: owns the two-state scroll so `MediaItemView.body` itself never
-        // reads `isHeroOnScreen` (see `MediaItemHeroPhase`).
-        .background {
-          MediaItemHeroScrollDriver(phase: heroPhase, proxy: proxy)
-        }
-#endif
-    }
-  }
-
-  private var scrollBody: some View {
     ScrollView(.vertical) {
       VStack(alignment: .leading, spacing: MediaItemLayout.sectionSpacing) {
         MediaItemHeroView(mediaItem: itemModel.mediaItem,
@@ -266,22 +252,50 @@ struct MediaItemView: View {
           // Screen height MINUS a peek strip, not the whole viewport. That subtraction
           // is what makes the resting hero state show a slice of the first section at
           // the bottom — the affordance that says "there is more below" — and it is
-          // also what makes the two scroll positions computable rather than emergent.
-          .containerRelativeFrame(.vertical) { length, _ in
-            max(length - MediaItemLayout.heroPeek, 1)
+          // also what gives the snap behaviour below a height to snap to.
+          .containerRelativeFrame(.vertical, alignment: .topLeading) { length, _ in
+            length * MediaItemLayout.heroFraction
           }
-//          .focusSection()
-          .id(MediaItemLayout.heroAnchor)
+          // Restored (it was commented out): Apple's tvOS layout guidance calls this
+          // out by name — without a full-width focus section on the header, "moving
+          // focus up from the right side of the shelves below might fail, or might
+          // jump all the way to the tab bar", because the engine searches straight up
+          // from the focused item. That is verbatim the Up-from-sections bug this page
+          // has been carrying.
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .focusSection()
+          .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.height
+          } action: { height in
+            showcaseHeight = height
+          }
+          // The fold, straight from the scroll view: true while more than half the
+          // hero is on screen. Replaces the apparatus of per-section focus reporters
+          // that used to infer it — those had blind spots by construction
+          // (`@Environment(\.isFocused)` is only true *inside* the focused view's
+          // subtree, so a reporter attached outside a `Button` never fired at all).
+          .onScrollVisibilityChange(threshold: 0.5) { visible in
+            heroPhase.isHeroOnScreen = visible
+          }
 #endif
 
         contentSections
-#if os(tvOS)
-          .id(MediaItemLayout.sectionsAnchor)
-#endif
       }
       .padding(.bottom, MediaItemLayout.bottomPadding)
     }
     .coordinateSpace(name: MediaItemLayout.scrollSpace)
+#if os(tvOS)
+    // The snap. A *custom* `ScrollTargetBehavior` — not `.viewAligned`, which this
+    // page tried before and which fought section focus; that experiment was recorded
+    // as "no scroll target behaviour here", which was the wrong conclusion drawn from
+    // the right result. This rewrites the scroll target from inside the native scroll
+    // instead of chasing it from outside with `scrollTo`, so there is nothing for the
+    // focus engine's own scroll animator to fight.
+    .scrollTargetBehavior(
+      MediaItemFoldSnappingBehavior(aboveFold: heroPhase.isHeroOnScreen,
+                                    showcaseHeight: showcaseHeight)
+    )
+#endif
     // No `.viewAligned` on the vertical detail scroll — it fought section focus and
     // pinned a full-viewport hero so the info panel never settled on screen. Home
     // banners keep viewAligned on their own horizontal rails.
@@ -489,34 +503,33 @@ struct MediaItemView: View {
 }
 
 #if os(tvOS)
-/// The page has exactly **two** resting scroll positions, and this is what holds it to
-/// them: hero (offset 0, first section peeking at the bottom) and sections (first
-/// section at the top). Nothing in between is reachable.
-///
-/// Left to itself the focus engine scrolls only far enough to reveal whatever element
-/// just took focus — an offset that is a function of that element's geometry, not of
-/// which half of the page you are in. That is why the page used to stop twenty pixels
-/// down and stay there: it was never a state, just a by-product. Rivulet solves this
-/// by switching its scroll view off entirely and driving `contentOffset` from a
-/// `CADisplayLink`; we do not need that machinery, because the state that decides the
-/// position (`isHeroOnScreen`) already exists and already flips on focus — all that
-/// was missing was pinning a position to it.
-///
-/// A separate view purely so the `onChange` read lives here instead of in
-/// `MediaItemView.body` — see `MediaItemHeroPhase`.
-private struct MediaItemHeroScrollDriver: View {
-  var phase: MediaItemHeroPhase
-  let proxy: ScrollViewProxy
+/// Snaps the page to one of two resting positions: hero at the top, or the first
+/// content section at the top. Nothing in between is reachable, which is the whole
+/// point — left alone, the focus engine scrolls only far enough to reveal whichever
+/// element just took focus, an offset that is a function of that element's geometry
+/// rather than of which half of the page you are in. That is why the page used to
+/// stop twenty pixels down and stay there.
+private struct MediaItemFoldSnappingBehavior: ScrollTargetBehavior {
+  var aboveFold: Bool
+  var showcaseHeight: CGFloat
 
-  var body: some View {
-    Color.clear
-      .allowsHitTesting(false)
-      .onChange(of: phase.isHeroOnScreen) { _, onScreen in
-        withAnimation(.easeOut(duration: 0.35)) {
-          proxy.scrollTo(onScreen ? MediaItemLayout.heroAnchor : MediaItemLayout.sectionsAnchor,
-                         anchor: .top)
-        }
-      }
+  func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
+    // Before the hero has been measured there is no fold to snap to.
+    guard showcaseHeight > 0 else { return }
+
+    // Above the fold and not travelling far enough down to cross it — leave it be.
+    if aboveFold, target.rect.minY < showcaseHeight * 0.3 { return }
+    // Below the fold and the hero is not coming back on screen — leave it be.
+    if !aboveFold, target.rect.minY > showcaseHeight { return }
+
+    // Coming back up only counts once more than 30% of the hero is revealed;
+    // otherwise the page returns to the sections.
+    let snapToHideRange = (showcaseHeight * 0.7)...showcaseHeight
+    if aboveFold || snapToHideRange.contains(target.rect.origin.y) {
+      target.rect.origin.y = showcaseHeight
+    } else {
+      target.rect.origin.y = 0
+    }
   }
 }
 

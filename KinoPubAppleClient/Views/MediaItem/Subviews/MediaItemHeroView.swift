@@ -215,15 +215,17 @@ final class TrailerLayerHostView: UIView {
 #if os(tvOS)
 /// Full-screen stack pinned behind the detail `ScrollView` — the Apple TV shape.
 ///
-/// One wide still, blurred **as a material** when focus leaves the hero — not a
-/// second, different asset (a downsampled poster) cross-fading in underneath. The
-/// two-asset version this replaced showed visibly disagreeing colors while washing
-/// (blurring a different picture than the sharp one) and paid for a full-screen
-/// `.regularMaterial` pass every frame because its opacity was animated directly —
-/// materials don't have an animatable intensity, so fading one by `opacity` is
-/// exactly the antipattern that produces this. `MediaItemHeroMaterialBackdrop`
-/// below drops to UIKit for that one transition (`UIVisualEffectView.effect` swap,
-/// which UIKit interpolates correctly) while everything else here stays SwiftUI.
+/// One wide still with a material over it, masked by a gradient — Apple's documented
+/// tvOS above/below-the-fold treatment, built entirely in SwiftUI.
+///
+/// Two earlier versions of this are worth remembering. The first cross-faded a
+/// *different* asset (a downsampled poster, separately blurred) under the sharp one,
+/// which is why the colours visibly disagreed mid-wash. The second fixed the colours
+/// by dropping to a `UIVisualEffectView` bridge, on my claim that SwiftUI cannot
+/// animate a material — it can: you animate the gradient mask in front of it, not the
+/// material itself. What must never come back is fading a material by `.opacity()`,
+/// which draws the same full-strength effect semi-transparently instead of weakening
+/// it.
 /// Ambient trailer is intentionally off (policy: no blur-over-video; scrims +
 /// still until a dedicated hero pass). `trailer` is kept for a later pass /
 /// Up-to-fullscreen when ambient returns.
@@ -258,27 +260,72 @@ struct MediaItemHeroBackdrop: View {
     ZStack {
       Color.KinoPub.background
 
-      // Loading placeholder only now — a cheap blurred wash from the *small* poster
-      // (120×180 raster) shown until the real wide still decodes. Once the material
-      // backdrop below has an image it paints over this opaquely for the rest of the
-      // page's life; this never doubles as the "washed" state itself anymore. Do not
-      // `drawingGroup`+scale a full-bleed buffer — that path + eager Home shelves was
-      // blowing past 1.5GB (CVPixelBuffer -6680).
-//      blurredPoster
+      // Loading placeholder only — a cheap blurred wash from the *small* poster
+      // (120×180 raster) until the real wide still decodes. Do not `drawingGroup`
+      // +scale a full-bleed buffer: that path plus eager Home shelves was blowing
+      // past 1.5GB (CVPixelBuffer -6680).
+      blurredPoster
 
-      MediaItemHeroMaterialBackdrop(url: URL(string: heroStillURL), isWashed: !phase.isHeroOnScreen)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+      // One wide still, with the material laid over it and *masked* by a gradient
+      // whose stop opacities are what animate. This is Apple's documented tvOS
+      // above/below-the-fold treatment, and it replaces the `UIVisualEffectView`
+      // bridge that used to live here.
+      //
+      // I had told you SwiftUI has no animatable material intensity and dropped to
+      // UIKit for it. That was wrong: you do not animate the material, you animate
+      // the mask in front of it — the docs call this out explicitly, "rather than
+      // swapping out the mask view, you achieve a smooth animation". Worth being
+      // precise about what it does, though: this changes how much of the frame the
+      // material *covers*, not the blur radius. Above the fold the material fades
+      // out toward the top and the still reads sharp; below the fold it covers the
+      // whole frame and the still is fully washed.
+      heroStill
+        .overlay { foldMaterial }
 
-//      topGradient
-//        .opacity(1 - effectiveWash)
+      topGradient
+        .opacity(1 - effectiveWash)
 
-//      bottomScrim
-//      titleScrim
+      bottomScrim
+      titleScrim
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .clipped()
     .ignoresSafeArea()
     .animation(.easeOut(duration: 0.35), value: phase.isHeroOnScreen)
+  }
+
+  /// The single source of every pixel behind this page — sharp above the fold,
+  /// washed below it. Prefer `/wide/`, falling back to `medium` rather than `big` so
+  /// a multi-MB 4K poster is never decoded into a full-screen layer.
+  private var heroStill: some View {
+    AsyncImage(url: URL(string: heroStillURL),
+               transaction: Transaction(animation: .easeIn(duration: 0.3))) { phase in
+      if let image = phase.image {
+        image
+          .resizable()
+          .aspectRatio(contentMode: .fill)
+          .transition(.opacity)
+      } else {
+        Color.clear
+      }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .clipped()
+  }
+
+  /// Material over the still, revealed by a gradient mask. Only the stop opacities
+  /// change between states, which is what keeps the transition smooth.
+  private var foldMaterial: some View {
+    let belowFold = !phase.isHeroOnScreen
+    return Rectangle()
+      .fill(.regularMaterial)
+      .mask {
+        LinearGradient(stops: [
+          .init(color: .black, location: 0.25),
+          .init(color: .black.opacity(belowFold ? 1 : 0.3), location: 0.375),
+          .init(color: .black.opacity(belowFold ? 1 : 0), location: 0.5)
+        ], startPoint: .bottom, endPoint: .top)
+      }
   }
 
   /// Scale is derived from the real container so a portrait buffer still covers
@@ -363,95 +410,6 @@ struct MediaItemHeroBackdrop: View {
   private static let blurRadius: CGFloat = 12
 }
 
-/// Single wide still + a real `UIVisualEffectView` blur toggled on top of it.
-///
-/// This exists because SwiftUI has no animatable "material intensity" — `.blur()` is
-/// a rendered-frame filter, and `.regularMaterial` has to be either mounted or not; the
-/// old code fudged a transition by animating that material's `.opacity()`, which does
-/// not fade the blur itself, just draws the same full-strength `UIVisualEffectView`
-/// gradually more transparent while still paying its per-frame cost underneath. UIKit's
-/// `UIVisualEffectView.effect` is the actual lever — assigning it inside `UIView.animate`
-/// cross-fades the blur honestly, and the view can be dropped from the layer tree
-/// entirely (not just mounted at alpha 0) whenever it isn't needed.
-///
-/// One `UIImageView` backs both the sharp and washed states — never a second asset —
-/// so there is nothing for the blur to disagree in color with.
-struct MediaItemHeroMaterialBackdrop: UIViewRepresentable {
-  var url: URL?
-  var isWashed: Bool
-
-  func makeUIView(context: Context) -> HeroMaterialBackdropView {
-    HeroMaterialBackdropView()
-  }
-
-  func updateUIView(_ view: HeroMaterialBackdropView, context: Context) {
-    view.configure(url: url, washed: isWashed)
-  }
-}
-
-final class HeroMaterialBackdropView: UIView {
-  private let imageView = UIImageView()
-  private let blurView = UIVisualEffectView(effect: nil)
-  private var loadedURL: URL?
-  private var loadTask: Task<Void, Never>?
-  private var appliedWash = false
-
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    imageView.contentMode = .scaleAspectFill
-    imageView.clipsToBounds = true
-    imageView.alpha = 0
-    addSubview(imageView)
-
-    blurView.translatesAutoresizingMaskIntoConstraints = false
-    addSubview(blurView)
-    NSLayoutConstraint.activate([
-      blurView.topAnchor.constraint(equalTo: topAnchor),
-      blurView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      blurView.leadingAnchor.constraint(equalTo: leadingAnchor),
-      blurView.trailingAnchor.constraint(equalTo: trailingAnchor)
-    ])
-  }
-
-  @available(*, unavailable)
-  required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-  override func layoutSubviews() {
-    super.layoutSubviews()
-    imageView.frame = bounds
-  }
-
-  func configure(url: URL?, washed: Bool) {
-    if url != loadedURL {
-      loadedURL = url
-      loadTask?.cancel()
-      imageView.image = nil
-      imageView.alpha = 0
-      if let url {
-        loadTask = Task { [weak self] in
-          guard let image = await TVUIKitRemoteImage.load(url: url) else { return }
-          guard let self, !Task.isCancelled, self.loadedURL == url else { return }
-          self.imageView.image = image
-          UIView.animate(withDuration: 0.3) { self.imageView.alpha = 1 }
-        }
-      }
-    }
-
-    guard washed != appliedWash else { return }
-    appliedWash = washed
-    UIView.animate(withDuration: 0.35, delay: 0, options: .curveEaseOut) {
-      // `.dark` rather than an adaptive `.systemMaterial`: the page forces `.dark`
-      // colorScheme throughout, and tvOS doesn't expose the fixed-dark system
-      // materials (`.systemMaterialDark` etc. are `@available(tvOS, unavailable)`) —
-      // `.dark` is tvOS's own fixed-appearance blur style.
-      self.blurView.effect = washed ? UIBlurEffect(style: .dark) : nil
-    }
-  }
-
-  deinit {
-    loadTask?.cancel()
-  }
-}
 #endif // SEEMS VERY RESOURCEFUL FOR WHAT?? I
 
 /// The item page's secondary actions, as menu content. Shared so the same list can be

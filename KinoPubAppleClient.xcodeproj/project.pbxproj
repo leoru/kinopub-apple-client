@@ -89,7 +89,6 @@
 		CCA100012C6F000100000401 /* SeasonsRailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000402 /* SeasonsRailView.swift */; };
 		CCA100012C6F000100000501 /* CatalogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000502 /* CatalogView.swift */; };
 		CCA100012C6F000100000601 /* MediaItemDetailSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000602 /* MediaItemDetailSections.swift */; };
-		CCA100012C6F000100000B03 /* MediaItemAboutLayouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000B04 /* MediaItemAboutLayouts.swift */; };
 		CCA100012C6F000100000701 /* LibraryCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000702 /* LibraryCatalog.swift */; };
 		CCA100012C6F000100000703 /* LibraryFiltersBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000704 /* LibraryFiltersBar.swift */; };
 		CCA100012C6F000100000901 /* PersonItemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000902 /* PersonItemsView.swift */; };
@@ -97,6 +96,7 @@
 		CCA100012C6F000100000A03 /* MediaCardMenuCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000A04 /* MediaCardMenuCoordinator.swift */; };
 		CCA100012C6F000100000A05 /* MediaCardMenuAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000A06 /* MediaCardMenuAlerts.swift */; };
 		CCA100012C6F000100000B01 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000B02 /* HistoryView.swift */; };
+		CCA100012C6F000100000B03 /* MediaItemAboutLayouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000B04 /* MediaItemAboutLayouts.swift */; };
 		CCA100012C6F000100000C01 /* WatchlistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C02 /* WatchlistView.swift */; };
 		CCA100012C6F000100000C03 /* RecentlyWatchedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C04 /* RecentlyWatchedView.swift */; };
 		CCA100012C6F000100000C05 /* BookmarkFolderTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C06 /* BookmarkFolderTabView.swift */; };
@@ -255,7 +255,6 @@
 		CCA100012C6F000100000402 /* SeasonsRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonsRailView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000502 /* CatalogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000602 /* MediaItemDetailSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDetailSections.swift; sourceTree = "<group>"; };
-		CCA100012C6F000100000B04 /* MediaItemAboutLayouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemAboutLayouts.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000702 /* LibraryCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryCatalog.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000704 /* LibraryFiltersBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFiltersBar.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000902 /* PersonItemsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonItemsView.swift; sourceTree = "<group>"; };
@@ -263,6 +262,7 @@
 		CCA100012C6F000100000A04 /* MediaCardMenuCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCardMenuCoordinator.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000A06 /* MediaCardMenuAlerts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCardMenuAlerts.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000B02 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000B04 /* MediaItemAboutLayouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemAboutLayouts.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C02 /* WatchlistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchlistView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C04 /* RecentlyWatchedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentlyWatchedView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C06 /* BookmarkFolderTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkFolderTabView.swift; sourceTree = "<group>"; };
@@ -1318,7 +1318,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = "KinoPubAppleClient/Resources/KinoPubAppleClient-Debug.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -1329,6 +1329,7 @@
 				INFOPLIST_FILE = KinoPubAppleClient/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = KinoPub;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				INFOPLIST_KEY_NSVideoSubscriberAccountUsageDescription = "";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -1365,7 +1366,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = KinoPubAppleClient/Resources/KinoPubAppleClient.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -1377,6 +1378,7 @@
 				INFOPLIST_FILE = KinoPubAppleClient/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = KinoPub;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				INFOPLIST_KEY_NSVideoSubscriberAccountUsageDescription = "";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -1442,7 +1444,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ashleymills/Reachability.swift";
 			requirement = {
-				kind = upToNextMinorVersion;
+				kind = upToNextMajorVersion;
 				minimumVersion = 5.1.0;
 			};
 		};
@@ -1450,7 +1452,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess.git";
 			requirement = {
-				kind = upToNextMinorVersion;
+				kind = upToNextMajorVersion;
 				minimumVersion = 4.2.2;
 			};
 		};

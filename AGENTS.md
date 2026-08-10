@@ -28,6 +28,11 @@ design questions with "Apple defaults", or rewrite docs to rationalize an implem
 - **Native Apple UI first.** Stock SwiftUI / AVKit / system UIKit-AppKit bridges before custom chrome.
   Custom UI needs a named missing API, rejected alternatives, and a maintenance cost. See
   [apple-native-design](docs/en/policies/apple-native-design.md).
+- **One component catalogue, templated pages.** A page is a list of typed sections built from shared
+  components — never a screen-specific copy of something that already exists. Trying 2–4 variants of
+  *one* component behind a switch is fine; two screens growing their own version of the same idea is a
+  defect. TVML's `productTemplate` is the reference spec for what a media page is. See
+  [component-catalogue](docs/en/policies/component-catalogue.md).
 - **Multiplatform-native, tvOS-quality.** Ship a real app on tvOS, iOS, iPadOS, and macOS. tvOS sets
   the media / focus / 10-foot bar; other platforms get their own native controls, not TV chrome
   forced sideways.
