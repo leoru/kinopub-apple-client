@@ -33,13 +33,15 @@ public struct MediaCard: Identifiable, Hashable, Codable {
   public let posterURL: String
   public let title: String
   public let subtitle: String?
-  public let imdbRating: Double?
-  public let kinopoiskRating: Double?
+  /// External catalogue scores. Prefer this over pulling fields off `MediaItem`.
+  public let scores: MediaScores
+
+  /// Convenience for call sites / Codable that still speak in loose doubles.
+  public var imdbRating: Double? { scores.imdb }
+  public var kinopoiskRating: Double? { scores.kinopoisk }
 
   /// The combined score shown on the poster, or nil when neither source rated it.
-  public var rating: Rating? {
-    Rating(imdb: imdbRating, kinopoisk: kinopoiskRating)
-  }
+  public var rating: Rating? { scores.aggregate }
   /// 0…1 for partially watched serials, nil when there is nothing to show.
   public let progress: Double?
   public let badge: String?
@@ -116,14 +118,12 @@ public struct MediaCard: Identifiable, Hashable, Codable {
 
   /// Score for the plaque / caption, honouring the user's source preference.
   public func displayRating(source: MediaCardRatingSource) -> Rating? {
-    switch source {
-    case .combined:
-      return Rating(imdb: imdbRating, kinopoisk: kinopoiskRating)
-    case .imdb:
-      return Rating(imdb: imdbRating, kinopoisk: nil)
-    case .kinopoisk:
-      return Rating(imdb: nil, kinopoisk: kinopoiskRating)
-    }
+    scores.selecting(source).aggregate
+  }
+
+  /// Scores filtered to the user's source preference (for `MediaScoresView`).
+  public func displayScores(source: MediaCardRatingSource) -> MediaScores {
+    scores.selecting(source)
   }
 
   /// Compact runtime for captions when `durationSeconds` is set.
@@ -137,8 +137,11 @@ public struct MediaCard: Identifiable, Hashable, Codable {
               posterURL: String,
               title: String,
               subtitle: String? = nil,
+              scores: MediaScores? = nil,
               imdbRating: Double? = nil,
+              imdbVotes: Int? = nil,
               kinopoiskRating: Double? = nil,
+              kinopoiskVotes: Int? = nil,
               progress: Double? = nil,
               badge: String? = nil,
               backdropURL: String? = nil,
@@ -172,8 +175,12 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     self.posterURL = posterURL
     self.title = title
     self.subtitle = subtitle
-    self.imdbRating = imdbRating
-    self.kinopoiskRating = kinopoiskRating
+    self.scores = scores ?? MediaScores(
+      imdb: imdbRating,
+      imdbVotes: imdbVotes,
+      kinopoisk: kinopoiskRating,
+      kinopoiskVotes: kinopoiskVotes
+    )
     self.progress = progress
     self.badge = badge
     self.backdropURL = backdropURL
@@ -211,8 +218,12 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     posterURL = try c.decode(String.self, forKey: .posterURL)
     title = try c.decode(String.self, forKey: .title)
     subtitle = try c.decodeIfPresent(String.self, forKey: .subtitle)
-    imdbRating = try c.decodeIfPresent(Double.self, forKey: .imdbRating)
-    kinopoiskRating = try c.decodeIfPresent(Double.self, forKey: .kinopoiskRating)
+    scores = MediaScores(
+      imdb: try c.decodeIfPresent(Double.self, forKey: .imdbRating),
+      imdbVotes: try c.decodeIfPresent(Int.self, forKey: .imdbVotes),
+      kinopoisk: try c.decodeIfPresent(Double.self, forKey: .kinopoiskRating),
+      kinopoiskVotes: try c.decodeIfPresent(Int.self, forKey: .kinopoiskVotes)
+    )
     progress = try c.decodeIfPresent(Double.self, forKey: .progress)
     badge = try c.decodeIfPresent(String.self, forKey: .badge)
     backdropURL = try c.decodeIfPresent(String.self, forKey: .backdropURL)
@@ -252,8 +263,10 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     try c.encode(posterURL, forKey: .posterURL)
     try c.encode(title, forKey: .title)
     try c.encodeIfPresent(subtitle, forKey: .subtitle)
-    try c.encodeIfPresent(imdbRating, forKey: .imdbRating)
-    try c.encodeIfPresent(kinopoiskRating, forKey: .kinopoiskRating)
+    try c.encodeIfPresent(scores.imdb, forKey: .imdbRating)
+    try c.encodeIfPresent(scores.imdbVotes, forKey: .imdbVotes)
+    try c.encodeIfPresent(scores.kinopoisk, forKey: .kinopoiskRating)
+    try c.encodeIfPresent(scores.kinopoiskVotes, forKey: .kinopoiskVotes)
     try c.encodeIfPresent(progress, forKey: .progress)
     try c.encodeIfPresent(badge, forKey: .badge)
     try c.encodeIfPresent(backdropURL, forKey: .backdropURL)
@@ -286,7 +299,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
   }
 
   private enum CodingKeys: String, CodingKey {
-    case id, posterURL, title, subtitle, imdbRating, kinopoiskRating
+    case id, posterURL, title, subtitle, imdbRating, imdbVotes, kinopoiskRating, kinopoiskVotes
     case progress, badge, backdropURL, metaLine, overview
     case landscapeImageURL, overlayLabel, itemID, video, season, mediaID
     case isWatched, isSeries, isInHistory, isInWatchlist, is4K, isHDR
@@ -315,8 +328,7 @@ public extension MediaCard {
               posterURL: item.posters.medium,
               title: item.localizedTitle,
               subtitle: item.originalTitle,
-              imdbRating: item.imdbRating,
-              kinopoiskRating: item.kinopoiskRating,
+              scores: MediaScores(item),
               backdropURL: wide ?? item.posters.wideURL,
               metaLine: item.metadataLine,
               overview: item.plot,
@@ -490,26 +502,14 @@ public struct MediaCardView: View {
     return parts
   }
 
-  private var captionImdb: Double? {
-    switch ratingSource {
-    case .combined, .imdb:
-      return (card.imdbRating ?? 0) > 0 ? card.imdbRating : nil
-    case .kinopoisk:
-      return nil
-    }
-  }
-
-  private var captionKinopoisk: Double? {
-    switch ratingSource {
-    case .combined, .kinopoisk:
-      return (card.kinopoiskRating ?? 0) > 0 ? card.kinopoiskRating : nil
-    case .imdb:
-      return nil
-    }
+  private var captionScores: MediaScores {
+    // With the aggregate off there is no source picker — show whatever we have.
+    guard RatingFeature.combinedEnabled else { return card.scores }
+    return card.displayScores(source: ratingSource)
   }
 
   private var showsCaptionScores: Bool {
-    guard captionImdb != nil || captionKinopoisk != nil else { return false }
+    guard captionScores.hasDisplayableScore else { return false }
     // Labelled scores are the only rating a card has while the aggregate is off —
     // they are not the "Under title" branch of a setting that is no longer shown.
     guard RatingFeature.combinedEnabled else { return true }
@@ -536,7 +536,7 @@ public struct MediaCardView: View {
 
   private var isPointerActive: Bool {
 #if os(macOS)
-    isHovered || cardFocused
+    isHovered
 #elseif os(tvOS)
     cardFocused
 #else
@@ -704,11 +704,11 @@ public struct MediaCardView: View {
         Image(systemName: "checkmark.circle.fill")
           .font(.caption.weight(.bold))
           .foregroundStyle(.white)
-#if !os(tvOS)
+//#if !os(tvOS)
           // Per-card shadow, rendered on every visible watched glyph in a shelf —
           // measurable tvOS shelf-scroll cost for a barely-visible glow. Off there.
-          .shadow(radius: 4)
-#endif
+//          .shadow(radius: 4)
+//#endif
           .padding(3)
       }
     }
@@ -728,9 +728,9 @@ public struct MediaCardView: View {
         Image(systemName: "bookmark.fill")
           .font(.caption.weight(.semibold))
           .foregroundStyle(.white)
-#if !os(tvOS)
-          .shadow(color: .black.opacity(0.55), radius: 4, y: 1)
-#endif
+//#if !os(tvOS)
+//          .shadow(color: .black.opacity(0.55), radius: 4, y: 1)
+//#endif
           .accessibilityLabel(Text("Bookmarked"))
       }
     }
@@ -848,7 +848,7 @@ public struct MediaCardView: View {
       }
 
       if showsCaptionScores {
-        MediaScoresView(imdb: captionImdb, kinopoisk: captionKinopoisk)
+        MediaScoresView(captionScores)
           .font(TypeScale.cardMeta)
           .foregroundStyle(Color.KinoPub.subtitle)
       }
@@ -1026,7 +1026,7 @@ private struct LandscapePlayChromeBackground: ViewModifier {
   )
   .frame(width: 260)
   .padding()
-  .background(Color.black)
+//  .background(Color.black)
   .preferredColorScheme(.dark)
 }
 
@@ -1045,7 +1045,7 @@ private struct LandscapePlayChromeBackground: ViewModifier {
   )
   .frame(width: 260)
   .padding()
-  .background(Color.black)
+//  .background(Color.black)
   .preferredColorScheme(.dark)
 }
 

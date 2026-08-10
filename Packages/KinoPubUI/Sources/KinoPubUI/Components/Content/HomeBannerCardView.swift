@@ -68,8 +68,8 @@ public struct HomeBannerCardView: View {
 
           // Detailed IMDb / KP scores stay beside the copy; the poster carries the
           // compact aggregate badge so the still reads like a catalog lockup.
-          if card.imdbRating != nil || card.kinopoiskRating != nil {
-            MediaScoresView(imdb: card.imdbRating, kinopoisk: card.kinopoiskRating)
+          if card.scores.hasDisplayableScore {
+            MediaScoresView(card.scores)
               .font(Self.scoreFont)
               .foregroundStyle(.white.opacity(0.92))
           }

@@ -206,7 +206,7 @@ enum PreviewSample {
   }
   .padding(32)
   .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-  .background(Color.black)
+//  .background(Color.black)
   .preferredColorScheme(.dark)
 }
 

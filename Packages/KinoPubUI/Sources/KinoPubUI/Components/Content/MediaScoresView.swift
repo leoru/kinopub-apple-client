@@ -16,8 +16,8 @@ public struct MediaScoreLogo: View {
 
     fileprivate var colorAssetName: String {
       switch self {
-      case .imdb: return "imdb_color"
-      case .kinopoisk: return "kinopoisk_color_2"
+      case .imdb: return "imdb_lol"
+      case .kinopoisk: return "kinopoisk_lol"
       }
     }
   }
@@ -33,7 +33,7 @@ public struct MediaScoreLogo: View {
   private let height: CGFloat
   private let style: Style
 
-  public init(_ source: Source, height: CGFloat, style: Style = .template) {
+  public init(_ source: Source, height: CGFloat, style: Style = .color) {
     self.source = source
     self.height = height
     self.style = style
@@ -52,25 +52,39 @@ public struct MediaScoreLogo: View {
 /// separate — on a detail page there is room to show where each number came from.
 public struct MediaScoresView: View {
 
-  private let imdb: Double?
-  private let kinopoisk: Double?
+  private let scores: MediaScores
 
-  public init(imdb: Double?, kinopoisk: Double?) {
-    self.imdb = imdb
-    self.kinopoisk = kinopoisk
+  public init(_ scores: MediaScores) {
+    self.scores = scores
   }
 
-  /// The API sends 0 for "not rated".
-  private var imdbScore: Double? { (imdb ?? 0) > 0 ? imdb : nil }
-  private var kinopoiskScore: Double? { (kinopoisk ?? 0) > 0 ? kinopoisk : nil }
+  /// Convenience for previews / call sites that still pass loose numbers.
+  public init(
+    imdb: Double?,
+    kinopoisk: Double?,
+    imdbVotes: Int? = nil,
+    kinopoiskVotes: Int? = nil
+  ) {
+    self.init(MediaScores(
+      imdb: imdb,
+      imdbVotes: imdbVotes,
+      kinopoisk: kinopoisk,
+      kinopoiskVotes: kinopoiskVotes
+    ))
+  }
 
   public var body: some View {
     HStack(spacing: Self.groupSpacing) {
-      if let imdbScore {
-        score(logo: .imdb, value: imdbScore, imageHeight: Self.imdbHeight)
+      if let value = scores.imdbScore {
+        score(logo: .imdb, value: value, imageHeight: Self.imdbHeight, votes: scores.imdbVotes)
       }
-      if let kinopoiskScore {
-        score(logo: .kinopoisk, value: kinopoiskScore, imageHeight: Self.kinopoiskHeight)
+      if let value = scores.kinopoiskScore {
+        score(
+          logo: .kinopoisk,
+          value: value,
+          imageHeight: Self.kinopoiskHeight,
+          votes: scores.kinopoiskVotes
+        )
       }
     }
   }
@@ -78,18 +92,30 @@ public struct MediaScoresView: View {
   /// Font and colour come from whatever this is dropped into. The scores sit inside
   /// a metadata line and have to read as part of it, not as a brighter, smaller badge
   /// pasted next to it.
-  private func score(logo: MediaScoreLogo.Source, value: Double, imageHeight: CGFloat) -> some View {
-    HStack(spacing: 6) {
+  private func score(
+    logo: MediaScoreLogo.Source,
+    value: Double,
+    imageHeight: CGFloat,
+    votes: Int?
+  ) -> some View {
+    HStack(spacing: 7) {
       MediaScoreLogo(logo, height: imageHeight)
       Text(String(format: "%.1f", value))
-        .monospacedDigit()
+        .fontDesign(.rounded)
+        .fontWeight(.semibold)
+      if let votes, votes > 0 {
+        Text("(\(votes.formatted(.number.notation(.compactName))))")
+          .font(.caption2)
+          .fontWeight(.medium)
+          .foregroundStyle(Color.KinoPub.subtitle)
+      }
     }
   }
 
 #if os(tvOS)
   static let groupSpacing: CGFloat = 24
-  static let imdbHeight: CGFloat = 24
-  static let kinopoiskHeight: CGFloat = 26
+  static let imdbHeight: CGFloat = 18
+  static let kinopoiskHeight: CGFloat = 20
 #else
   static let groupSpacing: CGFloat = 14
   static let imdbHeight: CGFloat = 14
@@ -99,12 +125,11 @@ public struct MediaScoresView: View {
 
 #Preview {
   VStack(alignment: .leading, spacing: 16) {
-    MediaScoresView(imdb: 8.1, kinopoisk: 8.3)
+    MediaScoresView(MediaScores(imdb: 8.1, imdbVotes: 486_000, kinopoisk: 8.3, kinopoiskVotes: 92_000))
     MediaScoresView(imdb: 7.4, kinopoisk: 0)
-    MediaScoresView(imdb: nil, kinopoisk: 6.2)
+    MediaScoresView(imdb: nil, kinopoisk: 6.2, kinopoiskVotes: 1_200)
   }
-  .font(.subheadline)
+  .font(.body)
   .foregroundStyle(Color.KinoPub.text)
   .padding()
-  .background(Color.black)
 }
