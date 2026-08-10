@@ -13,19 +13,19 @@
 //
 //  One deliberately simple look, not a set of options:
 //
-//  * **Under the tile** — the name: a movie's title, or "S2, E11" plus the show's
-//    title for an episode. Always visible, not just on focus — this is the system's
-//    own `text`, in its own space below the artwork, so it never collides with
-//    anything drawn over the artwork itself.
-//  * **Inside the artwork** — the system's progress bar when there is progress, else
-//    the runtime bottom-trailing: exactly one of the two, both shown immediately, never
-//    gated by focus. A play/checkmark glyph sits bottom-leading, always on. Neither
-//    sits on a pill; a drop shadow carries their legibility instead. No SF Symbol
-//    floats in the middle of the tile.
-//  * **Top-leading badge** carries what the corner can't: "Watched", or an upcoming
-//    episode's date behind a small clock glyph. It replaces the capability badge
-//    (4K / HDR) for exactly those two states — the corner has room for one badge, and
-//    the state wins.
+//  * **Under the tile** — one line, the system's own `text`, in its own space below the
+//    artwork. `S2 E4 • Episode Name` in Continue Watching, `7. "Episode Name"` in a
+//    season rail. `secondaryText` renders nothing for us, so there is no second line.
+//  * **Inside the artwork** — a progress bar whenever there is progress, drawn by our
+//    overlay rather than by `playbackProgress`, because the system's only paints on the
+//    focused tile and an idle rail still has to say "you did not finish this". Else the
+//    runtime bottom-trailing. A play/checkmark glyph sits bottom-leading. Neither sits
+//    on a pill; a drop shadow carries their legibility. No SF Symbol floats in the
+//    middle of the tile, and no dates appear down here.
+//  * **Top-leading badge** — an announced episode's date goes through the *system*
+//    badge (`configuration.badgeText`, the same chip as 4K / HDR) and outranks a
+//    capability badge. "Watched" stays on our overlay, paired with its scrim and
+//    checkmark. `badgeText` takes a `String`, so no glyph can ride along with the date.
 //  * **Progress is never a series completion ratio.** A card with no specific episode
 //    pinned to it cannot be "in progress" here, however its `progress` field reads —
 //    that number would be "6 of 12 episodes watched", not a resume point.
@@ -116,16 +116,6 @@ public struct TVUIKitMediaItem: Identifiable, Equatable {
   public let symbol: String?
   /// The line under the tile — always visible: a movie's title, or "S2, E11 · Show".
   public let caption: String?
-  /// A second line under the tile, for the metadata a title needs beyond its name —
-  /// year, country, genre, episode count, an episode's own synopsis. Maps to the
-  /// configuration's `secondaryText`.
-  ///
-  /// **Left nil in the app until it is judged on a screen.** The gallery's "Caption
-  /// lines" row exists to find out where the system actually places it: if it lands
-  /// below the tile it is the second line we want, and if it lands over the artwork's
-  /// bottom-leading corner it collides with our glyph + time chip and the second line
-  /// has to come from somewhere else. Do not ship it on a guess.
-  public let subcaption: String?
   public let status: TVUIKitMediaItemStatus
   /// Chip text beside the glyph, inside the artwork — runtime, or time left.
   public let timeLabel: String?
@@ -138,7 +128,6 @@ public struct TVUIKitMediaItem: Identifiable, Equatable {
               tint: UIColor? = nil,
               symbol: String? = nil,
               caption: String? = nil,
-              subcaption: String? = nil,
               status: TVUIKitMediaItemStatus = .ready,
               timeLabel: String? = nil,
               badgeText: String? = nil,
@@ -148,7 +137,6 @@ public struct TVUIKitMediaItem: Identifiable, Equatable {
     self.tint = tint
     self.symbol = symbol
     self.caption = caption
-    self.subcaption = subcaption
     self.status = status
     self.timeLabel = timeLabel
     self.badgeText = badgeText
@@ -173,8 +161,7 @@ public extension TVUIKitMediaItem {
     let status = Self.status(for: card)
     self.init(id: card.id,
               imageURL: URL(string: art),
-              caption: TVUIKitCardText.primary(for: card),
-              subcaption: TVUIKitCardText.secondary(for: card),
+              caption: TVUIKitCardText.caption(for: card),
               status: status,
               timeLabel: Self.timeLabel(for: card, status: status),
               badgeText: Self.badgeText(for: card))
@@ -606,13 +593,16 @@ final class TVUIKitMediaItemCell: UICollectionViewCell {
     config.image = artwork ?? fallbackImage(for: item)
     // `text` is the line *under* the tile, always visible.
     config.text = item.caption
-    // The second (and last) line. Apple's own sample puts "S1, E1" here beneath the
-    // title, which is the shape we want; two lines is the agreed ceiling, so anything
-    // more goes *into* this line rather than under it.
-    config.secondaryText = item.subcaption
-    // Shown immediately, not gated by focus — an idle rail should already tell you
-    // what is worth resuming.
-    config.playbackProgress = Float(item.status.progress)
+    // One line, on purpose. Setting `secondaryText` here produced nothing visible on
+    // screen (2026-08-11), so the tile is treated as having a single caption and
+    // everything worth saying is packed into `text`. The one lead never tried: Apple's
+    // sample builds the configuration as `wideCell().updatedConfiguration(for: state)`
+    // and we do not — if the second line is ever wanted back, start there.
+    config.secondaryText = nil
+    // Zero on purpose: the system's bar only appears on the focused tile, and "you
+    // started this and did not finish it" is exactly what an *idle* rail has to say.
+    // Ours lives in the overlay below, where we control when it shows.
+    config.playbackProgress = 0
     // One corner, one chip. An announced date outranks a capability badge — 4K on
     // something you cannot watch yet is not the useful fact — and both go through the
     // system's own badge rather than a second one of ours.
@@ -698,13 +688,20 @@ final class TVUIKitMediaItemOverlayView: UIView {
   private let badgeIcon = UIImageView()
   private let badgeLabel = UILabel()
   private var badgeIconWidth: NSLayoutConstraint!
+  /// Ours, not the configuration's. `playbackProgress` only paints on the focused tile,
+  /// and "started, not finished" is precisely what an idle rail has to say — so the bar
+  /// moved here, where it is on whenever there is progress.
+  private let progressTrack = UIView()
+  private let progressFill = UIView()
+  private var progressFillWidth: NSLayoutConstraint!
 
-  /// The system draws `playbackProgress` along the very bottom edge — this clears it.
+  /// Keeps the corner chrome clear of the bar along the very bottom edge.
   private static let cornerInset: CGFloat = 22
   private static let glyphSize: CGFloat = 22
   private static let badgeIconSize: CGFloat = 14
   /// Fraction of the tile height the legibility gradient covers, from the bottom up.
   private static let gradientHeightFraction: CGFloat = 0.4
+  private var progressFraction: CGFloat = 0
 
   init() {
     super.init(frame: .zero)
@@ -756,9 +753,31 @@ final class TVUIKitMediaItemOverlayView: UIView {
     badgeLabel.textColor = .white
     badge.addSubview(badgeLabel)
 
+    progressTrack.translatesAutoresizingMaskIntoConstraints = false
+    progressTrack.backgroundColor = UIColor.white.withAlphaComponent(0.28)
+    progressTrack.layer.cornerRadius = 3
+    progressTrack.isHidden = true
+    addSubview(progressTrack)
+
+    progressFill.translatesAutoresizingMaskIntoConstraints = false
+    progressFill.backgroundColor = .white
+    progressFill.layer.cornerRadius = 3
+    progressTrack.addSubview(progressFill)
+
     badgeIconWidth = badgeIcon.widthAnchor.constraint(equalToConstant: Self.badgeIconSize)
+    progressFillWidth = progressFill.widthAnchor.constraint(equalToConstant: 0)
 
     NSLayoutConstraint.activate([
+      progressTrack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+      progressTrack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+      progressTrack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
+      progressTrack.heightAnchor.constraint(equalToConstant: 6),
+
+      progressFill.leadingAnchor.constraint(equalTo: progressTrack.leadingAnchor),
+      progressFill.topAnchor.constraint(equalTo: progressTrack.topAnchor),
+      progressFill.bottomAnchor.constraint(equalTo: progressTrack.bottomAnchor),
+      progressFillWidth,
+
       scrim.topAnchor.constraint(equalTo: topAnchor),
       scrim.bottomAnchor.constraint(equalTo: bottomAnchor),
       scrim.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -794,6 +813,7 @@ final class TVUIKitMediaItemOverlayView: UIView {
     CATransaction.begin()
     CATransaction.setDisableActions(true)
     badge.layer.cornerRadius = badge.bounds.height / 2
+    progressFillWidth.constant = max(progressTrack.bounds.width, 0) * progressFraction
     gradientLayer.frame = CGRect(x: 0,
                                  y: bounds.height * (1 - Self.gradientHeightFraction),
                                  width: bounds.width,
@@ -807,6 +827,10 @@ final class TVUIKitMediaItemOverlayView: UIView {
     let glyph = status.glyph
     glyphView.image = glyph.flatMap { UIImage(systemName: $0) }
     glyphView.isHidden = glyph == nil
+
+    progressFraction = CGFloat(status.progress)
+    progressTrack.isHidden = status.progress <= 0
+    setNeedsLayout()
 
     let showsRuntime = status.showsRuntime && timeLabel?.isEmpty == false
     runtimeLabel.text = timeLabel

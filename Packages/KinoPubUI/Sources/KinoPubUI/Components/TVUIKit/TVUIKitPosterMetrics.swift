@@ -6,27 +6,24 @@
 //  One sizing model for shelves AND grids — same `ShelfMetrics` column equation.
 //  A horizontal shelf is the same poster grid scrolled sideways.
 //
-//  Every focus-room number here is derived from the tile, not chosen: a focused tvOS
-//  tile grows by a fraction of its own size, so a constant reserve is either wasted
-//  space on a small tile or a collision on a large one.
+//  The poster tile is deliberately back to **one** caption line (2026-08-11). A second
+//  line was tried and reverted along with the rest of the poster experiment: see
+//  `TVUIKitPosterCell`.
 //
 
 import CoreGraphics
 import SwiftUI
 
 public enum TVUIKitPosterMetrics {
-  /// On-focus caption under the poster: **two lines, and only ever two** — the title
-  /// and `TVUIKitCardText.secondary`. Sized for `.callout` over `.caption1` at tvOS
-  /// metrics; a third line is not a layout question, it is a decision that was made
-  /// against (see the tvOS cell standard).
-  public static let captionHeight: CGFloat = 72
+  /// On-focus caption under poster. One line.
+  public static let captionHeight: CGFloat = 44
   public static let captionTopPadding: CGFloat = 8
-  public static let captionLineSpacing: CGFloat = 2
   public static let cornerRadius: CGFloat = 16
 
   /// Room a tile needs above and below itself for the focus lift, plus a gap so two
   /// stacked rows do not touch when one of them is focused. Same rule as
-  /// `ShelfMetrics.tvGutter`, applied to the tile's *height*.
+  /// `ShelfMetrics.tvGutter`, applied to the tile's *height* — a constant reserve is
+  /// either wasted space on a small tile or a collision on a large one.
   public static func focusGrowthPadding(tileHeight: CGFloat) -> CGFloat {
     (tileHeight * ShelfMetrics.tvFocusGrowth / 2).rounded() + ShelfMetrics.tvMinimumGap
   }

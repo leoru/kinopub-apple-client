@@ -375,31 +375,38 @@ struct SeasonsRailView: View {
   /// One rail entry in media-item terms. The status carries what used to be an opacity
   /// and a bespoke card: an unaired episode is `.upcoming` with its date in the badge,
   /// not a dimmed copy of a playable one.
+  ///
+  /// The caption is `7. "Episode Name"` — the season is already named by the tab above,
+  /// so repeating it here is noise, and the air date lives in the badge rather than
+  /// under the artwork.
   private func railItem(for entry: RailEntry) -> TVUIKitMediaItem {
     switch entry {
     case .playable(let season, let episode, let schedule):
       let card = Self.card(for: episode, in: season, schedule: schedule)
-      var item = TVUIKitMediaItem(card: card)
-      if schedule?.isUpcoming == true, let date = schedule?.airDate {
-        item = TVUIKitMediaItem(id: entry.id,
-                                imageURL: item.imageURL,
-                                caption: item.caption,
-                                status: .upcoming(Self.airDateLabel(date)))
-      }
-      return item
+      let base = TVUIKitMediaItem(card: card)
+      let caption = TVUIKitCardText.episodeCaption(
+        number: episode.number,
+        name: Self.displayTitle(episode: episode, schedule: schedule)
+      )
+      let status: TVUIKitMediaItemStatus = (schedule?.isUpcoming == true)
+        ? (schedule?.airDate.map { .upcoming(Self.airDateLabel($0)) } ?? .unavailable)
+        : base.status
+      return TVUIKitMediaItem(id: entry.id,
+                              imageURL: base.imageURL,
+                              caption: caption,
+                              status: status,
+                              timeLabel: base.timeLabel,
+                              badgeText: base.badgeText)
 
     case .unavailable(_, let schedule):
-      // Same two-line split as a playable episode: the name on top, the designation
-      // under it. An episode kino.pub has not uploaded must not read differently from
-      // one it has — only its status badge should say so.
-      let label = Self.episodeLabel(number: schedule.episodeNumber)
-      let name = schedule.name?.trimmingCharacters(in: .whitespacesAndNewlines)
+      // An episode kino.pub has not uploaded must not read differently from one it has —
+      // only its status badge should say so.
       let status: TVUIKitMediaItemStatus = schedule.airDate
         .map { .upcoming(Self.airDateLabel($0)) } ?? .unavailable
       return TVUIKitMediaItem(id: entry.id,
                               imageURL: schedule.still,
-                              caption: (name?.isEmpty == false ? name : label),
-                              subcaption: (name?.isEmpty == false ? label : nil),
+                              caption: TVUIKitCardText.episodeCaption(number: schedule.episodeNumber,
+                                                                      name: schedule.name),
                               status: status)
 
     case .missingSeasons(let from, let to, let episodes, _, _):

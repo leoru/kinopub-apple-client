@@ -3,64 +3,38 @@
 //  TVUIKitCardText.swift
 //  KinoPubUI
 //
-//  The two lines under a tvOS tile, for every TVUIKit cell that has them.
+//  The single line under a tvOS tile.
 //
-//  **Two lines, no more** (user decision, 2026-08-10). A wide tile has
-//  `TVMediaItemContentConfiguration.text` / `.secondaryText` and nothing else; a poster
-//  gets the same pair from `TVUIKitPosterCell`'s own labels, because `TVPosterView`'s
-//  built-in title/subtitle reserve footer space that crops 2:3 art. Lockups and footer
-//  views are deliberately not on the table yet — anything that does not fit these two
-//  lines gets packed into them, not given a third.
+//  **One label** (user decision, 2026-08-11, reverting the two-line attempt of the day
+//  before): `configuration.secondaryText` did not render on screen, so the second line
+//  bought nothing and cost a wider tile. Treat the tile as having one line and pack what
+//  matters into it. Everything else — year, country, genre — waits for a real decision
+//  about where card metadata lives, not for another subtitle experiment.
 //
-//  Artwork stays clean. Only a badge, the progress bar, the duration chip and the
-//  watch-status glyph are allowed over the image; metadata belongs underneath, where it
-//  needs no scrim or blur to stay legible over a still.
-//
-//  The second line is built from the **same** `MediaCardDisplayPreferences` the SwiftUI
-//  card reads, so the display settings that already existed keep working here instead of
-//  tvOS quietly growing a fixed format of its own.
+//  No dates down here either: an announced episode says so in its top-corner badge, and
+//  repeating it under the artwork is the same fact twice.
 //
 
 import Foundation
 
 public enum TVUIKitCardText {
 
-  /// The name. A title, or the episode designation when there is no title at all.
-  public static func primary(for card: MediaCard) -> String? {
-    if !card.title.isEmpty { return card.title }
-    guard let overlay = card.overlayLabel, !overlay.isEmpty else { return nil }
-    return overlay
+  /// Continue Watching and history: which episode, then which episode it *is*.
+  /// `S2 E4 • Episode Name`, and just the title when there is no episode context.
+  public static func caption(for card: MediaCard) -> String? {
+    let title = card.title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let overlay = card.overlayLabel?.trimmingCharacters(in: .whitespacesAndNewlines),
+          !overlay.isEmpty else {
+      return title.isEmpty ? nil : title
+    }
+    return title.isEmpty ? overlay : "\(overlay) • \(title)"
   }
 
-  /// Everything else, in one line, in the order it is useful: which episode this is,
-  /// then what the title is like. Apple's own sample puts exactly this in
-  /// `secondaryText` ("S1, E1"), so the shape is the platform's, not ours.
-  ///
-  /// Returns nil rather than an empty string — a tile with nothing to add must not
-  /// reserve a blank second line.
-  public static func secondary(for card: MediaCard) -> String? {
-    var parts: [String] = []
-
-    // "S2, E11" leads: it says *which* thing this is before saying what it is like.
-    // Skipped when the title was empty, because then it is already the primary line.
-    if !card.title.isEmpty, let overlay = card.overlayLabel, !overlay.isEmpty {
-      parts.append(overlay)
-    }
-    if MediaCardDisplayPreferences.showOriginalTitle,
-       let original = card.subtitle, !original.isEmpty, original != card.title {
-      parts.append(original)
-    }
-    if MediaCardDisplayPreferences.showYear, let year = card.year {
-      parts.append(String(year))
-    }
-    if MediaCardDisplayPreferences.showGenre, let genre = card.genreLine, !genre.isEmpty {
-      parts.append(genre)
-    }
-    if MediaCardDisplayPreferences.showCountry, let country = card.countryLine, !country.isEmpty {
-      parts.append(country)
-    }
-
-    return parts.isEmpty ? nil : parts.joined(separator: " · ")
+  /// An episode inside a season rail, where the season is already named by the tab
+  /// above: `7. "Episode Name"`, or a bare `7.` when the name is unknown.
+  public static func episodeCaption(number: Int, name: String?) -> String {
+    let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return trimmed.isEmpty ? "\(number)." : "\(number). \"\(trimmed)\""
   }
 }
 #endif

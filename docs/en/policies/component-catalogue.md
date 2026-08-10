@@ -80,8 +80,9 @@ Rules that follow from the table:
    `text` / `secondaryText` / status differ. If the episodes rail and the Continue
    Watching rail are two different views, that is the catalogue rule being broken —
    the tile is the same object in the product.
-2. **The caption lives in the configuration**, under the artwork, in `text` /
-   `secondaryText`. Not a `UILabel` we position, not gated on focus.
+2. **The caption lives in the configuration**, under the artwork, in `text`. Not a
+   `UILabel` we position over the image, not gated on focus. (`secondaryText` renders
+   nothing for us — see "One label under a tile" below.)
 3. **`overlayView` is the only sanctioned place for anything of ours** over the artwork,
    and it stays one view with one look (see `TVUIKitMediaItemOverlayView`).
 4. **Type styling goes through `textProperties` / `secondaryTextProperties`** (`font`,
@@ -162,92 +163,69 @@ The trap to remember: the entry item must not be recomputed from "whichever seas
 selected", because focus travelling right into the next season selects that season — and
 the rail would scroll back under the user on every step.
 
-### Two lines under a tile, and the artwork stays clean
+### One label under a tile, and the artwork stays clean
 
-> User decision, 2026-08-10. This closes the question below it, which is kept as the
-> reasoning that led here.
+> User decision, 2026-08-11, replacing the two-line attempt of the day before.
 
-- **Two text lines, maximum: a label and a subtitle.** A third line is not a layout
-  problem to solve, it is a decision made against. Anything that does not fit gets
-  packed *into* those two, and if the subtitle turns out not to work, into one.
-- **Nothing large goes on the artwork.** Only a badge, the progress bar, the duration
-  chip and the watch-status glyph — all small, all already there. The images are small
-  to begin with; anything more would need a blur or scrim to stay clean, and that is a
-  bigger job than it is worth right now. (A mirrored/specular treatment is parked as a
-  someday experiment, not a plan.)
-- **No lockups, no footer views yet.** Ship what `TVMediaItemContentConfiguration`
-  already exposes.
-- **Apple's own episode cell is two focus areas** — the banner and the description
-  beneath it, each separately focusable, one playing and one opening the episode page.
-  Deliberately not copied: kino.pub has no episode pages, and the context menu already
-  covers the secondary actions.
+- **One text line.** `configuration.secondaryText` produced nothing visible on screen, so
+  the second line cost a wider tile and bought nothing. Treat the tile as having a single
+  caption and pack what matters into it. The one lead never tried, if it is ever wanted
+  back: Apple's sample builds the configuration as
+  `wideCell().updatedConfiguration(for: state)` and we never call that.
+- **Nothing large goes on the artwork**, and **no dates under it** — an announced episode
+  says so in its top-corner badge; repeating it below is the same fact twice. What is
+  allowed over the image: the badge, the progress bar, the duration chip, the
+  watch-status glyph.
+- **No lockups, no footer views.**
+- **Apple's own episode cell is two focus areas** — banner and description, separately
+  focusable. Deliberately not copied: kino.pub has no episode pages, and the context menu
+  already covers the secondary actions.
 
-How it is built:
+Caption formats, because they differ by surface:
 
-| Cell | Line 1 | Line 2 |
-| --- | --- | --- |
-| wide (`TVUIKitMediaItemRail`) | `configuration.text` | `configuration.secondaryText` |
-| poster (`TVUIKitPosterCell`) | its own `captionLabel` | its own `subtitleLabel` |
-
-The poster pair is ours because `TVPosterView.title` / `.subtitle` reserve footer space
-that crops 2:3 art — the reason both were nil there in the first place.
-
-Both lines come from **`TVUIKitCardText`**, which reads the same
-`MediaCardDisplayPreferences` the SwiftUI card does (`showOriginalTitle`, `showYear`,
-`showGenre`, `showCountry`). The display settings that already existed keep working on
-tvOS instead of the platform growing a fixed format of its own; which fields belong on
-which surface is still the user's to set, and will be fixed later.
-
-What is on the poster's artwork, and when (user decision, 2026-08-11):
-
-| chrome | shown |
+| surface | caption |
 | --- | --- |
-| progress bar | **always** — "started, not finished" is a fact the tile must state while you are nowhere near it |
-| watched checkmark | always |
-| play glyph, duration | **on focus only** — the cover is already the title; idle tiles stay clean |
-| both text lines | on focus only |
+| Continue Watching / history | `S2 E4 • Episode Name` — the season matters when the rail spans shows |
+| a season rail | `7. "Episode Name"` — the season is already named by the tab above |
 
-The poster card is a **fixed 2:3 rectangle with the artwork aspect-filled**, not a box
-sized by the image. `TVPosterView` takes its proportions from the image's natural size
-unless given a `contentSize`, which made a rail of posters jump in height and — since
-the overlay is a child of the image view — made the overlay stop short of the card's
-edges on placeholder tiles. Rounding lives on that image view too: it used to come from
-the overlay while the overlay was a sibling covering the image, and moving it inside left
-the corners square.
+Both come from `TVUIKitCardText`.
 
-The two poster labels must read as *different things*: title in `.callout` at `.label`,
-metadata in `.caption1` at `.secondaryLabel`. Same size and colour for both reads as one
-wrapped sentence.
+**The progress bar is ours, not `playbackProgress`.** The system's only paints on the
+*focused* tile, and "started, not finished" is exactly what an idle rail has to say, so
+`config.playbackProgress` is set to 0 and the bar lives in
+`TVUIKitMediaItemOverlayView`. That is a deliberate exception to "let the system draw
+it", taken with the trade stated: we own a bar, and in exchange it is visible when it
+matters.
 
-An **announced episode's date goes through the system badge** (`configuration.badgeText`),
-the same corner chip 4K and HDR use, and outranks a capability badge — 4K on something
-unwatchable is not the useful fact. The cost: `badgeText` takes a `String`, so the clock
-glyph cannot ride along with the date. "Watched" stays on our overlay, because it is
-paired with the scrim and checkmark the system badge knows nothing about.
+### One wide tile, one poster tile — no per-screen variants
 
-Open check: whether the system draws `secondaryText` under the wide tile or over the
-artwork's bottom-leading corner, where our glyph and time chip sit. The gallery's
-**"Caption lines"** row is there to judge it. If it draws over the artwork, the wide
-tile packs down to one line — the poster cell shows what the clean alternative would
-cost (labels of our own, i.e. the footer work that is deferred).
+Landscape **grids** (history, library) used to use a hand-built
+`TVUIKitContinueWatchingCell`: `TVCardView` plus labels positioned over the artwork, so
+the same show read one way in a rail and another way in a grid. Deleted 2026-08-11;
+`TVUIKitMediaCollection` now dequeues the same `TVUIKitMediaItemCell` the rails use.
 
-### Why one line was not enough (the reasoning behind the decision above)
+### The poster experiment, and why it was reverted
 
-Open requirement, recorded so the next pass does not re-litigate it. A tile currently
-carries **one** line (its name), and that loses to what kino.pub already shows.
+Tried on 2026-08-10 and reverted on 2026-08-11 — recorded so it is not tried again by
+accident. The attempt pinned `TVPosterView.contentSize`, set the image view to
+`scaleAspectFill` with `clipsToBounds`, rounded that view, and added a second label plus
+focus-only play/duration chrome. On screen it was worse in three ways:
 
-- **Posters** need a metadata line under the title: year at minimum, plus some of
-  country / original title / genre / type / season-and-episode counts. Which fields is a
-  user setting, not a constant — the app has always let this be configured.
-- **Wide tiles** have more room and need more: Continue Watching wants at least two
-  lines, an episode wants its title, its meta, and its synopsis.
-- **On focus the tile should become a real card** — a background appears, it may grow
-  substantial. That is a design direction, not a spec, and it is not built.
+1. **Aspect-fill crops posters.** 2:3 source art is what the artwork already is; filling
+   a fixed box cuts it.
+2. **`clipsToBounds` on the image view kills the parallax.** The lockup's tilt moves
+   content inside its own frame, and clipping that frame removes the effect that makes a
+   tvOS poster feel native. This is the expensive lesson: it is not obvious from the API.
+3. The second label was the same change that produced nothing on the wide tile.
 
-`TVMediaItemContentConfiguration` offers exactly `text`, `secondaryText`, `badgeText`,
-`overlayView`, `playbackProgress` — enough for the MVP, which is what the decision above
-settles on. The episode synopsis and the "tile becomes a full card on focus" idea are
-**not** part of it; they would need the footer / lockup work that is deferred.
+What survived the revert: the decoded-artwork cache lookup in `loadImage`, which changes
+nothing visually except that a recycled tile stops going blank.
+
+Still true, and the reason the overlay sits where it does: the overlay must ride the
+system's focus transform, and the only two places it can be are a child of the poster's
+image view (which forced the clipping above) or a sibling that mirrors the scale by hand.
+The cell is back on the sibling. If hand-mirroring is to go away again, that trade has to
+be solved, not assumed away.
 
 ## Native first, and at the right level
 

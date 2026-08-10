@@ -4,7 +4,11 @@
 //  KinoPubUI
 //
 //  One UICollectionView for both Home shelves (horizontal) and catalog grids
-//  (vertical). Same `TVUIKitPosterCell` / `TVUIKitContinueWatchingCell` either way.
+//  Poster grids use `TVUIKitPosterCell`; landscape grids use the **same** system
+//  `TVUIKitMediaItemCell` the wide rails use. There is one wide tile in this app, not a
+//  rail version and a grid version — the grid used to draw the title and "S1, E4" over
+//  the artwork with hand-placed labels, which is exactly the divergence the component
+//  catalogue exists to prevent.
 //
 
 import SwiftUI
@@ -101,8 +105,8 @@ public final class TVUIKitMediaCollectionController: UIViewController {
     view.prefetchDataSource = self
     view.register(TVUIKitPosterCell.self, forCellWithReuseIdentifier: TVUIKitPosterCell.reuseID)
     view.register(
-      TVUIKitContinueWatchingCell.self,
-      forCellWithReuseIdentifier: TVUIKitContinueWatchingCell.reuseID
+      TVUIKitMediaItemCell.self,
+      forCellWithReuseIdentifier: TVUIKitMediaItemCell.reuseID
     )
     return view
   }()
@@ -242,10 +246,10 @@ extension TVUIKitMediaCollectionController: UICollectionViewDataSource, UICollec
     let card = cards[indexPath.item]
     if isLandscape {
       let cell = collectionView.dequeueReusableCell(
-        withReuseIdentifier: TVUIKitContinueWatchingCell.reuseID,
+        withReuseIdentifier: TVUIKitMediaItemCell.reuseID,
         for: indexPath
-      ) as! TVUIKitContinueWatchingCell
-      cell.configure(card: card, size: tileSize)
+      ) as! TVUIKitMediaItemCell
+      cell.configure(TVUIKitMediaItem(card: card))
       return cell
     }
 
