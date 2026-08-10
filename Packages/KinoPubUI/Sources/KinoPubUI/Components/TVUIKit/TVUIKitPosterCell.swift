@@ -28,6 +28,8 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
   private var imageTask: Task<Void, Never>?
   private var currentURL: URL?
   private var tileWidth: CGFloat = 296
+  /// The box the artwork is decoded into — see `TVUIKitRemoteImage.load(url:size:)`.
+  private var posterSize = CGSize(width: 296, height: 444)
   private var posterWidthConstraint: NSLayoutConstraint!
   private var posterHeightConstraint: NSLayoutConstraint!
   private var progressFillWidth: NSLayoutConstraint!
@@ -134,6 +136,13 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
     tileWidth = size.width
     posterWidthConstraint.constant = size.width
     posterHeightConstraint.constant = size.height
+    posterSize = size
+    // Pin the lockup to the card, not to the image. Without this `TVPosterView` takes
+    // its proportions from whatever aspect the source happens to be, and a rail ends up
+    // with posters of visibly different shapes. Note this is *only* contentSize: the
+    // 2026-08-10 attempt also clipped and aspect-filled the image view, which cropped
+    // the art and killed the parallax. Shape here, nothing else.
+    posterView.contentSize = size
     captionLabel.text = card.title
     configureProgress(card)
     configureWatched(card)
@@ -190,7 +199,7 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
     // re-downloading art that was on screen a moment ago. The only piece of the
     // 2026-08-11 poster experiment kept after the revert — it changes nothing visually
     // except that the tile stops going blank.
-    if let hit = TVUIKitRemoteImage.cached(url: url) {
+    if let hit = TVUIKitRemoteImage.cached(url: url, size: posterSize) {
       posterView.image = hit
       placeholderPanel.isHidden = true
       ArtworkLog.servedFromMemory(url, by: "poster")
@@ -199,8 +208,9 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
     posterView.image = nil
     placeholderPanel.isHidden = false
     ArtworkLog.requested(url, by: "poster")
+    let size = posterSize
     imageTask = Task { [weak self] in
-      let image = await TVUIKitRemoteImage.load(url: url)
+      let image = await TVUIKitRemoteImage.load(url: url, size: size)
       await MainActor.run {
         guard let self, self.currentURL == url else { return }
         self.posterView.image = image

@@ -82,22 +82,24 @@ public enum TVUIKitMediaItemStatus: Equatable {
     }
   }
 
-  /// An announced episode's date, drawn by the **system** badge — the same corner chip
-  /// 4K and HDR use, which is what it is: a fact about the item, in the platform's own
-  /// treatment. The one thing lost by going through `configuration.badgeText` is the
-  /// clock glyph: that API takes a `String`, so an SF Symbol cannot ride along with it.
-  var systemBadgeText: String? {
-    if case .upcoming(let dateText) = self { return dateText }
-    return nil
+  /// Both state badges live on **our** overlay, not on `configuration.badgeText`. The
+  /// system chip only paints on the focused tile, and "airs in 3 days" is exactly the
+  /// thing an idle rail has to say — same reason the progress bar moved here. Named
+  /// distinctly from `TVUIKitMediaItem.badgeText` (the capability badge) so a call site
+  /// reading either name says which one it means.
+  var overlayBadgeText: String? {
+    switch self {
+    case .watched: String(localized: "TVMediaItem_Watched")
+    case .upcoming(let dateText): dateText
+    case .ready, .inProgress, .unavailable: nil
+    }
   }
 
-  /// "Watched" stays on our overlay: it is a fact about *you*, not about the item, and
-  /// it is paired with the scrim and the checkmark that the system badge knows nothing
-  /// about. Named distinctly from `TVUIKitMediaItem.badgeText` (the capability badge) so
-  /// a call site reading either name says which one it means.
-  var overlayBadgeText: String? {
-    if case .watched = self { return String(localized: "TVMediaItem_Watched") }
-    return nil
+  /// An upcoming date gets a clock beside it — the reason this badge is ours and not
+  /// the system's is partly that `badgeText` is a `String` with no room for a glyph.
+  var badgeShowsClock: Bool {
+    if case .upcoming = self { return true }
+    return false
   }
 
   /// Watched tiles sit back so the unwatched ones beside them read first.
@@ -405,7 +407,13 @@ public final class TVUIKitMediaItemRailController: UIViewController {
     let view = UICollectionView(frame: .zero, collectionViewLayout: layout)
     view.backgroundColor = .clear
     view.clipsToBounds = false
-    view.remembersLastFocusedIndexPath = true
+    // Deliberately OFF. `remembersLastFocusedIndexPath` restores by *index*, and this
+    // rail's contents grow underneath it — TMDB schedules arrive after the kino.pub
+    // episodes and insert unaired entries, so the remembered index silently becomes a
+    // different, later episode. That is how opening a series you have never watched
+    // landed on episode 7. `indexPathForPreferredFocusedView` below does the same job
+    // by identity, from `entryItemID`.
+    view.remembersLastFocusedIndexPath = false
     view.showsHorizontalScrollIndicator = false
     view.showsVerticalScrollIndicator = false
     view.dataSource = self
@@ -603,13 +611,10 @@ final class TVUIKitMediaItemCell: UICollectionViewCell {
     // started this and did not finish it" is exactly what an *idle* rail has to say.
     // Ours lives in the overlay below, where we control when it shows.
     config.playbackProgress = 0
-    // One corner, one chip. An announced date outranks a capability badge — 4K on
-    // something you cannot watch yet is not the useful fact — and both go through the
-    // system's own badge rather than a second one of ours.
-    if let upcoming = item.status.systemBadgeText {
-      config.badgeText = upcoming
-      config.badgeProperties = .default()
-    } else if item.status.overlayBadgeText == nil, let badge = item.badgeText, !badge.isEmpty {
+    // One corner, one chip. A state badge (Watched / a release date) is drawn by our
+    // overlay and outranks the capability badge — 4K on something you cannot watch yet
+    // is not the useful fact.
+    if item.status.overlayBadgeText == nil, let badge = item.badgeText, !badge.isEmpty {
       config.badgeText = badge
       config.badgeProperties = item.badgeIsLive ? .liveContent() : .default()
     }
@@ -635,7 +640,8 @@ final class TVUIKitMediaItemCell: UICollectionViewCell {
     }
     // Already decoded — take it now so a recycled tile never shows the tint fallback
     // in place of art it had a moment ago.
-    if let hit = TVUIKitRemoteImage.cached(url: url) {
+    let size = contentView.bounds.size
+    if let hit = TVUIKitRemoteImage.cached(url: url, size: size) {
       artwork = hit
       loadedURL = url
       ArtworkLog.servedFromMemory(url, by: "wide")
@@ -643,7 +649,7 @@ final class TVUIKitMediaItemCell: UICollectionViewCell {
     }
     ArtworkLog.requested(url, by: "wide")
     imageTask = Task { [weak self] in
-      let image = await TVUIKitRemoteImage.load(url: url)
+      let image = await TVUIKitRemoteImage.load(url: url, size: size)
       guard let self, !Task.isCancelled, self.item?.imageURL == url else { return }
       self.artwork = image
       self.loadedURL = image == nil ? nil : url
@@ -839,9 +845,10 @@ final class TVUIKitMediaItemOverlayView: UIView {
     if let text = status.overlayBadgeText {
       badge.isHidden = false
       badgeLabel.text = text
-      badgeIcon.isHidden = true
-      badgeIcon.image = nil
-      badgeIconWidth.constant = 0
+      let showsIcon = status.badgeShowsClock
+      badgeIcon.isHidden = !showsIcon
+      badgeIcon.image = showsIcon ? UIImage(systemName: "clock") : nil
+      badgeIconWidth.constant = showsIcon ? Self.badgeIconSize : 0
     } else {
       badge.isHidden = true
     }

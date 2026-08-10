@@ -127,6 +127,17 @@ public enum FocusLog {
     )
   }
 
+  /// Where the episodes rail decided to open, and out of how many entries. The report
+  /// this exists for: "a series I have never watched opened on episode 7, which has not
+  /// even aired". One line says whether the *choice* was wrong or whether something
+  /// moved the rail afterwards.
+  public static func resumeTarget(episode: Int, number: Int, season: String, of count: Int) {
+    guard isEnabled else { return }
+    logger.info(
+      "⤓ RESUME \(season, privacy: .public) · episode \(number, privacy: .public) (id \(episode, privacy: .public)) of \(count, privacy: .public) entries"
+    )
+  }
+
   /// A section reporting that focus entered it, for the coarse "where am I" trace.
   public static func enteredSection(_ section: String) {
     guard isEnabled else { return }

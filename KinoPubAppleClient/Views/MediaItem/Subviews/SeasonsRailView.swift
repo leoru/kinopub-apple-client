@@ -248,7 +248,10 @@ struct SeasonsRailView: View {
   var body: some View {
     ScrollViewReader { proxy in
       VStack(alignment: .leading, spacing: showsChrome ? 2 : 0) {
-        if showsChrome {
+        // One season is not a choice, so there is no strip: a lone tab was an empty
+        // focus stop on the way up out of the rail, and a permanently prominent
+        // "Season 1" header is not chrome, it is noise.
+        if showsChrome, seasons.count > 1 {
           seasonTabs(proxy: proxy)
             .transition(.opacity)
         }
@@ -266,7 +269,11 @@ struct SeasonsRailView: View {
           selectedSeasonID = firstUnseen?.season?.id ?? seasons.first?.id
         }
       }
-      .task {
+      // Keyed on the rail's contents, not fired once on appear: the detail payload and
+      // the TMDB schedules land *after* this view first renders, so a plain `.task` ran
+      // against an empty `entries`, bailed, and never came back — leaving the opening
+      // position to whatever the collection view happened to do.
+      .task(id: entries.map(\.id)) {
         await scrollToFirstUnseen(proxy: proxy)
       }
       .task {
@@ -295,29 +302,23 @@ struct SeasonsRailView: View {
     ScrollView(.horizontal, showsIndicators: false) {
       HStack(spacing: Self.tabSpacing) {
         ForEach(seasons) { season in
-          if seasons.count > 1 {
-            Button {
-              // Enter / click only moves the rail when the season actually changes.
-              guard season.id != selectedSeasonID else { return }
-              selectSeason(season.id, proxy: proxy, animated: true)
-            } label: {
-              tabLabel(season)
-            }
-#if os(tvOS)
-            .focused($focusedSeasonID, equals: season.id)
-            // The one that makes Up land on the season you are actually in.
-            .prefersDefaultFocus(season.id == selectedSeason?.id, in: seasonTabsScope)
-#endif
-            // TODO: replace with the system pill/toggle component once we settle which
-            // one (there is a glass-styled equivalent outside tvOS worth checking).
-            // Until then the stock borderless style: no chrome at rest, the platform's
-            // own treatment on focus — and no hand-rolled focus code of ours.
-            .buttonStyle(.borderless)
-          } else {
-            // One season is not a choice. A lone tab that takes focus is a stop the
-            // remote has to travel through to reach nothing, so it stays a label.
+          Button {
+            // Enter / click only moves the rail when the season actually changes.
+            guard season.id != selectedSeasonID else { return }
+            selectSeason(season.id, proxy: proxy, animated: true)
+          } label: {
             tabLabel(season)
           }
+#if os(tvOS)
+          .focused($focusedSeasonID, equals: season.id)
+          // The one that makes Up land on the season you are actually in.
+          .prefersDefaultFocus(season.id == selectedSeason?.id, in: seasonTabsScope)
+#endif
+          // TODO: replace with the system pill/toggle component once we settle which
+          // one (there is a glass-styled equivalent outside tvOS worth checking).
+          // Until then the stock borderless style: no chrome at rest, the platform's
+          // own treatment on focus — and no hand-rolled focus code of ours.
+          .buttonStyle(.borderless)
         }
       }
       .padding(.horizontal, metrics.inset)
@@ -595,9 +596,16 @@ struct SeasonsRailView: View {
 
   private func scrollToFirstUnseen(proxy: ScrollViewProxy) async {
     guard !didScrollToUnseen, let target = firstUnseen, let season = target.season else { return }
-    didScrollToUnseen = true
     try? await Task.sleep(for: .milliseconds(120))
     guard !Task.isCancelled else { return }
+    // Only now: bailing above must leave this false so a later payload gets its turn.
+    didScrollToUnseen = true
+#if os(tvOS)
+    FocusLog.resumeTarget(episode: target.id,
+                          number: target.episodeNumber,
+                          season: Self.seasonTitle(season),
+                          of: entries.count)
+#endif
     // The specific resume episode, not just its season — see `seasonEntryEpisodeID`.
     selectSeason(season.id, entryEpisodeID: target.id, proxy: proxy, animated: false)
   }
