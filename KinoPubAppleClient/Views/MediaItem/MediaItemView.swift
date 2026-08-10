@@ -166,9 +166,11 @@ struct MediaItemView: View {
         FocusLog.moved(section: "hero",
                        element: target.map { "\($0)" } ?? "none",
                        focused: target != nil)
-        // No fold write here — see `leaveHero`. The fold has one writer,
-        // `onScrollVisibilityChange` on the hero; focus landing on a hero control
-        // scrolls the page back up on its own and the scroll view reports that.
+        // The fold, and its only writer. `focus` is non-nil exactly while one of the
+        // hero's own controls holds focus; the moment focus moves to anything below
+        // it goes nil. That is the whole state: focus in the hero → the page belongs
+        // to the hero; focus anywhere else → it belongs to the sections.
+        heroPhase.isHeroOnScreen = target != nil
       }
 #endif
       .onDisappear {
@@ -269,14 +271,11 @@ struct MediaItemView: View {
           } action: { height in
             showcaseHeight = height
           }
-          // The fold, straight from the scroll view: true while more than half the
-          // hero is on screen. Replaces the apparatus of per-section focus reporters
-          // that used to infer it — those had blind spots by construction
-          // (`@Environment(\.isFocused)` is only true *inside* the focused view's
-          // subtree, so a reporter attached outside a `Button` never fired at all).
-          .onScrollVisibilityChange(threshold: 0.5) { visible in
-            heroPhase.isHeroOnScreen = visible
-          }
+          // NOT `onScrollVisibilityChange`. Deriving the fold from how much of the
+          // hero is on screen is circular on a page that moves by focus: the scroll
+          // decides the fold, and the fold decides where to scroll. The fold is a
+          // property of *where focus is*, and focus is the thing the user moves —
+          // see the `focus` observer on `body`.
 #endif
 
         contentSections
@@ -517,19 +516,18 @@ private struct MediaItemFoldSnappingBehavior: ScrollTargetBehavior {
     // Before the hero has been measured there is no fold to snap to.
     guard showcaseHeight > 0 else { return }
 
-    // Above the fold and not travelling far enough down to cross it — leave it be.
-    if aboveFold, target.rect.minY < showcaseHeight * 0.3 { return }
-    // Below the fold and the hero is not coming back on screen — leave it be.
-    if !aboveFold, target.rect.minY > showcaseHeight { return }
-
-    // Coming back up only counts once more than 30% of the hero is revealed;
-    // otherwise the page returns to the sections.
-    let snapToHideRange = (showcaseHeight * 0.7)...showcaseHeight
-    if aboveFold || snapToHideRange.contains(target.rect.origin.y) {
-      target.rect.origin.y = showcaseHeight
-    } else {
-      target.rect.origin.y = 0
-    }
+    // Two positions, chosen by which page owns focus — nothing else.
+    //
+    // Apple's landing-page sample guards this with distance thresholds ("above the
+    // fold and not travelling far enough down — leave it be"). Those are written for
+    // a page the user *swipes*: a small target means they barely moved. On a page
+    // that moves by focus the first thing below the fold is only a short scroll away
+    // — it is already peeking under the hero — so every crossing landed inside the
+    // leave-it-be zone and never snapped. Sections further down (ratings, cast) did
+    // snap, which is exactly how this was spotted.
+    let destination: CGFloat = aboveFold ? 0 : showcaseHeight
+    FocusLog.snapped(from: target.rect.origin.y, to: destination, aboveFold: aboveFold)
+    target.rect.origin.y = destination
   }
 }
 

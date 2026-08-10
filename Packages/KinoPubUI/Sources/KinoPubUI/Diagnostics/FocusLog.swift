@@ -84,6 +84,16 @@ public enum FocusLog {
     logger.info("▸ SECTION \(section, privacy: .public)")
   }
 
+  /// Where the fold snap decided to send the page, and on what basis. Without this
+  /// a snap that silently declines to fire is indistinguishable from one that never
+  /// ran — which is how the distance-guard bug survived a whole pass.
+  public static func snapped(from current: CGFloat, to destination: CGFloat, aboveFold: Bool) {
+    guard isEnabled else { return }
+    logger.info(
+      "⇅ SNAP \(aboveFold ? "hero" : "sections", privacy: .public): \(Int(current), privacy: .public) → \(Int(destination), privacy: .public)"
+    )
+  }
+
   // MARK: - Global trace
 
   private static var globalObserver: NSObjectProtocol?

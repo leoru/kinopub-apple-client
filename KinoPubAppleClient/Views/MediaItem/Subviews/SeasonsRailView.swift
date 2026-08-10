@@ -286,11 +286,20 @@ struct SeasonsRailView: View {
           } label: {
             Text(Self.seasonTitle(season))
               .font(Self.tabFont)
+              // Selected reads QUIETER than focused, not equal to it. The custom
+              // style this replaced coloured on `isSelected || isFocused`, so the
+              // selected tab stayed as bright as a focused one — which is why a tab
+              // you had left still looked live after focus went back up to the hero.
+              .foregroundStyle(season.id == selectedSeason?.id ? .primary : .secondary)
           }
 #if os(tvOS)
           .focused($focusedSeasonID, equals: season.id)
 #endif
-          .buttonStyle(SeasonTabButtonStyle(isSelected: season.id == selectedSeason?.id))
+          // TODO: replace with the system pill/toggle component once we settle which
+          // one (there is a glass-styled equivalent outside tvOS worth checking).
+          // Until then the stock borderless style: no chrome at rest, the platform's
+          // own treatment on focus — and no hand-rolled focus code of ours.
+          .buttonStyle(.borderless)
         }
       }
       .padding(.horizontal, metrics.inset)
@@ -539,36 +548,6 @@ struct SeasonsRailView: View {
 }
 
 /// A season tab: filled when selected, outlined otherwise, and lifting on focus.
-private struct SeasonTabButtonStyle: ButtonStyle {
-  let isSelected: Bool
-
-  func makeBody(configuration: ButtonStyleConfiguration) -> some View {
-    Tab(configuration: configuration, isSelected: isSelected)
-  }
-
-  private struct Tab: View {
-    let configuration: ButtonStyleConfiguration
-    let isSelected: Bool
-    @Environment(\.isFocused) private var isFocused
-
-    var body: some View {
-      configuration.label
-            .foregroundStyle(
-                isSelected || isFocused ? Color.primary : Color.secondary
-            )
-        .padding(.horizontal, 24)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(isFocused ? Color.secondary.opacity(0.4) : Color.clear)
-          )
-
-//        .scaleEffect(isFocused ? 1.06 : 1.0)
-        .animation(.easeOut(duration: 0.15), value: isFocused)
-    }
-  }
-}
-
 // MARK: - Trailing cards (missing / upcoming seasons)
 
 /// One dark slot for whole seasons between kino.pub's last and the next announced

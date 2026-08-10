@@ -676,3 +676,74 @@ of the "everything is dark but focused and it's mush" impression.
 2. Deterministic fold driver — replace the engine's scroll rather than correct it.
 3. Only then re-judge the overlay logo timing, which is downstream of 2.
 
+
+
+---
+
+## 2026-08-10 — the fold, corrected twice
+
+### What was wrong with my first explanation
+
+I told the user `ScrollTargetBehavior` does not apply to focus-driven movement, and
+that the fold therefore needed a hand-driven `contentOffset`. **That was wrong**, and
+their own observation disproved it: the snap worked correctly for the ratings section
+(below the episodes) while doing nothing for the season rail.
+
+The real cause is the guards copied verbatim from Apple's landing-page sample:
+
+```swift
+if aboveFold, target.rect.minY < showcaseHeight * 0.3 { return }
+```
+
+With an 864pt showcase that threshold is ~259pt. The season rail is *already peeking*
+under the hero, so focusing it scrolls ~100pt — inside the leave-it-alone zone, so no
+snap. Ratings sit far enough down to clear the threshold, so they snapped. Those
+guards exist for a page the user **swipes** ("they barely moved, don't yank it"). On a
+page that moves by **focus**, the first thing below the fold is always a short scroll
+away, so the guard fires every time.
+
+### The model that is actually right
+
+The user stated it plainly and it is correct: *the fold is a property of which page
+owns focus, not of how far the page happened to scroll.* Focus in the hero → offset 0.
+Focus anywhere below → offset = showcase height. No thresholds, no distance maths.
+
+Fixed accordingly:
+- `MediaItemFoldSnappingBehavior` now snaps unconditionally on `aboveFold`.
+- `aboveFold` comes from **focus**, not `onScrollVisibilityChange`. Deriving it from
+  scroll visibility was circular on this page: the scroll decided the fold and the fold
+  decided the scroll. `MediaItemView`'s `focus` is non-nil exactly while a hero control
+  holds focus — that single value is the fold, and it has exactly one writer.
+- `FocusLog.snapped(from:to:aboveFold:)` logs every snap decision. A snap that silently
+  declines to fire was indistinguishable from one that never ran, which is how the
+  guard bug survived a whole pass.
+
+**Unverified on device.** Confirm: focusing the season rail moves the page a full
+showcase height, and Up back to the hero returns it to 0.
+
+### Shelf semantics — separate bugs, all still open
+
+These are not fold problems and were not fixed:
+
+- [ ] **Section header must appear on focus, not always.** An Apple TV shelf peeks
+      from below the fold with no header; the header arrives when it takes focus.
+      `SeasonsRailView.showsChrome` exists for exactly this and is passed `true`
+      unconditionally.
+- [ ] **One season → the tab strip must not be focusable at all.** Down from the hero
+      should land on the episode. Even with twenty seasons the tabs are reachable only
+      by Up *from* an episode — never on the way down.
+- [x] **Selected tab looked as bright as a focused one.** `SeasonTabButtonStyle`
+      coloured on `isSelected || isFocused`, so a tab you had left stayed lit and read
+      as still-focused. Replaced with the stock `.buttonStyle(.borderless)`; selected
+      is now `.primary` against `.secondary`, quieter than focus.
+- [ ] **TODO:** replace the tab strip with a real system pill/toggle component once we
+      decide which (a glass-styled equivalent exists outside tvOS worth checking).
+      `.borderless` is the interim, chosen so no hand-rolled focus code remains.
+- [ ] **Overlay logo appears too early** — it keys off the same fold flag, so it
+      arrived on the micro-scroll. Re-check now that the fold is focus-driven.
+
+### Standing lesson
+
+Two passes in a row went wrong the same way: Apple's sample was copied including
+constants tuned for a *different input model* (swipe), on a page driven by focus. Copy
+the mechanism, re-derive the thresholds.
