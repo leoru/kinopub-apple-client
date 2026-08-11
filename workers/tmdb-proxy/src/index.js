@@ -7,6 +7,7 @@
 
 const TMDB_API = "https://api.themoviedb.org";
 const TMDB_IMAGE = "https://image.tmdb.org";
+const TMDB_FILES = "https://files.tmdb.org";
 
 export default {
   async fetch(request, env, ctx) {
@@ -28,9 +29,15 @@ export default {
       return proxyAPI(url, env, ctx);
     }
 
+    // Daily id dumps. Same reason as the image route: files.tmdb.org resolves
+    // to 127.0.0.1 on hijacked networks, and these need no auth.
+    if (url.pathname.startsWith("/p/exports/")) {
+      return proxyFile(TMDB_FILES + url.pathname, ctx, 60 * 60 * 12);
+    }
+
     return json({
       error: "not_found",
-      hint: "use /3/... for API or /t/p/{size}/{path} for images",
+      hint: "use /3/... for API, /t/p/{size}/{path} for images, /p/exports/... for daily id dumps",
     }, 404);
   },
 };
@@ -77,7 +84,11 @@ async function proxyAPI(url, env, ctx) {
 
 async function proxyImage(url, ctx) {
   // /t/p/w185/abc.jpg → https://image.tmdb.org/t/p/w185/abc.jpg
-  const upstreamURL = TMDB_IMAGE + url.pathname;
+  return proxyFile(TMDB_IMAGE + url.pathname, ctx, 604800);
+}
+
+// Unauthenticated passthrough with edge caching — images and export dumps.
+async function proxyFile(upstreamURL, ctx, maxAge) {
   const cache = caches.default;
   const cacheKey = new Request(upstreamURL, { method: "GET" });
   const cached = await cache.match(cacheKey);
@@ -85,11 +96,11 @@ async function proxyImage(url, ctx) {
 
   const upstream = await fetch(upstreamURL, {
     method: "GET",
-    headers: { Accept: "image/*,*/*" },
+    headers: { Accept: "*/*" },
   });
 
   const headers = new Headers(upstream.headers);
-  headers.set("Cache-Control", "public, max-age=604800");
+  headers.set("Cache-Control", `public, max-age=${maxAge}`);
   headers.set("Access-Control-Allow-Origin", "*");
 
   const response = new Response(upstream.body, {

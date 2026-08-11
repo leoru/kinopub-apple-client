@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
-"""Fill the record from TMDB, through our worker proxy. Resumable, rate-limited.
+"""Fill the record from TMDB, through our worker proxy. Lazy by default.
 
-    python3 fetch_tmdb.py --limit 200        # a taste
-    python3 fetch_tmdb.py                    # everything unresolved, popular first
-    python3 fetch_tmdb.py --refresh          # re-fetch titles we already have
+    python3 fetch_tmdb.py --titles 41,905    # exactly these, the normal case
+    python3 fetch_tmdb.py --limit 200        # the 200 most-voted still missing
+    python3 fetch_tmdb.py --sweep --yes      # the whole backlog. Think first.
+
+**This is not a crawler.** TMDB's catalogue is not ours to mirror, and a sweep
+spends a personal token on titles nobody asked for. Fetch what a page needs,
+when it needs it; let coverage accumulate from use. `--sweep` exists for the
+deliberate backfill and refuses to run without `--yes`.
+
+For breadth — knowing an id exists at all — use `fetch_tmdb_exports.py`, which
+reads TMDB's free daily id dumps and costs no API calls.
 
 No API token lives here: the worker holds it. Progress is in `fetch_log`, so a
 killed run resumes where it stopped and never re-asks a question it already has
@@ -42,6 +50,11 @@ TV_APPEND = ("aggregate_credits,images,videos,external_ids,content_ratings,keywo
              "reviews,episode_groups")
 
 IMAGE_BASE = "https://image.tmdb.org/t/p/original"
+
+CAST_LIMIT = 30
+KEPT_CREW = {"director", "writer", "screenplay", "story", "creator", "novel",
+             "director of photography", "original music composer", "producer",
+             "executive producer"}
 
 
 class Throttle:
@@ -135,7 +148,11 @@ def derive(conn, title_id, tmdb_id, media_type, payload):
 
     credits = payload.get("aggregate_credits") if is_tv else payload.get("credits")
     credits = credits or payload.get("credits") or {}
-    for person in (credits.get("cast") or [])[:60]:
+    # Cap at 30 leads by billing order, per the policy. Everyone below that is
+    # noise on a card and nobody opens their page.
+    for person in sorted((credits.get("cast") or []),
+                         key=lambda c: c.get("order") if c.get("order") is not None else 999
+                         )[:CAST_LIMIT]:
         if not person.get("name"):
             continue
         roles = person.get("roles") or []
@@ -156,11 +173,16 @@ def derive(conn, title_id, tmdb_id, media_type, payload):
             " VALUES (?,?,'actor',?,?,?,'tmdb')",
             (title_id, person_id, character, person.get("order"), episodes),
         )
-    for person in (credits.get("crew") or [])[:60]:
+    # Crew is not capped by count but by role: the people a page actually names,
+    # plus anyone an award could be attached to later. The rest is a long tail
+    # of gaffers we would never render.
+    for person in credits.get("crew") or []:
         if not person.get("name"):
             continue
         jobs = person.get("jobs") or []
         job = (jobs[0].get("job") if jobs else person.get("job")) or person.get("department")
+        if (job or "").lower() not in KEPT_CREW:
+            continue
         person_id = resolve_person(conn, name_en=person["name"], ids={"tmdb": person.get("id")})
         conn.execute(
             "INSERT OR IGNORE INTO title_credit"
@@ -215,19 +237,24 @@ def derive(conn, title_id, tmdb_id, media_type, payload):
 
 # -------------------------------------------------------------------- main
 
-def pending(conn, refresh, limit):
+def pending(conn, *, refresh=False, limit=None, titles=None):
     """Titles with an IMDb id and no TMDB answer yet, most-voted first.
 
-    Popularity order matters: a killed run has still covered what people open.
+    Popularity order matters only for a sweep: a killed one has still covered
+    what people open. With `--titles` the caller already knows what it wants.
     """
     asked = "" if refresh else (
         " AND NOT EXISTS (SELECT 1 FROM fetch_log f WHERE f.source='tmdb'"
         " AND f.endpoint='title' AND f.key=e.value)")
+    chosen = ""
+    if titles:
+        ids = ",".join(str(int(value)) for value in titles)
+        chosen = f" AND e.title_id IN ({ids})"
     query = (
         "SELECT e.title_id, e.value AS imdb, t.kind,"
         " (SELECT votes FROM rating r WHERE r.title_id=e.title_id AND r.source='imdb') AS votes"
         " FROM title_external_id e JOIN title t ON t.id=e.title_id"
-        f" WHERE e.namespace='imdb'{asked}"
+        f" WHERE e.namespace='imdb'{asked}{chosen}"
         " ORDER BY votes IS NULL, votes DESC"
     )
     if limit:
@@ -264,17 +291,26 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
-    parser.add_argument("--limit", type=int)
+    parser.add_argument("--titles", help="comma-separated title ids — the normal case")
+    parser.add_argument("--limit", type=int, help="most-voted N still missing")
+    parser.add_argument("--sweep", action="store_true", help="the whole backlog; needs --yes")
+    parser.add_argument("--yes", action="store_true")
     parser.add_argument("--language", default="ru-RU")
     parser.add_argument("--rps", type=float, default=12.0)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--refresh", action="store_true")
     args = parser.parse_args()
 
+    titles = [part for part in (args.titles or "").split(",") if part.strip()]
+    if not titles and not args.limit and not args.sweep:
+        parser.error("say what to fetch: --titles, --limit, or --sweep --yes")
+    if args.sweep and not args.yes:
+        parser.error("--sweep spends a personal token across the whole backlog; add --yes")
+
     conn = connect(args.db)
-    queue = pending(conn, args.refresh, args.limit)
+    queue = pending(conn, refresh=args.refresh, limit=args.limit, titles=titles)
     if not queue:
-        print("nothing pending — the record already has an answer for every IMDb id")
+        print("nothing pending — every requested title already has an answer")
         return 0
 
     print(f"{len(queue):,} titles · {args.language} · {args.rps} rps · {args.workers} workers")

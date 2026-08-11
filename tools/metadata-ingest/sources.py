@@ -11,7 +11,7 @@ import sqlite3
 from pathlib import Path
 
 from common import (Run, add_image, add_rating, add_rows, enrich_title, link_external,
-                    now, resolve_person, resolve_title, store_raw)
+                    now, resolve_person, resolve_title, store_raw, upsert_copy)
 
 TOOLS = Path(__file__).resolve().parent.parent
 
@@ -90,6 +90,11 @@ def ingest_kinopub(conn, *, limit=None):
 
         add_rows(conn, "country", ("title_id", "source", "name"),
                  [(title_id, "kinopub", c) for c in _json_list(item["countries"])])
+
+        # kino.pub is a platform as well as a source: this row is its copy, and
+        # is where its streams, qualities and audio tracks will hang once we
+        # read them. `title` stays a fact about the work.
+        upsert_copy(conn, title_id, "kinopub", item["id"])
 
     source_db.close()
     run.finish()
@@ -178,31 +183,35 @@ def ingest_tvoe(conn):
                     (title_id, person_id, entry.get("type"), order),
                 )
 
-            _tvoe_videos(conn, title_id, item)
+            _tvoe_copy(conn, title_id, item)
 
     run.finish()
     return run
 
 
-def _tvoe_videos(conn, title_id, item):
-    """Trailers, features, and per-episode video with intro/outro markers."""
-    videos = item.get("videos") or {}
-    batches = [("trailer", videos.get("trailers") or []),
-               ("feature", videos.get("films") or [])]
-    for season_index, season in enumerate(videos.get("seasons") or [], start=1):
-        batches.append((f"episode:{season_index}", season or []))
+def _tvoe_copy(conn, title_id, item):
+    """tvoe's *copy* — its streams, encodes, tracks and markers.
 
-    for kind, entries in batches:
-        season = int(kind.split(":")[1]) if kind.startswith("episode:") else None
-        base_kind = "episode" if season else kind
+    None of this transfers to kino.pub's file. Different encode, different dub
+    tracks, different intro offsets. It hangs off `title_copy`, never `title`.
+    """
+    copy_id = upsert_copy(conn, title_id, "tvoe", item["_id"],
+                          url=item.get("url"), seasons=item.get("seasonsCount"))
+
+    videos = item.get("videos") or {}
+    batches = [("feature", None, videos.get("films") or [])]
+    for season_index, season in enumerate(videos.get("seasons") or [], start=1):
+        batches.append(("episode", season_index, season or []))
+
+    for kind, season, entries in batches:
         for episode_index, video in enumerate(entries, start=1):
             if not video.get("_id"):
                 continue
             conn.execute(
-                "INSERT OR IGNORE INTO video(title_id,source,source_key,kind,season,episode,"
+                "INSERT OR IGNORE INTO copy_video(copy_id,source_key,kind,season,episode,"
                 "name,duration,url,thumbnail,qualities,audio,subtitles)"
-                " VALUES (?,'tvoe',?,?,?,?,?,?,?,?,?,?,?)",
-                (title_id, video["_id"], base_kind, season,
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                (copy_id, video["_id"], kind, season,
                  episode_index if season else None,
                  video.get("nameForUser"), video.get("duration"),
                  video.get("hlsUrl") or video.get("src"), video.get("thumbnail"),
@@ -216,10 +225,20 @@ def _tvoe_videos(conn, title_id, item):
                 if video.get(start_key) is None and video.get(end_key) is None:
                     continue
                 conn.execute(
-                    "INSERT OR IGNORE INTO segment(source,source_key,title_id,kind,start_s,end_s)"
-                    " VALUES ('tvoe',?,?,?,?,?)",
-                    (video["_id"], title_id, segment, video.get(start_key), video.get(end_key)),
+                    "INSERT OR IGNORE INTO copy_segment(copy_id,source_key,kind,start_s,end_s)"
+                    " VALUES (?,?,?,?,?)",
+                    (copy_id, video["_id"], segment, video.get(start_key), video.get(end_key)),
                 )
+
+    # A trailer is about the work, not the copy — it plays the same anywhere.
+    for video in videos.get("trailers") or []:
+        if video.get("_id"):
+            conn.execute(
+                "INSERT OR IGNORE INTO trailer(title_id,source,source_key,kind,name,lang,"
+                "official,url) VALUES (?,'tvoe',?,'trailer',?,'ru',NULL,?)",
+                (title_id, video["_id"], video.get("nameForUser"),
+                 video.get("hlsUrl") or video.get("src")),
+            )
 
 
 # -------------------------------------------------------------- kinopoisk

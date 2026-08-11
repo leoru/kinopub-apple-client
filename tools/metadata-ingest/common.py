@@ -203,6 +203,23 @@ def add_image(conn, title_id, kind, source, url, *, stable=True, lang=None):
     )
 
 
+def upsert_copy(conn, title_id, platform, platform_key, *, url=None, seasons=None) -> int:
+    """One platform's copy of a title. Streams, tracks and encode markers hang here."""
+    row = conn.execute(
+        "SELECT id FROM title_copy WHERE platform=? AND platform_key=?",
+        (platform, str(platform_key)),
+    ).fetchone()
+    if row:
+        conn.execute("UPDATE title_copy SET url=COALESCE(?,url), seasons=COALESCE(?,seasons),"
+                     " updated_at=? WHERE id=?", (url, seasons, now(), row["id"]))
+        return row["id"]
+    cursor = conn.execute(
+        "INSERT INTO title_copy(title_id,platform,platform_key,url,seasons,updated_at)"
+        " VALUES (?,?,?,?,?,?)", (title_id, platform, str(platform_key), url, seasons, now()),
+    )
+    return cursor.lastrowid
+
+
 def add_rows(conn, table, columns, rows):
     if not rows:
         return

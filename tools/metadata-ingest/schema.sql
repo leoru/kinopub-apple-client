@@ -137,9 +137,30 @@ CREATE TABLE IF NOT EXISTS rating (
 CREATE UNIQUE INDEX IF NOT EXISTS uq_rating
   ON rating(title_id, source, COALESCE(season,-1), COALESCE(episode,-1));
 
-CREATE TABLE IF NOT EXISTS video (
-  title_id   INTEGER NOT NULL REFERENCES title(id),
-  source     TEXT NOT NULL,
+-- ---------------------------------------------------------- platform copies
+--
+-- A platform's *copy* of a title is not the title. tvoe's audio tracks, its
+-- encode's intro offsets and its stream URLs describe tvoe's file — merging
+-- them onto `title` would claim kino.pub has dub tracks it does not, and that
+-- an intro ends at second 125 in an encode nobody here will ever play.
+--
+-- So: facts about a work go on `title`. Facts about one platform's copy go
+-- here. Availability lands here too when it arrives.
+
+CREATE TABLE IF NOT EXISTS title_copy (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  title_id     INTEGER NOT NULL REFERENCES title(id),
+  platform     TEXT NOT NULL,          -- kinopub | tvoe | netflix | …
+  platform_key TEXT NOT NULL,          -- that platform's id for its copy
+  url          TEXT,
+  seasons      INTEGER,
+  updated_at   TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_title_copy ON title_copy(platform, platform_key);
+CREATE INDEX IF NOT EXISTS idx_title_copy_title ON title_copy(title_id);
+
+CREATE TABLE IF NOT EXISTS copy_video (
+  copy_id    INTEGER NOT NULL REFERENCES title_copy(id),
   source_key TEXT NOT NULL,
   kind       TEXT,                     -- trailer | feature | episode
   season     INTEGER,
@@ -151,20 +172,34 @@ CREATE TABLE IF NOT EXISTS video (
   qualities  TEXT,                     -- JSON array
   audio      TEXT,                     -- JSON array: lang, channels, voiceover studio/type
   subtitles  TEXT,                     -- JSON array
-  PRIMARY KEY (source, source_key)
+  PRIMARY KEY (copy_id, source_key)
 );
-CREATE INDEX IF NOT EXISTS idx_video_title ON video(title_id);
 
--- Intro/outro/recap markers. tvoe ships these for ~96% of its films.
-CREATE TABLE IF NOT EXISTS segment (
-  source     TEXT NOT NULL,
+-- Intro/outro/recap markers, per encode. tvoe ships them for ~96% of its films
+-- and they are only valid against tvoe's own file.
+CREATE TABLE IF NOT EXISTS copy_segment (
+  copy_id    INTEGER NOT NULL REFERENCES title_copy(id),
   source_key TEXT NOT NULL,            -- the video it belongs to
-  title_id   INTEGER NOT NULL REFERENCES title(id),
   kind       TEXT NOT NULL,            -- preview | credits | replay
   start_s    REAL,
   end_s      REAL,
-  PRIMARY KEY (source, source_key, kind)
+  PRIMARY KEY (copy_id, source_key, kind)
 );
+
+-- Trailers are a fact about the work, not about a copy: a YouTube trailer plays
+-- the same wherever it is referenced from.
+CREATE TABLE IF NOT EXISTS trailer (
+  title_id   INTEGER NOT NULL REFERENCES title(id),
+  source     TEXT NOT NULL,
+  source_key TEXT NOT NULL,
+  kind       TEXT,
+  name       TEXT,
+  lang       TEXT,
+  official   INTEGER,
+  url        TEXT,
+  PRIMARY KEY (source, source_key)
+);
+CREATE INDEX IF NOT EXISTS idx_trailer_title ON trailer(title_id);
 
 -- Dated, with a validity window: "premiere", "new season", "leaving soon".
 CREATE TABLE IF NOT EXISTS badge (

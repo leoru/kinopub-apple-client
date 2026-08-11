@@ -32,8 +32,9 @@ SOURCES = {
 def report(conn) -> None:
     print("\nrecord:")
     tables = ["title", "title_external_id", "person", "person_external_id", "title_credit",
-              "image", "rating", "video", "segment", "badge", "episode", "award",
-              "genre", "country", "synopsis", "raw_payload"]
+              "image", "rating", "trailer", "badge", "episode", "award",
+              "genre", "country", "synopsis",
+              "title_copy", "copy_video", "copy_segment", "raw_payload"]
     for table in tables:
         count = conn.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
         print(f"  {table:<20} {count:>9,}")
@@ -58,8 +59,12 @@ def report(conn) -> None:
         ("any rating", "SELECT count(DISTINCT title_id) FROM rating"),
         ("any credit", "SELECT count(DISTINCT title_id) FROM title_credit"),
         ("stable artwork", "SELECT count(DISTINCT title_id) FROM image WHERE stable=1"),
-        ("skip markers", "SELECT count(DISTINCT title_id) FROM segment"),
         ("episodes", "SELECT count(DISTINCT title_id) FROM episode"),
+        ("a copy on 2+ platforms",
+         "SELECT count(*) FROM (SELECT title_id FROM title_copy GROUP BY title_id"
+         " HAVING count(DISTINCT platform) > 1)"),
+        ("copies with skip markers",
+         "SELECT count(DISTINCT copy_id) FROM copy_segment"),
     ):
         print(f"  {label:<28} {conn.execute(query).fetchone()[0]:>9,}")
 
