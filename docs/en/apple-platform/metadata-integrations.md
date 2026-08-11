@@ -1,5 +1,10 @@
 # Metadata integrations
 
+Platform-level notes on talking to these services. The *architecture* they plug into —
+aggregator behind our own API, identity mapping, provenance, trust rules — is
+[policies/metadata-architecture](../policies/metadata-architecture.md); per-provider capability
+sheets are [providers/](../providers/README.md).
+
 ## Evergreen
 
 - Matching is free via `MediaItem.imdb` and `MediaItem.kinopoisk`. TMDB `/find`, Trakt, IntroDB, and

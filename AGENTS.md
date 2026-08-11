@@ -53,6 +53,11 @@ design questions with "Apple defaults", or rewrite docs to rationalize an implem
   Firebase, Sentry, or similar without an explicit decision from the user.
 - **Downloads are non-TV only.** Feature-gate incomplete surfaces rather than inventing half-UI.
 - **New API calls go through `KinoPubBackend`** (Endpoint + model + service protocol + mock).
+- **Document an external source before integrating or extending it.** Every method, field, and model
+  it offers — including ones we do not want — goes into a sheet in
+  [docs/en/providers/](docs/en/providers/) *first*. Store every detail the API gives; decide what is
+  redundant later, from evidence. See
+  [metadata-architecture](docs/en/policies/metadata-architecture.md).
 - **Localization** through `Localizable.xcstrings` (RU + EN). Maintained *docs* are English-only.
 
 ## Workflow
@@ -70,6 +75,7 @@ variants; predetermined system controls do not. Verify by risk, not ritual. Deta
 | [docs/en/policies/](docs/en/policies/) | Durable design / continuity / workflow rules |
 | [docs/en/features/](docs/en/features/) | Feature behavior, small checklists, flags, validation |
 | [docs/en/apple-platform/](docs/en/apple-platform/) | Categorized Apple API / HIG / pitfalls knowledge base |
+| [docs/en/providers/](docs/en/providers/) | External metadata providers: endpoints, models, quotas, coverage |
 | [docs/en/plans/](docs/en/plans/) | Dated implementation history — not living authority |
 
 README changes only when public positioning, a macro stage, or a broad capability changes — not after

@@ -4,6 +4,14 @@
 **Goal:** External metadata, reviews, artwork/logos/ratings polish, editorial surfaces, and a **real**
 recommendations source or an honest absence.
 
+> **Today's plumbing is an early slice, not the target shape.** The aggregator we are building —
+> a crawled catalogue behind one API, keyed by our own title id, with stored identity mapping,
+> per-field provenance, people as entities, and cross-service availability — is specified in
+> [policies/metadata-architecture](../policies/metadata-architecture.md), staged in
+> [plans/2026-08-11-metadata-service](../plans/2026-08-11-metadata-service.md), and its providers
+> are catalogued in [providers/](../providers/README.md). Read the policy's "Known defects" before
+> assuming any current behavior is a decision.
+
 ## Accepted behavior
 
 - TMDB via worker proxy; Kinopoisk Unofficial per-user key + keyless proxy fallback.
