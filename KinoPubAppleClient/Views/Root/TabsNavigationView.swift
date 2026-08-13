@@ -341,7 +341,7 @@ struct TabsNavigationView: View {
   }
 
   /// macOS and tvOS run the sidebar shell; iOS still gets the shelf-rows Library until
-  /// its Podcasts-shaped list lands (`docs/en/plans/library-sidebar.md`, phase 4).
+  /// its Podcasts-shaped list lands (`docs/archive/plans/library-sidebar.md`, phase 4).
   @ViewBuilder
   private var libraryContent: some View {
 #if os(macOS) || os(tvOS)

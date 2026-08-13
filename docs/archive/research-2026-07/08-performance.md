@@ -2,12 +2,12 @@
 
 Condensed English summary of a 2026-07-25 research pass, baseline 26.0, read-only against the code
 at the time. Current guidance is distributed across
-[`docs/en/apple-platform/images-and-persistence.md`](../../en/apple-platform/images-and-persistence.md)
+[`.claude/skills/tvos-surface/SKILL.md`](../../../.claude/skills/apple-chrome/SKILL.md)
 and the data-continuity policy. This report's diagnosis of the hero-preview blur cost is the direct
 ancestor of the `variableBlur` decisions recorded in
-[`materials-blur-and-chrome.md`](../../en/apple-platform/materials-blur-and-chrome.md), and its
+[`materials-blur-and-chrome.md`](../../../.claude/skills/apple-chrome/SKILL.md), and its
 `ContentStore`/stale-while-revalidate design is the direct ancestor of what shipped as `ContentStore`
-per [`01-foundation-continuity.md`](../../en/features/01-foundation-continuity.md). Russian original:
+per [`01-foundation-continuity.md`](../../../ROADMAP.md). Russian original:
 `08-performance.ru.md` (gitignored, local only).
 
 ## TL;DR (at the time)
@@ -82,11 +82,11 @@ relevant to a specific risk noted below.
 
 The quadratic `loadMoreContent` bug, the response-logging body serialization, the always-on Home
 material, and the missing data/image caches are the direct ancestors of work now tracked in
-[`01-foundation-continuity.md`](../../en/features/01-foundation-continuity.md) (`ContentStore`/
+[`01-foundation-continuity.md`](../../../ROADMAP.md) (`ContentStore`/
 `RowSnapshotStore` shipped; a shared image pipeline is still listed as an open evaluation item
 there — "evaluate Nuke vs. finish in-house," which mirrors this report's own build-vs-adopt
 question). The hero-preview blur cost analysis here predates and matches the reasoning in
-[`materials-blur-and-chrome.md`](../../en/apple-platform/materials-blur-and-chrome.md) for why
+[`materials-blur-and-chrome.md`](../../../.claude/skills/apple-chrome/SKILL.md) for why
 `variableBlur` stays private-API-and-isolated rather than a per-frame shader on a focus-driven hero.
 Whether `@Observable` migration proceeded, and how far, is not something this archive can answer —
 check current code.

@@ -746,7 +746,7 @@ private struct PortraitButtonStyle: ButtonStyle {
 /// Bookmarks), not a fragment embedded in another page. Nesting a second vertical
 /// `ScrollView` inside this page's own would double up scroll/focus capture on tvOS
 /// — the same class of bug that broke navigation when phase 1 of
-/// `docs/en/plans/detail-page-choreography.md` pulled the hero into a `ZStack`
+/// `docs/archive/plans/detail-page-choreography.md` pulled the hero into a `ZStack`
 /// sibling. This reproduces `MediaRowsView`'s per-row rendering and shared
 /// `@FocusState` directly, without its outer scroll container.
 struct MediaItemRelatedRowsSection: View {

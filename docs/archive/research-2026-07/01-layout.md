@@ -2,7 +2,7 @@
 
 Condensed English summary of a 2026-07-25 research pass, baseline 26.0, read-only (no code changed
 during research). Most recommendations below **landed** during the modernization pass — see
-[`docs/en/apple-platform/layout-and-containers.md`](../../en/apple-platform/layout-and-containers.md)
+[`.claude/skills/tvos-surface/SKILL.md`](../../../.claude/skills/apple-chrome/SKILL.md)
 for current guidance and [`docs/en/plans/modernization.md`](../plans/modernization.md) for what
 shipped. Kept here for the reasoning and file:line evidence, which is now stale. Russian original:
 `01-layout.ru.md` (gitignored, local only).
@@ -66,7 +66,7 @@ the size of the screen... apps show the same interface on every display" (tvOS c
 - The `.frame(height:)`-after-`.frame(minHeight:)` bug fixed.
 - `@ScaledMetric` applied to square/hairline dimensions.
 - `MediaItemInfoColumns` → `Grid`/`GridRow` — tracked as still-open in
-  [`01-foundation-continuity.md`](../../en/features/01-foundation-continuity.md).
+  [`01-foundation-continuity.md`](../../../ROADMAP.md).
 
 ## tvOS pitfalls worth keeping in mind
 

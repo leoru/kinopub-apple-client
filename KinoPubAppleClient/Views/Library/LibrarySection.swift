@@ -10,7 +10,7 @@ import KinoPubBackend
 /// tab — each shows its own vertical poster grid, none of them is a shelf row.
 ///
 /// Order and membership are a product decision, not an implementation detail:
-/// see `docs/en/features/03-library-and-history.md`.
+/// see `ROADMAP.md`.
 ///
 /// `folder` carries only the id on purpose. A `Bookmark` value changes whenever its
 /// item count or `updated` stamp does, so selecting on the whole model would drop the

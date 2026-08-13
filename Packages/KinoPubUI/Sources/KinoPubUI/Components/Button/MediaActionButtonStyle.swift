@@ -11,7 +11,7 @@
 //  own spring. That is a reimplementation of `.borderedProminent` / `.bordered` that
 //  drifts from the platform every release — and on tvOS it also meant the focus lift,
 //  the specular highlight and the press feedback were ours to keep in step with a
-//  system that already does all three. `docs/en/policies/apple-native-design.md`:
+//  system that already does all three. `AGENTS.md`:
 //  custom chrome needs a named missing API, and there was none.
 //
 //  What is left here is the vocabulary (which control is the primary, which is a

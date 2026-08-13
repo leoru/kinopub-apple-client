@@ -6,7 +6,7 @@ Availability was cross-checked against the installed SDK's `.swiftinterface`
 in several places omit tvOS from a platform list rather than showing
 `@available(tvOS, unavailable)` explicitly — the interface is the ground truth used below. Current
 guidance lives in
-[`docs/en/apple-platform/navigation-and-search.md`](../../en/apple-platform/navigation-and-search.md).
+[`.claude/skills/tvos-surface/SKILL.md`](../../../.claude/skills/apple-chrome/SKILL.md).
 Most structural recommendations here **shipped**: `TabsNavigationView` now uses one `TabSection`
 tree (Browse / Library / Folders) with `customizationID` per tab, matching this report's sketch.
 Russian original: `03-navigation-tabs-search.ru.md` (gitignored, local only).

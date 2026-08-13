@@ -13,7 +13,7 @@
 //
 //  Presentation is the system's, per platform: a sheet everywhere, drawn as a centred
 //  panel over a scrim on tvOS (where Menu dismisses it for free), with detents on
-//  iPhone/iPad, and a panel on macOS. `docs/en/policies/component-catalogue.md` —
+//  iPhone/iPad, and a panel on macOS. `.claude/skills/tvos-surface/SKILL.md` —
 //  `description handlesOverflow` is a popup, and there is exactly one of it.
 //
 

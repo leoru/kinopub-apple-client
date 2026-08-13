@@ -4,7 +4,7 @@ Condensed English summary of a 2026-07-25 research pass, baseline 26.0, 27-only 
 Unlike the other reports, availability claims here were checked against the **installed Xcode 27
 compiler** (`swiftc -typecheck -sdk … -target arm64-apple-tvos26.0` etc.), not just documentation —
 marked "(compiler-verified)" below where that distinction mattered. Current guidance lives in
-[`docs/en/apple-platform/cross-platform.md`](../../en/apple-platform/cross-platform.md). The
+[`.claude/skills/tvos-surface/SKILL.md`](../../../.claude/skills/apple-chrome/SKILL.md). The
 baseline-26 migration this report scoped **landed**: packages are on `.v26` /
 `swift-tools-version: 6.2`, `SWIFT_VERSION` stays `5.0` with `swiftLanguageModes: [.v5]` (Swift 6
 language mode deliberately deferred — see below), and the `legacyTabs` availability branch is gone.

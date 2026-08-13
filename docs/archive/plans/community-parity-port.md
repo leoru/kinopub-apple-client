@@ -1,10 +1,15 @@
 # Community parity port — sections, filters, settings
 
+> **Archived 2026-08-13.** Survived: this inventory of what the community fork surfaces and we do
+> not — it is the reason to keep the file. The 31 open items are condensed into ROADMAP stage 4
+> ("Catalog parity with the community fork"); tick them there, not here.
+
+
 **Opened:** 2026-08-05
 **Scope:** everything the community fork (`dungeon-master-xx`, read-only remote `community`) already
 surfaces that we do not — Home/For-You shelves, catalog sections, collections, filter facets, and the
 Settings screens behind them.
-**Not scope:** their UI. Per [community-fork](../community-fork.md) this is a **technical steal**:
+**Not scope:** their UI. Per [community-fork](../../community-fork.md) this is a **technical steal**:
 we take endpoints, parameter shapes, genre ids and section taxonomy, and render them with our own
 rows / focus / materials (`MediaRowsView`, `ContentStore`, `MediaCard`).
 
@@ -179,7 +184,7 @@ they weren't; verify against current code before trusting old drafts of this sec
       — landed 2026-08-05: `Views/Settings/DevicesListView.swift`, pushed from the new Device
       settings pane via `SettingsDetailRoute.devicesList`.
 - [x] **Storage**: report what's actually introspectable today — `RowSnapshotStore` disk snapshots,
-      the `tmp/kinopub-hls` scratch directory ([playback conveniences](../features/07-playback-conveniences.md)
+      the `tmp/kinopub-hls` scratch directory ([playback conveniences](../../../ROADMAP.md)
       already flags it as never cleaned up), the Downloads folder when
       `FeatureFlags.downloadsEnabled`, system `URLCache`. No unified image cache exists yet (feature
       01 item, not done) — don't invent a number for it. "Clear" only touches what's safely

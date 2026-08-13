@@ -5,10 +5,10 @@ One page per external source. **A provider is not integrated before its sheet ex
 The sheet is written from the provider's documentation *and* from real captured responses — the docs
 lie about optional fields everywhere. The point is to know everything a provider *can* give before
 deciding what we take, so we never again call one endpoint out of eight (defect 4 in
-[metadata-architecture](../policies/metadata-architecture.md)).
+[metadata-architecture](../../.claude/skills/metadata-service/SKILL.md)).
 
-Rules of the road: [policies/metadata-architecture](../policies/metadata-architecture.md).
-Integration order and hosting: [plans/2026-08-11-metadata-service](../plans/2026-08-11-metadata-service.md).
+Rules of the road: [policies/metadata-architecture](../../.claude/skills/metadata-service/SKILL.md).
+Integration order and hosting: [plans/2026-08-11-metadata-service](../archive/plans/2026-08-11-metadata-service.md).
 
 ## Why the sheets are the first stage
 

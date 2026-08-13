@@ -1,5 +1,13 @@
 # Plan: local caching (lists + item facts)
 
+> **Archived 2026-08-13.** Survived: §1 (`ContentStore`) shipped for Home/Library rows. The open
+> items — per-source TTL, grids joining the store, the image pipeline — are ROADMAP stage 1.
+
+
+> **Dated implementation history — not living authority.** Continuity rules:
+> [data-continuity](../../../AGENTS.md). Open work:
+> [01-foundation-continuity](../../../ROADMAP.md).
+
 Date: 2026-07-28. Status: §1 (list cache) shipped for Home/Library rows. §2 (item-facts TTL) not
 started.
 
@@ -76,7 +84,7 @@ Kinopoisk Unofficial (awards/facts/RU cast). Keyed by request, same shape it alr
 
 - [ ] Per-source TTL instead of one TTL passed ad hoc at call sites:
   - kino.pub item details — no cache headers on this endpoint (confirmed,
-    [docs/research/ru/09-metadata-integrations.md §1.8](../../research/ru/09-metadata-integrations.md)) →
+    [docs/archive/research-2026-07/09-metadata-integrations.md §1.8](../research-2026-07/09-metadata-integrations.md)) →
     our own TTL, hours.
   - TMDB / Kinopoisk via the Cloudflare proxy — already edge-cached 6h
     ([workers/tmdb-proxy/README.md](../../../workers/tmdb-proxy/README.md)) → safe to keep locally
@@ -94,7 +102,7 @@ Kinopoisk Unofficial (awards/facts/RU cast). Keyed by request, same shape it alr
 ## Explicitly deferred
 
 - [ ] **Image pipeline** (own `NSCache` + disk + downsample layer). Parked — `AsyncImage` gets
-      native HTTP caching in **27** (confirmed, [docs/research/ru/07-ui-components-a11y.md](../../research/ru/07-ui-components-a11y.md)),
+      native HTTP caching in **27** (confirmed, [docs/archive/research-2026-07/07-ui-components-a11y.md](../research-2026-07/07-ui-components-a11y.md)),
       and 27 is plausible on our own devices. Revisit once that's confirmed working on-device;
       don't build the custom loader speculatively.
 - [ ] Offline kino.pub catalog index (`tools/kinopub-snapshot`, `tools/kinopoisk-metadata`) —

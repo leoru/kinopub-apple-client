@@ -1,12 +1,14 @@
 # kino.pub Apple client
 
-A native SwiftUI client for [kino.pub](https://kino.pub), built as a **real multiplatform Apple app**
-(tvOS, iOS, iPadOS, macOS) with a high bar for focus, materials, and system controls.
+A native client for [kino.pub](https://kino.pub), built as a **real multiplatform Apple app**
+(tvOS, iOS, iPadOS, macOS) with a high bar for focus, materials, and system controls. SwiftUI on
+iPhone, iPad and Mac; UIKit + TVUIKit where tvOS media surfaces need the focus engine. One target,
+shared models and services, native composition per platform.
 
 Fork of [leoru/kinopub-apple-client](https://github.com/leoru/kinopub-apple-client). A sibling fork,
 [dungeon-master-xx/kinopub-apple-client](https://github.com/dungeon-master-xx/kinopub-apple-client),
 is tracked as read-only remote `community` for **technical steals only** — we do not rebase our UI
-onto theirs. See [docs/en/community-fork.md](docs/en/community-fork.md).
+onto theirs. See [docs/community-fork.md](docs/community-fork.md).
 
 ## What this is
 
@@ -22,7 +24,7 @@ onto theirs. See [docs/en/community-fork.md](docs/en/community-fork.md).
 navigation/focus/materials). Auth/Settings shell and Library/History unification follow next.
 Advanced subtitles are intentionally late.
 
-Detail checklists: [docs/en/features/](docs/en/features/).
+Detail checklists: [ROADMAP.md](ROADMAP.md).
 
 ## Broadly working
 
@@ -32,26 +34,26 @@ Detail checklists: [docs/en/features/](docs/en/features/).
 - List-row caching for Home/Library summaries; TMDB / Kinopoisk enrichment plumbing
 - Downloads on non-TV platforms only
 
-Verification gaps and unfinished edges live in feature docs — not as a second roadmap here.
+Verification gaps and unfinished edges live in [ROADMAP.md](ROADMAP.md) — not as a second roadmap here.
 
 ## Macro stages
 
 1. **Foundation and UI stabilization** — continuity, image/metadata store, finish-or-gate auxiliary UI  
-   → [01](docs/en/features/01-foundation-continuity.md)
+   → [ROADMAP](ROADMAP.md#1--foundation-and-ui-stabilization)
 2. **Access and app shell** — QR/auth polish; Settings as a real sidebar destination  
-   → [02](docs/en/features/02-access-and-app-shell.md)
+   → [ROADMAP](ROADMAP.md#2--access-and-app-shell)
 3. **Library and History** — one vertical Library; separate coherent History  
-   → [03](docs/en/features/03-library-and-history.md)
+   → [ROADMAP](ROADMAP.md#3--library-and-history)
 4. **KinoPub catalog completeness** — collections, similar, photos, people, native metadata  
-   → [04](docs/en/features/04-catalog-completeness.md)
+   → [ROADMAP](ROADMAP.md#4--kinopub-catalog-completeness)
 5. **Platform completeness and appearance** — light theme, Top Shelf, platform integrations  
-   → [05](docs/en/features/05-platform-completeness.md)
+   → [ROADMAP](ROADMAP.md#5--platform-completeness-and-appearance)
 6. **Discovery and enrichment** — external metadata UI, editorial surfaces, real recommendations or honest absence  
-   → [06](docs/en/features/06-discovery-and-enrichment.md)
+   → [ROADMAP](ROADMAP.md#6--discovery-and-enrichment)
 7. **Playback conveniences** — audio memory, skips, Up Next (no player rewrite)  
-   → [07](docs/en/features/07-playback-conveniences.md)
+   → [ROADMAP](ROADMAP.md#7--playback-conveniences)
 8. **Advanced subtitles** — tap-a-word, live captions, language-learning (late)  
-   → [08](docs/en/features/08-advanced-subtitles.md)
+   → [ROADMAP](ROADMAP.md#8--advanced-subtitles)
 
 ## Requirements
 
@@ -69,13 +71,13 @@ open KinoPubAppleClient.xcodeproj
 
 | Doc | Role |
 | --- | --- |
-| [AGENTS.md](AGENTS.md) | Agent constitution |
-| [docs/en/policies/](docs/en/policies/) | Native design, continuity, workflow |
-| [docs/en/features/](docs/en/features/) | Stage checklists and acceptance |
-| [docs/en/apple-platform/](docs/en/apple-platform/) | Apple API / HIG knowledge base |
+| [AGENTS.md](AGENTS.md) | The whole agent context — defaults, banned patterns, traps |
+| [ROADMAP.md](ROADMAP.md) | Stages, accepted behavior, checklists |
+| `.claude/skills/` | Loaded on demand: tvOS surfaces, chrome, player, metadata, docs |
 | [CHANGELOG.md](CHANGELOG.md) | Notable shipped changes |
-| [docs/en/community-fork.md](docs/en/community-fork.md) | Community remote strategy |
-| [docs/archive/](docs/archive/) | Frozen research / notes (evidence only) |
+| [docs/providers/](docs/providers/) | External source capability sheets |
+| [docs/community-fork.md](docs/community-fork.md) | Community remote strategy |
+| [docs/archive/](docs/archive/) | Frozen plans / research (evidence only) |
 
 API reference: [kinoapi.com](https://kinoapi.com) (verify load-bearing shapes against live JSON).
 

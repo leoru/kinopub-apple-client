@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-04  
 **Status:** Approved for planning  
-**Feature doc:** [02-access-and-app-shell](../../en/features/02-access-and-app-shell.md)  
+**Feature doc:** [02-access-and-app-shell](../../../ROADMAP.md)  
 **Reference (visual / shell inspiration):** `/Users/sasha/Documents/GitHub/System-Settings` (System Settings recreation — patterns only; not App Store / private-API copy)
 
 ## Goal

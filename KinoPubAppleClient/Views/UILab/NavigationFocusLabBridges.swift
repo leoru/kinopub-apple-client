@@ -118,7 +118,7 @@ enum NavLabContent {
 }
 
 /// Every rail of the page inside **one** `UICollectionView`, as sections of a
-/// compositional layout — the shape `docs/en/policies/component-catalogue.md` asks for
+/// compositional layout — the shape `.claude/skills/tvos-surface/SKILL.md` asks for
 /// ("one `UICollectionView` per page region, with several sections in it — not one
 /// bridged representable per rail stacked in a `VStack`").
 ///

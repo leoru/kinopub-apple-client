@@ -1,10 +1,37 @@
 # Plan: detail-page choreography (hero → sections)
 
+> **Archived 2026-08-13.** The table below is what survived. Everything else is evidence.
+
+
+> ## ⛔ Superseded in large part — 2026-08-13
+>
+> Read everything below as **evidence of what was tried**, never as requirements. A user review on
+> 2026-08-13 went through what this page's documentation had turned into and voided the parts that
+> were workarounds wearing a requirement's clothes. Living rules now live in
+> [constraints-and-requirements](../../../AGENTS.md),
+> [apple-native-design](../../../AGENTS.md),
+> [component-catalogue](../../../AGENTS.md) and
+> [focus-and-tvui](../../../.claude/skills/tvos-surface/SKILL.md).
+>
+> | In this plan | Now |
+> | --- | --- |
+> | Continuous scroll progress driving every layer (phase 0, `washProgress`, the fold-snapping passes) | **Void.** Two discrete states, one writer, derived from focus |
+> | Hero **outside** the scrolling container (phase 1) | **Void as written.** The *artwork layer* is behind the scroll; hero content stays in one focus graph with the sections |
+> | Overlay header with the title logo (phase 2) | **Dropped.** No compact title, no floating logo, unless navigation chrome needs one |
+> | Hand-driven `contentOffset` / `CADisplayLink`, "re-file from rejected to required" | **Banned again.** We do not replace the focus engine's scroll animator |
+> | Sections as data (phase 3) | **Stands** — and the playable rail comes first |
+> | Empty / error state is focusable content (the invariant) | **Stands**, promoted to a platform invariant about focus escape paths |
+> | Tab bar pinning (the "no API lever on tvOS" notes) | **Not a requirement at all.** System `TabView`; whatever it does on scroll, it does |
+> | Row landing rules, per-frame chrome maths, the reference app's race guards | **Not ours to port.** tvOS heavy surfaces move to UIKit + TVUIKit, where the engine does this |
+>
+> The SDK facts, the on-device focus findings (`heroOther`, stranded posters, season-tab defaults)
+> and the TVUIKit gallery notes remain useful and are unaffected.
+
 > **Dated implementation plan — not living authority.** Focus rules:
-> [focus-and-tvui](../apple-platform/focus-and-tvui.md). Material rules:
-> [materials-blur-and-chrome](../apple-platform/materials-blur-and-chrome.md). Layout:
-> [layout-and-containers](../apple-platform/layout-and-containers.md). Accepted behavior:
-> [01 — Foundation](../features/01-foundation-continuity.md) § Focus, navigation, chrome.
+> [focus-and-tvui](../../../.claude/skills/tvos-surface/SKILL.md). Material rules:
+> [materials-blur-and-chrome](../../../.claude/skills/apple-chrome/SKILL.md). Layout:
+> [layout-and-containers](../../../.claude/skills/apple-chrome/SKILL.md). Accepted behavior:
+> [01 — Foundation](../../../ROADMAP.md) § Focus, navigation, chrome.
 
 Date: 2026-08-09. Status: phase 0 landed. Phase 1 attempted and reverted same day (broke tvOS focus
 + Menu/back on-device) — root cause found and fixed same day (see below) — needs its own retry.
@@ -20,7 +47,7 @@ the hero, the scroll down into the sections, and everything that rides that one 
 ## Reference
 
 Read from a local checkout of Rivulet (outside this tree). It is **PolyForm Noncommercial 1.0.0** —
-technique only, never code, same rule as [community-fork](../community-fork.md). Paths below are
+technique only, never code, same rule as [community-fork](../../community-fork.md). Paths below are
 theirs, cited as evidence for *why* a decision is what it is; they are not files we vendor.
 
 Their detail surface is one `UICollectionView` (compositional layout, diffable snapshot) with
@@ -73,7 +100,7 @@ flipped the phase and made the hero action row non-focusable. Up then finds noth
 back out of the page.
 
 Three rules, promoted to living law in
-[focus-and-tvui](../apple-platform/focus-and-tvui.md) § Project decisions:
+[focus-and-tvui](../../../.claude/skills/tvos-surface/SKILL.md) § Project decisions:
 
 1. Never move to a "scrolled into sections" state until at least one focusable row exists there.
 2. Never drop the hero's focusability until focus has actually landed below. Our 0.35 opacity floor
@@ -173,7 +200,7 @@ assuming they still need independent fixes.
 **Was already flagged and unfixed** — `01-foundation` § Focus, navigation, chrome carried
 `- [ ] MediaItemHeroView — four buttons share .focused($focus, equals: .heroOther)` for a while
 before this. Lesson recorded as a project decision in
-[focus-and-tvui](../apple-platform/focus-and-tvui.md): a known-bad pattern sitting in a checklist
+[focus-and-tvui](../../../.claude/skills/tvos-surface/SKILL.md): a known-bad pattern sitting in a checklist
 as a "someday" item, instead of being fixed on sight, cost a whole misdiagnosed detour (phase 1's
 revert) before it was found.
 
@@ -521,7 +548,7 @@ focused as a whole or by their own logical sub-groups, not link-by-link.
 **Not tvOS-only.** The user's words: "у нас кошмар" (ours is a nightmare) applies everywhere. Steal
 the *pattern* (round icon button → focused popup with the extended info) from Rivulet's
 `InfoPopupViewController`, not the code (PolyForm Noncommercial — technique only, per
-[community-fork](../community-fork.md)), and land it as one shared component across tvOS/iOS/macOS
+[community-fork](../../community-fork.md)), and land it as one shared component across tvOS/iOS/macOS
 rather than three divergent implementations.
 
 - [x] **Landed 2026-08-11, with the trigger deliberately changed.** `InfoPopup` in KinoPubUI is the

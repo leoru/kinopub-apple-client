@@ -1,8 +1,13 @@
 # Launch status, activity toasts, and stop re-asking for what we already know
 
+> **Archived 2026-08-13.** Survived: the launch rule — paint tabs and cached rails first, never
+> block the shell on the whole session — now a ROADMAP stage 1 item. The activity-toast and
+> diagnostics design here was never built and is not a requirement.
+
+
 > Dated plan (2026-08-10), not policy. Captured from a user decision so it is not lost
 > while the tvOS rail work continues. Authority: the product rule in
-> [data-continuity](../policies/data-continuity.md) — *continuity before placeholders*.
+> [data-continuity](../../../AGENTS.md) — *continuity before placeholders*.
 > This plan is the tvOS launch case of that rule, plus the diagnostics needed to see it.
 
 ## The complaint, stated plainly

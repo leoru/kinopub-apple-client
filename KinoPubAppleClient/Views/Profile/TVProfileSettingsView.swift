@@ -223,7 +223,7 @@ struct TVProfileSettingsView: View {
 #if DEBUG
   private var diagnosticsSection: some View {
     // Every row carries its own focus value. They all shared `.diagnostics` before,
-    // which is the exact pattern `docs/en/apple-platform/focus-and-tvui.md` bans —
+    // which is the exact pattern `.claude/skills/tvos-surface/SKILL.md` bans —
     // several sibling views bound to one `@FocusState` equals-value leave the engine
     // unable to resolve which one is focused, and that cost a whole misdiagnosed
     // detour on the detail page. The payload only disambiguates; the tip stays shared.

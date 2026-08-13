@@ -3,8 +3,8 @@
 **Date:** 2026-08-04  
 **Status:** Awaiting user review of this spec  
 
-**Roadmap:** [`docs/en/features/05-platform-completeness.md`](../../en/features/05-platform-completeness.md)  
-**Platform notes:** [`docs/en/apple-platform/focus-and-tvui.md`](../../en/apple-platform/focus-and-tvui.md)  
+**Roadmap:** [`ROADMAP.md`](../../../ROADMAP.md)  
+**Platform notes:** [`.claude/skills/tvos-surface/SKILL.md`](../../../.claude/skills/tvos-surface/SKILL.md)  
 **Research (evidence, not law):** [`docs/archive/research-2026-07/06-tvos-focus.md`](../../archive/research-2026-07/06-tvos-focus.md)
 
 ## Goal

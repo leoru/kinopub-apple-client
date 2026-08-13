@@ -5,8 +5,8 @@ what the current player implementation gets wrong, and what to borrow from the r
 Availability was checked against Xcode 27 / `AppleTVOS27.0.sdk` headers and `swiftc -typecheck`, not
 documentation alone — Apple's web docs were found to be wrong in places (see Pitfalls). Current
 guidance and the correctness bugs this report found now live in
-[`docs/en/apple-platform/player-and-media.md`](../../en/apple-platform/player-and-media.md) and
-[`docs/en/features/07-playback-conveniences.md`](../../en/features/07-playback-conveniences.md)
+[`.claude/skills/tvos-surface/SKILL.md`](../../../.claude/skills/player-avkit/SKILL.md) and
+[`ROADMAP.md`](../../../ROADMAP.md)
 (resume race, wrong-episode resume, Skip Intro, subtitle encoding/validation, cue-lookup
 performance, player perf items — all carried forward from this report's §3/§4 almost verbatim).
 Russian original: `05-player-media.ru.md` (gitignored, local only).
@@ -87,8 +87,8 @@ reading the first episode instead of the current one via `.first` lookups, `Task
 `currentPlaybackTime` republished 4×/second, linear subtitle-cue scans, SRT encoding assumed
 UTF-8/Latin-1 with no Windows-1251 fallback, `HLSAudioLabeler`'s leaked temp `.m3u8`,
 `BestVideoQualityFinder`'s deprecated `UIScreen.main.bounds`) are now tracked as open items in
-[`07-playback-conveniences.md`](../../en/features/07-playback-conveniences.md) and
-[`01-foundation-continuity.md`](../../en/features/01-foundation-continuity.md) — check those for
+[`07-playback-conveniences.md`](../../../ROADMAP.md) and
+[`01-foundation-continuity.md`](../../../ROADMAP.md) — check those for
 current status rather than treating this archive as up to date on what's fixed.
 
 ## What was borrowed

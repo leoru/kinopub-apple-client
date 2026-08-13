@@ -1,9 +1,41 @@
 # Changelog
 
 Notable shipped changes and implementation facts future agents need. Trivial copy/token churn does
-not belong here. Detail checklists live under [`docs/en/features/`](docs/en/features/).
+not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
+
+### Docs: one context file, five skills, and constraints that stop becoming requirements (2026-08-13)
+
+- **The documentation tree collapsed into [AGENTS.md](AGENTS.md) + [ROADMAP.md](ROADMAP.md) +
+  `.claude/skills/`.** `docs/en/policies/`, `docs/en/apple-platform/` and `docs/en/features/` are
+  gone as folders: durable rules are one always-on file, how-to knowledge loads on demand
+  (`tvos-surface`, `apple-chrome`, `player-avkit`, `metadata-service`, `docs-upkeep`), stage
+  checklists are one roadmap, and every dated plan moved to `docs/archive/plans/` with a note at the
+  top saying what survived it. Before: ~23.6k words of always-relevant docs plus 21.6k words of
+  plans that agents kept reading as law. The rule that keeps it that way: **a line in AGENTS.md must
+  carry either the default or the cost of getting it wrong.**
+- **Constraints are not requirements.** Every limitation gets one of four labels — Apple API /
+  performance / focus invariant / product decision — and only the last two may become durable
+  requirements; the first two become one named adapter. Three registers came with it: banned
+  patterns (focus bridges, shared `@FocusState` cases, manual focus delays, hand-rolled focus
+  chrome, continuous scroll-progress choreography, hand-driven `contentOffset`, custom hero focus
+  graphs, SwiftUI preview state machines, screen-specific component variants), invalid
+  agent-invented "requirements", and the two adapters that are allowed to exist.
+- **Voided as requirements:** the detail page's scroll-progress scrub (`washProgress`), "hero lives
+  outside the scrolling container" (only the *artwork layer* does — hero content stays in one focus
+  graph with the sections), the overlay title logo / compact title, and tab-bar pinning. The
+  detail-page plan is now explicitly history, with a table of what survived.
+- **Renderers differ by platform on purpose:** tvOS media surfaces are UIKit + TVUIKit; iOS/iPadOS/
+  macOS are SwiftUI including `.navigationTransition(.zoom)`. Shared: models, services, view
+  models, component semantics, tokens, assets — never view hierarchy or geometry. Cross-platform
+  geometry parity (the two-line tvOS poster caption) is named as the anti-pattern it was.
+- **`badgeText` can carry a glyph** — an SF Symbol is a character. "The system badge cannot show an
+  icon" was never a reason for a parallel overlay system.
+- **The playable graph** ([ROADMAP](ROADMAP.md#4--kinopub-catalog-completeness)):
+  episodes, trailers, parts and versions are one `PlayableItem` rail, with `PlaybackVariant` under
+  it (kino.pub ships 24/48 fps as `s0e1`/`s0e2` — item 124447 is the probe). Detail pages lead with
+  what can be played. The kino.pub endpoints to map before more detail UI are listed there.
 
 ### The info popup, and hero buttons that are actually the system's
 
@@ -64,10 +96,10 @@ not belong here. Detail checklists live under [`docs/en/features/`](docs/en/feat
   the user record on every sign-in into `@State` that no branch of its body drew — left over from
   the parked sidebar shell. `SettingsRootView` already loads and caches the avatar for the one
   screen that shows it. Two fewer launch requests, which is the direction
-  `docs/en/plans/2026-08-10-launch-status-and-continuity.md` asks for.
+  `docs/archive/plans/2026-08-10-launch-status-and-continuity.md` asks for.
 - **Fixed on sight: five Settings diagnostics rows shared one `@FocusState` value.** All bound
   `.focused($focusedItem, equals: .diagnostics)` — the exact ambiguity
-  `docs/en/apple-platform/focus-and-tvui.md` bans and that cost a misdiagnosed detour on the detail
+  `.claude/skills/tvos-surface/SKILL.md` bans and that cost a misdiagnosed detour on the detail
   page. `SettingsFocusItem.diagnostics` now carries a disambiguating id; the tip stays shared.
 - **New DEBUG/tvOS page: Settings → Diagnostics → "Navigation / Focus Lab."** Four shells of the
   same two-tab app, each isolating one variable behind the tab-bar and focus-stranding bugs:
@@ -186,7 +218,7 @@ not belong here. Detail checklists live under [`docs/en/features/`](docs/en/feat
 - **Reverted same-day:** pulling the hero out of the scrolling `VStack` into a fixed `ZStack` layer
   (meant to stop scroll jitter between Play / Watched / Watchlist). Broke tvOS focus outright on
   device — stuck on Play, Down/Up dead ends, Menu closed the app instead of popping. Full account in
-  [detail-page-choreography](docs/en/plans/detail-page-choreography.md).
+  [detail-page-choreography](docs/archive/plans/detail-page-choreography.md).
 - **Root cause of the above, found and fixed same day:** six hero buttons (watchlist, bookmark,
   watched, trailer, more, plus the non-tvOS plot branch) shared one `@FocusState` equals-value,
   `MediaItemFocusTarget.heroOther`. Ambiguous — the engine could not resolve which view was actually
@@ -245,14 +277,14 @@ not belong here. Detail checklists live under [`docs/en/features/`](docs/en/feat
   bar area blank instead of it reappearing; full account and a proposed direction (stop treating the
   bar as chrome that independently hides/shows — Apple's own tvOS apps don't duplicate a bar layer
   over content the way ours does) are in
-  [detail-page-choreography](docs/en/plans/detail-page-choreography.md).
+  [detail-page-choreography](docs/archive/plans/detail-page-choreography.md).
 - Fixed one of two writers racing `washProgress` on Up-back-to-hero: `MediaItemHeroView.chromeAlpha`
   read the raw (possibly stale, scroll-overwritten) value directly, unlike
   `MediaItemHeroBackdrop.effectiveWash`'s pre-existing `isHeroOnScreen` guard — so the backdrop
   snapped sharp correctly while the title/button chrome kept re-dimming in step with the still-settling
   scroll. Same guard added to `chromeAlpha`. Confirmed no navigation regression; the visual smoothness
   itself needs eyes-on, not a screenshot, to confirm — see
-  [detail-page-choreography](docs/en/plans/detail-page-choreography.md) phase 4.5.
+  [detail-page-choreography](docs/archive/plans/detail-page-choreography.md) phase 4.5.
 
 ### Ratings
 
@@ -369,7 +401,7 @@ not belong here. Detail checklists live under [`docs/en/features/`](docs/en/feat
 - `TypeScale.detailBody` (`.body`) is the single running-text size on the item page — hero metadata,
   synopsis, credit lines, rating vote counts, and every information-table row. They were four
   hand-picked sizes between 12 and 15pt. Rule recorded in
-  [apple-native-design](docs/en/policies/apple-native-design.md): always a Dynamic Type text style,
+  [apple-native-design](AGENTS.md): always a Dynamic Type text style,
   and when unifying sizes, unify **up**.
 
 ### Documentation
@@ -395,9 +427,9 @@ Agent-relevant facts from the remediation pass (verify in code before assuming s
 - Playback: app-scoped `PlaybackSession` (one `PlayerManager` at a time).
 - Shell: shared `.sidebarAdaptable` `TabView`; macOS profile via `tabViewSidebarBottomBar`.
 - Caching: `ContentStore` list-row cache for Home/Library summaries shipped; item-facts TTL and
-  paginated grid cache still open ([01-foundation](docs/en/features/01-foundation-continuity.md)).
+  paginated grid cache still open ([ROADMAP](ROADMAP.md#1--foundation-and-ui-stabilization)).
 
 ## Earlier
 
-See git history and dated plans under [`docs/en/plans/`](docs/en/plans/) /
+See git history and dated plans under [`docs/archive/plans/`](docs/archive/plans/) /
 [`docs/archive/plans/`](docs/archive/plans/) for pre-remediation modernization work.

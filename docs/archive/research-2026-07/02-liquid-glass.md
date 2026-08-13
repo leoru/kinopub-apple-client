@@ -3,7 +3,7 @@
 Condensed English summary of a 2026-07-25 research pass, baseline 26.0 (tvOS/iOS/iPadOS/macOS),
 27-only noted separately. Every API claim was originally verified against Apple's docs; current
 guidance lives in
-[`docs/en/apple-platform/materials-blur-and-chrome.md`](../../en/apple-platform/materials-blur-and-chrome.md).
+[`.claude/skills/tvos-surface/SKILL.md`](../../../.claude/skills/apple-chrome/SKILL.md).
 This report's core recommendation — a single `KinoGlass` helper with accessibility degradation —
 **landed** in this session as `KinoPubUI/DesignSystem/KinoGlass.swift`. Russian original:
 `02-liquid-glass.ru.md` (gitignored, local only).
@@ -71,12 +71,12 @@ custom glass does not, and must be tested under both.
   This directly followed the pattern this report flagged in silo-apple's `SiloGlass.swift` /
   `DevicePower.swift`.
 - The Metal `variableBlur` shader was **kept**, not deleted — see
-  [`materials-blur-and-chrome.md`](../../en/apple-platform/materials-blur-and-chrome.md) for the
+  [`materials-blur-and-chrome.md`](../../../.claude/skills/apple-chrome/SKILL.md) for the
   current, different reasoning (Music/Journal-style progressive blur over static hero art has no
   native equivalent; this report's proposed small-buffer alternative for the card-footer case was
   judged good enough only for that narrower spot).
 - `backgroundExtensionEffect()` was tried on Home and then **removed entirely** — see
-  [`materials-blur-and-chrome.md`](../../en/apple-platform/materials-blur-and-chrome.md) Pitfalls.
+  [`materials-blur-and-chrome.md`](../../../.claude/skills/apple-chrome/SKILL.md) Pitfalls.
   This report's assumption that it would be a safe "native hero blur" recipe did not hold: the app
   has no `NavigationSplitView`, and the effect mirrored unrelated content (including error
   placeholders) into chrome that was never underneath it.

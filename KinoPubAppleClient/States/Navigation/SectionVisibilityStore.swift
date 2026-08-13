@@ -5,12 +5,12 @@
 //  Persisted show/hide for the optional tabs — plain `UserDefaults`, not the system
 //  `TabViewCustomization` that `TabsNavigationView` already uses for macOS sidebar
 //  reordering. `TabViewCustomization` is `@available(tvOS, unavailable)` (see
-//  docs/en/apple-platform/navigation-and-search.md), so a store meant to apply on every
+//  .claude/skills/apple-chrome/SKILL.md), so a store meant to apply on every
 //  platform, tvOS included, has to carry its own state instead of leaning on it.
 //
 //  NOTE: this only *stores* visibility today. Actually hiding a section in
 //  `TabsNavigationView`'s tab-building switch is deliberately left to the follow-up
-//  catalog-sections work (docs/en/plans/community-parity-port.md §3/§8) — that file is
+//  catalog-sections work (docs/archive/plans/community-parity-port.md §3/§8) — that file is
 //  also where the new sections land, and editing the same switch from two directions at
 //  once is exactly the collision that split is meant to avoid.
 //

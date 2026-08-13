@@ -3,7 +3,7 @@
 //  KinoPubUI
 //
 //  Home for the "2–3 variants on a named axis" rule in
-//  docs/en/policies/agent-workflow.md.
+//  AGENTS.md.
 //
 //  Convention:
 //  - One file per ambiguous piece, named `<Thing>Variants.swift`, in this folder.

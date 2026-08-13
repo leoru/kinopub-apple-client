@@ -114,7 +114,7 @@ private struct ZoomDestinationModifier: ViewModifier {
 /// Safety net, not the fix: the player is never supposed to reach the main stack on
 /// macOS — every Play entry point either uses `PlayerLink` or routes through
 /// `NavigationState.push`, both of which open the dedicated window directly (see
-/// `docs/en/features/07-playback-conveniences.md`, "macOS presentation"). If a
+/// `ROADMAP.md`, "macOS presentation"). If a
 /// `.player` / `.trailerPlayer` route still lands here, open the window and pop this
 /// destination instead of showing the player inline next to the sidebar.
 private struct MacPlayerRouteGuard: View {

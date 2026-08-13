@@ -111,7 +111,7 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     // on a remote it becomes one more focus stop above every single row, which the
     // user has to travel through on the way down the page, and which no Apple tvOS
     // app has. "See all" belongs in the row itself — a trailing card — not in its
-    // title. See `docs/en/plans/detail-page-choreography.md` phase 6.
+    // title. See `docs/archive/plans/detail-page-choreography.md` phase 6.
     SectionHeader(title: title, count: count, showsChevron: false)
 #else
     if let destination {

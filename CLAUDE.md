@@ -2,15 +2,13 @@
 
 Compatibility entry point for Claude Code / Claude-compatible agents.
 
-**Canonical rules live in [AGENTS.md](AGENTS.md).** Do not invent a second policy here.
+**Everything lives in [AGENTS.md](AGENTS.md).** Read it first; it is the whole always-on context.
+Do not invent a second policy here, and do not add a policy folder back.
 
-Read, in order, as needed:
-
-1. [AGENTS.md](AGENTS.md) — authority, preservation, non-negotiables, doc map
-2. [README.md](README.md) — what the product is and which macro stage is current
-3. [docs/en/policies/](docs/en/policies/) — durable design / continuity / workflow
-4. [docs/en/features/](docs/en/features/) — the feature you are changing
-5. [docs/en/apple-platform/](docs/en/apple-platform/) — Apple API / HIG how-tos for this task
-6. [docs/en/community-fork.md](docs/en/community-fork.md) — technical steals only
-
-Archive and dated plans under `docs/archive/` and `docs/en/plans/` are evidence, not living law.
+- [AGENTS.md](AGENTS.md) — defaults, banned patterns, focus, components, chrome, data, build, traps
+- [ROADMAP.md](ROADMAP.md) — accepted behavior and what is next, by stage
+- `.claude/skills/` — loaded on demand: `tvos-surface`, `apple-chrome`, `player-avkit`,
+  `metadata-service`, `docs-upkeep`
+- [README.md](README.md) — what the product is
+- [docs/providers/](docs/providers/) — external source capability sheets
+- [docs/archive/](docs/archive/) — dated plans and research. **Evidence, never requirements.**

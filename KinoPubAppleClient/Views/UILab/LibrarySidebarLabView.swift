@@ -2,7 +2,7 @@
 //  LibrarySidebarLabView.swift
 //  KinoPubAppleClient
 //
-//  DEBUG-only. A/B for the shape docs/en/plans/library-sidebar.md leaves open:
+//  DEBUG-only. A/B for the shape docs/archive/plans/library-sidebar.md leaves open:
 //  `NavigationSplitView` vs `TabView(.sidebarAdaptable)` nested **inside** the
 //  Library tab of a plain top-level `TabView(.tabBarOnly)` — the outer chrome stays
 //  exactly as shipped; only what sits inside the Library tab changes. This is the
@@ -152,7 +152,7 @@ private struct LibraryLabPlaceholder: View {
 }
 
 // MARK: - Candidate A: NavigationSplitView nested in the Library tab
-// docs/en/plans/library-sidebar.md phase 2.
+// docs/archive/plans/library-sidebar.md phase 2.
 
 private struct LibraryLabNestedSplit: View {
   @State private var selection: LibraryLabItem? = .fixed(.watchlist)
@@ -199,7 +199,7 @@ private struct LibraryLabNestedSplit: View {
 }
 
 // MARK: - Candidate B: TabView(.sidebarAdaptable) nested in the Library tab
-// docs/en/plans/library-sidebar.md's named fallback if split-view focus doesn't
+// docs/archive/plans/library-sidebar.md's named fallback if split-view focus doesn't
 // carry on tvOS.
 
 private struct LibraryLabNestedTabView: View {

@@ -216,7 +216,7 @@ public struct ContentItemsListView<Header: View>: View {
     // Native fade as the grid passes under the nav bar / search field. A plain
     // `ScrollView` doesn't inherit the edge treatment `List` gets automatically, so it
     // needs asking for explicitly. tvOS has no floating bar over this screen to slide
-    // under — see `docs/en/apple-platform/materials-blur-and-chrome.md`.
+    // under — see `.claude/skills/apple-chrome/SKILL.md`.
     .scrollEdgeEffectStyle(.automatic, for: .top)
 #endif
   }

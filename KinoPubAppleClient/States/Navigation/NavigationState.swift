@@ -173,7 +173,7 @@ class NavigationState: ObservableObject {
   /// Appends onto the selected tab's navigation stack (context-menu Play, etc.).
   ///
   /// `.player` / `.trailerPlayer` never join that stack on macOS — the player is always
-  /// its own window there (see `docs/en/features/07-playback-conveniences.md`, "macOS
+  /// its own window there (see `ROADMAP.md`, "macOS
   /// presentation"). Every push-based Play entry point (card context menus, etc.) goes
   /// through this one function, so redirecting here covers all of them without having to
   /// track down each call site individually.

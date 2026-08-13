@@ -20,8 +20,8 @@ nothing (every write is keyed by source ids), and a killed TMDB fetch resumes
 where it stopped.
 
 Rules this implements live in
-[policies/metadata-architecture](../../docs/en/policies/metadata-architecture.md);
-the TMDB field inventory is [providers/tmdb](../../docs/en/providers/tmdb.md).
+[policies/metadata-architecture](../../.claude/skills/metadata-service/SKILL.md);
+the TMDB field inventory is [providers/tmdb](../../docs/providers/tmdb.md).
 
 ## Shape
 

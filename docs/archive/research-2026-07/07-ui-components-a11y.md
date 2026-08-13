@@ -2,8 +2,8 @@
 
 Condensed English summary of a 2026-07-25 research pass, baseline 26.0, 27-only noted separately.
 Current guidance lives in
-[`docs/en/apple-platform/images-and-persistence.md`](../../en/apple-platform/images-and-persistence.md)
-and [`docs/en/apple-platform/layout-and-containers.md`](../../en/apple-platform/layout-and-containers.md).
+[`.claude/skills/tvos-surface/SKILL.md`](../../../.claude/skills/apple-chrome/SKILL.md)
+and [`.claude/skills/tvos-surface/SKILL.md`](../../../.claude/skills/apple-chrome/SKILL.md).
 This report's accessibility checklist is the most complete one in the archive and largely predates
 the a11y coverage that now exists in the codebase — treat the "what's fixed" claims here as frozen
 at 2026-07-25, not current status. Russian original: `07-ui-components-a11y.ru.md` (gitignored,
@@ -86,7 +86,7 @@ suggests the badge-data-honesty finding above (don't badge 4K/HDR/Atmos without 
 followed. Whether the specific checklist items below (Dynamic Type scaling, Reduce Motion/
 Transparency gating, `@ScaledMetric` adoption, the marquee/expandable-text/avatar/badge component
 consolidation) are done is not something this archive can answer — check current code and
-[`01-foundation-continuity.md`](../../en/features/01-foundation-continuity.md) rather than assuming
+[`01-foundation-continuity.md`](../../../ROADMAP.md) rather than assuming
 either way.
 
 ## The image cache (Question 1: is there native caching at 26/27?)

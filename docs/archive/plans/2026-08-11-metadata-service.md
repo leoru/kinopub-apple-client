@@ -1,9 +1,14 @@
 # Plan: metadata service — registry, sync, and where the code lives
 
+> **Archived 2026-08-13.** Survived: the registry / write-through sync / document-every-source
+> shape, now in the `metadata-service` skill along with the known defects. Nothing here was
+> built — `workers/tmdb-proxy` is still a transparent forwarder.
+
+
 > **Dated implementation history — not living authority.** The durable rules are
-> [policies/metadata-architecture](../policies/metadata-architecture.md). Open feature work:
-> [06-discovery-and-enrichment](../features/06-discovery-and-enrichment.md). Provider sheets:
-> [providers/](../providers/README.md).
+> [policies/metadata-architecture](../../../.claude/skills/metadata-service/SKILL.md). Open feature work:
+> [06-discovery-and-enrichment](../../../ROADMAP.md). Provider sheets:
+> [providers/](../../providers/README.md).
 
 Date: 2026-08-11. Status: not started. `workers/tmdb-proxy` is the only deployed piece and is a
 transparent forwarder.
@@ -53,7 +58,7 @@ any other provider. If adding a source requires touching a second provider's cod
 wrong.
 
 Each provider directory carries its own `sheet.md` (the template in
-[providers/](../providers/README.md)) next to its code, so the model documentation cannot drift away
+[providers/](../../providers/README.md)) next to its code, so the model documentation cannot drift away
 from the client that uses it.
 
 ### Client: do not restructure it now

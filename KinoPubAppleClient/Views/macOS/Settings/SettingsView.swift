@@ -26,7 +26,7 @@ struct SettingsView: View {
 
 private struct SettingsSceneHost: View {
   // Eager, not lazy — see the note on `ProfileView.init` in ProfileView.swift and
-  // "Observation model" in docs/en/features/01-foundation-continuity.md.
+  // "Observation model" in ROADMAP.md.
   @State private var model: ProfileModel
 
   init(model: ProfileModel) {

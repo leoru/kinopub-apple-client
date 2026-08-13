@@ -16,7 +16,7 @@ struct ProfileView: View {
   // Eager, not lazy: `ProfileModel.init` only stores references and reads
   // `UserDefaults` synchronously — no Task, no network call — so re-evaluating it on
   // every `ProfileView.init` (and discarding the extra instances `@State` doesn't use)
-  // costs nothing worth guarding against. See docs/en/features/01-foundation-continuity.md
+  // costs nothing worth guarding against. See ROADMAP.md
   // "Observation model" for the general rule this follows.
   @State private var model: ProfileModel
 

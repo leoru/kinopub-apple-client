@@ -66,7 +66,7 @@ kino.pub’s account Devices list uses three notify fields + settings badges:
 | badges | settings: HLS4 / region / 4K / HEVC / HDR | same via `syncCapabilities` |
 
 Wired on authorize: `registerDeviceIdentity()` then `syncCapabilities()`.
-API notes: [`docs/archive/kinoapi-v1.3-ru/device.md`](../archive/kinoapi-v1.3-ru/device.md) (prefer [kinoapi.com](https://kinoapi.com)).
+API notes: [`docs/archive/kinoapi-v1.3-ru/device.md`](archive/kinoapi-v1.3-ru/device.md) (prefer [kinoapi.com](https://kinoapi.com)).
 List/remove are on `DeviceService` — Profile chrome is `// DESIGN:` stub only.
 
 ---

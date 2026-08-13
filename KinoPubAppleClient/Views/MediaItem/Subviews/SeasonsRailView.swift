@@ -351,7 +351,7 @@ struct SeasonsRailView: View {
   /// wide media-item cell in `orthogonalLayoutSectionForMediaItems`. It is literally
   /// the same tile in the product ("keep watching this episode" and "here are the
   /// episodes"), so it must not be a second hand-built strip; see
-  /// `docs/en/policies/component-catalogue.md`.
+  /// `.claude/skills/tvos-surface/SKILL.md`.
   ///
   /// Everything the SwiftUI strip drew by hand is a property on the configuration or a
   /// case of `TVUIKitMediaItemStatus` — progress, watched, unaired, announced-with-a-date

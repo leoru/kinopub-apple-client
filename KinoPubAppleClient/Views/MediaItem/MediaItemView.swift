@@ -112,7 +112,7 @@ struct MediaItemView: View {
       // Tabs stay visible over the detail page for now (2026-08-09): the hide-on-enter
       // here plus the system's own tab-bar minimize timing was reading as "tabs fade in
       // and out in random places." Revisit properly later; until then, always-on beats
-      // unpredictable. See `docs/en/plans/detail-page-choreography.md`.
+      // unpredictable. See `docs/archive/plans/detail-page-choreography.md`.
       // No navigation bar on this page, on either platform: the artwork runs to the
       // top edge and the title is already spelled out in 100pt over it. What stays is
       // the toolbar itself — Back and the overflow float over the picture.
@@ -217,7 +217,7 @@ struct MediaItemView: View {
   /// Single native vertical scroll: hero + content in one focus graph. Layout-driven
   /// scrolling replaces the old offset slideshow and invisible focus bridges.
   ///
-  /// Phase 1 of `docs/en/plans/detail-page-choreography.md` tried pulling the hero
+  /// Phase 1 of `docs/archive/plans/detail-page-choreography.md` tried pulling the hero
   /// out of this `ScrollView` into a fixed `ZStack` layer, to stop focus moves among
   /// Play / Watched / Watchlist from nudging the scroll offset. **Reverted** —
   /// on-device it broke tvOS spatial focus across the ZStack/ScrollView sibling
@@ -303,7 +303,7 @@ struct MediaItemView: View {
     // offset re-ran this body on every scroll frame, which re-rendered every shelf
     // below — including each `TVUIKitMediaCollection`'s `updateUIViewController`. The
     // wash is section state now (`isHeroOnScreen`), so nothing here needs per-frame
-    // work. See `docs/en/plans/detail-page-choreography.md`.
+    // work. See `docs/archive/plans/detail-page-choreography.md`.
 #if os(tvOS)
     // Phase 2 of the same plan: small title logo pinned at the top once focus has
     // left the hero. `.overlay` on the `ScrollView` draws fixed relative to its own
@@ -545,7 +545,7 @@ private struct MediaItemFoldSnappingBehavior: ScrollTargetBehavior {
   }
 }
 
-/// Overlay-header title logo (`docs/en/plans/detail-page-choreography.md` phase 2).
+/// Overlay-header title logo (`docs/archive/plans/detail-page-choreography.md` phase 2).
 /// Fades in once focus has left the hero, fades out on return — matching the same
 /// binary `isHeroOnScreen` clock as `MediaItemHeroBackdrop`'s wash and
 /// `MediaItemHeroView`'s `chromeAlpha`, rather than the continuous scroll-progress the

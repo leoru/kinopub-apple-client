@@ -1,9 +1,13 @@
 # Plan: Library sidebar (parity with the shipping KinoPub client)
 
+> **Archived 2026-08-13.** Survived: the sidebar shape and the section list, now accepted behavior
+> in ROADMAP stage 3. The macOS shell landed; iPadOS, tvOS and the iPhone list are open there.
+
+
 > **Dated implementation plan — not living authority.** Accepted behavior:
-> [03-library-and-history](../features/03-library-and-history.md). Shell rules:
-> [navigation-and-search](../apple-platform/navigation-and-search.md). Cache rules:
-> [data-continuity](../policies/data-continuity.md).
+> [03-library-and-history](../../../ROADMAP.md). Shell rules:
+> [navigation-and-search](../../../.claude/skills/apple-chrome/SKILL.md). Cache rules:
+> [data-continuity](../../../AGENTS.md).
 
 Date: 2026-08-06. Status: not started.
 
@@ -87,7 +91,7 @@ Nothing here needs new networking except folder rename (see §Undocumented endpo
 sane focus (left out of the grid, back into it, no traps) is **not** settled from documentation.
 The macOS toolbar-search work in this same area proved the docs and the rendered result can
 disagree, so phase 5 starts with a throwaway probe app (three variants, screenshots) exactly like
-[navigation-and-search](../apple-platform/navigation-and-search.md) records for `.searchable`.
+[navigation-and-search](../../../.claude/skills/apple-chrome/SKILL.md) records for `.searchable`.
 
 Fallback if `NavigationSplitView` will not carry focus on tvOS: `TabView(.sidebarAdaptable)` scoped
 **inside** the Library tab. The parked ban in navigation-and-search is on the **app-level** sidebar

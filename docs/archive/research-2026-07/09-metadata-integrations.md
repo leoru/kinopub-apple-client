@@ -3,7 +3,7 @@
 Condensed English summary of a 2026-07-25 research pass into what these three services (plus
 IntroDB, AniSkip, and IMDb's non-commercial datasets) can give the app, verified by live requests
 and official docs where marked. Current status of this integration work is tracked in
-[`06-discovery-and-enrichment.md`](../../en/features/06-discovery-and-enrichment.md) — this archive
+[`06-discovery-and-enrichment.md`](../../../ROADMAP.md) — this archive
 is the original research, not the current roadmap. Russian original: `09-metadata-integrations.ru.md`
 (gitignored, local only).
 

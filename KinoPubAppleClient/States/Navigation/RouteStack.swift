@@ -9,7 +9,7 @@
 //  building a `RouteDestination`, and a `.navigationStackActive` gate — and they had
 //  already drifted: two passed a zoom namespace, eight didn't, and only some carried the
 //  gate. A destination registry that exists in ten copies is the catalogue rule being
-//  broken at the navigation layer (docs/en/policies/component-catalogue.md).
+//  broken at the navigation layer (.claude/skills/tvos-surface/SKILL.md).
 //
 
 import SwiftUI

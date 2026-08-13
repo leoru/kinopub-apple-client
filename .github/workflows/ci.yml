@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build:
     name: Build (${{ matrix.platform }})
-    runs-on: macos-15
+    runs-on: macos-26
     strategy:
       fail-fast: false
       matrix:
@@ -26,6 +26,9 @@ jobs:
             destination: 'platform=macOS'
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: .github/scripts/select-xcode-26.sh
 
       - name: Toolchain versions
         run: |
@@ -60,13 +63,16 @@ jobs:
 
   test-packages:
     name: Test ${{ matrix.package }}
-    runs-on: macos-15
+    runs-on: macos-26
     strategy:
       fail-fast: false
       matrix:
         package: [KinoPubKit, KinoPubUI, KinoPubBackend, KinoPubLogging]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: .github/scripts/select-xcode-26.sh
 
       - name: Toolchain versions
         run: |

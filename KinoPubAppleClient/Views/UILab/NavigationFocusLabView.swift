@@ -10,8 +10,8 @@
 //  Menu back, then Up to the bar — and read the HUD. It reports what the system thinks
 //  (`isTabBarHidden`, which scroll view `contentScrollViewForEdge(.top)` resolved to,
 //  stack depth), not what the screen looks like, because those two disagreeing *is* the
-//  bug. See docs/en/plans/detail-page-choreography.md § "Bugs found, deliberately NOT
-//  fixed" and docs/en/apple-platform/navigation-and-search.md.
+//  bug. See docs/archive/plans/detail-page-choreography.md § "Bugs found, deliberately NOT
+//  fixed" and .claude/skills/apple-chrome/SKILL.md.
 //
 //  Each variant runs in a `fullScreenCover` on purpose: nested inside the real Settings
 //  tab it would find the *app's* tab bar controller in its ancestor chain and measure

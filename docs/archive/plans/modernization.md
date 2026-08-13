@@ -1,30 +1,36 @@
 # Plan: UI modernization on the 26.0 baseline
 
-Date: 2026-07-28. Status: Phase 0–3 Home banner landed; **native-UI remediation plan
-(phases 1–8) implemented** — confirmed defects, Home material/snapping, lockups/badges,
-typography/marquee/a11y, unified `Route`, zoom transitions, single-scroll detail, and
-`PlaybackSession`. Remaining work is Device Hub remote verification and player Info polish.
+> **Archived 2026-08-13.** Already closed to history before the move. Kept for the file:line
+> rationale behind changes that landed; every open item went to ROADMAP long ago.
 
-This is the migration plan the research asked for
-([docs/research/en/00-plan.md](../../research/en/00-plan.md), "После ресёрча"). It folds the nine
-reports into one ordered sequence. **Do not re-derive the research** — every "why" already has a
-report behind it; this file only says what to do, in what order, and what it touches.
 
-Reports, for reference:
-[01 layout](../../research/en/01-layout.md) ·
-[02 liquid glass](../../research/en/02-liquid-glass.md) ·
-[03 nav/tabs/search](../../research/en/03-navigation-tabs-search.md) ·
-[04 cross-platform](../../research/en/04-cross-platform.md) ·
-[05 player](../../research/en/05-player-media.md) ·
-[06 tvOS focus](../../research/en/06-tvos-focus.md) ·
-[07 components/a11y](../../research/en/07-ui-components-a11y.md) ·
-[08 performance](../../research/en/08-performance.md) ·
-[09 metadata](../../research/en/09-metadata-integrations.md)
+> **Dated implementation history — not living authority.** Current rules:
+> [AGENTS.md](../../../AGENTS.md), [policies](../../../AGENTS.md), [features](../../../ROADMAP.md),
+> [apple-platform](../../../.claude/skills/). Open work lives in feature docs (especially
+> [01-foundation](../../../ROADMAP.md)). English knowledge base:
+> [skills](../../../.claude/skills/). Russian snapshot:
+> [docs/archive/research-2026-07/](../research-2026-07/).
+
+Date: 2026-07-28. Historical status notes below; verify against feature docs before treating items as current.
+
+## Closed to history — where the open work went
+
+This plan no longer carries unchecked boxes. Everything still to do was moved into feature-doc
+checklists; `- [x]` entries stay as a record of what landed, and the prose under each moved item
+stays here as the detailed rationale / file:line evidence.
+
+| Moved work | Now tracked in |
+| --- | --- |
+| Atoms, duplication, accessibility, type scale, focus / navigation / chrome cleanups | [01 — Foundation](../../../ROADMAP.md) |
+| Resume bugs, Skip Intro, subtitle rendering correctness, player perf and lifetime | [07 — Playback conveniences](../../../ROADMAP.md) |
+| Tap-a-word word-chip focus | [08 — Advanced subtitles](../../../ROADMAP.md) |
+
+Do not re-open boxes here. Add work to the feature doc that owns it.
 
 ## Where we actually are (verified 2026-07-28, updated after Phase 3 Home banner)
 
 Phase 0–2 are in. Packages sit on `.v26` with `swift-tools-version: 6.2` and
-`swiftLanguageModes: [.v5]` (language mode 6 deferred per [04 §4.4](../../research/en/04-cross-platform.md);
+`swiftLanguageModes: [.v5]` (language mode 6 deferred per [04 §4.4](../research-2026-07/04-cross-platform.md);
 `SWIFT_VERSION` in the app target stays `5.0`). Dead availability / dead files are gone; the app is
 dark-locked; tvOS page background is `Color.black`. Phase 1 insets, focus owners, button metrics and
 player quick wins are in. D1 (Home hero / banner) and D2 (poster sizing) are decided — see below.
@@ -52,9 +58,9 @@ Nothing below Phase 0 compiles until this is done. No visible change; do it in o
   ```
 - [x] `swift-tools-version: 6.2` in all five (`.v26` requires PackageDescription 6.2, not 6.0;
   ```
-  see [04](../../research/en/04-cross-platform.md)). App `SWIFT_VERSION` stays `5.0` with
+  see [04](../research-2026-07/04-cross-platform.md)). App `SWIFT_VERSION` stays `5.0` with
   `swiftLanguageModes: [.v5]` on packages — language mode 6 deferred until `@Observable`
-  (see [04 §4.4](../../research/en/04-cross-platform.md)).
+  (see [04 §4.4](../research-2026-07/04-cross-platform.md)).
   ```
 - [x] **Delete dead availability branches.** All of these are unreachable at baseline 26:
   - `TabsNavigationView.swift` — `if #available(iOS 18, tvOS 18, macOS 15)`, and the whole
@@ -190,7 +196,7 @@ Today metrics are spread over nine `#if os` blocks in as many files (`MediaCardV
   `ShelfMetrics.swift` (inset / gutter / columns derived from container width + Dynamic Type),
   `Metrics.swift` (hairlines, radii, spacing — all `@ScaledMetric`), `TypeScale.swift` (text
   styles only; `.system(size:)` banned). Sketch is written out in
-  [01 §4.2 MED-1](../../research/en/01-layout.md).
+  [01 §4.2 MED-1](../research-2026-07/01-layout.md).
   ```
 - [x] `MediaCardView` stops knowing its own width: `.aspectRatio(aspect.ratio, contentMode: .fit)`,
   ```
@@ -216,7 +222,7 @@ Today metrics are spread over nine `#if os` blocks in as many files (`MediaCardV
   `GeometryReader` pumps feeding it (`CatalogView`, `SearchView`, `BookmarkView`,
   `PersonItemsView`).
   ```
-- [ ] `MediaItemInfoColumns` → `Grid`/`GridRow` + `gridColumnAlignment(.leading)`. Removes
+- `MediaItemInfoColumns` → `Grid`/`GridRow` + `gridColumnAlignment(.leading)`. Removes
   ```
   `columnWidth`, `keyWidth`, `sheetKeyWidth` and lets the existing `ViewThatFits` finally
   measure real content instead of a sum of constants.
@@ -260,7 +266,7 @@ over the picture), so the platform split has no reason to survive it.
   ```
   artwork means nothing to blur on that card.
   ```
-- [ ] Once both cards share one caption+progress structure, fold the episode card in
+- Once both cards share one caption+progress structure, fold the episode card in
   ```
   `SeasonsRailView` into `KinoPubUI` rather than leaving a second implementation.
   ```
@@ -270,10 +276,10 @@ every extra image layer inside a `.borderless` label gets its own highlight and 
 fragments — that is why the overlays were removed in the first place. The answer is not "no
 overlays", it is binding the effect explicitly.
 
-- [ ] Bring the poster overlays back on tvOS behind an explicit `.hoverEffect(.highlight)` on the
+- Bring the poster overlays back on tvOS behind an explicit `.hoverEffect(.highlight)` on the
   ```
   card container plus `HoverEffectGroup` so the layers highlight as one, not four
-  ([06 §4.1-4.2](../../research/en/06-tvos-focus.md)). Verify on a real remote — if the group
+  ([06 §4.1-4.2](../research-2026-07/06-tvos-focus.md)). Verify on a real remote — if the group
   still fragments, fall back to a single pre-composited overlay layer. (iOS/macOS keep existing
   rating + badge overlays today.)
   ```
@@ -282,7 +288,7 @@ overlays", it is binding the effect explicitly.
   Designer defines award / “weeks in top” / Kinopoisk top / premiere treatment later. App already
   collects that data. Existing score + count badge on non-tvOS stay.
   ```
-- [ ] **Behavioural identity is the acceptance criterion.** Same focus animation, same caption
+- **Behavioural identity is the acceptance criterion.** Same focus animation, same caption
   ```
   reveal rule, same progress semantics, same watched treatment — a poster card and a landscape
   card must differ only in aspect ratio and which slots have content.
@@ -299,12 +305,12 @@ transparent buttons with clear primary vs secondary prominence (white Play pill 
 secondaries). D3 (`.glassProminent` / `.glass`) is an **optional later supplement** for non-hero
 surfaces if it reads better than current chrome.
 
-- [ ] New `KinoPubUI/DesignSystem/KinoGlass.swift` — the only place `glassEffect` is written, with
+- [x] New `KinoPubUI/DesignSystem/KinoGlass.swift` — the only place `glassEffect` is written, with
   ```
   `accessibilityReduceTransparency` / `colorSchemeContrast` degradation built in, modelled on
   `silo-apple/.../DesignSystem/SiloGlass.swift`. Call sites never write `glassEffect` directly.
   ```
-- [ ] Port `DevicePower.isLowPowerAppleTV` (utsname → `AppleTV<major>`). Glass over *playing video*
+- [x] Port `DevicePower.isLowPowerAppleTV` (utsname → `AppleTV<major>`). Glass over *playing video*
   ```
   re-samples the backdrop every video frame; on A12 boxes substitute an opaque fill.
   ```
@@ -313,11 +319,11 @@ surfaces if it reads better than current chrome.
   Play = solid white pill at rest; secondary circles / pills = translucent white plate; focus
   scales and inverts. Do not pile `.glass` onto the hero CTA row.
   ```
-- [ ] `LibraryFiltersBar` / `SubtitleTranslatePanel` / `MainView` material cleanups — optional when
+- `LibraryFiltersBar` / `SubtitleTranslatePanel` / `MainView` material cleanups — optional when
   ```
   touching those files; prefer system glass only where it matches scroll/nav chrome.
   ```
-- [ ] Collapse the 16 custom `ButtonStyle` types down (separate pass).
+- Collapse the 16 custom `ButtonStyle` types down (separate pass).
 
 
 
@@ -339,7 +345,7 @@ overlays that need the Music–Journal look.
     (pass `isEnabled: false` while trailer is showing).
   - **iOS + iPadOS:** blur OK over **images and video**.
   ```
-- [ ] Apply the helper on detail/Home hero/banner overlays (Phase 3 banner rebuild + detail
+- Apply the helper on detail/Home hero/banner overlays (Phase 3 banner rebuild + detail
   ```
   backdrop pass). Featured-preview path already uses the overlay where still enabled.
   ```
@@ -352,18 +358,18 @@ overlays that need the Music–Journal look.
 
 ### 2e. Typography and accessibility
 
-- [ ] Replace remaining `.system(size:)` calls with text styles (card/shelf titles moved to
+- Replace remaining `.system(size:)` calls with text styles (card/shelf titles moved to
   ```
   `TypeScale` in 2a; detail / hero / seasons still to go).
   ```
-- [ ] `@ScaledMetric` on every square/hairline dimension: actor portraits, circular buttons, tab
+- `@ScaledMetric` on every square/hairline dimension: actor portraits, circular buttons, tab
   ```
   icons, progress bars, player controls.
   ```
-- [ ] `MediaCardView` gets an `accessibilityLabel`.
-- [ ] `RatingBadgeView` — rating tier is encoded **only** by colour. Add a non-colour differentiator.
-- [ ] De-duplicate the two initials-avatar implementations into one atom.
-- [ ] One `AsyncImage` atom instead of 15 call sites.
+- `MediaCardView` gets an `accessibilityLabel`.
+- `RatingBadgeView` — rating tier is encoded **only** by colour. Add a non-colour differentiator.
+- De-duplicate the two initials-avatar implementations into one atom.
+- One `AsyncImage` atom instead of 15 call sites.
 
 ---
 
@@ -386,31 +392,31 @@ D9) is landed.
   shelves (not Continue Watching). Full-bleed single hero / shared `MediaItemHeroView`
   variant / curated set deferred.
   ```
-- [ ] Target banner look polish: optional page dots / L-R only if a carousel is
+- Target banner look polish: optional page dots / L-R only if a carousel is
   ```
   straightforward later; CTAs if we want parity with detail later. Text legibility via
   **private `variableBlur` over static art**; on tvOS/macOS, no blur while video is showing.
   ```
-- [ ] tvOS tab background: `containerBackground(for: .tabView)` where useful (old
+- tvOS tab background: `containerBackground(for: .tabView)` where useful (old
   ```
   `.ignoresSafeArea()` backdrop path is gone with the featured preview).
   ```
-- [ ] Detail hero height → `containerRelativeFrame(.vertical)` (kill hard-coded detail
+- Detail hero height → `containerRelativeFrame(.vertical)` (kill hard-coded detail
   ```
   `heroHeight = 1080`). Banner cards already size from `CardAspect.landscape`.
   ```
-- [ ] **Card → detail transition:** desire is classic Apple morph, but prefer default /
+- **Card → detail transition:** desire is classic Apple morph, but prefer default /
   ```
   system-achievable navigation beauty over a custom hero morph. Historical third-party morphs
   looked worse than none — **abandon custom morph** unless it is cleanly doable with stock
   APIs. Simple push/navigation is the default.
   ```
-- [ ] `MediaItemHeroView` — four different buttons all `.focused($focus, equals: .heroOther)`
+- `MediaItemHeroView` — four different buttons all `.focused($focus, equals: .heroOther)`
   ```
   (`:635,653,663,703`). Same `@FocusState` value on several views is undefined behaviour on
   programmatic writes. Give them distinct values, and add `.focusSection()` on the button row.
   ```
-- [ ] `MediaItemView.swift:142-161` — the two-slide "slideshow" driven by `.offset(y:)` + `.clipped()`
+- `MediaItemView.swift:142-161` — the two-slide "slideshow" driven by `.offset(y:)` + `.clipped()`
   ```
   with both slides always in the hierarchy and both `.focusSection()`. tvOS resolves focus from
   **layout frames**, so focus can land on an invisible, clipped control. Highest-risk area on the
@@ -423,18 +429,18 @@ D9) is landed.
   While video is showing: **no blur on tvOS/macOS**; **blur allowed on iOS/iPadOS** (same
   variableBlur helper).
   ```
-- [ ] `SubtitleTranslatePanel.swift:168-178` — the word chips have no `@FocusState`, no 
+- `SubtitleTranslatePanel.swift:168-178` — the word chips have no `@FocusState`, no 
   ```
   `defaultFocus`, no `focusSection`. Focus is undefined when the panel opens.
   ```
-- [ ] `TabsNavigationView.swift` — 630 lines, three near-identical platform trees. After Phase 0
+- `TabsNavigationView.swift` — 630 lines, three near-identical platform trees. After Phase 0
   ```
   deletions this should land around 240-280. Bring tvOS in line with the macOS tree
   (`TabSection` Browse / Library / Folders — available on tvOS since 18.0). Replace
   `.buttonStyle(.plain)` on the profile button (`:121`, `:311`) — AGENTS.md warns against it and
   it may be what makes the sidebar row visually inert.
   ```
-- [ ] **Known ceilings, so nobody plans around them:** `TabViewCustomization` is
+- **Known ceilings, so nobody plans around them:** `TabViewCustomization` is
   ```
   `@available(tvOS, unavailable)` — hiding, reordering and badging tabs is impossible on tvOS in
   both 26 and 27. `.tabBarMinimizeBehavior`'s useful values are iPhone-only. On tvOS,
@@ -459,7 +465,7 @@ colour, background, opacity — is a system feature: Settings → Accessibility 
 Captioning, read through `MediaAccessibility`. Instead `SubtitleOverlayView.swift:18,33-47`
 hardcodes 34/22pt white-with-a-shadow and ignores the user's setting entirely. Whatever custom
 rendering genuinely has to stay (sidecar SRT attachment and dual tracks *are* impossible natively
-— see [05 §1.4](../../research/en/05-player-media.md)) must still take its styling from the system
+— see [05 §1.4](../research-2026-07/05-player-media.md)) must still take its styling from the system
 and expose its own options in our Settings screen, not in the player.
 - **Switching subtitle tracks mid-stream crashes.** Reported, reproducible, not diagnosed. Nothing
 else in Phase 4 matters until this is understood — start from `PlayerManager` track selection and
@@ -484,29 +490,29 @@ subtitles or track selection.
 
 ## Phase 4 — Player (backlog, blocked)
 
-Full list in [05 §4](../../research/en/05-player-media.md). The correctness bugs here are not
+Full list in [05 §4](../research-2026-07/05-player-media.md). The correctness bugs here are not
 cosmetic and several are user-visible today — but see the stop above: this list gets re-scoped
 before it gets worked.
 
-- [ ] **Fix the resume race.** `PlayerView.swift:80` (`.onAppear` → `fetchWatchMark` → seek) and
+- **Fix the resume race.** `PlayerView.swift:80` (`.onAppear` → `fetchWatchMark` → seek) and
   ```
   `:104` (`.task` → `preparePlayback` → `replaceCurrentItem` + play) run in undefined order, so
   the seek often lands on an empty or stale item. One `.task`: prepare → wait for
   `.readyToPlay` → seek with `toleranceBefore/After: .zero` → play. This is the "continue
   watching doesn't always work" report.
   ```
-- [ ] **Resume reads the wrong episode.** `PlayerManager.swift:382` uses
+- **Resume reads the wrong episode.** `PlayerManager.swift:382` uses
   ```
   `videos?.first / seasons?.first?.episodes.first`. Episode 7 resumes at episode 1's timestamp.
   Same root cause as the known `MediaItem.subtitles` bug — `Models/MediaItem.swift:260,264,268,272`
   all read `videos?.first`, so for a series the entire `PlayableItem` describes S1E1.
   ```
-- [ ] **Skip Intro, natively.** `AVPlayerViewController.contextualActions` (tvOS 15+) *is* Apple's
+- **Skip Intro, natively.** `AVPlayerViewController.contextualActions` (tvOS 15+) *is* Apple's
   ```
   Skip pill. Chapters via `AVPlayerItem.navigationMarkerGroups`. v1 data can come from the SRT
   we already download (gap between cues in the first 8 minutes) — no new service needed.
   ```
-- [ ] **Subtitle overlay respects the system.** `SubtitleOverlayView.swift:18,33-47` hardcodes
+- **Subtitle overlay respects the system.** `SubtitleOverlayView.swift:18,33-47` hardcodes
   ```
   34/22pt, white, with a shadow, and ignores Settings → Accessibility → Subtitles entirely.
   Use `MediaAccessibility`, host it as `customOverlayViewController` inside
@@ -515,35 +521,35 @@ before it gets worked.
   pause (`PlayerView.swift:122` gates on `isPlaying`), which is backwards for the
   language-learning use case.
   ```
-- [ ] Encoding and validation on the SRT fetch: Russian subtitles are routinely windows-1251, and
+- Encoding and validation on the SRT fetch: Russian subtitles are routinely windows-1251, and
   ```
   the current `.utf8 ?? .isoLatin1` chain "successfully" decodes them into mojibake. Add an HTTP
   status check — a 404 page currently parses to 0 cues and silently disables subtitles.
   ```
-- [ ] Cue lookup: binary search + cursor instead of a linear scan over ~2000 cues four times a
+- Cue lookup: binary search + cursor instead of a linear scan over ~2000 cues four times a
   ```
   second (`PlayerManager.swift:341`, `SubtitleCueParser.swift:76`).
   ```
-- [ ] Drop the second periodic observer and stop publishing `currentPlaybackTime` four times a
+- Drop the second periodic observer and stop publishing `currentPlaybackTime` four times a
   ```
   second — it invalidates the whole `PlayerView` for the length of the film and is read nowhere.
   ```
-- [ ] `PlayerTimeObserver` fires its callback on `.global(qos: .userInteractive)`, so
+- `PlayerTimeObserver` fires its callback on `.global(qos: .userInteractive)`, so
   ```
   `saveWatchMark` and `persistAudioSelectionIfNeeded` touch `currentMediaSelection` and
   `UserDefaults` off the main thread. Also `if time.seconds > 60.0` at `:31` means nothing
   shorter than a minute ever gets a watch mark.
   ```
-- [ ] `Task.detached(priority: .utility) { [unowned self] … }` at `PlayerManager.swift:364` — a
+- `Task.detached(priority: .utility) { [unowned self] … }` at `PlayerManager.swift:364` — a
   ```
   detached task outliving the manager with `unowned` is a crash on exit. `[weak self]`.
   ```
-- [ ] `HLSAudioLabeler.swift:34-38` writes a temp `.m3u8` per launch into `tmp/kinopub-hls` and never
+- `HLSAudioLabeler.swift:34-38` writes a temp `.m3u8` per launch into `tmp/kinopub-hls` and never
   ```
   deletes it; `:47` splits on `\n` without stripping `\r`, which corrupts the attribute list on
   a CRLF playlist (kino.pub sends LF today — latent, not theoretical).
   ```
-- [ ] `BestVideoQualityFinder` — `UIScreen.main.bounds` is deprecated and reports 1920×1080pt even on
+- `BestVideoQualityFinder` — `UIScreen.main.bounds` is deprecated and reports 1920×1080pt even on
   ```
   Apple TV 4K; the `.wifi` check inverts its own intent on a wired box; macOS picks
   `files.first` (the *lowest* quality); an empty list returns `""` → `nil` URL → silent no-play.

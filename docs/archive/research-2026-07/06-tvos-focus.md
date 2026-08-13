@@ -2,7 +2,7 @@
 
 Condensed English summary of a 2026-07-25 research pass, baseline tvOS 26 (27-only noted
 separately). Current guidance lives in
-[`docs/en/apple-platform/focus-and-tvui.md`](../../en/apple-platform/focus-and-tvui.md), including
+[`.claude/skills/tvos-surface/SKILL.md`](../../../.claude/skills/tvos-surface/SKILL.md), including
 the TVUIKit inventory table added this session. This report's diagnosis of the app's focus
 architecture at the time is the direct ancestor of that policy's "one focus owner per zone" rule and
 the ban on `.buttonStyle(.plain)`. Russian original: `06-tvos-focus.ru.md` (gitignored, local only).
@@ -72,7 +72,7 @@ images (`.lcr`) must be generated server-side (`layerutil`) and downloaded, neve
 something a flat-JPEG catalog like kino.pub's can produce.
 
 TVUIKit inventory and verdicts are now consolidated in
-[`focus-and-tvui.md`](../../en/apple-platform/focus-and-tvui.md#tvuikit-inventory) rather than
+[`focus-and-tvui.md`](../../../.claude/skills/tvos-surface/SKILL.md) rather than
 duplicated here.
 
 tvOS 26 relevant changes: `sidebarAdaptable` content now gets a real safe-area inset under the
@@ -97,10 +97,10 @@ fix. The `.buttonStyle(.plain)` warning in this report (item 13 of the pitfalls 
 now a stated rule in `AGENTS.md`. The focus-ownership findings (`.userInitiated` misuse,
 `focusScope`/`focusSection` confusion, `focusBridge` hacks, offset-driven "slideshow" focus) map
 directly onto still-open items tracked in
-[`01-foundation-continuity.md`](../../en/features/01-foundation-continuity.md) — check that doc, not
+[`01-foundation-continuity.md`](../../../ROADMAP.md) — check that doc, not
 this archive, for current status. The hero/hoverEffect/parallax recommendations below fed the
 now-**superseded** Netflix-style hero decision — see
-[`focus-and-tvui.md`](../../en/apple-platform/focus-and-tvui.md), which reopened that direction per
+[`focus-and-tvui.md`](../../../.claude/skills/tvos-surface/SKILL.md), which reopened that direction per
 later product decisions; this report's `containerBackground(for: .tabView)` +
 small-buffer-blur-instead-of-shader recipe is still the right technical approach if that hero gets
 rebuilt.

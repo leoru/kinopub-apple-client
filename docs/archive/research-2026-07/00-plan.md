@@ -78,5 +78,5 @@ Roll the nine reports into one migration plan: phase order, what breaks when the
 moves, what gets rewritten into `KinoPubUI` as an atom library, and update `README.md` + `AGENTS.md`.
 
 **What actually happened:** superseded by [`modernization.md`](../plans/modernization.md), now closed
-to pure history — live work moved into [`docs/en/features/`](../../en/features/). Current guidance
-lives in [`docs/en/apple-platform/`](../../en/apple-platform/).
+to pure history — live work moved into [`docs/en/features/`](../../../ROADMAP.md). Current guidance
+lives in [`docs/en/apple-platform/`](../../../.claude/skills/).

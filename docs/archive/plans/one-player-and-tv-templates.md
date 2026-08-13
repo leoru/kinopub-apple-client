@@ -1,9 +1,15 @@
 # Plan: one player, and the tvOS template study
 
+> **Archived 2026-08-13.** Survived: one `AVPlayer` at a time (AGENTS.md, `player-avkit` skill),
+> and its own opening warning — a reference app shows *that* something is possible, never *how*;
+> find Apple's documentation for the API before building from it. The template study fed the
+> three-cells-one-collection standard in the `tvos-surface` skill.
+
+
 > **Dated plan — not living authority.** Started 2026-08-10, carried over from a
 > session that ran out of room before implementing any of it. Durable rules it feeds:
-> [component-catalogue](../policies/component-catalogue.md),
-> [apple-native-design](../policies/apple-native-design.md).
+> [component-catalogue](../../../AGENTS.md),
+> [apple-native-design](../../../AGENTS.md).
 >
 > **Read this before writing code from it.** Everything below was arrived at by
 > reading two other apps and one Apple guide. Reference apps show *that* something is
@@ -18,7 +24,7 @@
 ## Licensing
 
 Reference apps (Rivulet, Plozz) are read for **technique only** — never copied code.
-Same rule as [community-fork](../community-fork.md). Paths cited below are evidence
+Same rule as [community-fork](../../community-fork.md). Paths cited below are evidence
 for *why* a decision is what it is, not files we vendor.
 
 ---
@@ -91,7 +97,7 @@ the clearest published specification of what an Apple TV media page **is**, and 
 Apple TV app still looks like it. Treat it as the spec; build from native parts.
 
 The component list is already codified in
-[component-catalogue](../policies/component-catalogue.md) — that policy is the durable
+[component-catalogue](../../../AGENTS.md) — that policy is the durable
 output of this study and should be extended, not duplicated.
 
 - [ ] Read the TVML element reference **specifically for video**: the user's read is

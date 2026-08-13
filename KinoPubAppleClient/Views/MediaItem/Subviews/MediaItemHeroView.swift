@@ -1324,7 +1324,7 @@ private extension View {
   /// has to come from contrast — `bottomScrim` / `titleScrim` under the text — rather
   /// than a shadow chasing the letters. Placeholder kept so call sites don't need
   /// touching again once that contrast pass lands; see
-  /// `docs/en/plans/detail-page-choreography.md`.
+  /// `docs/archive/plans/detail-page-choreography.md`.
   func heroTextShadow() -> some View {
     self
   }
