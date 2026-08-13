@@ -524,10 +524,21 @@ the *pattern* (round icon button → focused popup with the extended info) from 
 [community-fork](../community-fork.md)), and land it as one shared component across tvOS/iOS/macOS
 rather than three divergent implementations.
 
-- [ ] Inventory what "нашего кошмара" actually is today — which popups/sheets this replaces, per
-      platform.
-- [ ] Design the one shared component before touching call sites; this is a cross-platform surface,
-      not a tvOS patch.
+- [x] **Landed 2026-08-11, with the trigger deliberately changed.** `InfoPopup` in KinoPubUI is the
+      one shared component (`expandsIntoInfoPopup(title:)`), and it is **not** hung off a round icon
+      button the way `InfoPopupViewController` is. User decision: the clipped content is the
+      trigger. The synopsis opens itself — now on *every* platform and *regardless of truncation*,
+      where before it was a dead press on tvOS whenever the text happened to fit and plain
+      unfocusable copy off tvOS. The About columns (`AboutColumn`, `AboutLegendColumn`) open
+      themselves too, which is what "внизу на секциях" asked for and what gives the bottom of the
+      page real focus stops.
+- [x] It replaced exactly one thing: the private `MediaItemDetailSheet` / `MediaItemSheetLayout`
+      pair inside `MediaItemDetailSections.swift`, whose own doc comment already promised "the
+      synopsis, **or a column with its lists unclamped**" and only ever did the synopsis. Deleted.
+- [ ] **Open, needs judging on device:** the About columns are now `Button`s, so on tvOS they wear
+      `.card` — which argues with `AboutLayoutAppleShape`'s "no card behind the columns at all,
+      their job is to be skippable". Either the note gives (a column you can open is a control) or
+      the columns need a quieter focus treatment that is still system-drawn. Do not hand-roll one.
 
 ### Phase 9 — KinoPub rating card (likes/dislikes/views merged)
 

@@ -430,7 +430,25 @@ struct AboutCard<Content: View>: View {
   }
 }
 
+/// Which sizes a column's lines are drawn at. The same lines appear twice — small and
+/// skippable in the page, at reading size in the popup — and nothing else differs.
+struct AboutColumnTypography {
+  let caption: Font
+  let value: Font
+
+  static let inline = AboutColumnTypography(caption: AboutMetrics.captionFont,
+                                            value: AboutMetrics.valueFont)
+  /// The popup is a reading surface, and on a TV that is the whole reason to open it.
+  static let popup = AboutColumnTypography(caption: .caption, value: InfoPopupMetrics.bodyFont)
+}
+
 /// Plain, unbacked column of label/value blocks — the "table" half of every layout.
+///
+/// The column opens itself. Nothing here is clipped by a line limit, but the content
+/// *is* summarised upstream (the Languages column keeps three preferred languages and
+/// counts the rest), and at ten feet the table is deliberately small — so selecting the
+/// column shows the same lines at reading size. No `i` button beside it: the thing you
+/// want to read is the thing you press.
 struct AboutColumn: View {
   let title: LocalizedStringKey
   let sections: [InfoSection]
@@ -443,14 +461,25 @@ struct AboutColumn: View {
         .font(AboutMetrics.columnTitleFont)
         .foregroundStyle(Color.KinoPub.text)
 
+      lines(typography: .inline)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .expandsIntoInfoPopup(title: Text(title)) {
+      lines(typography: .popup)
+    }
+  }
+
+  @ViewBuilder
+  private func lines(typography: AboutColumnTypography) -> some View {
+    VStack(alignment: .leading, spacing: AboutMetrics.sectionSpacing) {
       ForEach(sections) { section in
         VStack(alignment: .leading, spacing: 3) {
           Text(LocalizedStringKey(section.caption))
-            .font(AboutMetrics.captionFont)
+            .font(typography.caption)
             .foregroundStyle(Color.KinoPub.subtitle)
           ForEach(section.values) { value in
             Text(value.title)
-              .font(value.style == .note ? AboutMetrics.captionFont : AboutMetrics.valueFont)
+              .font(value.style == .note ? typography.caption : typography.value)
               .foregroundStyle(value.style == .note
                                ? Color.KinoPub.subtitle
                                : Color.KinoPub.text)
@@ -462,11 +491,11 @@ struct AboutColumn: View {
       if !languageLines.isEmpty {
         VStack(alignment: .leading, spacing: 3) {
           Text("MediaItem_Voice")
-            .font(AboutMetrics.captionFont)
+            .font(typography.caption)
             .foregroundStyle(Color.KinoPub.subtitle)
           ForEach(languageLines) { line in
             Text(AboutFormat.languageLine(line))
-              .font(AboutMetrics.valueFont)
+              .font(typography.value)
               .foregroundStyle(Color.KinoPub.text)
               .fixedSize(horizontal: false, vertical: true)
           }
@@ -476,10 +505,10 @@ struct AboutColumn: View {
       if !subtitleNames.isEmpty {
         VStack(alignment: .leading, spacing: 3) {
           Text("Subtitles")
-            .font(AboutMetrics.captionFont)
+            .font(typography.caption)
             .foregroundStyle(Color.KinoPub.subtitle)
           Text(subtitleNames.joined(separator: ", "))
-            .font(AboutMetrics.valueFont)
+            .font(typography.value)
             .foregroundStyle(Color.KinoPub.text)
             .fixedSize(horizontal: false, vertical: true)
         }
@@ -489,7 +518,9 @@ struct AboutColumn: View {
   }
 }
 
-/// Apple's Accessibility column: the badge, then what it means, in prose.
+/// Apple's Accessibility column: the badge, then what it means, in prose. Opens itself
+/// the same way the other columns do — this is the one column that is pure explanation,
+/// so reading size is exactly what it is for.
 struct AboutLegendColumn: View {
   let badges: [MediaItemAboutContent.AboutBadge]
 
@@ -499,11 +530,21 @@ struct AboutLegendColumn: View {
         .font(AboutMetrics.columnTitleFont)
         .foregroundStyle(Color.KinoPub.text)
 
+      legend(typography: .inline)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .expandsIntoInfoPopup(title: Text("MediaItem_Technical")) {
+      legend(typography: .popup)
+    }
+  }
+
+  private func legend(typography: AboutColumnTypography) -> some View {
+    VStack(alignment: .leading, spacing: AboutMetrics.sectionSpacing) {
       ForEach(badges) { badge in
         VStack(alignment: .leading, spacing: 4) {
           AboutBadgeChip(badge: badge)
           Text(badge.explanation)
-            .font(AboutMetrics.captionFont)
+            .font(typography.caption)
             .foregroundStyle(Color.KinoPub.subtitle)
             .fixedSize(horizontal: false, vertical: true)
         }

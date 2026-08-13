@@ -5,6 +5,42 @@ not belong here. Detail checklists live under [`docs/en/features/`](docs/en/feat
 
 ## Unreleased
 
+### The info popup, and hero buttons that are actually the system's
+
+- **`InfoPopup` (KinoPubUI) is the one "show me the rest of this" surface, on every platform** —
+  phase 8 of the detail-page plan, with the trigger deliberately changed from the reference app's.
+  No round `i` button: `expandsIntoInfoPopup(title:)` makes the *clipped content itself* the
+  control. Presentation is the system's per platform — a sheet drawn as a centred panel over a
+  scrim on tvOS (where Menu dismisses it for free, and `.presentationBackground(.clear)` is what
+  keeps it reading as a popup instead of a pushed page), detents on iPhone/iPad, a panel on macOS.
+- **The synopsis now always opens** — every platform, truncated or not. It used to be a dead press
+  on tvOS whenever the text happened to fit, and plain unfocusable copy off tvOS: the same
+  paragraph behaved two ways for a reason the reader cannot see. The "More" hint still depends on
+  truncation, because that is a statement about the text, not about whether the control exists.
+- **The About columns open themselves too** (`AboutColumn`, `AboutLegendColumn`) — the same lines at
+  reading size, which is the whole point at ten feet. `MediaItemDetailSheet` /
+  `MediaItemSheetLayout` are gone; their own doc comment promised "the synopsis, **or a column with
+  its lists unclamped**" and only ever delivered the synopsis. **Judge on device:** the columns are
+  `Button`s now, so on tvOS they wear `.card`, which argues with `AboutLayoutAppleShape`'s "no card
+  behind the columns at all".
+- **Hero actions are `.borderedProminent` / `.bordered` with a border shape, and nothing else.**
+  Three hand-written `ButtonStyle`s went away: hand-painted capsule and circle plates, hairline
+  strokes, `Color.white.opacity(0.22)` fills, black-on-white inversion, `.onHover` state, drop
+  shadows, and a `scaleEffect` focus lift with its own spring — a reimplementation of two system
+  styles, which on tvOS also meant owning the focus lift, the specular and the press feedback the
+  system already ships. `.circle` and `.capsule` are real `ButtonBorderShape`s on tvOS 26 (checked
+  in the SDK). What survives is the vocabulary, the icon metrics, and the resume bar — the one part
+  with no system equivalent, now drawn with **hierarchical** styles (`.tertiary` / `.primary`) so it
+  inverts with the button instead of needing a `forceFocusedColors` flag to guess when the button
+  turned white.
+- **Trailer is a labelled capsule, first in the row under Play** — not a fifth anonymous circle. The
+  circles are all *state* (following / filed / how far in); the trailer is the other thing on the
+  page you can watch, and a film glyph among four state glyphs read as one more toggle. The hidden
+  "Up from Play opens the fullscreen trailer" gesture is untouched and now arguably redundant —
+  left as a product call.
+- **Built on tvOS, macOS and iOS. Not run** — the hero and the popup are visual work and the
+  simulator is yours.
+
 ### One navigation assembly, one tab table, and a lab for the tvOS bar
 
 - **`RouteStack` replaces ten hand-copied stacks.** Every tab used to write the same four lines —

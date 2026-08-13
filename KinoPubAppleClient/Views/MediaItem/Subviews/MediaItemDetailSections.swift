@@ -2379,7 +2379,6 @@ struct MediaItemPlotView: View {
   /// lets the answer go back to false when the text genuinely fits.
   @State private var fullHeight: CGFloat = 0
   @State private var clampedHeight: CGFloat = 0
-  @State private var showsFullText = false
 
   /// The full copy needs more room than the clamped three lines leave it. A point of
   /// slack absorbs sub-pixel rounding so a paragraph that exactly fills the clamp is
@@ -2399,43 +2398,21 @@ struct MediaItemPlotView: View {
       .onPreferenceChange(PlotFullHeightKey.self) { fullHeight = $0 }
   }
 
-  @ViewBuilder
+  /// Always the control, on every platform — the synopsis is the canonical "there is
+  /// more of this" surface, so it always opens rather than only when the clamp bit. It
+  /// used to be a dead press on tvOS whenever the text happened to fit, and plain
+  /// unfocusable copy off tvOS, which meant the same paragraph behaved two ways for a
+  /// reason the reader cannot see. The "More" hint still depends on truncation: that is
+  /// a statement about the text, not about whether the control exists.
   private var content: some View {
-#if os(tvOS)
-    Button {
-      if isTruncated { showsFullText = true }
-    } label: {
-      paragraph(showsMore: isTruncated)
-    }
-    .buttonStyle(.card)
-    .focused($focus, equals: .plot)
-    .sheet(isPresented: $showsFullText) {
-      plotSheet
-    }
-#else
-    if isTruncated {
-      Button {
-        showsFullText = true
-      } label: {
-        paragraph(showsMore: true)
+    paragraph(showsMore: isTruncated)
+      .expandsIntoInfoPopup(title: Text(title)) {
+        Text(plot)
+          .font(InfoPopupMetrics.bodyFont)
+          .foregroundStyle(Color.KinoPub.text)
+          .multilineTextAlignment(.leading)
       }
-      .buttonStyle(DetailTileStyle.buttonStyle)
       .focused($focus, equals: .plot)
-      .sheet(isPresented: $showsFullText) {
-        plotSheet
-      }
-    } else {
-      paragraph(showsMore: false)
-    }
-#endif
-  }
-  private var plotSheet: some View {
-    MediaItemDetailSheet(title: Text(title)) {
-      Text(plot)
-        .font(MediaItemSheetLayout.bodyFont)
-        .foregroundStyle(Color.KinoPub.text)
-        .multilineTextAlignment(.leading)
-    }
   }
 
   private func paragraph(showsMore: Bool) -> some View {
@@ -2506,63 +2483,6 @@ struct MediaItemPlotView: View {
   static let font: Font = TypeScale.detailBody
 }
 
-/// Whatever was clipped on the page, presented over it in full: the synopsis, or a
-/// column with its lists unclamped.
-        private struct MediaItemDetailSheet<Content: View>: View {
-            
-            let title: Text
-            @ViewBuilder let content: () -> Content
-            
-            @Environment(\.dismiss) private var dismiss
-            
-            var body: some View {
-                ZStack {
-                    Color.KinoPub.background.ignoresSafeArea()
-                    
-                    ScrollView(.vertical) {
-                        VStack(alignment: .leading, spacing: 24) {
-                            title
-                                .font(MediaItemSheetLayout.titleFont)
-                                .foregroundStyle(Color.KinoPub.text)
-                            
-                            content()
-                            
-#if !os(tvOS)
-                            Button("Close") { dismiss() }
-                                .buttonStyle(.bordered)
-#endif
-                        }
-                        .frame(maxWidth: MediaItemSheetLayout.maxWidth, alignment: .leading)
-                        .padding(MediaItemSheetLayout.padding)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    // Nothing in here is a control, and on tvOS a scroll view with nothing
-                    // focusable inside it will not move. This lets the remote pan it directly.
-#if os(tvOS)
-                    .focusable()
-#endif
-                }
-            }
-        }
-        
-        /// Its own type because the sheet is generic over its content, and generic types
-        /// cannot hold static storage.
-        private enum MediaItemSheetLayout {
-#if os(tvOS)
-            static let titleFont: Font = .system(size: 48, weight: .bold)
-            static let bodyFont: Font = .system(size: 30, weight: .regular)
-            static let captionFont: Font = .system(size: 28, weight: .regular)
-            static let maxWidth: CGFloat = 1200
-            static let padding: CGFloat = 80
-#else
-            static let titleFont: Font = .system(size: 26, weight: .bold)
-            static let bodyFont: Font = .system(size: 16, weight: .regular)
-            static let captionFont: Font = .system(size: 14, weight: .regular)
-            static let maxWidth: CGFloat = 640
-            static let padding: CGFloat = 24
-#endif
-        }
-        
 #if DEBUG
         private struct PlotPreviewHost: View {
             @FocusState private var focus: MediaItemFocusTarget?

@@ -984,6 +984,11 @@ struct MediaItemHeroView: View {
 #endif
 
       HStack(spacing: MediaActionMetrics.rowSpacing) {
+        // Trailer leads the row, directly under Play: it is the other thing you can
+        // watch, not another piece of state.
+        if mediaItem.trailerURL != nil {
+          trailerButton
+        }
         // Three different questions, three different controls: am I following this,
         // where have I filed it, how far did I get. They were two controls wired to
         // the same folder menu, which made the first two indistinguishable.
@@ -993,9 +998,6 @@ struct MediaItemHeroView: View {
         bookmarkButton
         if showsWatchedButton {
           watchedButton
-        }
-        if mediaItem.trailerURL != nil {
-          trailerButton
         }
 #if os(tvOS)
         // No toolbar on a TV — overflow stays in the row there and only there.
@@ -1080,17 +1082,19 @@ struct MediaItemHeroView: View {
       .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
   }
 
-  /// The trailer, out of the overflow menu and onto the row — one tap, same circle as
-  /// its neighbours. Only present when the item actually has one.
+  /// The trailer says what it is. It sits directly under Play, first in the row, as a
+  /// labelled capsule rather than one more anonymous circle: the circles are all
+  /// *state* — am I following this, where is it filed, how far did I get — and the
+  /// trailer is the second thing on the page you can actually watch. A film glyph
+  /// among four state glyphs read as a fifth toggle. Only present when there is one.
   @ViewBuilder
   private var trailerButton: some View {
     PlayerLink(route: linkProvider.trailerPlayer(for: mediaItem), item: mediaItem, mode: .trailer) {
-      Image(systemName: "film")
-        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
+      Label("Trailer", systemImage: "film")
+        .font(MediaActionMetrics.labelFont)
     }
-    .mediaActionCircleStyle()
+    .mediaActionPillStyle()
     .focused($focus, equals: .trailer)
-    .accessibilityLabel("Trailer")
   }
 
   /// tvOS only: overflow as one more circle in the row, because a TV has no toolbar to
@@ -1184,7 +1188,7 @@ struct MediaItemHeroView: View {
 
       switch content {
       case .resume(let progress, let episodeLabel, let durationSeconds):
-        MediaActionProgressTrack(progress: progress, forceFocusedColors: true)
+        MediaActionProgressTrack(progress: progress)
         Text(Self.resumeMeta(episodeLabel: episodeLabel, durationSeconds: durationSeconds)
           ?? Self.resumeFallback(episodeLabel: episodeLabel))
           .font(MediaActionMetrics.labelFont)
@@ -1205,6 +1209,9 @@ struct MediaItemHeroView: View {
           .lineLimit(1)
       }
     }
+    // On the label, not the button: the system styles hug their content, and a bare
+    // "Play" next to a labelled Trailer would otherwise be the narrower of the two.
+    .frame(minWidth: MediaActionMetrics.playPillMinWidth)
   }
 
   /// For a series, play the first episode that still has something left; the rail

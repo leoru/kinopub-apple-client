@@ -172,7 +172,7 @@ private struct PhonePlayPill: View {
         Image(systemName: "play.fill")
           .mediaActionIconFont(size: MediaActionMetrics.iconPointSize, weight: .semibold)
         if showProgress {
-          MediaActionProgressTrack(progress: 0.35, forceFocusedColors: true)
+          MediaActionProgressTrack(progress: 0.35)
         }
         Text(label)
           .font(MediaActionMetrics.labelFont)

@@ -2,10 +2,21 @@
 //  MediaActionButtonStyle.swift
 //  KinoPubUI
 //
-//  Hero action controls: primary white pill + translucent circular secondaries.
-//  Matches Apple TV (prominent Play, quieter circles) — not Liquid Glass overlays.
-//  Resting primary = solid white / black content; focused = scale + same invert.
-//  Secondary circles = translucent plate at rest, solid white when focused.
+//  Hero action controls. These are the **system** button styles with a border shape,
+//  and nothing else.
+//
+//  They used to be three hand-written `ButtonStyle`s: capsule and circle plates painted
+//  by hand, a hairline stroke, `Color.white.opacity(0.22)` fills, black-on-white
+//  inversion, `.onHover` state, drop shadows, and a `scaleEffect` focus lift with its
+//  own spring. That is a reimplementation of `.borderedProminent` / `.bordered` that
+//  drifts from the platform every release — and on tvOS it also meant the focus lift,
+//  the specular highlight and the press feedback were ours to keep in step with a
+//  system that already does all three. `docs/en/policies/apple-native-design.md`:
+//  custom chrome needs a named missing API, and there was none.
+//
+//  What is left here is the vocabulary (which control is the primary, which is a
+//  secondary, which is a circle), the icon/label metrics, and the resume bar — the one
+//  piece the system genuinely does not ship.
 //
 
 import SwiftUI
@@ -14,7 +25,9 @@ import SwiftUI
 
 public enum MediaActionMetrics {
 #if os(tvOS)
-  /// Minimum width for the Play / Resume pill. Watchlist and other labeled pills hug content.
+  /// Floor for the Play label so the primary control keeps its weight next to a
+  /// labelled Trailer button. Applied to the *label*: the button itself is system-drawn
+  /// and hugs whatever it is given.
   public static let playPillMinWidth: CGFloat = 200
   public static let buttonHeight: CGFloat = 66
   public static let iconPointSize: CGFloat = 26
@@ -23,9 +36,7 @@ public enum MediaActionMetrics {
   public static let progressWidth: CGFloat = 60
   public static let progressHeight: CGFloat = 5
   public static let contentSpacing: CGFloat = 12
-  public static let pillHorizontalPadding: CGFloat = 28
   public static let rowSpacing: CGFloat = 16
-  public static let focusScale: CGFloat = 1.08
 #else
   public static let playPillMinWidth: CGFloat = 168
   public static let buttonHeight: CGFloat = 44
@@ -35,20 +46,16 @@ public enum MediaActionMetrics {
   public static let progressWidth: CGFloat = 40
   public static let progressHeight: CGFloat = 3
   public static let contentSpacing: CGFloat = 8
-  public static let pillHorizontalPadding: CGFloat = 18
   public static let rowSpacing: CGFloat = 12
-  public static let focusScale: CGFloat = 1.04
 #endif
-
-  public static var cornerRadius: CGFloat { buttonHeight / 2 }
 }
 
 // MARK: - Scaled icon glyphs
 
 /// `.system(size:weight:)` for an SF Symbol glyph, but the size still tracks Dynamic
-/// Type. Icons here are sized off the button's own geometry (`buttonHeight`), not a
-/// text baseline, so a text style would fit the wrong thing — this scales the exact
-/// point size instead, the same way a semantic style would.
+/// Type. Icons here are sized off the button's own geometry, not a text baseline, so a
+/// text style would fit the wrong thing — this scales the exact point size instead, the
+/// same way a semantic style would.
 private struct ScaledIconFont: ViewModifier {
   @ScaledMetric private var size: CGFloat
   private let weight: Font.Weight
@@ -70,284 +77,66 @@ public extension View {
   }
 }
 
-// MARK: - Pill style (Play / Resume / Watchlist)
+// MARK: - System styles
 
-public struct MediaActionPillStyle: ButtonStyle {
-  /// When set, the pill won't shrink below this width (Play). `nil` = hug content (Watchlist).
-  public var minWidth: CGFloat?
-  /// Primary CTA (Play): solid white at rest — Apple TV prominence, not glass.
-  public var isPrimary: Bool
-
-  public init(minWidth: CGFloat? = nil, isPrimary: Bool = false) {
-    self.minWidth = minWidth
-    self.isPrimary = isPrimary
-  }
-
-  public func makeBody(configuration: Configuration) -> some View {
-    MediaActionPillChrome(
-      minWidth: minWidth,
-      isPrimary: isPrimary,
-      isPressed: configuration.isPressed
-    ) {
-      configuration.label
-    }
-  }
-}
-
-// MARK: - Circle style (watched / bookmark)
-
-public struct MediaActionCircleStyle: ButtonStyle {
-  public init() {}
-
-  public func makeBody(configuration: Configuration) -> some View {
-    MediaActionCircleChrome(isPressed: configuration.isPressed) {
-      configuration.label
-    }
-  }
-}
-
-// MARK: - Ghost style (ellipsis — no fill until focused / hovered)
-
-/// Icon-only control with no resting chrome. Background appears on focus (tvOS) or
-/// hover (pointer platforms), matching the secondary circle so the hit target is obvious.
-public struct MediaActionGhostStyle: ButtonStyle {
-  public init() {}
-
-  public func makeBody(configuration: Configuration) -> some View {
-    MediaActionGhostChrome(isPressed: configuration.isPressed) {
-      configuration.label
-    }
-  }
-}
-
-// MARK: - Pill chrome
-
-private struct MediaActionPillChrome<Content: View>: View {
-  let minWidth: CGFloat?
-  let isPrimary: Bool
-  let isPressed: Bool
-  @ViewBuilder let content: Content
-  @Environment(\.isFocused) private var isFocused
-  @State private var isHovered = false
-
-  /// Primary is always the prominent (white) look. Secondary lights on focus / hover.
-  private var showsProminentChrome: Bool {
-    if isPrimary { return true }
-#if os(tvOS)
-    return isFocused
-#else
-    return isFocused || isHovered
-#endif
-  }
-
-  var body: some View {
-    content
-      .foregroundStyle(showsProminentChrome ? Color.black : Color.white)
-      .padding(.horizontal, MediaActionMetrics.pillHorizontalPadding)
-      .frame(minWidth: minWidth, minHeight: MediaActionMetrics.buttonHeight)
-      .background {
-        Capsule(style: .continuous)
-          .fill(fillColor)
-      }
-      .overlay {
-        Capsule(style: .continuous)
-          .strokeBorder(Color.white.opacity(0.35), lineWidth: Metrics.hairline)
-          .opacity(showsProminentChrome ? 0 : 1)
-      }
-      .clipShape(Capsule(style: .continuous))
+public extension View {
+  /// Play / Resume — the primary call to action.
+  func mediaActionPlayPillStyle() -> some View {
+    buttonStyle(.borderedProminent)
+      .buttonBorderShape(.capsule)
 #if !os(tvOS)
-      .shadow(color: .black.opacity(showsProminentChrome ? 0.35 : 0.2), radius: 8, y: 4)
+      .controlSize(.large)
 #endif
-      .scaleEffect(scale)
-      .animation(.spring(response: 0.25, dampingFraction: 0.8), value: showsProminentChrome)
-      .animation(.easeOut(duration: 0.15), value: isHovered)
-      .animation(.spring(response: 0.15, dampingFraction: 0.9), value: isPressed)
+  }
+
+  /// A labelled secondary control (Trailer, Watchlist) — same capsule, quieter weight.
+  func mediaActionPillStyle() -> some View {
+    buttonStyle(.bordered)
+      .buttonBorderShape(.capsule)
 #if !os(tvOS)
-      .onHover { isHovered = $0 }
-      .pointingHandCursorOnHover()
+      .controlSize(.large)
 #endif
   }
 
-  private var fillColor: Color {
-    if showsProminentChrome { return Color.white }
-    // Secondary labeled pill: translucent, not glass material.
-    return Color.white.opacity(0.22)
-  }
-
-  private var scale: CGFloat {
-#if os(tvOS)
-    let focused = isFocused ? MediaActionMetrics.focusScale : 1
-#else
-    let focused: CGFloat = 1
+  /// An icon-only secondary control. `.circle` is a real `ButtonBorderShape`, so the
+  /// plate, its focus treatment and its press feedback are all the system's.
+  func mediaActionCircleStyle() -> some View {
+    buttonStyle(.bordered)
+      .buttonBorderShape(.circle)
+#if !os(tvOS)
+      .controlSize(.large)
 #endif
-    return isPressed ? focused * 0.95 : focused
   }
 }
 
-// MARK: - Circle chrome
+// MARK: - Resume bar
 
-private struct MediaActionCircleChrome<Content: View>: View {
-  let isPressed: Bool
-  @ViewBuilder let content: Content
-  @Environment(\.isFocused) private var isFocused
-  @State private var isHovered = false
-
-  private var showsProminentChrome: Bool {
-#if os(tvOS)
-    isFocused
-#else
-    isFocused || isHovered
-#endif
-  }
-
-  var body: some View {
-    content
-      .foregroundStyle(showsProminentChrome ? Color.black : Color.white)
-      .frame(width: MediaActionMetrics.buttonHeight, height: MediaActionMetrics.buttonHeight)
-      .background {
-        Circle()
-          .fill(fillColor)
-      }
-      .overlay {
-        Circle()
-          .strokeBorder(Color.white.opacity(0.35), lineWidth: Metrics.hairline)
-          .opacity(showsProminentChrome ? 0 : 1)
-      }
-      .clipShape(Circle())
-#if !os(tvOS)
-      .shadow(color: .black.opacity(0.25), radius: 8, y: 2)
-#endif
-      .scaleEffect(scale)
-      .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isFocused)
-      .animation(.easeOut(duration: 0.15), value: isHovered)
-      .animation(.spring(response: 0.15, dampingFraction: 0.9), value: isPressed)
-#if !os(tvOS)
-      .onHover { isHovered = $0 }
-      .pointingHandCursorOnHover()
-#endif
-  }
-
-  private var fillColor: Color {
-    if showsProminentChrome { return Color.white }
-    return Color.white.opacity(0.22)
-  }
-
-  private var scale: CGFloat {
-    let focused = isFocused ? MediaActionMetrics.focusScale : 1
-    return isPressed ? focused * 0.95 : focused
-  }
-}
-
-// MARK: - Ghost chrome
-
-private struct MediaActionGhostChrome<Content: View>: View {
-  let isPressed: Bool
-  @ViewBuilder let content: Content
-  @Environment(\.isFocused) private var isFocused
-  @State private var isHovered = false
-
-  private var showsSecondaryPlate: Bool {
-#if os(tvOS)
-    isFocused
-#else
-    isHovered || isFocused
-#endif
-  }
-
-  var body: some View {
-    content
-      .foregroundStyle(showsSecondaryPlate && isFocused ? Color.black : Color.white)
-      .frame(width: MediaActionMetrics.buttonHeight, height: MediaActionMetrics.buttonHeight)
-      .contentShape(Circle())
-      .background {
-        Circle()
-          .fill(isFocused ? Color.white : Color.white.opacity(showsSecondaryPlate ? 0.22 : 0))
-      }
-      .overlay {
-        if showsSecondaryPlate && !isFocused {
-          Circle()
-            .strokeBorder(Color.white.opacity(0.35), lineWidth: Metrics.hairline)
-        }
-      }
-      .clipShape(Circle())
-      .scaleEffect(scale)
-      .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isFocused)
-      .animation(.easeOut(duration: 0.15), value: isHovered)
-      .animation(.spring(response: 0.15, dampingFraction: 0.9), value: isPressed)
-#if !os(tvOS)
-      .onHover { isHovered = $0 }
-      .pointingHandCursorOnHover()
-#endif
-  }
-
-  private var scale: CGFloat {
-    let focused = isFocused ? MediaActionMetrics.focusScale : 1
-    return isPressed ? focused * 0.95 : focused
-  }
-}
-
-// MARK: - Progress track (invert-friendly)
-
-/// Thin capsule track used inside the play pill when playback has already started.
+/// Thin capsule track shown inside the Play control once playback has started. The one
+/// piece with no system equivalent — and the only reason this file still draws anything.
+///
+/// Colours are **hierarchical styles, not literals**: inside a button label they resolve
+/// against whatever foreground the current style and focus state established, so the bar
+/// inverts with the button instead of guessing when the button turned white. The old
+/// version hard-coded black-on-white and needed a `forceFocusedColors` flag to paper
+/// over the cases where the guess was wrong.
 public struct MediaActionProgressTrack: View {
   public var progress: Double
-  /// When true (Play primary), use the inverted track colours for the white pill.
-  public var forceFocusedColors: Bool
-  @Environment(\.isFocused) private var isFocused
 
-  public init(progress: Double, forceFocusedColors: Bool = false) {
+  public init(progress: Double) {
     self.progress = progress
-    self.forceFocusedColors = forceFocusedColors
-  }
-
-  private var inverted: Bool {
-    // Primary play pill is always white → dark track.
-    forceFocusedColors || isFocused
   }
 
   public var body: some View {
     Capsule()
-      .fill(trackColor)
+      .fill(.tertiary)
       .frame(width: MediaActionMetrics.progressWidth,
              height: MediaActionMetrics.progressHeight)
       .overlay(alignment: .leading) {
         Capsule()
-          .fill(fillColor)
+          .fill(.primary)
           .frame(width: max(6, MediaActionMetrics.progressWidth * min(max(progress, 0), 1)),
                  height: MediaActionMetrics.progressHeight)
       }
-  }
-
-  private var trackColor: Color {
-    inverted
-      ? Color.black.opacity(0.3)
-      : Color.white.opacity(0.25)
-  }
-
-  private var fillColor: Color {
-    inverted ? Color.black.opacity(0.55) : Color.white.opacity(1)
-  }
-}
-
-// MARK: - Convenience modifiers
-
-public extension View {
-  /// Play / Resume pill — primary CTA. Solid white at rest (Apple TV prominence).
-  func mediaActionPlayPillStyle() -> some View {
-    buttonStyle(MediaActionPillStyle(minWidth: MediaActionMetrics.playPillMinWidth, isPrimary: true))
-  }
-
-  /// Labeled secondary pill (Watchlist) — hugs its content, translucent resting plate.
-  func mediaActionPillStyle() -> some View {
-    buttonStyle(MediaActionPillStyle(minWidth: nil, isPrimary: false))
-  }
-
-  func mediaActionCircleStyle() -> some View {
-    buttonStyle(MediaActionCircleStyle())
-  }
-
-  func mediaActionGhostStyle() -> some View {
-    buttonStyle(MediaActionGhostStyle())
   }
 }
 
@@ -360,11 +149,12 @@ public extension View {
         Text("Play")
           .font(MediaActionMetrics.labelFont)
       }
+      .frame(minWidth: MediaActionMetrics.playPillMinWidth)
     }
     .mediaActionPlayPillStyle()
 
     Button {} label: {
-      Text("Watchlist")
+      Label("Trailer", systemImage: "film")
         .font(MediaActionMetrics.labelFont)
     }
     .mediaActionPillStyle()
@@ -374,12 +164,6 @@ public extension View {
         .mediaActionIconFont(size: MediaActionMetrics.circleIconPointSize, weight: .semibold)
     }
     .mediaActionCircleStyle()
-
-    Button {} label: {
-      Image(systemName: "ellipsis")
-        .mediaActionIconFont(size: MediaActionMetrics.circleIconPointSize, weight: .bold)
-    }
-    .mediaActionGhostStyle()
   }
   .padding(32)
   .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

@@ -42,7 +42,7 @@ same lockups. Reach for these before writing anything:
 | `buttonLockup` | `TVCaptionButtonView`, or a `Button` whose label is a `Label` |
 | `badge` / `textBadge` | an `Image` from the asset catalogue; badges are artwork, not text |
 | `productInfo` / `infoTable` | the About block's columns — a table, quiet, free to grow |
-| `description handlesOverflow` | truncated text in a `.plain` `Button` + `fullScreenCover` |
+| `description handlesOverflow` | `InfoPopup` (KinoPubUI) — **the clipped content is the trigger**, never an `i` button beside it. `expandsIntoInfoPopup(title:)` wraps the paragraph or column itself; presentation is a sheet, drawn as a centred panel over a scrim on tvOS |
 | section header | `SectionHeader` — and on tvOS it never navigates (no chevron, no `NavigationLink`) |
 
 No native equivalent exists for `ratingCard`, `reviewCard` and the `ratingBadge` bar.
