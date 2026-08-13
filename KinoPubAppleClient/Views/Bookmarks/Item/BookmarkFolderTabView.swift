@@ -22,9 +22,7 @@ struct BookmarkFolderTabView: View {
       BookmarkView(model: BookmarkModel(bookmark: bookmark,
                                         itemsService: appContext.contentService,
                                         errorHandler: errorHandler))
-        .navigationDestination(for: Route.self) { route in
-          RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
-        }
+        .appRouteDestinations()
     }
     .navigationStackActive(for: .bookmark(bookmark.id), selected: navigationState.selectedTab)
     .id(bookmark.id)

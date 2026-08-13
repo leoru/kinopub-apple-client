@@ -18,27 +18,24 @@ struct CatalogView: View {
 
   private let title: LocalizedStringKey
   private let tab: NavigationTabs
-  private let path: ReferenceWritableKeyPath<NavigationState, [CatalogRoutes]>
 
   @StateObject private var catalog: MediaCatalog
   @StateObject private var cardMenu = MediaCardMenuCoordinator()
   @State private var showShortCutPicker: Bool = false
-  @Namespace private var zoomNamespace
 
+  /// The tab is the whole address: `RouteStack` resolves which array of
+  /// `NavigationState` backs it, so there is no separate path key path to keep in step.
   init(title: LocalizedStringKey,
        tab: NavigationTabs,
-       path: ReferenceWritableKeyPath<NavigationState, [CatalogRoutes]>,
        catalog: @autoclosure @escaping () -> MediaCatalog) {
     self.title = title
     self.tab = tab
-    self.path = path
     _catalog = StateObject(wrappedValue: catalog())
   }
 
   var body: some View {
     @Bindable var errorHandler = errorHandler
-    NavigationStack(path: Binding(get: { navigationState[keyPath: path] },
-                                  set: { navigationState[keyPath: path] = $0 })) {
+    RouteStack(tab: tab, zoom: true) {
       catalogView
         .platformNavigationTitle(title)
         .background(Color.KinoPub.background)
@@ -59,11 +56,6 @@ struct CatalogView: View {
         .sheet(isPresented: $showShortCutPicker) {
           ShortcutSelectionView(shortcut: $catalog.shortcut, mediaType: $catalog.contentType)
         }
-        .navigationDestination(for: Route.self) { route in
-          RouteDestination(route: route,
-                           linkProvider: AppRoutesLinkProvider(),
-                           transitionNamespace: zoomNamespace)
-        }
         .handleError(state: $errorHandler.state)
         .task {
           cardMenu.bind(errorHandler: errorHandler)
@@ -72,8 +64,6 @@ struct CatalogView: View {
         .task { await cardMenu.refreshFolders() }
         .mediaCardNewFolderAlert(cardMenu)
     }
-    .environment(\.zoomTransitionNamespace, zoomNamespace)
-    .navigationStackActive(for: tab, selected: navigationState.selectedTab)
   }
 
   private var sortToolbarPlacement: ToolbarItemPlacement {

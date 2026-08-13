@@ -14,7 +14,6 @@ struct MainView: View {
   @EnvironmentObject var authState: AuthState
   @Environment(\.appContext) var appContext
   @Environment(\.openURL) private var openURL
-  @Namespace private var zoomNamespace
 
   @StateObject private var catalog: HomeCatalog
   @StateObject private var cardMenu = MediaCardMenuCoordinator()
@@ -25,7 +24,7 @@ struct MainView: View {
 
   var body: some View {
     @Bindable var errorHandler = errorHandler
-    NavigationStack(path: $navigationState.mainRoutes) {
+    RouteStack(tab: .home, zoom: true) {
       // No page-level material and no `backgroundExtensionEffect` on any platform.
       //
       // That modifier duplicates the view into *mirrored, blurred copies* laid into
@@ -44,11 +43,6 @@ struct MainView: View {
 #if os(macOS)
         .macToolbarSearch()
 #endif
-        .navigationDestination(for: Route.self) { route in
-          RouteDestination(route: route,
-                           linkProvider: AppRoutesLinkProvider(),
-                           transitionNamespace: zoomNamespace)
-        }
         .handleError(state: $errorHandler.state)
         .task {
           cardMenu.bind(errorHandler: errorHandler)
@@ -59,8 +53,6 @@ struct MainView: View {
         }
         .mediaCardNewFolderAlert(cardMenu)
     }
-    .environment(\.zoomTransitionNamespace, zoomNamespace)
-    .navigationStackActive(for: .home, selected: navigationState.selectedTab)
   }
 
   /// Nothing on screen until the rows arrive, then a spinner if the wait drags on —

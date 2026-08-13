@@ -27,7 +27,7 @@ struct WatchlistView: View {
 
   var body: some View {
     @Bindable var errorHandler = errorHandler
-    NavigationStack(path: $navigationState.watchlistRoutes) {
+    RouteStack(tab: .watchlist) {
       content
         .platformNavigationTitle("Watchlist")
         .background(Color.KinoPub.background)
@@ -37,12 +37,8 @@ struct WatchlistView: View {
         }
         .task { await cardMenu.refreshFolders() }
         .mediaCardNewFolderAlert(cardMenu)
-        .navigationDestination(for: Route.self) { route in
-          RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
-        }
         .handleError(state: $errorHandler.state)
     }
-    .navigationStackActive(for: .watchlist, selected: navigationState.selectedTab)
   }
 
   @ViewBuilder

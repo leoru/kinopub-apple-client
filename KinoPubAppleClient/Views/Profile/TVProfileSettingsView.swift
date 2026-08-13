@@ -108,6 +108,8 @@ struct TVProfileSettingsView: View {
       SystemTypeStylesCatalogView()
     case .tvUIKitGallery:
       TVUIKitComponentGalleryView()
+    case .navFocusLab:
+      NavigationFocusLabView()
     case .libraryLab:
       LibrarySidebarLabView()
 #endif
@@ -220,39 +222,30 @@ struct TVProfileSettingsView: View {
 
 #if DEBUG
   private var diagnosticsSection: some View {
+    // Every row carries its own focus value. They all shared `.diagnostics` before,
+    // which is the exact pattern `docs/en/apple-platform/focus-and-tvui.md` bans —
+    // several sibling views bound to one `@FocusState` equals-value leave the engine
+    // unable to resolve which one is focused, and that cost a whole misdiagnosed
+    // detour on the detail page. The payload only disambiguates; the tip stays shared.
     SettingsSection("Diagnostics") {
-      Button {
-        path.append(SettingsRoute.streamSurvey)
-      } label: {
-        SettingsPillLabel(title: "Stream survey", showsChevron: true)
-      }
-      .buttonStyle(SettingsPillButtonStyle())
-      .focused($focusedItem, equals: .diagnostics)
-
-      Button {
-        path.append(SettingsRoute.typeStyles)
-      } label: {
-        SettingsPillLabel(title: "Type Styles", showsChevron: true)
-      }
-      .buttonStyle(SettingsPillButtonStyle())
-      .focused($focusedItem, equals: .diagnostics)
-
-      Button {
-        path.append(SettingsRoute.tvUIKitGallery)
-      } label: {
-        SettingsPillLabel(title: "TVUIKit Gallery", showsChevron: true)
-      }
-      .buttonStyle(SettingsPillButtonStyle())
-      .focused($focusedItem, equals: .diagnostics)
-
-      Button {
-        path.append(SettingsRoute.libraryLab)
-      } label: {
-        SettingsPillLabel(title: "Library Sidebar Lab", showsChevron: true)
-      }
-      .buttonStyle(SettingsPillButtonStyle())
-      .focused($focusedItem, equals: .diagnostics)
+      diagnosticsRow("Stream survey", route: .streamSurvey, id: "streamSurvey")
+      diagnosticsRow("Type Styles", route: .typeStyles, id: "typeStyles")
+      diagnosticsRow("TVUIKit Gallery", route: .tvUIKitGallery, id: "tvUIKitGallery")
+      diagnosticsRow("Navigation / Focus Lab", route: .navFocusLab, id: "navFocusLab")
+      diagnosticsRow("Library Sidebar Lab", route: .libraryLab, id: "libraryLab")
     }
+  }
+
+  private func diagnosticsRow(_ title: LocalizedStringKey,
+                              route: SettingsRoute,
+                              id: String) -> some View {
+    Button {
+      path.append(route)
+    } label: {
+      SettingsPillLabel(title: title, showsChevron: true)
+    }
+    .buttonStyle(SettingsPillButtonStyle())
+    .focused($focusedItem, equals: .diagnostics(id))
   }
 #endif
 
@@ -399,6 +392,7 @@ private enum SettingsRoute: Hashable {
   case streamSurvey
   case typeStyles
   case tvUIKitGallery
+  case navFocusLab
   case libraryLab
 #endif
 }
@@ -413,7 +407,9 @@ private enum SettingsFocusItem: Hashable {
   case kinopoisk
   case dataSources
   case logout
-  case diagnostics
+  /// The payload only keeps sibling rows from sharing one focus value — see the note
+  /// on `diagnosticsRow`. Every diagnostics row still shows the same tip.
+  case diagnostics(String)
 }
 
 private struct SettingsTip {

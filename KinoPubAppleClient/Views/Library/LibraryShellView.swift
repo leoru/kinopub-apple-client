@@ -45,14 +45,11 @@ struct LibraryShellView: View {
     // pane's width beside a sidebar that never goes anywhere — section switching is
     // separate state (`model.selection`), not a stack push, so it is unaffected by
     // where the stack sits.
-    NavigationStack(path: $navigationState.libraryRoutes) {
+    RouteStack(tab: .library) {
       HStack(spacing: 0) {
         sidebar
         detail
           .frame(maxWidth: .infinity)
-      }
-      .navigationDestination(for: Route.self) { route in
-        RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
       }
     }
     .task {
@@ -71,7 +68,6 @@ struct LibraryShellView: View {
       Button("Cancel", role: .cancel) { model.isCreatingFolder = false }
     }
     .handleError(state: $errorHandler.state)
-    .navigationStackActive(for: .library, selected: navigationState.selectedTab)
   }
 
   // MARK: - Sidebar

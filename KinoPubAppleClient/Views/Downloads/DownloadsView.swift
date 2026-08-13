@@ -22,7 +22,7 @@ struct DownloadsView: View {
   }
   
   var body: some View {
-    NavigationStack(path: $navigationState.downloadsRoutes) {
+    RouteStack(tab: .downloads) {
       ZStack {
         if catalog.isEmpty {
           emptyView
@@ -32,14 +32,10 @@ struct DownloadsView: View {
       }
       .platformNavigationTitle("Downloads")
       .background(Color.KinoPub.background)
-      .navigationDestination(for: Route.self) { route in
-        RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
-      }
       .onAppear(perform: {
         catalog.refresh()
       })
     }
-    .navigationStackActive(for: .downloads, selected: navigationState.selectedTab)
   }
   
   var downloadsList: some View {

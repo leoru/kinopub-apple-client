@@ -24,6 +24,9 @@
 		9BB427D377EF668A2FFC1A10 /* KinopoiskSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */; };
 		9F6F94A15ADEFE2F79EFD2E3 /* SectionsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CCB33005E595A30B2B59E06 /* SectionsSettingsView.swift */; };
 		A1B2C3D42E5F60718293A002 /* RouteDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293A001 /* RouteDestination.swift */; };
+		A1B2C3D42E5F60718293C004 /* NavigationFocusLabBridges.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293C003 /* NavigationFocusLabBridges.swift */; };
+		A1B2C3D42E5F60718293C002 /* NavigationFocusLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293C001 /* NavigationFocusLabView.swift */; };
+		A1B2C3D42E5F60718293B002 /* RouteStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293B001 /* RouteStack.swift */; };
 		A1B2C3D42E5F60718293A004 /* PlaybackSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293A003 /* PlaybackSession.swift */; };
 		A33EDB761E32D7E524DDAB0F /* ActorImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A9752C15D23B6E4419BA5E1 /* ActorImageProvider.swift */; };
 		A7EDB3D1A6A6B06830D80416 /* KinopoiskKeySettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F6301ED273E06AFCEBCC48 /* KinopoiskKeySettingsModel.swift */; };
@@ -189,6 +192,9 @@
 		8A9752C15D23B6E4419BA5E1 /* ActorImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActorImageProvider.swift; sourceTree = "<group>"; };
 		A10A0594FE3A3EF35AA32EDD /* CollectionDetailModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionDetailModel.swift; sourceTree = "<group>"; };
 		A1B2C3D42E5F60718293A001 /* RouteDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteDestination.swift; sourceTree = "<group>"; };
+		A1B2C3D42E5F60718293C003 /* NavigationFocusLabBridges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationFocusLabBridges.swift; sourceTree = "<group>"; };
+		A1B2C3D42E5F60718293C001 /* NavigationFocusLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationFocusLabView.swift; sourceTree = "<group>"; };
+		A1B2C3D42E5F60718293B001 /* RouteStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteStack.swift; sourceTree = "<group>"; };
 		A1B2C3D42E5F60718293A003 /* PlaybackSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSession.swift; sourceTree = "<group>"; };
 		A5945A0BAD187210B5696B83 /* CollectionDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionDetailView.swift; sourceTree = "<group>"; };
 		AAA67574E8F59DCCBF4B88BF /* BookmarkMembershipStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookmarkMembershipStore.swift; sourceTree = "<group>"; };
@@ -668,6 +674,8 @@
 				CCA100012E1004 /* UILabSearchToolbar.swift */,
 				CCA100012E1006 /* SystemTypeStylesCatalogView.swift */,
 				CCA100012E1008 /* TVUIKitComponentGalleryView.swift */,
+				A1B2C3D42E5F60718293C001 /* NavigationFocusLabView.swift */,
+				A1B2C3D42E5F60718293C003 /* NavigationFocusLabBridges.swift */,
 				CCA100012E100A /* LibrarySidebarLabView.swift */,
 			);
 			path = UILab;
@@ -749,6 +757,7 @@
 				CC01461C2A783EEF00F858AF /* NavigationTabs.swift */,
 				CC01461E2A783F8400F858AF /* Routes.swift */,
 				A1B2C3D42E5F60718293A001 /* RouteDestination.swift */,
+				A1B2C3D42E5F60718293B001 /* RouteStack.swift */,
 				CC0146342A78439600F858AF /* NavigationLinkProvider.swift */,
 				B52C3C1EAD68A9B19F26BA2E /* SectionVisibilityStore.swift */,
 			);
@@ -1092,6 +1101,9 @@
 				C9A401FF2B7E4D0A91C36B12 /* UnauthorizedResponsePlugin.swift in Sources */,
 				CC01461F2A783F8400F858AF /* Routes.swift in Sources */,
 				A1B2C3D42E5F60718293A002 /* RouteDestination.swift in Sources */,
+				A1B2C3D42E5F60718293C004 /* NavigationFocusLabBridges.swift in Sources */,
+				A1B2C3D42E5F60718293C002 /* NavigationFocusLabView.swift in Sources */,
+				A1B2C3D42E5F60718293B002 /* RouteStack.swift in Sources */,
 				CC7FCE8C2A72D23600DFC0A9 /* APIClientError+Description.swift in Sources */,
 				CCC70B8C2A7FC16A00274E5F /* BookmarkModel.swift in Sources */,
 				CCC70B922A7FCA0D00274E5F /* ErrorHandler.swift in Sources */,

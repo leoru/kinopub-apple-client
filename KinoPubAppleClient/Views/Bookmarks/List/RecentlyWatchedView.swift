@@ -16,13 +16,9 @@ struct RecentlyWatchedView: View {
   @Environment(\.appContext) var appContext
 
   var body: some View {
-    NavigationStack(path: $navigationState.recentlyWatchedRoutes) {
+    RouteStack(tab: .recentlyWatched) {
       HistoryView()
-        .navigationDestination(for: Route.self) { route in
-          RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
-        }
     }
-    .navigationStackActive(for: .recentlyWatched, selected: navigationState.selectedTab)
   }
 
 }

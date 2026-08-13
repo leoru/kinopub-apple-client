@@ -40,7 +40,7 @@ struct SearchView: View {
 
   var body: some View {
     @Bindable var errorHandler = errorHandler
-    NavigationStack(path: $navigationState.searchRoutes) {
+    RouteStack(tab: .search) {
       Group {
         if catalog.loadFailed && catalog.items.isEmpty {
           // First page failed — full-screen retry. A failed page further down keeps
@@ -127,9 +127,6 @@ struct SearchView: View {
         }
 #endif
       }
-      .navigationDestination(for: Route.self) { route in
-        RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
-      }
       .handleError(state: $errorHandler.state)
       .task {
         cardMenu.bind(errorHandler: errorHandler)
@@ -157,7 +154,6 @@ struct SearchView: View {
       }
 #endif
     }
-    .navigationStackActive(for: .search, selected: navigationState.selectedTab)
   }
 
   private var searchReturnPlacement: ToolbarItemPlacement {

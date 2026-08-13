@@ -135,31 +135,39 @@ class NavigationState: ObservableObject {
     selectedTab = tab
   }
 
+  /// Which array backs which tab. One table, because `push` and `popToRoot` used to
+  /// carry a `switch` each over the same ten cases — two places to forget a tab in.
+  /// `.settings` has no shared stack: tvOS Settings owns a local `NavigationPath`.
+  private static func routes(for tab: NavigationTabs) -> ReferenceWritableKeyPath<NavigationState, [Route]>? {
+    switch tab {
+    case .search: \.searchRoutes
+    case .home: \.mainRoutes
+    case .movies: \.moviesRoutes
+    case .series: \.seriesRoutes
+    case .library: \.libraryRoutes
+    case .watchlist: \.watchlistRoutes
+    case .recentlyWatched: \.recentlyWatchedRoutes
+    case .bookmarks, .bookmark: \.bookmarksRoutes
+    case .downloads: \.downloadsRoutes
+    case .settings: nil
+    }
+  }
+
+  /// The path a tab's `NavigationStack` binds to. A tab with no shared stack gets an
+  /// inert binding rather than a crash — see `routes(for:)`.
+  func path(for tab: NavigationTabs) -> Binding<[Route]> {
+    guard let keyPath = Self.routes(for: tab) else {
+      return .constant([])
+    }
+    return Binding(get: { self[keyPath: keyPath] },
+                   set: { self[keyPath: keyPath] = $0 })
+  }
+
   /// Clears the selected tab's stack so a second click on the same tab
   /// returns to that tab's root (Apple Music / Apple TV behaviour).
   func popToRoot(for tab: NavigationTabs) {
-    switch tab {
-    case .search:
-      searchRoutes = []
-    case .home:
-      mainRoutes = []
-    case .movies:
-      moviesRoutes = []
-    case .series:
-      seriesRoutes = []
-    case .library:
-      libraryRoutes = []
-    case .watchlist:
-      watchlistRoutes = []
-    case .recentlyWatched:
-      recentlyWatchedRoutes = []
-    case .bookmarks, .bookmark:
-      bookmarksRoutes = []
-    case .downloads:
-      downloadsRoutes = []
-    case .settings:
-      break
-    }
+    guard let keyPath = Self.routes(for: tab) else { return }
+    self[keyPath: keyPath] = []
   }
 
   /// Appends onto the selected tab's navigation stack (context-menu Play, etc.).
@@ -185,28 +193,8 @@ class NavigationState: ObservableObject {
       break
     }
 #endif
-    switch selectedTab {
-    case .search:
-      searchRoutes.append(route)
-    case .home:
-      mainRoutes.append(route)
-    case .movies:
-      moviesRoutes.append(route)
-    case .series:
-      seriesRoutes.append(route)
-    case .library:
-      libraryRoutes.append(route)
-    case .watchlist:
-      watchlistRoutes.append(route)
-    case .recentlyWatched:
-      recentlyWatchedRoutes.append(route)
-    case .bookmarks, .bookmark:
-      bookmarksRoutes.append(route)
-    case .downloads:
-      downloadsRoutes.append(route)
-    case .settings:
-      break
-    }
+    guard let keyPath = Self.routes(for: selectedTab) else { return }
+    self[keyPath: keyPath].append(route)
   }
 }
 

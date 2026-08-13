@@ -5,6 +5,44 @@ not belong here. Detail checklists live under [`docs/en/features/`](docs/en/feat
 
 ## Unreleased
 
+### One navigation assembly, one tab table, and a lab for the tvOS bar
+
+- **`RouteStack` replaces ten hand-copied stacks.** Every tab used to write the same four lines —
+  a `NavigationStack` bound to one of `NavigationState`'s arrays, a `.navigationDestination(for:
+  Route.self)` building a `RouteDestination`, and a `.navigationStackActive` gate — and they had
+  already drifted: two passed a zoom namespace, eight did not. `RouteStack(tab:zoom:)` now owns all
+  four; `appRouteDestinations()` covers the two stacks whose path is local `@State`
+  (bookmark-folder tabs, tvOS Settings). Zoom stays **opt-in per stack** because the zoom *source*
+  modifier is `#if os(iOS)`-only — publishing a namespace on a stack whose cards never mark a
+  source would give the destination a transition with nothing to match.
+- **`NavigationState` lost both of its ten-case switches.** `push` and `popToRoot` each carried one
+  over the same tabs — two places to forget a tab in. One `routes(for:)` key-path table feeds both,
+  plus the new `path(for:)` binding. `.settings` has no shared stack and now says so once.
+- **`TabsNavigationView`: four hand-written platform trees → one browse-tab table.** The tabs come
+  from `browseTabs` and a `ForEach` (`ForEach` conforms to `TabContent`); each platform only decides
+  how a tab labels itself and which utility ends surround it. That drift was already visible — the
+  iPad bar's own comment described "glyph · words · glyph" while its code built icon+word chips.
+  Badges stay off tvOS: `TabContent.badge` is `@available(tvOS, unavailable)` in the 27.0 SDK
+  interface (checked, not assumed).
+- **The unrendered profile-avatar fetch is gone.** `TabsNavigationView` downloaded the avatar and
+  the user record on every sign-in into `@State` that no branch of its body drew — left over from
+  the parked sidebar shell. `SettingsRootView` already loads and caches the avatar for the one
+  screen that shows it. Two fewer launch requests, which is the direction
+  `docs/en/plans/2026-08-10-launch-status-and-continuity.md` asks for.
+- **Fixed on sight: five Settings diagnostics rows shared one `@FocusState` value.** All bound
+  `.focused($focusedItem, equals: .diagnostics)` — the exact ambiguity
+  `docs/en/apple-platform/focus-and-tvui.md` bans and that cost a misdiagnosed detour on the detail
+  page. `SettingsFocusItem.diagnostics` now carries a disambiguating id; the tip stays shared.
+- **New DEBUG/tvOS page: Settings → Diagnostics → "Navigation / Focus Lab."** Four shells of the
+  same two-tab app, each isolating one variable behind the tab-bar and focus-stranding bugs:
+  (A) what ships — stack per tab, SwiftUI rails; (B) one `NavigationStack` outside the `TabView`;
+  (C) one `UICollectionView` with the rails as `orthogonalLayoutSectionForMediaItems` sections;
+  (D) C plus `setContentScrollView(_:for: .top)`. A HUD reads `isTabBarHidden`, the class+address of
+  whatever `contentScrollView(for: .top)` resolved to, and stack depth — because the screen and the
+  system disagreeing is the bug, and that is not visible from SwiftUI. Each variant runs in a
+  `fullScreenCover`: nested in the real Settings tab it would measure the *app's* tab bar controller
+  instead of its own. **Built on all three platforms, not yet run.**
+
 ### tvOS wide rails are system media items
 
 - **Every 16:9 horizontal rail now draws with `TVMediaItemContentConfiguration.wideCell()`, laid out

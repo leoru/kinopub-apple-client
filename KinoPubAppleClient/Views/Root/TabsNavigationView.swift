@@ -10,21 +10,26 @@ import SwiftUI
 import KinoPubUI
 import KinoPubBackend
 import KinoPubKit
-#if canImport(UIKit)
-import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 /// Primary chrome — classic system `TabView` tab bar on every platform.
 ///
-/// - **tvOS:** `.tabBarOnly` (top); Search is the **first** tab (left of Home).
+/// The browse destinations live in **one table** (`browseTabs`); each platform only
+/// decides how a tab *labels* itself and which utility ends surround them. Before that
+/// they were four hand-written trees that had to be edited in parallel every time a tab
+/// changed, which is how the iPad bar's comment ended up describing a shape its own code
+/// did not build.
+///
+/// - **tvOS:** `.tabBarOnly` (top); glyph · word · word · word · word · glyph. Search is
+///   the **first** tab (left of Home) — not `role: .search`, which pins trailing.
 /// - **macOS:** `.tabBarOnly`; no Settings tab (Settings window / ⌘,); no Search tab —
-///   compact trailing toolbar search via `macToolbarSearch()` on each `NavigationStack`
-///   (Finder/Photos). Return opens Search results. System back/forward stay leading.
-/// - **iPad:** `.tabBarOnly`; same shape as tvOS — Search glyph **first**, Settings gear
-///   last, words in between (no `role: .search`, which would pin Search trailing).
-/// - **iPhone:** bottom tab bar; `Tab(role: .search)` pins Search trailing (HIG).
+///   compact trailing toolbar search via `macToolbarSearch()` on each `RouteStack`
+///   (Finder/Photos). Return opens Search results.
+/// - **iPad:** `.tabBarOnly`; Search glyph **first**, Settings gear last, icon+word in
+///   between.
+/// - **iPhone:** bottom bar; `Tab(role: .search)` pins Search trailing (HIG).
+///
+/// Badges are `@available(tvOS, unavailable)` on `TabContent` — verified in the 27.0 SDK
+/// interface, not assumed — so only the non-TV bars carry the Library count.
 ///
 /// PARKED (do not re-enable until locked properly per docs/WWDC): `.sidebarAdaptable`,
 /// `TabViewCustomization`, custom `NavigationSplitView` sidebars, Home segmented
@@ -41,10 +46,7 @@ struct TabsNavigationView: View {
   @EnvironmentObject var networkMonitor: NetworkMonitor
 
   @State private var sidebarFolders: [Bookmark] = []
-  @State private var userData: UserData? = UserProfileCache.shared.loadUser()
-  @State private var avatarImage: Image?
   @State private var watchlistBadgeCount = 0
-  @State private var downloadsBadgeCount = 0
   @State private var sidebarSyncedAt: Date?
   private static let sidebarSyncTTL: TimeInterval = 120
 #if os(macOS)
@@ -112,6 +114,42 @@ struct TabsNavigationView: View {
     )
   }
 
+  // MARK: - The tab table
+
+  /// A browse destination in bar order. Search and Settings are deliberately absent:
+  /// they are the utility ends, and every platform places them differently.
+  private struct TabSpec: Identifiable {
+    let tab: NavigationTabs
+    let title: LocalizedStringKey
+    let systemImage: String
+    var id: NavigationTabs { tab }
+  }
+
+  private static let browseTabs: [TabSpec] = [
+    TabSpec(tab: .home, title: "Home", systemImage: "house.fill"),
+    TabSpec(tab: .movies, title: "Movies", systemImage: "movieclapper"),
+    TabSpec(tab: .series, title: "Shows", systemImage: "rectangle.stack"),
+    TabSpec(tab: .library, title: "Library", systemImage: "rectangle.stack.badge.person.crop")
+  ]
+
+  @ViewBuilder
+  private func content(for tab: NavigationTabs) -> some View {
+    switch tab {
+    case .home: homeContent
+    case .movies: moviesContent
+    case .series: seriesContent
+    case .library: libraryContent
+    default: EmptyView()
+    }
+  }
+
+  /// Glyph-only tab label. The title still ships as the accessibility label — dropping
+  /// the text is a visual decision, not a reason for VoiceOver to announce nothing.
+  private func glyph(_ systemImage: String, label: LocalizedStringKey) -> some View {
+    Image(systemName: systemImage)
+      .accessibilityLabel(Text(label))
+  }
+
   // MARK: - TabView
 
   @ViewBuilder
@@ -130,25 +168,15 @@ struct TabsNavigationView: View {
   }
 
 #if os(macOS)
-  /// Browse tabs; trailing toolbar search lives on each tab's `NavigationStack` via
+  /// Browse tabs; trailing toolbar search lives on each tab's stack via
   /// `macToolbarSearch()` — never on `TabView` (that yields the giant under-tab field).
   /// Return in the field opens the Search results surface.
   private var macShell: some View {
     ZStack {
       TabView(selection: tabSelection) {
-        Tab("Home", systemImage: "house.fill", value: NavigationTabs.home) {
-          homeContent
+        ForEach(Self.browseTabs) { spec in
+          browseTab(spec)
         }
-        Tab("Movies", systemImage: "movieclapper", value: NavigationTabs.movies) {
-          moviesContent
-        }
-        Tab("Shows", systemImage: "rectangle.stack", value: NavigationTabs.series) {
-          seriesContent
-        }
-        Tab("Library", systemImage: "rectangle.stack.badge.person.crop", value: NavigationTabs.library) {
-          libraryContent
-        }
-        .badge(libraryBadgeCount)
       }
       .tabViewStyle(.tabBarOnly)
       .opacity(navigationState.selectedTab == .search ? 0 : 1)
@@ -168,64 +196,40 @@ struct TabsNavigationView: View {
 #endif
 
 #if os(tvOS)
-  /// Top tab bar — Search is first (left of Home), not `role: .search` (that pins trailing).
+  /// Top tab bar — Search is first (left of Home), not `role: .search` (that pins
+  /// trailing).
   ///
-  /// Shape is icon · text · text · text · text · icon, the way tvOS media apps read:
-  /// the two utility ends are glyphs, the browse destinations are words. Giving the
-  /// browse tabs a `systemImage` too turns the bar into a row of icon+label chips,
-  /// which is what it must not be — so these deliberately pass a bare `Text`.
+  /// The browse tabs pass a bare `Text`: `Tab("Title", systemImage:)` gives every tab an
+  /// icon+label chip, which is what a 10-foot bar must not be. Only the two utility ends
+  /// are glyphs.
   private var tvTabBar: some View {
     TabView(selection: tabSelection) {
       Tab(value: NavigationTabs.search) {
         searchContent
       } label: {
-        tvIconTab("magnifyingglass", label: "Search")
+        glyph("magnifyingglass", label: "Search")
       }
 
-      Tab(value: NavigationTabs.home) {
-        homeContent
-      } label: {
-        Text("Home")
-      }
-
-      Tab(value: NavigationTabs.movies) {
-        moviesContent
-      } label: {
-        Text("Movies")
-      }
-
-      Tab(value: NavigationTabs.series) {
-        seriesContent
-      } label: {
-        Text("Shows")
-      }
-
-      Tab(value: NavigationTabs.library) {
-        libraryContent
-      } label: {
-        Text("Library")
+      ForEach(Self.browseTabs) { spec in
+        Tab(value: spec.tab) {
+          content(for: spec.tab)
+        } label: {
+          Text(spec.title)
+        }
       }
 
       Tab(value: NavigationTabs.settings) {
         settingsContent
       } label: {
-        tvIconTab("gear", label: "Settings")
+        glyph("gear", label: "Settings")
       }
     }
     .tabViewStyle(.tabBarOnly)
   }
-
-  /// Glyph-only tab. The title still ships as the accessibility label — dropping the
-  /// text is a visual decision, not a reason for VoiceOver to announce nothing.
-  private func tvIconTab(_ systemImage: String, label: LocalizedStringKey) -> some View {
-    Image(systemName: systemImage)
-      .accessibilityLabel(Text(label))
-  }
 #endif
 
 #if os(iOS)
-  /// iPad top tab bar, shaped like the tvOS one: glyph · words · glyph. Search leads
-  /// and Settings closes the bar as bare icons; the browse destinations are words.
+  /// iPad top tab bar: Search glyph leads, Settings gear closes, icon+word in between.
   ///
   /// Search deliberately does **not** use `Tab(role: .search)` here — that role pins it
   /// trailing, which put the two utility tabs at the same end and read as an
@@ -235,30 +239,17 @@ struct TabsNavigationView: View {
       Tab(value: NavigationTabs.search) {
         searchContent
       } label: {
-        iconTab("magnifyingglass", label: "Search")
+        glyph("magnifyingglass", label: "Search")
       }
 
-      Tab("Home", systemImage: "house.fill", value: NavigationTabs.home) {
-        homeContent
+      ForEach(Self.browseTabs) { spec in
+        browseTab(spec)
       }
-
-      Tab("Movies", systemImage: "movieclapper", value: NavigationTabs.movies) {
-        moviesContent
-      }
-
-      Tab("Shows", systemImage: "rectangle.stack", value: NavigationTabs.series) {
-        seriesContent
-      }
-
-      Tab("Library", systemImage: "rectangle.stack.badge.person.crop", value: NavigationTabs.library) {
-        libraryContent
-      }
-      .badge(libraryBadgeCount)
 
       Tab(value: NavigationTabs.settings) {
         settingsContent
       } label: {
-        iconTab("gear", label: "Settings")
+        glyph("gear", label: "Settings")
       }
     }
     .tabViewStyle(.tabBarOnly)
@@ -270,22 +261,9 @@ struct TabsNavigationView: View {
   /// iPhone bottom bar — content tabs + pinned trailing Search (`Tab(role: .search)`).
   private var phoneCompactTabBar: some View {
     TabView(selection: tabSelection) {
-      Tab("Home", systemImage: "house.fill", value: NavigationTabs.home) {
-        homeContent
+      ForEach(Self.browseTabs) { spec in
+        browseTab(spec)
       }
-
-      Tab("Movies", systemImage: "movieclapper", value: NavigationTabs.movies) {
-        moviesContent
-      }
-
-      Tab("Shows", systemImage: "rectangle.stack", value: NavigationTabs.series) {
-        seriesContent
-      }
-
-      Tab("Library", systemImage: "rectangle.stack.badge.person.crop", value: NavigationTabs.library) {
-        libraryContent
-      }
-      .badge(libraryBadgeCount)
 
       Tab("Settings", systemImage: "gear", value: NavigationTabs.settings) {
         settingsContent
@@ -300,22 +278,27 @@ struct TabsNavigationView: View {
     // Always visible for now (2026-08-09) — see `padTabBar`.
     .tabBarMinimizeBehavior(.never)
   }
+#endif
 
-  /// Glyph-only tab. The title still ships as the accessibility label — dropping the
-  /// text is a visual decision, not a reason for VoiceOver to announce nothing.
-  private func iconTab(_ systemImage: String, label: LocalizedStringKey) -> some View {
-    Image(systemName: systemImage)
-      .accessibilityLabel(Text(label))
+#if !os(tvOS)
+  /// One browse tab with its badge. Split out because `TabContent.badge` is
+  /// `@available(tvOS, unavailable)` — the TV bar builds its tabs without this.
+  @TabContentBuilder<NavigationTabs>
+  private func browseTab(_ spec: TabSpec) -> some TabContent<NavigationTabs> {
+    if spec.tab == .library {
+      Tab(spec.title, systemImage: spec.systemImage, value: spec.tab) {
+        content(for: spec.tab)
+      }
+      .badge(libraryBadgeCount)
+    } else {
+      Tab(spec.title, systemImage: spec.systemImage, value: spec.tab) {
+        content(for: spec.tab)
+      }
+    }
   }
 #endif
 
-  // MARK: - Profile chrome (badges / Settings tab)
-
-  private var profileDisplayName: String {
-    userData?.profile.name?.nilIfEmpty
-      ?? userData?.username.nilIfEmpty
-      ?? "Profile".localized
-  }
+  // MARK: - Badges
 
   private var libraryBadgeCount: Int {
     watchlistBadgeCount + bookmarksBadgeCount
@@ -342,7 +325,6 @@ struct TabsNavigationView: View {
   private var moviesContent: some View {
     CatalogView(title: "Movies",
                 tab: .movies,
-                path: \.moviesRoutes,
                 catalog: MediaCatalog(itemsService: appContext.contentService,
                                       authState: authState,
                                       errorHandler: errorHandler,
@@ -352,7 +334,6 @@ struct TabsNavigationView: View {
   private var seriesContent: some View {
     CatalogView(title: "Shows",
                 tab: .series,
-                path: \.seriesRoutes,
                 catalog: MediaCatalog(itemsService: appContext.contentService,
                                       authState: authState,
                                       errorHandler: errorHandler,
@@ -388,27 +369,18 @@ struct TabsNavigationView: View {
   }
 #endif
 
-  // MARK: - Badge / profile data
+  // MARK: - Badge data
 
+  /// Only the badge counts are fetched here. The profile avatar deliberately is **not**:
+  /// `SettingsRootView` already loads and caches it for the one screen that draws it,
+  /// and this view's copy fed a `@State` no branch of the body ever rendered — a network
+  /// fetch per sign-in for nothing. Left over from the parked sidebar shell.
   private func loadSidebarChrome() async {
-    if avatarImage == nil, let cachedAvatar = UserProfileCache.shared.loadAvatar() {
-      avatarImage = Self.platformImage(from: cachedAvatar)
-    }
-
-    async let userTask: UserData? = {
-      try? await appContext.userService.fetchUserData()
-    }()
     async let foldersTask = fetchFolders()
     async let watchlistTask = fetchWatchlistCount()
-
-    if let freshUser = await userTask {
-      userData = freshUser
-      UserProfileCache.shared.save(user: freshUser)
-    }
     sidebarFolders = await foldersTask
     watchlistBadgeCount = await watchlistTask
     sidebarSyncedAt = Date()
-    await loadAvatarImage(from: userData?.profile.avatar)
   }
 
   private func syncSidebarFolders() async {
@@ -438,38 +410,6 @@ struct TabsNavigationView: View {
     } catch {
       return watchlistBadgeCount
     }
-  }
-
-  private func loadAvatarImage(from urlString: String?) async {
-    guard let urlString, !urlString.isEmpty, let url = URL(string: urlString) else {
-      avatarImage = nil
-      UserProfileCache.shared.clearAvatar()
-      return
-    }
-    do {
-      let (data, _) = try await URLSession.shared.data(from: url)
-      guard let image = Self.platformImage(from: data) else { return }
-      avatarImage = image
-      UserProfileCache.shared.saveAvatar(data)
-    } catch {
-      // Keep whatever's on screen.
-    }
-  }
-
-  private static func platformImage(from data: Data) -> Image? {
-#if canImport(UIKit)
-    guard let uiImage = UIImage(data: data) else { return nil }
-    return Image(uiImage: uiImage)
-#elseif canImport(AppKit)
-    guard let nsImage = NSImage(data: data) else { return nil }
-    return Image(nsImage: nsImage)
-#endif
-  }
-}
-
-private extension String {
-  var nilIfEmpty: String? {
-    isEmpty ? nil : self
   }
 }
 

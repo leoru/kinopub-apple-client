@@ -24,7 +24,7 @@ struct LibraryView: View {
 
   var body: some View {
     @Bindable var errorHandler = errorHandler
-    NavigationStack(path: $navigationState.libraryRoutes) {
+    RouteStack(tab: .library) {
       content
         .platformNavigationTitle("Library")
         .background(Color.KinoPub.background)
@@ -37,12 +37,8 @@ struct LibraryView: View {
         }
         .task { await cardMenu.refreshFolders() }
         .mediaCardNewFolderAlert(cardMenu)
-        .navigationDestination(for: Route.self) { route in
-          RouteDestination(route: route, linkProvider: AppRoutesLinkProvider())
-        }
         .handleError(state: $errorHandler.state)
     }
-    .navigationStackActive(for: .library, selected: navigationState.selectedTab)
   }
 
   @ViewBuilder

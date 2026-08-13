@@ -76,7 +76,10 @@ not supporting it at all. See [layout-and-containers](../apple-platform/layout-a
   and turned out to freeze tvOS focus dead rather than just being untidy. See
   [detail-page-choreography](../plans/detail-page-choreography.md) for the on-device evidence.
 - [ ] `MediaItemView` two-slide `.offset(y:)` + `.clipped()` "slideshow"
-- [ ] `TabsNavigationView` — 630 lines across three near-identical platform trees
+- [x] `TabsNavigationView` — the near-identical platform trees are gone. Browse tabs come from one
+  table + `ForEach`; each platform only chooses the label shape and the utility ends. Stacks moved
+  to `RouteStack`, which also collapsed ten copies of the destination registry and both of
+  `NavigationState`'s ten-case switches. See CHANGELOG.
 - [ ] Detail hero height → `containerRelativeFrame(.vertical)` instead of hard-coded values
 - [ ] Card → detail transition: prefer the default / system morph before anything custom
 - [ ] tvOS tab background via `containerBackground(for: .tabView)` where useful
