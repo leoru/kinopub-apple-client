@@ -92,6 +92,11 @@ struct MainView: View {
       onPlay: { card in
         cardMenu.play(card) { navigationState.push($0) }
       },
+      // Horizontal paging: the shelf reports its last card, the catalog decides whether
+      // a next page exists. Continue Watching declines inside `loadMore`.
+      onLoadMore: { row, _ in
+        catalog.loadMore(rowID: row.id)
+      },
       contextMenuProvider: { card, surface in
         guard !card.opensCollection else { return [] }
         return menuEntries(for: card, surface: surface, isContinueWatching: card.isLandscape)

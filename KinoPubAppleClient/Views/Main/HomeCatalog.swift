@@ -35,9 +35,22 @@ class HomeCatalog: ObservableObject {
 
   static let continueWatchingRowID = "continue-watching"
   static let collectionsRowID = "collections"
-  /// Cards shown in the Home preview row — the full browser (`Route.collections`)
-  /// pages through everything.
-  static let collectionsPreviewCount = 12
+
+  /// How far a horizontal shelf has been paged, per row id.
+  ///
+  /// Home rows used to be one page each, forever: `fetch(… page: nil)` and the
+  /// `pagination` block thrown away. This is the state that was missing — without it
+  /// there is nowhere to record "page 3 of 40" or "a request is already in flight",
+  /// and a near-end signal has nothing to act on.
+  private struct PageCursor {
+    var loaded: Int
+    var total: Int
+    var isLoading = false
+
+    var hasMore: Bool { loaded < total }
+  }
+
+  private var cursors: [String: PageCursor] = [:]
 
   /// Empty until the first fetch lands — the screen shows a spinner rather than
   /// stand-in artwork, the way the Apple TV app waits.
@@ -132,6 +145,64 @@ class HomeCatalog: ObservableObject {
     loadError = rows.isEmpty ? firstError : nil
   }
 
+  // MARK: - Paging a horizontal shelf
+
+  /// The user scrolled a shelf to its last loaded card. Fetches the next page and
+  /// appends it, or does nothing when there is nothing left.
+  ///
+  /// **Continue Watching never pages.** It is not one endpoint with pages: it is a
+  /// merge of `watching/movies`, `watching/serials` (twice) and `history`, ordered by
+  /// what the user touched last. "Page 2" of that has no meaning on the server.
+  func loadMore(rowID: String) {
+    guard rowID != Self.continueWatchingRowID else { return }
+    guard var cursor = cursors[rowID], cursor.hasMore, !cursor.isLoading else { return }
+
+    cursor.isLoading = true
+    cursors[rowID] = cursor
+    let next = cursor.loaded + 1
+
+    Task { [weak self] in
+      guard let self else { return }
+      defer { self.cursors[rowID]?.isLoading = false }
+      do {
+        let cards = try await self.fetchPage(next, ofRow: rowID)
+        guard !cards.isEmpty else {
+          // Server says there is another page and hands back nothing: stop asking,
+          // rather than retrying on every scroll to the end for the rest of the session.
+          self.cursors[rowID]?.total = self.cursors[rowID]?.loaded ?? next
+          return
+        }
+        self.store.appendCards(cards, for: try self.storeKey(forRow: rowID))
+        self.cursors[rowID]?.loaded = next
+        self.assembleRows()
+      } catch {
+        // Leave the cursor where it was — the next scroll to the end retries. A failed
+        // page must not look like the end of the catalogue.
+        Logger.app.debug("HomeCatalog: page \(next) of \(rowID) failed: \(error)")
+      }
+    }
+  }
+
+  private func fetchPage(_ page: Int, ofRow rowID: String) async throws -> [MediaCard] {
+    if rowID == Self.collectionsRowID {
+        let data = try await collectionsService.fetchCollections(page: page, sort: "views-")
+      return data.collections.map(CollectionMediaCard.make(from:))
+    }
+    guard let shortcut = Self.shortcuts.first(where: { $0.id == rowID }) else { return [] }
+    let data = try await itemsService.fetch(shortcut: shortcut.shortcut,
+                                            contentType: shortcut.contentType,
+                                            page: page)
+    return data.items.map(Self.card(for:))
+  }
+
+  private func storeKey(forRow rowID: String) throws -> RowKey {
+    if rowID == Self.collectionsRowID { return .collections }
+    guard let shortcut = Self.shortcuts.first(where: { $0.id == rowID }) else {
+      throw CancellationError()
+    }
+    return .shortcut(shortcut.shortcut, shortcut.contentType)
+  }
+
   /// Pull-to-refresh: forces every row to refetch regardless of TTL.
   func refresh() async {
     errorHandler.reset()
@@ -139,6 +210,9 @@ class HomeCatalog: ObservableObject {
     loadError = nil
     store.invalidate(family: .watch)
     store.invalidate(family: .catalog)
+    // A refresh returns every shelf to page 1, so the cursors have to go back with it —
+    // otherwise a row that had reached page 5 would ask for page 6 of a one-page row.
+    cursors.removeAll()
     await fetch()
   }
 
@@ -153,7 +227,15 @@ class HomeCatalog: ObservableObject {
     for shortcut in Self.shortcuts {
       let cards = store.cards(.shortcut(shortcut.shortcut, shortcut.contentType))
       guard !cards.isEmpty else { continue }
-      assembled.append(MediaRow(id: shortcut.id, title: shortcut.title.localized, cards: cards))
+      // Same chevron + "see all" the Collections row already has: the header pushes a
+      // full paginated grid pinned to this shortcut. tvOS ignores `destination` (a row
+      // header is never a focus stop there) — see `MediaPosterShelf`.
+      assembled.append(MediaRow(id: shortcut.id,
+                                title: shortcut.title.localized,
+                                cards: cards,
+                                destination: Route.shortcutItems(shortcut.shortcut,
+                                                                 shortcut.contentType,
+                                                                 title: shortcut.title.localized)))
     }
     // Collections sit last — a catalog add-on, not mixed into the hot/fresh/popular band.
     let collectionsCards = store.cards(.collections)
@@ -249,7 +331,7 @@ class HomeCatalog: ObservableObject {
     async let moviesTask = try? itemsService.fetchWatchingMovies().items
     async let allSerialsTask = try? itemsService.fetchWatchingSerials(subscribedOnly: false).items
     async let watchlistTask = try? itemsService.fetchWatchingSerials(subscribedOnly: true).items
-    async let historyTask = try? itemsService.fetchHistory(page: nil).history
+    async let historyTask = try? itemsService.fetchHistory(page: nil, perPage: 20).history
 
     let moviesResult = await moviesTask
     let serialsResult = await allSerialsTask
@@ -421,6 +503,8 @@ class HomeCatalog: ObservableObject {
     let data = try await itemsService.fetch(shortcut: shortcut.shortcut,
                                              contentType: shortcut.contentType,
                                              page: nil)
+    // Page 1 is also where we learn how many there are — the only place the API says so.
+    cursors[shortcut.id] = PageCursor(loaded: 1, total: max(data.pagination.total, 1))
     return data.items.map(Self.card(for:))
   }
 
@@ -434,8 +518,13 @@ class HomeCatalog: ObservableObject {
   /// First page of curated collections, as poster tiles — `/v1/collections` ships
   /// each collection's own artwork + counters (no per-collection item fetch).
   private func fetchCollectionsPreviewCards() async throws -> [MediaCard] {
-    let data = try await collectionsService.fetchCollections(page: nil, sort: nil)
-    return data.collections.prefix(Self.collectionsPreviewCount).map(CollectionMediaCard.make(from:))
+    let data = try await collectionsService.fetchCollections(page: nil, sort: "views-")
+    cursors[Self.collectionsRowID] = PageCursor(loaded: 1,
+                                                total: max(data.pagination?.total ?? 1, 1))
+    // No longer capped at twelve: the row pages like the catalogue shelves now, and a
+    // hard cap would have been the thing stopping it. `Route.collections` stays as the
+    // full grid for anyone who would rather not scroll sideways.
+    return data.collections.map(CollectionMediaCard.make(from:))
   }
 
   private func subscribeForAuth() {

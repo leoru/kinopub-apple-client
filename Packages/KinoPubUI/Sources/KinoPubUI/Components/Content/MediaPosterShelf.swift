@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import KinoPubBackend
 
 /// Horizontal poster (or landscape) shelf. Home Hot Movies and detail "More from
 /// director" are the same component; only title / destination / data differ.
@@ -23,6 +24,9 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
   private let focusedCard: FocusState<FocusKey?>.Binding?
   private let focusKey: ((MediaCard) -> FocusKey)?
   private let onCardFocused: (() -> Void)?
+  /// The rail reached its last loaded card. The shelf does not know what "more" means
+  /// — it reports the edge and the owner decides whether there is a next page.
+  private let onNearEnd: ((MediaCard) -> Void)?
 
   @Environment(\.dynamicTypeSize) private var typeSize
   @Environment(\.usesTVUIKitPosters) private var usesTVUIKitPosters
@@ -45,7 +49,8 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     caption: MediaCardCaption? = nil,
     focusedCard: FocusState<FocusKey?>.Binding? = nil,
     focusKey: ((MediaCard) -> FocusKey)? = nil,
-    onCardFocused: (() -> Void)? = nil
+    onCardFocused: (() -> Void)? = nil,
+    onNearEnd: ((MediaCard) -> Void)? = nil
   ) {
     self.title = title
     self.count = count
@@ -62,10 +67,21 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     self.focusedCard = focusedCard
     self.focusKey = focusKey
     self.onCardFocused = onCardFocused
+    self.onNearEnd = onNearEnd
   }
 
   private var isLandscape: Bool {
     cards.first?.isLandscape == true
+  }
+
+  /// Both TVUIKit rails call their `onNearEnd` from `willDisplay` — that is **every**
+  /// cell, not the last one. Passing it straight through would page the whole catalogue
+  /// the moment a shelf first drew. Filtering here rather than in each caller is what
+  /// makes `onNearEnd` mean the same thing on tvOS as it does on the SwiftUI rail.
+  private func reportIfLast(_ id: Int) {
+    guard CatalogLoadMore.isThresholdID(id, lastID: cards.last?.id),
+          let card = cards.last else { return }
+    onNearEnd?(card)
   }
 
   private var metrics: ShelfMetrics {
@@ -137,6 +153,9 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
         onSelect: { id in
           if let card = cards.first(where: { $0.id == id }) { open(card) }
         },
+        onNearEnd: onNearEnd.map { _ in
+          { id in reportIfLast(id) }
+        },
         contextMenuProvider: contextMenuProvider.map { provider in
           { id in cards.first(where: { $0.id == id }).map(provider) ?? [] }
         }
@@ -155,6 +174,7 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
       safeArea: containerSafeArea,
       typeSize: typeSize,
       onSelect: { card in open(card) },
+      onNearEnd: onNearEnd.map { _ in { card in reportIfLast(card.id) } },
       contextMenuProvider: contextMenuProvider
     )
     .frame(height: TVUIKitPosterMetrics.railHeight(
@@ -190,6 +210,13 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
               isEnabled: contextMenuProvider != nil,
               entriesProvider: { contextMenuProvider?(card) ?? [] }
             ))
+            // Last loaded card came into view. `isThresholdID` rather than an index
+            // lookup on purpose: `firstIndex(of:)` over `MediaCard` from every card's
+            // `onAppear` is the O(n^2) deep-compare `CatalogLoadMore` exists to prevent.
+            .onAppear {
+              guard CatalogLoadMore.isThresholdID(card.id, lastID: cards.last?.id) else { return }
+              onNearEnd?(card)
+            }
         }
       }
       .padding(.horizontal, metrics.inset)

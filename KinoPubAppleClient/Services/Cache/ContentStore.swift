@@ -98,6 +98,29 @@ final class ContentStore {
     disk.saveAll(rows)
   }
 
+  /// Append the next page of a paginated row.
+  ///
+  /// **`fetchedAt` is deliberately left alone.** Appending is not a refresh: if every
+  /// loaded page pushed the timestamp forward, a row the user keeps scrolling would
+  /// never go stale and would stop refreshing entirely. The TTL still measures from
+  /// when page 1 landed, and a refresh legitimately returns the row to page 1.
+  ///
+  /// Deduplicates by id — kino.pub can repeat an item across page boundaries when the
+  /// catalog shifts under the cursor, and a duplicate id in a `ForEach` is a silent
+  /// SwiftUI defect, not a cosmetic one.
+  func appendCards(_ cards: [MediaCard], for key: RowKey) {
+    guard var state = rows[key] else {
+      setCards(cards, for: key)
+      return
+    }
+    let known = Set(state.cards.map(\.id))
+    let fresh = cards.filter { !known.contains($0.id) }
+    guard !fresh.isEmpty else { return }
+    state.cards.append(contentsOf: fresh)
+    rows[key] = state
+    disk.saveAll(rows)
+  }
+
   /// Optimistic removal: the card disappears immediately, before the network call
   /// that caused it (hide/mark watched/...) even returns.
   func removeCard(id: Int, from key: RowKey) {

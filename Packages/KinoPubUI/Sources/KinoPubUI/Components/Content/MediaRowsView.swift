@@ -40,6 +40,9 @@ public struct MediaRowsView: View {
   /// When a card's `primaryAction` is `.play`, Select/click runs this instead of navigating.
   private let onPlay: ((MediaCard) -> Void)?
   private let onRowAppear: ((MediaRow) -> Void)?
+  /// A shelf was scrolled to its last loaded card. The row is named so the owner knows
+  /// which one to page; the card is the edge it stopped at.
+  private let onLoadMore: ((MediaRow, MediaCard) -> Void)?
   /// Long-press menu for a card. Return an empty array to leave the card without one.
   /// `surface` distinguishes shelf lockups from featured banners (artwork URL, etc.).
   private let contextMenuProvider: ((MediaCard, MediaCardContextSurface) -> [MediaCardContextEntry])?
@@ -63,12 +66,14 @@ public struct MediaRowsView: View {
               navigationLinkProvider: @escaping (MediaCard) -> any Hashable,
               onPlay: ((MediaCard) -> Void)? = nil,
               onRowAppear: ((MediaRow) -> Void)? = nil,
+              onLoadMore: ((MediaRow, MediaCard) -> Void)? = nil,
               contextMenuProvider: ((MediaCard, MediaCardContextSurface) -> [MediaCardContextEntry])? = nil) {
     self.rows = rows
     self.bannerCards = bannerCards
     self.navigationLinkProvider = navigationLinkProvider
     self.onPlay = onPlay
     self.onRowAppear = onRowAppear
+    self.onLoadMore = onLoadMore
     self.contextMenuProvider = contextMenuProvider
   }
 
@@ -190,7 +195,8 @@ public struct MediaRowsView: View {
       },
       caption: Self.cardCaption,
       focusedCard: $focusedCard,
-      focusKey: { CardKey(row: row.id, card: $0.id) }
+      focusKey: { CardKey(row: row.id, card: $0.id) },
+      onNearEnd: onLoadMore.map { report in { card in report(row, card) } }
     )
     .onAppear { onRowAppear?(row) }
   }
