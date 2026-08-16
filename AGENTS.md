@@ -25,7 +25,9 @@ semantic component is not a DRY violation; two components for one idea on one pl
 - **Appearance:** dark only, forced on every platform, until the deliberate light-theme stage.
 - **Distribution:** personal builds / TestFlight. App Store review is not a target — which is what
   makes isolated private API acceptable.
-- **Docs are English-only.** UI strings are RU + EN through `Localizable.xcstrings`.
+- **Our docs are English-only** — but a vendor's own documentation is kept **verbatim, in its
+  language** (`docs/providers/kinopub/` is Russian). Do not translate or delete it; it has been
+  deleted once already. UI strings are RU + EN through `Localizable.xcstrings`.
 - **Repo layout:** `KinoPubAppleClient/` (app), `Packages/KinoPub{UI,Backend,Kit,Metadata,Logging}/`,
   `workers/` (Cloudflare), `tools/` (offline crawlers/probes).
 - **Third-party SPM:** `KeychainAccess`, `PopupView`, `Reachability`, `Nuke` (artwork),
