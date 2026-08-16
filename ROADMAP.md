@@ -37,7 +37,9 @@ grid so the remote has a focus landing zone); contained Home banner shelf; unifi
 - [ ] Item-facts TTL cache (`MetadataCache`) for kino.pub details + enrichment
 - [ ] Per-source TTL instead of one TTL passed ad hoc at call sites; stale read returns cache **and**
       kicks a background refresh
-- [ ] Shared image pipeline (dedupe, disk, prefetch, palette) — evaluate Nuke vs finish in-house
+- [x] Shared image pipeline (dedupe, disk, prefetch) — Nuke, behind `Artwork`
+      (`ArtworkPipeline.swift`), one decoded cache keyed by target size on all four platforms.
+      **Palette is not part of it** and is still open
 - [ ] Card → detail always seeds the hero from known artwork
 - [ ] Launch: paint tabs and cached rails first; never block the shell on the whole session
       (a launch trace showed `history?perpage=20` alone at 96 KB, re-fetched every cold start)
@@ -69,7 +71,8 @@ grid so the remote has a focus landing zone); contained Home banner shelf; unifi
 
 ### Atoms and duplication
 
-- [ ] One `AsyncImage` atom instead of ~15 call sites
+- [x] One artwork atom instead of ~15 `AsyncImage` call sites — `CachedRemoteImage` (configured) over
+      `ArtworkImage` (the primitive). `AsyncImage` no longer appears in the repo
 - [ ] De-duplicate the two initials-avatar implementations
 - [ ] Collapse the 16 custom `ButtonStyle` types (separate pass)
 - [ ] `MediaItemInfoColumns` → `Grid` / `GridRow`
@@ -212,7 +215,8 @@ Media
 - `PlayableItem` — id, title, duration, image, source, progress, kind. An episode and a trailer
   differ by `kind` and nothing else, so they render through one rail.
 - `PlaybackVariant` — the *same* content encoded differently. **Built and verified 2026-08-16
-  against the real `GET /v1/items/124447`** (fixture + tests in `KinoPubBackendTests`).
+  against the real `GET /v1/items/124447`** (fixture + tests in `KinoPubBackendTests`, sheet in
+  [docs/providers/kinopub/video.md](docs/providers/kinopub/video.md)).
   The `s0e1` / `s0e2` in the original note was **exactly right**, in the API's own notation: each
   entry of `videos` carries `snumber: 0` and `number: 1…n`. There is no `seasons` key at all — the
   "fake episodes" live in `videos` on a `subtype: "multi"` item, with their own `id` and a human
@@ -222,12 +226,13 @@ Media
   `MediaItem.playbackVariants` + `VersionsRailView`; they never reach the episodes rail.
 - The trailer is needed **before** the rail is, because the hero's Trailer button needs it.
 
-- [ ] Map the API before designing more UI here (one focused reverse-engineering pass, by proxying
-      the real client): what distinguishes season/episode from part from fps variant in
-      `GET /v1/items/{id}`; how to *request* a variant and what the player needs handed to it; what
-      the playback endpoint returns per variant (streams, qualities, fps, codecs, audio, subtitles);
-      where the trailer lives; whether `items/similar` is cacheable and how slow it really is;
-      what collections / rewards actually are. Write it into a kino.pub sheet in `docs/providers/`
+- [x] **`GET /v1/items/{id}` mapped** from a captured response (124447): what distinguishes
+      season/episode from part from fps variant, how a variant is requested and what the player is
+      handed, what each variant carries (streams, qualities, codecs, audio, subtitles), and where
+      the trailer lives. → [docs/providers/kinopub/video.md](docs/providers/kinopub/video.md), fixture +
+      `MultiVersionItemTests`
+- [ ] The rest of the kino.pub sheet — `items/similar` (cacheable? how slow?), collections,
+      rewards, and the endpoints the item sheet does not cover. Same method: capture, then write
 - [x] Similar items rail · cast/crew → person credits · detail shelves (more from director / with
       actor) · multi-country, ratings, synopsis, info/audio columns
 - [ ] Trailers as items in the playable rail — not a movies-only section, not a hero takeover alone

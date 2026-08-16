@@ -1,0 +1,97 @@
+{
+    "status": 200,
+    "item": {
+        "id": 126187,
+        "type": "concert",
+        "subtype": "",
+        "title": "Schiller / Nature One",
+        "year": 2026,
+        "cast": "Christopher von Deylen",
+        "director": "Мартин Скорсезе",
+        "genres": [
+            {"id": 36, "title": "Electronic"},
+            {"id": 42, "title": "New Age"},
+            {"id": 100, "title": "Trance"},
+            {"id": 102, "title": "Chillout"}
+        ],
+        "countries": [{"id": 4, "title": "Германия"}],
+        "voice": null,
+        "duration": {"average": 5257, "total": 5257},
+        "ac3": 0,
+        "langs": 1,
+        "quality": 1080,
+        "plot": "Музыкальный проект Schiller выступил на старейшем опен-эйр фестивале.",
+        "tracklist": [
+            {"artists": "", "title": "Ruhe", "url": ""},
+            {"artists": "", "title": "Liebesschmerz", "url": ""},
+            {"artists": "", "title": "Das Glockenspiel", "url": ""},
+            {"artists": "", "title": "N/A", "url": ""},
+            {"artists": "", "title": "Willkommen im Glück", "url": ""},
+            {"artists": "", "title": "Leben… I Feel You", "url": ""}
+        ],
+        "imdb": null,
+        "imdb_rating": 8.1,
+        "imdb_votes": 22326,
+        "kinopoisk": null,
+        "kinopoisk_rating": 7.295,
+        "kinopoisk_votes": 580,
+        "rating": 1,
+        "rating_votes": 1,
+        "rating_percentage": 100,
+        "views": 0,
+        "comments": 0,
+        "posters": {
+            "small": "https://m.boramoraboom.ru/poster/item/small/126187.jpg",
+            "medium": "https://m.boramoraboom.ru/poster/item/medium/126187.jpg",
+            "big": "https://m.boramoraboom.ru/poster/item/big/126187.jpg",
+            "wide": "https://m.boramoraboom.ru/poster/item/wide/126187.jpg"
+        },
+        "trailer": null,
+        "finished": false,
+        "advert": false,
+        "poor_quality": false,
+        "created_at": 1786688106,
+        "updated_at": 1786739458,
+        "bookmarks": [],
+        "videos": [
+            {
+                "id": 1157602,
+                "number": 1,
+                "snumber": 0,
+                "thumbnail": "https://m.boramoraboom.ru/thumb/0/f1/29fed68efe3e05fa4a1a92b08f014c0f/2629000/480.jpg",
+                "title": "Концерт",
+                "tracks": 1,
+                "duration": 5257,
+                "ac3": 0,
+                "audios": [
+                    {
+                        "id": 3851575, "index": 1, "codec": "aac", "channels": 2, "lang": "eng",
+                        "type": {"id": 6, "title": "Оригинал", "short_title": "Orig"},
+                        "author": null
+                    }
+                ],
+                "subtitles": [
+                    {"lang": "ai", "shift": 0, "embed": false, "forced": false,
+                     "file": "/8/f4/2879770.srt",
+                     "url": "https://cdn.example/subtitles/8/f4/2879770.srt"}
+                ],
+                "files": [
+                    {"codec": "h264", "w": 1920, "h": 1080, "quality": "1080p", "quality_id": 3,
+                     "file": "/b/ea/56276a88dc49701d6f88311496e20871.mp4",
+                     "url": {"http": "https://cdn.example/pd/1080.mp4",
+                             "hls": "https://cdn.example/hls/1080/master-v1a1.m3u8",
+                             "hls4": "https://api.example/manifest/hls4/1157602.m3u8",
+                             "hls2": "https://api.example/manifest/hls2/1157602.m3u8"}},
+                    {"codec": "h264", "w": 1280, "h": 720, "quality": "720p", "quality_id": 2,
+                     "file": "/8/82/5ea8a16bdfe8e820234c8356a4ec7627.mp4",
+                     "url": {"http": "https://cdn.example/pd/720.mp4",
+                             "hls": "https://cdn.example/hls/720/master-v1a1.m3u8",
+                             "hls4": "https://api.example/manifest/hls4/1157602.m3u8",
+                             "hls2": "https://api.example/manifest/hls2/1157602.m3u8"}}
+                ],
+                "watched": -1,
+                "watching": {"status": -1, "time": 0}
+            }
+        ]
+    }
+}

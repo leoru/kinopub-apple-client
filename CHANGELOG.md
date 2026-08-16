@@ -5,6 +5,51 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Concerts decode, and the PWA's API surface is written down (2026-08-16)
+
+- **The PWA's API surface is written into the vendor sheets, each note next to the method it
+  describes** — not a separate file. Everything ours is marked 🔎, and anything captured but not
+  probed by us says so, so it reads as a shape and not a contract:
+  - `intro` — the alternate hosts (`api.boramoraboom.ru`, and `api.ios-kp.store` with its
+    `/api2/v1.1/` branch) and the artwork domains. **Nothing may key on a domain**: the same poster
+    comes from `m.staticpop.net`, `m.boramoraboom.ru` or `m.pushbr.com`.
+  - `video` — **`conditions[]`**, undocumented and the mechanism behind every filter checkbox in
+    their UI: repeatable free-form comparisons (`year<=2020`, `kinopoisk_rating>=6.0`). Noted on
+    **`/v1/items`**, which is where the captured requests went. `/v1/items/search` is a different
+    method — text over `title` / `cast` / `director`, `type=` sent empty for "all" — and the web
+    client never sends it a filter, so neither should we. Also **`api2/v1.1/items/search` answers
+    with no token at all** (verified: HTTP 200, 40 summary items with a ready-made `value` display
+    string and a `pagination` block, but no `videos` / `genres` / `duration`) — it looks like the
+    typeahead endpoint, and it is a search that works **before login**. Plus
+    `api2/v1.1/items/{id}`, a slim response carrying **`age_rating` and `fps`, neither of which v1
+    returns** — we currently take the age rating from TMDB only.
+  - `collections` — `items/collections/{item_id}`, which collections an item sits in, with
+    `views`/`watchers` counters that exist nowhere else.
+  - `device` — the real `settings` payload, where the vendor doc has only `// Список настроек`:
+    five checkboxes and two lists, including **`streamingType`** (HTTP / HLS / HLS2 / HLS4 — the
+    choice between the `url.*` variants we currently hard-code to `hls4`) and `serverLocation`
+    (1 = NL, 3 = RU, which is the `?loc=nl` on every CDN URL).
+  - `references` — **`https://www.kpapp.link/config.json`, public and unauthenticated**: types,
+    genres, countries, sorts, subtitle languages, the 11 menu sections, home blocks and quality
+    tables in one 26 KB file. `home_blocks_shortcut` is the spec the hard-coded
+    `HomeCatalog.Shortcut` is supposed to become, and `filter.types[].genres` says which genre set
+    applies to which type — they are not all-to-all.
+- **A concert payload now has a fixture and tests** (item 126187). It decodes — but it is the first
+  payload seen with **`imdb: null` alongside `imdb_rating: 8.1`**, so "has a rating" can never imply
+  "has an external id". Also `subtype: ""` (empty, not absent), `trailer: null`, and
+  `audios[].author: null` on an original-language track.
+- 🔴 **`tracklist` is not decoded at all** — six tracks in that payload, dropped on the floor.
+  `ConcertItemTests.testTracklistIsNotDecodedYet` pins the gap and fails the day it is closed.
+  On the live data `artists` and `url` are empty on every track and an unknown one is literally
+  `"N/A"`, so only `title` is usable.
+- **Artwork hosts in the network-log filter were incomplete** — kino.pub serves the same posters
+  from `m.boramoraboom.ru` and `m.pushbr.com` too. Added, and the list is now labelled as knowingly
+  incomplete with the extension patterns as the real net.
+- Kept **out of AGENTS.md on purpose**: this was decided once and belongs with the method, not in
+  the file every session loads. The multi-version findings live in `video.md` too — including one
+  place the vendor docs disagree with reality (`tracks` documented as `'1,2,3,4'`, arrives as `4`).
+- 221 backend tests green.
+
 ### Films with several versions are playable, and stop being a tag (2026-08-16)
 
 - **`PlaybackVariant` + `VersionsRailView`.** A `subtype: "multi"` movie ships its encodings in
@@ -18,15 +63,15 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
   second version was unreachable *and* Play resumed the first one at a position belonging to the
   other encoding. They now read `MediaItem.primaryVideo`: the started-but-unfinished version, else
   the first. `playbackAction` considers every version, not just one.
+- **`subtype: multi` is gone from the tag strip** (type · country · genre). It is not a fact about
+  the film in the way a country is — it says the film ships in several versions, which the rail now
+  says by listing them. Unknown subtypes still render: better an unexplained word than a dropped one.
 - **A 2 h 24 min film was claiming 4 h 48 min.** `duration.total` is the sum of every *version*
   (8634 + 8634 on item 124447), the same trap the code already documented one level up for series.
   The runtime line now uses `duration.average` when a film has versions.
 - **Subtitles and audio are per version.** On item 124447 the 24 fps encoding carries 55 subtitle
   tracks and the 48 fps one carries none — so reading them off `videos.first` handed the 48 fps
   player a subtitle list that was not its own.
-- **`subtype: multi` is gone from the tag strip** (type · country · genre). It is not a fact about
-  the film in the way a country is — it says the film ships in several versions, which the rail now
-  says by listing them. Unknown subtypes still render: better an unexplained word than a dropped one.
 - **Verified against the real response.** `Fixtures/item_124447_multi.json` is the actual
   `GET /v1/items/124447` payload (signed CDN URLs replaced, subtitle/audio/file lists trimmed —
   nothing asserted on was changed), with `MultiVersionItemTests` covering decode, variant order and

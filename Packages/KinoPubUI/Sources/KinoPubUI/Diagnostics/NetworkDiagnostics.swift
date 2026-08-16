@@ -88,8 +88,14 @@ public enum NetworkDiagnostics {
     configuration.sensitiveQueryItems = ["access_token", "refresh_token", "api_key"]
     configuration.sensitiveDataFields = ["access_token", "refresh_token", "password"]
 
+    // kino.pub serves the same artwork from several domains and adds new ones over time
+    // (`m.staticpop.net`, `m.boramoraboom.ru`, `m.pushbr.com` seen so far), so this list
+    // is *known incomplete* — the extension patterns below are the real safety net.
+    // See `docs/providers/kinopub/intro.md`.
     configuration.excludedHosts = [
-      "*.staticpop.net",     // kino.pub artwork
+      "*.staticpop.net",
+      "*.boramoraboom.ru",
+      "*.pushbr.com",
       "image.tmdb.org",
       "*.mds.yandex.net"     // Kinopoisk stills, via the proxy
     ]
