@@ -385,29 +385,37 @@ class MediaItemModel: ObservableObject {
   }
 
   /// "More from director" / "More with actor" — best-effort, same swallow-on-failure
-  /// rule as `loadSimilar`. First credited name only (community heuristic). Sorted by
-  /// Kinopoisk rating so the rail reads as a "best of" strip, not upload order.
+  /// rule as `loadSimilar`. First credited name only (community heuristic). Picked by
+  /// Kinopoisk rating so the rail is a "best of" strip rather than upload order, then
+  /// shown newest first — a filmography reads as a timeline, and "known for" ordering
+  /// waits until we have a signal worth ranking on.
   /// Current title is always dropped; titles that land in both rails stay on the
-  /// director shelf only so the pair doesn't repeat the same poster twice.
+  /// director shelf only so the pair doesn't repeat the same poster twice — by film,
+  /// not by id, so the flat copy of a 3D entry counts as the same title.
   private func loadPeopleShelves() async {
     async let directorItems = fetchPersonShelf(person: primaryDirector)
     async let actorItems = fetchPersonShelf(person: primaryActor)
     let director = await directorItems
     let actor = await actorItems
-    let directorIDs = Set(director.map(\.id))
+    let directorFilms = Set(director.map(\.filmIdentity))
     moreFromDirector = director
-    moreWithActor = actor.filter { !directorIDs.contains($0.id) }
+    moreWithActor = actor.filter { !directorFilms.contains($0.filmIdentity) }
     moreFromDirectorLoaded = true
     moreWithActorLoaded = true
   }
 
+  /// One card per film: kino.pub files the 3D encoding as its own entry under the same
+  /// credits, so an unfiltered answer puts the same poster on the shelf twice. Which
+  /// copy survives follows the page — a 3D title keeps 3D company. Collapsing happens
+  /// before the shelf is cut to length, so a duplicate never costs a slot.
   private func fetchPersonShelf(person: MediaPerson?) async -> [MediaItem] {
     guard let person else { return [] }
     let filter = LibraryFilter(sort: .kinopoiskRating, person: person)
     do {
       let items = try await itemsService.fetchItems(filter: filter, page: nil).items
-        .filter { $0.id != mediaItemId }
-      return Array(items.prefix(Self.peopleShelfLimit))
+        .filter { $0.filmIdentity != mediaItem.filmIdentity }
+        .collapsingFilmVariants(preferring3D: mediaItem.is3D)
+      return Array(items.prefix(Self.peopleShelfLimit)).sortedNewestFirst()
     } catch {
       Logger.app.error(
         "Failed to load \(person.role.rawValue) shelf for \(person.name): \(error)"

@@ -85,8 +85,7 @@ public struct MediaCapabilityBadges: Hashable, Sendable {
     let isHD = !is4K && qualityHint >= 720
     let range = videoRange?.uppercased() ?? ""
     let isHDR = range == "PQ" || range == "HLG" || range.contains("HDR")
-    let is3D = item.type.caseInsensitiveCompare(MediaType.threeD.rawValue) == .orderedSame
-      || item.subtype.localizedCaseInsensitiveContains("3d")
+    let is3D = item.is3D
     let hasCC = closedCaptions ?? item.subtitles.contains { subtitle in
       let lang = subtitle.lang.lowercased()
       return lang.contains("cc") || lang.contains("sdh")

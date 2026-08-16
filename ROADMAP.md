@@ -235,6 +235,20 @@ Media
       rewards, and the endpoints the item sheet does not cover. Same method: capture, then write
 - [x] Similar items rail · cast/crew → person credits · detail shelves (more from director / with
       actor) · multi-country, ratings, synopsis, info/audio columns
+- [x] A person's films are **one card per film**: the 3D encoding is a separate catalogue entry
+      under the same credits (kinopoisk/imdb id shared — #9072 / #7319 are both The Lego Movie), so
+      the person shelves and the person page collapse copies by `MediaItem.filmIdentity`, keeping
+      the one that matches the page (3D title → 3D copy) and otherwise the better file. Shelves are
+      picked by Kinopoisk rating and **shown newest first**. The library grid and search do not
+      collapse — a "3D" type filter asks for exactly those entries
+- [x] **Views, not a rating, break the ties** in those shelves and pick between two copies of a
+      film. A score is only as good as the crowd behind it and we cannot count on a vote count
+      being there — 5 Kinopoisk votes must not outrank a million on IMDb — while "how many people
+      here opened it" is never missing and is already the "known for" signal
+- [ ] "Known for" ordering proper for person shelves — lead with the films the person is known for
+      instead of the chronological fallback. Note the shelf is still *selected* server-side by
+      `sort=-kinopoisk_rating`, so a title kino.pub has no Kinopoisk id for can be missing from
+      page 1 before we ever rank it; `sort=-views` is the obvious thing to try there
 - [ ] Trailers as items in the playable rail — not a movies-only section, not a hero takeover alone
 - [ ] Collections browser + collection detail UI
 - [ ] Vote (`GET /v1/items/vote`) + show own vote state

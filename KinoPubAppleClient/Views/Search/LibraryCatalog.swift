@@ -133,12 +133,14 @@ class LibraryCatalog: ObservableObject {
     countries = (await countriesTask ?? []).sorted { $0.title < $1.title }
   }
 
+  /// A person's credits are the one listing where the same film arrives twice — the 3D
+  /// encoding is its own entry under the same name — so they get one card per film.
+  /// The library grid and search do not: there a type filter of "3D" is a request for
+  /// exactly those entries. Collapsing runs over everything loaded so far, since the
+  /// second copy of a film can land a page later.
   private func handle(_ data: PaginatedData<MediaItem>, isFirstPage: Bool) {
-    if isFirstPage {
-      items = data.items
-    } else {
-      items.append(contentsOf: data.items)
-    }
+    let loaded = isFirstPage ? data.items : items + data.items
+    items = filter.person != nil && !isSearching ? loaded.collapsingFilmVariants() : loaded
     pagination = data.pagination
   }
 
