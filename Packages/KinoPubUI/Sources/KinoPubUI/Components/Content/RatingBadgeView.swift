@@ -16,7 +16,7 @@ import SwiftUI
 /// only under their own logos, never folded into one number. An off flag hides the
 /// settings too, so nothing points at chrome that cannot appear.
 public enum RatingFeature {
-    public static let combinedEnabled = false
+    public static let combinedEnabled = true
 }
 
 /// A single score combining the IMDb and Kinopoisk ratings.

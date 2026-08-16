@@ -56,7 +56,7 @@ enum FeatureFlags {
   /// The fabricated episodes are **not playable** (no `files`) — this is a layout and
   /// focus probe, nothing else. DEBUG-only so it cannot reach a shipping build.
 #if DEBUG
-  static let fakeSeasonsOnMovies = true
+  static let fakeSeasonsOnMovies = false
 #else
   static let fakeSeasonsOnMovies = false
 #endif

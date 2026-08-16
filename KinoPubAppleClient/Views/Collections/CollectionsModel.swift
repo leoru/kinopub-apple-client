@@ -71,7 +71,7 @@ class CollectionsModel: ObservableObject {
 
   private func loadFirstPage() async {
     do {
-      let data = try await collectionsService.fetchCollections(page: nil, sort: nil)
+      let data = try await collectionsService.fetchCollections(page: nil, sort: "views-")
       pagination = data.pagination
       cards = data.collections.map(CollectionMediaCard.make(from:))
       loadFailed = false
@@ -90,7 +90,7 @@ class CollectionsModel: ObservableObject {
     isFetchingMore = true
     defer { isFetchingMore = false }
     do {
-      let data = try await collectionsService.fetchCollections(page: pagination.current + 1, sort: nil)
+      let data = try await collectionsService.fetchCollections(page: pagination.current + 1, sort: "views-")
       self.pagination = data.pagination
       cards.append(contentsOf: data.collections.map(CollectionMediaCard.make(from:)))
       paginationError = false
@@ -141,11 +141,11 @@ enum CollectionMediaCard {
 
   private static func captionStats(for collection: Collection) -> [MediaCardCaptionStat] {
     var stats: [MediaCardCaptionStat] = []
-    if let watchers = collection.watchers, watchers > 0 {
-      stats.append(MediaCardCaptionStat(systemImage: "person.2", value: compact(watchers)))
-    }
+//    if let watchers = collection.watchers, watchers > 0 {
+//      stats.append(MediaCardCaptionStat(systemImage: "person.2.fill", value: compact(watchers)))
+//    }
     if let views = collection.views, views > 0 {
-      stats.append(MediaCardCaptionStat(systemImage: "eye", value: compact(views)))
+      stats.append(MediaCardCaptionStat(systemImage: "eye.fill", value: compact(views)))
     }
     return stats
   }
