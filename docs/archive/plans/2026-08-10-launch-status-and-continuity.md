@@ -1,8 +1,15 @@
 # Launch status, activity toasts, and stop re-asking for what we already know
 
 > **Archived 2026-08-13.** Survived: the launch rule — paint tabs and cached rails first, never
-> block the shell on the whole session — now a ROADMAP stage 1 item. The activity-toast and
-> diagnostics design here was never built and is not a requirement.
+> block the shell on the whole session — now a ROADMAP stage 1 item.
+>
+> **Updated 2026-08-16.** Items 1 and 2 have since been built, differently from the sketch here:
+> the activity registry is `NetworkActivity` (`KinoPubLogging`), fed once inside `URLSessionImpl`
+> rather than by each piece of work registering itself, and it drives **`LaunchStatusLabel`** in
+> release plus a debug overlay. **Item 2's toasts were not built** — the overlay replaced them, and
+> `HudToast` was not touched. Item 3 (status at the detail-page spinner) and item 4 (cache-first
+> history / watching / bookmarks) are still open; item 5 (iCloud sync) is still undecided.
+> The current rules live in [AGENTS.md](../../../AGENTS.md) — read them, not this file.
 
 
 > Dated plan (2026-08-10), not policy. Captured from a user decision so it is not lost

@@ -5,6 +5,72 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### A network log you can read on the device, and a launch that says what it is waiting for (2026-08-16)
+
+- **Settings › Diagnostics › Network log** — every request with headers, full request and response
+  bodies, timing, errors and cURL, kept 14 days on the device, searchable and filterable, exportable
+  as a `.pulse` file. Backed by [Pulse 5.2.3](https://github.com/kean/Pulse), pinned `from:
+  "5.2.3"`, declared in `KinoPubUI`; nothing outside `NetworkDiagnostics` / `NetworkConsoleView`
+  imports it.
+- **What it replaced:** `ResponseLoggingPlugin` logs one line — status, URL, byte count — and says
+  in its own doc comment that bodies are not dumped. There was no in-app viewer and no history, so
+  on an Apple TV with no Xcode attached a slow launch and a failing one looked identical.
+- **Capture is `NetworkLogger.enableProxy()`, once in `App.init`.** It swizzles `URLSession`, which
+  is what makes one call cover kino.pub, artwork through Nuke, TMDB and the Cloudflare workers, and
+  what makes tasks visible while they are still in flight. **Not DEBUG-only** — the launches worth
+  reading a log for are TestFlight ones on real hardware.
+- **The log records API traffic only, and is capped.** Artwork and media are excluded at capture by
+  host (`*.staticpop.net`, `image.tmdb.org`, `*.mds.yandex.net`) *and* by extension (jpg/png/webp/
+  gif/avif, m3u8/ts/mp4/mkv/m4s) — both, because hosts catch artwork served without an extension and
+  extensions catch a CDN we have not met. A picture in a log answers no question its status line
+  did not already answer, and an HLS segment answers none at all.
+- **`NetworkDiagnostics.store` is ours, not `LoggerStore.shared`.** Pulse's shared store is built
+  with its defaults and cannot be reconfigured after creation, and those defaults are what produced
+  50 MB log files: **256 MB** of store, **8 MB** per response body. Ours caps the store at 32 MB and
+  a body at 512 KB — kino.pub's largest reply, a history page, is about 96 KB. It lives in
+  `Caches/`, the only place on tvOS an app may put a file this size; the system purges it between
+  runs there, which is the documented tvOS trade.
+- Settings › Storage gained a **Network log** row (size + clear) alongside the artwork one.
+- **Tokens are redacted at capture, not at export.** `Authorization`, `Cookie`, `access_token`,
+  `refresh_token`, `api_key`, `password`. A redaction you have to remember to apply at share time is
+  one you will forget, and this store is meant to be shared.
+- **`CURLLoggingPlugin` is out of the default plugin stack.** It printed every request's headers,
+  bearer token included, into the system log; the Network log renders cURL redacted. The type is
+  kept for one-off local debugging.
+- **`NetworkActivity` (`KinoPubLogging`) answers the other half:** what is outstanding *now*,
+  hooked once in `URLSessionImpl` so no view model has to remember to report and none can forget.
+  Pulse cannot answer this — it writes its record when a task *completes*.
+- **The launch splash says what it is waiting for, in release.** `LaunchStatusLabel` replaces the
+  bare `ProgressView` with the names of everything currently outstanding, joined — "Проверяем
+  сессию · Загружаем историю" — because the wait is several things at once and a single-line
+  "Loading…" is the empty spinner with extra steps. Names are distinct and ordered by start, so
+  three catalogue pages in flight read as one thing and not a stutter.
+- **Activity entries carry a localization key, not a path.** `Activity_Session`, `Activity_History`,
+  `Activity_Watching`, `Activity_Bookmarks`, `Activity_Collections`, `Activity_Catalog`,
+  `Activity_Sections`, `Activity_Search`, `Activity_Device`, `Activity_Network` — RU + EN in
+  `Localizable.xcstrings`. An unmapped endpoint falls back to "Загружаем" rather than to `/v1/items/…`;
+  the path travels alongside for the debug overlay, which shows paths precisely because it is for
+  whoever is debugging. Product decision (2026-08-16): the label ships.
+- Item 2 of [the 2026-08-10 plan](docs/archive/plans/2026-08-10-launch-status-and-continuity.md) —
+  activity *toasts* — was **not** built; the debug overlay covers that ground and `HudToast` was
+  left alone. Items 3–5 of that plan are still open; its header now says so.
+- **Streaming to the Pulse app on a Mac**, off by default, toggled in Settings › Advanced ›
+  Diagnostics (and in the tvOS diagnostics list, where it matters most — reading a log on a
+  television with a remote is nobody's idea of a good time). `RemoteLogger` over Bonjour
+  `_pulse._tcp`; `NSBonjourServices` + `NSLocalNetworkUsageDescription` added to `Info.plist`.
+  Enabling it is what asks for local-network permission, so nothing turns it on for the user, and
+  it is restored at launch only if they left it on. The macOS entitlements already carried
+  `network.client` / `network.server`.
+- **Adapter:** `PulseUI.ConsoleView` does not exist on macOS in 5.2.3 — the module ships
+  `ConsoleView-ios/-tvos/-watchos` and fences its public init `#if !os(macOS)`. Capture runs on the
+  Mac anyway, so `NetworkConsoleView` offers export there and the `.pulse` file opens in the
+  standalone Pulse app.
+- The "Verbose logging" / "Keep playback diagnostics" toggles are gone. They were bound to `@State`
+  that nothing read, under the footer "Demo controls — not saved yet".
+- Verified: `xcodebuild build` green on tvOS 27 simulator, iOS Simulator and macOS. **Not yet run
+  on a physical Apple TV** — which is the run that motivated this, so the launch trace it is
+  supposed to produce has not been read yet.
+
 ### One artwork cache on Nuke, for all four platforms (2026-08-16)
 
 - **`Artwork` (`ArtworkPipeline.swift`) is the single image cache.** Decoded-image memory cache

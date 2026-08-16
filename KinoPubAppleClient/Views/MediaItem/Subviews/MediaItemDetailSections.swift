@@ -2167,34 +2167,78 @@ struct MediaItemInfoColumns: View {
     }
   }
 
+  /// One source call: header always visible, body behind a disclosure and **collapsed by
+  /// default**. Six expanded dumps made the sheet a wall of JSON you had to scroll past
+  /// to find out which sources even answered — which is the first thing it should tell
+  /// you. Collapsed also means `prettyPrinted` does not run for bodies nobody opened.
   private struct DebugEntryRow: View {
     let entry: SourceDebugEntry
+    @State private var isExpanded = false
 
     var body: some View {
       VStack(alignment: .leading, spacing: 8) {
-        HStack(spacing: 8) {
-          Text(verbatim: "\(entry.source.rawValue) · \(entry.endpoint)")
-            .font(.system(size: 15, weight: .semibold))
-          Spacer()
-          badge(entry.proxied ? "proxied" : "direct", tint: .secondary)
-          badge(entry.succeeded ? "ok" : "failed", tint: entry.succeeded ? .green : .red)
+        Button {
+          isExpanded.toggle()
+        } label: {
+          header
         }
-        Text(entry.url)
-          .font(.system(size: 12, design: .monospaced))
-          .foregroundStyle(.secondary)
-#if !os(tvOS)
-          .textSelection(.enabled)
+#if os(tvOS)
+        // `.plain` kills visible focus on tvOS; `.card` is the focusable-container
+        // default. Same `#if` split Apple's own samples use on every card.
+        .buttonStyle(.card)
+#else
+        .buttonStyle(.plain)
 #endif
-        Text(Self.prettyPrinted(entry.responseBody))
-          .font(.system(size: 11, design: .monospaced))
+
+        if isExpanded {
+          Text(entry.url)
+            .font(.system(size: 12, design: .monospaced))
+            .foregroundStyle(.secondary)
 #if !os(tvOS)
-          .textSelection(.enabled)
+            .textSelection(.enabled)
 #endif
-          .padding(8)
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .background(Color.KinoPub.selectionBackground.opacity(0.5),
-                      in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+          Text(Self.prettyPrinted(entry.responseBody))
+            .font(.system(size: 11, design: .monospaced))
+#if !os(tvOS)
+            .textSelection(.enabled)
+#endif
+            .padding(8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.KinoPub.selectionBackground.opacity(0.5),
+                        in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
       }
+      .padding(10)
+      .background(Color.KinoPub.selectionBackground.opacity(0.25),
+                  in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+      .animation(.easeOut(duration: 0.15), value: isExpanded)
+    }
+
+    private var header: some View {
+      HStack(spacing: 8) {
+        Image(systemName: "chevron.right")
+          .font(.system(size: 11, weight: .semibold))
+          .foregroundStyle(.secondary)
+          .rotationEffect(.degrees(isExpanded ? 90 : 0))
+        Text(verbatim: "\(entry.source.rawValue) · \(entry.endpoint)")
+          .font(.system(size: 15, weight: .semibold))
+        Spacer()
+        // Size while closed: "did this one answer with anything" is the question the
+        // collapsed row has to answer on its own, or closing them helped nothing.
+        if !isExpanded {
+          Text(verbatim: Self.sizeLabel(entry.responseBody))
+            .font(.system(size: 11, design: .monospaced))
+            .foregroundStyle(.tertiary)
+        }
+        badge(entry.proxied ? "proxied" : "direct", tint: .secondary)
+        badge(entry.succeeded ? "ok" : "failed", tint: entry.succeeded ? .green : .red)
+      }
+      .contentShape(Rectangle())
+    }
+
+    private static func sizeLabel(_ raw: String) -> String {
+      let bytes = raw.utf8.count
+      return bytes < 1024 ? "\(bytes) B" : "\(bytes / 1024) KB"
     }
 
     private func badge(_ text: String, tint: Color) -> some View {

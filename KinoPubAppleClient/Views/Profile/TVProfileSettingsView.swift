@@ -28,6 +28,7 @@ struct TVProfileSettingsView: View {
 
   @FocusState private var focusedItem: SettingsFocusItem?
   @State private var path = NavigationPath()
+  @AppStorage(DiagnosticsSettings.remoteLoggingKey) private var streamsToPulse = false
 
   var body: some View {
     NavigationStack(path: $path) {
@@ -55,9 +56,7 @@ struct TVProfileSettingsView: View {
       // (identity + HEVC/4K/HDR already sync on auth). Focusable Settings list TBD.
       kinopoiskSection
       dataSourcesSection
-#if DEBUG
       diagnosticsSection
-#endif
       logoutSection
     }
     .defaultFocus($focusedItem, .language)
@@ -101,6 +100,8 @@ struct TVProfileSettingsView: View {
       )
     case .kinopoisk:
       TVKinopoiskKeyView(keyProvider: kinopoiskKeyProvider)
+    case .networkLog:
+      NetworkConsoleView()
 #if DEBUG
     case .streamSurvey:
       StreamSurveyView()
@@ -220,7 +221,6 @@ struct TVProfileSettingsView: View {
     }
   }
 
-#if DEBUG
   private var diagnosticsSection: some View {
     // Every row carries its own focus value. They all shared `.diagnostics` before,
     // which is the exact pattern `.claude/skills/tvos-surface/SKILL.md` bans —
@@ -228,11 +228,26 @@ struct TVProfileSettingsView: View {
     // unable to resolve which one is focused, and that cost a whole misdiagnosed
     // detour on the detail page. The payload only disambiguates; the tip stays shared.
     SettingsSection("Diagnostics") {
+      // Not DEBUG-only: this is the platform the slow launches happen on, and the
+      // builds they happen in are TestFlight ones with no Xcode attached.
+      diagnosticsRow("Network log", route: .networkLog, id: "networkLog")
+      // Reading a log on a television with a remote is nobody's idea of a good time;
+      // this is the row that moves it to a Mac.
+      Button {
+        streamsToPulse.toggle()
+        NetworkDiagnostics.setRemoteLoggingEnabled(streamsToPulse)
+      } label: {
+        SettingsPillLabel(title: "Stream to Pulse on Mac", showsCheckmark: streamsToPulse)
+      }
+      .buttonStyle(SettingsPillButtonStyle())
+      .focused($focusedItem, equals: .diagnostics("streamToPulse"))
+#if DEBUG
       diagnosticsRow("Stream survey", route: .streamSurvey, id: "streamSurvey")
       diagnosticsRow("Type Styles", route: .typeStyles, id: "typeStyles")
       diagnosticsRow("TVUIKit Gallery", route: .tvUIKitGallery, id: "tvUIKitGallery")
       diagnosticsRow("Navigation / Focus Lab", route: .navFocusLab, id: "navFocusLab")
       diagnosticsRow("Library Sidebar Lab", route: .libraryLab, id: "libraryLab")
+#endif
     }
   }
 
@@ -247,7 +262,6 @@ struct TVProfileSettingsView: View {
     .buttonStyle(SettingsPillButtonStyle())
     .focused($focusedItem, equals: .diagnostics(id))
   }
-#endif
 
   private var logoutSection: some View {
     Button(action: onLogout) {
@@ -388,6 +402,7 @@ private enum SettingsRoute: Hashable {
   case secondSubtitleLanguage
   case streamQuality
   case kinopoisk
+  case networkLog
 #if DEBUG
   case streamSurvey
   case typeStyles

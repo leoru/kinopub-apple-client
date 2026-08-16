@@ -40,6 +40,14 @@ struct KinoPubAppleClientApp: App {
 #endif
 
   init() {
+    // First thing: the proxy only records requests made after it is installed, and the
+    // launch traffic is the whole reason it exists.
+    NetworkDiagnostics.start()
+    // Restore streaming if it was left on — but never turn it on by default: enabling it
+    // is what triggers the local-network permission prompt.
+    if UserDefaults.standard.bool(forKey: DiagnosticsSettings.remoteLoggingKey) {
+      MainActor.assumeIsolated { NetworkDiagnostics.setRemoteLoggingEnabled(true) }
+    }
     HLSAudioLabeler.removeLegacyTemporaryFiles()
 #if os(tvOS) && DEBUG
     // One observer under both SwiftUI and UIKit — see `FocusLog.startGlobalTrace`.

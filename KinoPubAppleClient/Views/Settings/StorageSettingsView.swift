@@ -23,6 +23,7 @@ final class StorageSettingsModel: ObservableObject {
   @Published private(set) var urlCacheMemoryBytes: Int = 0
   @Published private(set) var artworkDiskBytes: Int = 0
   @Published private(set) var artworkMemoryBytes: Int = 0
+  @Published private(set) var networkLogBytes: Int64 = 0
   @Published private(set) var downloadsCount = 0
   @Published private(set) var downloadsBytes: Int64 = 0
 
@@ -67,6 +68,16 @@ final class StorageSettingsModel: ObservableObject {
     artworkDiskBytes = 0
     artworkMemoryBytes = 0
   }
+
+  /// Separate from `refresh` because it walks the store directory off the main actor.
+  func refreshNetworkLog() async {
+    networkLogBytes = await NetworkDiagnostics.storeBytes()
+  }
+
+  func clearNetworkLog() {
+    NetworkDiagnostics.clear()
+    networkLogBytes = 0
+  }
 }
 
 struct StorageSettingsView: View {
@@ -79,6 +90,7 @@ struct StorageSettingsView: View {
     case hlsTemp
     case urlCache
     case artwork
+    case networkLog
 
     var id: Self { self }
 
@@ -88,6 +100,7 @@ struct StorageSettingsView: View {
       case .hlsTemp: return "Clear HLS temp files?"
       case .urlCache: return "Clear network cache?"
       case .artwork: return "Clear artwork cache?"
+      case .networkLog: return "Clear network log?"
       }
     }
   }
@@ -136,6 +149,16 @@ struct StorageSettingsView: View {
         Text("API responses cached by the system. Clearing just means the next loads refetch.")
       }
 
+      Section {
+        LabeledContent("Recorded requests", value: formatted(model.networkLogBytes))
+        Button("Clear") { pendingClear = .networkLog }
+          .disabled(model.networkLogBytes == 0)
+      } header: {
+        Text("Network log")
+      } footer: {
+        Text("Settings › Advanced › Diagnostics reads this. Artwork and video are not recorded, bodies are capped at 512 KB each, and the store is capped at 32 MB — the oldest entries are dropped past that.")
+      }
+
       if FeatureFlags.downloadsEnabled {
         Section {
           LabeledContent("Downloaded files", value: "\(model.downloadsCount)")
@@ -149,7 +172,10 @@ struct StorageSettingsView: View {
     }
     .formStyle(.grouped)
     .platformNavigationTitle("Storage")
-    .task { model.refresh(appContext: appContext) }
+    .task {
+      model.refresh(appContext: appContext)
+      await model.refreshNetworkLog()
+    }
     .confirmationDialog(
       pendingClear?.title ?? "",
       isPresented: Binding(get: { pendingClear != nil }, set: { if !$0 { pendingClear = nil } }),
@@ -161,6 +187,7 @@ struct StorageSettingsView: View {
         case .hlsTemp: model.clearHLSTemp()
         case .urlCache: model.clearURLCache()
         case .artwork: model.clearArtworkCache()
+        case .networkLog: model.clearNetworkLog()
         }
         pendingClear = nil
       }

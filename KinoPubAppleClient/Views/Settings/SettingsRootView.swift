@@ -5,6 +5,7 @@
 
 import SwiftUI
 import KinoPubBackend
+import KinoPubUI
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
@@ -78,6 +79,9 @@ struct SettingsRootView: View {
             case .sections:
               SectionsSettingsView()
                 .settingsMacChrome(title: "Sections", isRoot: false)
+            case .networkLog:
+              NetworkConsoleView()
+                .settingsMacChrome(title: "Network log", isRoot: false)
 #if DEBUG
             case .streamSurvey:
               StreamSurveyView()
@@ -180,6 +184,9 @@ struct SettingsRootView: View {
             StorageSettingsView()
           case .sections:
             SectionsSettingsView()
+          case .networkLog:
+            NetworkConsoleView()
+              .navigationTitle("Network log")
 #if DEBUG
           case .streamSurvey:
             StreamSurveyView()

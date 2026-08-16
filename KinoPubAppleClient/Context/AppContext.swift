@@ -180,7 +180,10 @@ struct AppContext: AppContextProtocol {
     APIClient(
       baseUrl: baseURL,
       plugins: [
-        CURLLoggingPlugin(),
+        // `CURLLoggingPlugin` is deliberately not here: it printed every request's
+        // headers — `Authorization: Bearer …` included — into the system log, and the
+        // Network log now renders cURL with the token redacted. The type is kept for
+        // one-off local debugging, not for the default stack.
         ResponseLoggingPlugin(),
         UnauthorizedResponsePlugin(),
         AccessTokenPlugin(accessTokenService: accessTokenService)

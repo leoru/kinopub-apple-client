@@ -28,8 +28,8 @@ semantic component is not a DRY violation; two components for one idea on one pl
 - **Docs are English-only.** UI strings are RU + EN through `Localizable.xcstrings`.
 - **Repo layout:** `KinoPubAppleClient/` (app), `Packages/KinoPub{UI,Backend,Kit,Metadata,Logging}/`,
   `workers/` (Cloudflare), `tools/` (offline crawlers/probes).
-- **Third-party SPM:** `KeychainAccess`, `PopupView`, `Reachability`, `Nuke` (artwork). Allowed —
-  see [Dependencies](#dependencies).
+- **Third-party SPM:** `KeychainAccess`, `PopupView`, `Reachability`, `Nuke` (artwork),
+  `Pulse` (network log). Allowed — see [Dependencies](#dependencies).
 
 ### Where to read more
 
@@ -127,6 +127,13 @@ Allowed to exist, one place each, limitation in the doc comment:
   equivalent section at our scale; Apple keeps owning the proportions.
 - **The progress bar in the media-item overlay** — `configuration.playbackProgress` only paints on
   the *focused* tile, and "started, not finished" is what an idle rail has to say.
+- **`NetworkConsoleView`'s macOS branch** — `PulseUI.ConsoleView` does not exist on macOS in Pulse
+  5.2.3 (the module ships `ConsoleView-ios/-tvos/-watchos`, and its public init is fenced
+  `#if !os(macOS)`). Capture still runs there, so the Mac gets export-to-`.pulse`, and streaming to
+  the Pulse app is the live reader. Re-probe on the next Pulse major.
+- **Auto-connect in `setRemoteLoggingEnabled`** — Pulse keeps `RemoteLoggerSettingsView` internal,
+  so there is no server picker to present. "First server found, then remembered" is the only
+  selection model its public API offers. Re-probe if that view goes public.
 
 An adapter that stops being needed gets deleted, not kept "in case".
 
@@ -257,7 +264,26 @@ Details: skill `apple-chrome`.
 - **New providers land server-side, not in the app.** The app gets one more field, not one more
   network client, and never models a provider's response shape. Skill `metadata-service`.
 - **Telemetry:** no third-party SDK. TestFlight / Xcode Organizer already deliver crashes. Do not
-  add Firebase, Sentry or similar without an explicit decision.
+  add Firebase, Sentry or similar without an explicit decision. **This is a rule about *sending*
+  data somewhere.** On-device diagnostics that leave nothing behind — `Pulse`'s local store behind
+  `NetworkDiagnostics` — are not telemetry and are not covered by it.
+- **Diagnostics are shipped, not DEBUG-only.** The launches worth reading a log for happen on a
+  physical Apple TV running TestFlight, with no Xcode attached, so Settings › Diagnostics › Network
+  log is in every build. Capture goes through `NetworkDiagnostics.start()` once at launch (it
+  swizzles `URLSession`, so it catches every client and shows tasks still in flight). Tokens are
+  redacted **at capture**, because the store is exported and shared.
+- **The log records API traffic only.** Artwork and media are excluded by host *and* extension,
+  and `NetworkDiagnostics.store` is ours rather than `LoggerStore.shared` because Pulse's defaults
+  — 256 MB of store, 8 MB per body — are what produced 50 MB log files. Ours: 32 MB store, 512 KB
+  per body, in `Caches/`. Adding a media host to the app means adding it to `excludedHosts`.
+- **"What are we waiting for" is `NetworkActivity`** (`KinoPubLogging`), hooked once in
+  `URLSessionImpl` so no call site has to remember to report. Pulse logs completed tasks; this is
+  the live one. It feeds two readers: the debug overlay, and **`LaunchStatusLabel`, which ships** —
+  the launch splash names what is outstanding ("Проверяем сессию · Загружаем историю") instead of
+  showing a bare spinner. Entries carry a **localization key**, never a path: a raw `/v1/items/…`
+  on a user's TV is worse than saying less, so an unmapped endpoint reads "Загружаем" and keeps the
+  path for the overlay only. Add a key to `Localizable.xcstrings` (RU + EN) when you add an endpoint
+  family, not a string at the call site.
 - **Downloads are non-TV only.** Feature-gate incomplete surfaces (`FeatureFlags`) rather than
   inventing half-UI. An off flag must skip the work — network, sampling — not only hide UI.
 
@@ -329,7 +355,8 @@ Deferred verification is allowed. Silent "everything landed" claims are not.
 | Blur/choreography "only works for series" | Something is keyed to incidental content geometry instead of state |
 | The page moves a little, then stops; background changes but layout doesn't | A threshold copied from a swipe-driven Apple sample onto a focus-driven page |
 | macOS: sidebar and player on screen together | A play entry point used `NavigationLink` instead of `PlayerLink` |
-| tvOS launch is slow with an empty loader | Nothing is stored; the launch blocks on the whole session instead of painting cached rows |
+| tvOS launch is slow with an empty loader | Nothing is stored; the launch blocks on the whole session instead of painting cached rows. Read Settings › Diagnostics › Network log, and switch on the in-flight overlay — do not guess from a spinner |
+| "What did the server actually reply?" | Settings › Diagnostics › Network log — full bodies, headers, timing. The one-line `ResponseLoggingPlugin` never had the body |
 
 **Standing lesson:** copy a sample's *mechanism*, re-derive its *constants*. Two passes in a row
 went wrong by porting thresholds tuned for a swipe-driven page onto a focus-driven one.
@@ -344,6 +371,8 @@ went wrong by porting thresholds tuned for a swipe-driven page onto a focus-driv
 | Glass helper | `Packages/KinoPubUI/Sources/KinoPubUI/DesignSystem/KinoGlass.swift` |
 | tvOS cells / rails / collection | `Packages/KinoPubUI/Sources/KinoPubUI/Components/TVUIKit/` |
 | Artwork cache (the only place Nuke is imported) | `Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ArtworkPipeline.swift` |
+| Network log (the only place Pulse is imported) | `Packages/KinoPubUI/Sources/KinoPubUI/Diagnostics/NetworkDiagnostics.swift` |
+| In-flight activity registry | `Packages/KinoPubLogging/Sources/KinoPubLogging/NetworkActivity.swift` |
 | Expanding clipped content | `Packages/KinoPubUI/Sources/KinoPubUI/Components/InfoPopup*` |
 | Detail page | `KinoPubAppleClient/Views/MediaItem/` |
 | Routes / destinations | `KinoPubAppleClient/States/Navigation/` |

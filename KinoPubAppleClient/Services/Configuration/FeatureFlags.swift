@@ -61,3 +61,16 @@ enum FeatureFlags {
   static let fakeSeasonsOnMovies = false
 #endif
 }
+
+/// Defaults keys shared by the diagnostics surfaces, so a toggle and the thing it
+/// toggles cannot drift apart. The "Verbose logging" switch this replaces was bound to a
+/// `@State` nothing read, under the footer "Demo controls — not saved yet" — a control
+/// that does nothing is worse than no control, because it looks like an answer.
+enum DiagnosticsSettings {
+  /// Shows the in-flight network readout over the whole app.
+  static let activityOverlayKey = "diagnostics.activityOverlay"
+
+  /// Streams the network log to the Pulse app on a Mac. Off by default — turning it on
+  /// is what asks for local-network permission, and that prompt is the user's to spend.
+  static let remoteLoggingKey = "diagnostics.remoteLogging"
+}
