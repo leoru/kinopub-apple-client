@@ -152,7 +152,10 @@ class PersonalLibraryCatalog: ObservableObject {
 
   private func fetchFolders() async -> [Bookmark] {
     do {
-      let fetched = try await contentService.fetchBookmarks().items
+      let all = try await contentService.fetchBookmarks().items
+      // Unfiltered into the shared store — see BookmarksCatalog.
+      BookmarkFoldersStore.shared.adopt(all)
+      let fetched = all
         .filter { $0.count != "0" }
         .recentlyUpdatedFirst()
       foldersFetchFailed = false

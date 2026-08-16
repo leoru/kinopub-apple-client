@@ -11,7 +11,11 @@ import KinoPubBackend
 protocol VideoContentService {
   func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?, perPage: Int?) async throws -> PaginatedData<MediaItem>
   func search(query: String?, page: Int?, perPage: Int?) async throws -> PaginatedData<MediaItem>
-  func fetchDetails(for id: String) async throws -> SingleItemData<MediaItem>
+  /// - Parameter excludeLinks: `nolinks=1` — details without video links. Only for
+  ///   callers that will resolve links per media with `fetchMediaLinks(mediaId:)`.
+  func fetchDetails(for id: String, excludeLinks: Bool) async throws -> SingleItemData<MediaItem>
+  /// Files + subtitles of one media (an episode's own id, or a film's video id).
+  func fetchMediaLinks(mediaId: Int) async throws -> MediaLinks
   func fetchSimilar(for id: String) async throws -> ArrayData<MediaItem>
   func fetchBookmarks() async throws -> ArrayData<Bookmark>
   func fetchBookmarkItems(id: String, page: Int?) async throws -> BookmarkFolderItemsData
@@ -41,6 +45,12 @@ extension VideoContentService {
   func search(query: String?, page: Int?) async throws -> PaginatedData<MediaItem> {
     try await search(query: query, page: page, perPage: nil)
   }
+
+  /// Details with links, which is what every caller that plays straight from the payload
+  /// wants. The detail page is the exception and asks for `excludeLinks: true`.
+  func fetchDetails(for id: String) async throws -> SingleItemData<MediaItem> {
+    try await fetchDetails(for: id, excludeLinks: false)
+  }
 }
 
 protocol VideoContentServiceProvider {
@@ -57,8 +67,12 @@ struct VideoContentServiceMock: VideoContentService {
     return PaginatedData.mock(data: [])
   }
 
-  func fetchDetails(for id: String) async throws -> SingleItemData<MediaItem> {
+  func fetchDetails(for id: String, excludeLinks: Bool) async throws -> SingleItemData<MediaItem> {
     return SingleItemData.mock(data: MediaItem.mock())
+  }
+
+  func fetchMediaLinks(mediaId: Int) async throws -> MediaLinks {
+    return MediaLinks(files: [])
   }
 
   func fetchSimilar(for id: String) async throws -> ArrayData<MediaItem> {

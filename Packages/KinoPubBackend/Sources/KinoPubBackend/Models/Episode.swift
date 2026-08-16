@@ -21,8 +21,12 @@ public class Episode: Codable, Hashable, Identifiable {
   /// without refetching the whole title.
   public var watched: Int
   public let watching: EpisodeWatching
-  public let subtitles: [Subtitle]
-  public let files: [FileInfo]
+  /// Both of these are empty when the details call asked for `nolinks=1`, and are filled
+  /// in from `/v1/items/media-links` the first time this episode is actually played
+  /// (`MediaLinksResolver`). `Episode` is a class, so the fill is visible to everything
+  /// already holding the episode — the seasons rail, the player, the next-episode logic.
+  public var subtitles: [Subtitle]
+  public var files: [FileInfo]
   public var seasonNumber: Int?
   public var mediaId: Int?
   /// The series' own name. `Episode` arrives from the API with none of its parent's

@@ -221,6 +221,16 @@ public extension MediaItem {
     !(seasons?.isEmpty ?? true)
   }
 
+  /// Series by *type* rather than by payload — a listing card carries `type` but never
+  /// `seasons`, so this is the only "is this episodic?" answer available before the
+  /// details call. Used to decide whether that call can ask for `nolinks=1`.
+  var isEpisodicType: Bool {
+    switch type.lowercased() {
+    case "serial", "docuserial", "tvshow": return true
+    default: return false
+    }
+  }
+
   /// What the primary button should offer, based on how far the user already got.
   var playbackAction: PlaybackAction {
     if isSeries {
@@ -327,8 +337,8 @@ public extension MediaItem {
 }
 
 public extension MediaItem {
-  static func mock(id: Int = 1) -> MediaItem {
-    MediaItem(id: id, type: "test",
+  static func mock(id: Int = 1, type: String = "test") -> MediaItem {
+    MediaItem(id: id, type: type,
               subtype: "test",
               title: "Стражи Галактики. Часть 3 / Guardians of the Galaxy Vol. 3",
               year: 2023,

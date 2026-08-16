@@ -95,7 +95,11 @@ final class LibraryModel: ObservableObject {
     do {
       // Unlike the item rows this is not cached: it is one cheap call, and we need it
       // live to know which folders even exist before drawing the sidebar.
-      folders = try await contentService.fetchBookmarks().items.recentlyUpdatedFirst()
+      let fetched = try await contentService.fetchBookmarks().items
+      // This screen needs the live list anyway, so hand it to the shared store — that is
+      // what keeps detail pages and card menus off `/v1/bookmarks` entirely.
+      BookmarkFoldersStore.shared.adopt(fetched)
+      folders = fetched.recentlyUpdatedFirst()
       foldersFailed = false
       foldersError = nil
     } catch {

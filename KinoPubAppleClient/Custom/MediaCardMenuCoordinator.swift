@@ -47,63 +47,25 @@ final class MediaCardMenuCoordinator: ObservableObject {
     self.errorHandler = errorHandler
   }
 
-  /// Bookmark folders, from a cache shared by every coordinator in the app.
+  /// Bookmark folders, from the store shared by every coordinator in the app.
   ///
-  /// Each screen that can show a card menu owns its own coordinator, and each one used
-  /// to call this on `.task` — so opening the app fired `GET /v1/bookmarks` twenty-odd
+  /// Each screen that can show a card menu owns its own coordinator, and each one calls
+  /// this on `.task` — so opening the app used to fire `GET /v1/bookmarks` twenty-odd
   /// times for the same 519 bytes, and every navigation fired more. The call sites are
   /// not wrong (a view should be able to ask for what it needs); fetching per-caller
-  /// was. `FoldersCache` collapses them: concurrent callers await one request, and a
-  /// fresh result is reused until it ages out.
+  /// was. `BookmarkFoldersStore` keeps the list across launches and only goes to the
+  /// network when it has nothing, so an ordinary screen — a detail page above all —
+  /// opens without a bookmarks request at all.
   func refreshFolders() async {
-    folders = await Self.foldersCache.value(using: contentService)
+    folders = await BookmarkFoldersStore.shared.ensureLoaded(using: contentService)
+      .recentlyUpdatedFirst()
   }
 
-  /// Drops the cached folders so the next `refreshFolders()` refetches. Call after any
-  /// mutation that changes the folder list.
-  static func invalidateFolders() {
-    Task { await foldersCache.invalidate() }
-  }
-
-  private static let foldersCache = FoldersCache()
-
-  /// Single-flight + TTL. An actor so the in-flight task is shared without locking.
-  private actor FoldersCache {
-    private var cached: [Bookmark] = []
-    private var fetchedAt: Date?
-    private var inFlight: Task<[Bookmark], Never>?
-
-    /// Long enough to absorb a screen's worth of simultaneous callers and ordinary
-    /// back-and-forth navigation; short enough that a folder added on another device
-    /// shows up without a relaunch. Mutations call `invalidateFolders()` regardless.
-    private static let ttl: TimeInterval = 60
-
-    func value(using service: VideoContentService) async -> [Bookmark] {
-      if let fetchedAt, Date().timeIntervalSince(fetchedAt) < Self.ttl, !cached.isEmpty {
-        return cached
-      }
-      if let inFlight { return await inFlight.value }
-
-      let task = Task<[Bookmark], Never> { [cached] in
-        do {
-          return try await service.fetchBookmarks().items.recentlyUpdatedFirst()
-        } catch {
-          Logger.app.debug("MediaCardMenu folders failed: \(error)")
-          // Keep whatever we had rather than blanking every menu on one failure.
-          return cached
-        }
-      }
-      inFlight = task
-      let result = await task.value
-      inFlight = nil
-      cached = result
-      fetchedAt = Date()
-      return result
-    }
-
-    func invalidate() {
-      fetchedAt = nil
-    }
+  /// Refetch after a mutation that changed the folder list itself. Every other
+  /// coordinator picks the new list up from the store on its next `refreshFolders()`.
+  func reloadFolders() async {
+    folders = await BookmarkFoldersStore.shared.reload(using: contentService)
+      .recentlyUpdatedFirst()
   }
 
   /// Folder ids that contain this card — local store + `MediaItem.bookmarks` hint on the card.
@@ -140,10 +102,9 @@ final class MediaCardMenuCoordinator: ObservableObject {
         try await contentService.toggleBookmark(itemId: itemID, folderId: folderId)
         _ = membership.toggle(itemID: itemID, folderID: folderId)
         objectWillChange.send()
-        // The folder list itself changed — drop the shared cache before re-reading it,
-        // otherwise every coordinator keeps serving the pre-creation list for the TTL.
-        Self.invalidateFolders()
-        await refreshFolders()
+        // The folder list itself changed, so this is the one place a card menu is
+        // allowed to go and fetch it again.
+        await reloadFolders()
         contentStore.invalidate(family: .bookmarks)
       } catch {
         errorHandler?.setError(error)

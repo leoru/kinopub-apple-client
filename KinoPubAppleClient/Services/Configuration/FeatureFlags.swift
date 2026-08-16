@@ -37,6 +37,14 @@ enum FeatureFlags {
   /// was turned on to be judged on a real screen, not because that check passed.
   static let tvUIKitPosters = true
 
+  /// A series detail page fetches its item with `nolinks=1` and resolves an episode's
+  /// links from `/v1/items/media-links` when it is played (`MediaLinksResolver`).
+  ///
+  /// A switch rather than a constant because it changes where playable links come from:
+  /// flipping it off restores the single fat details payload, which is the fastest way
+  /// to tell a link problem apart from a CDN / network one.
+  static let seriesDetailsWithoutLinks = true
+
   /// Our own combined IMDb + Kinopoisk score: poster plaque, hero pill, the detail
   /// "Rating" tile, and the card Rating placement / source settings. Off — IMDb and
   /// Kinopoisk show only under their own logos meanwhile.

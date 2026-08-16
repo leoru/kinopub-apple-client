@@ -39,6 +39,11 @@ final class SeasonDownloadManager: ObservableObject {
   }
 
   /// Distinct quality labels available across a season's episodes, best (highest resolution) first.
+  ///
+  /// TODO(downloads): a series detail page now fetches with `nolinks=1`, so episodes have
+  /// no files until `MediaLinksResolver` fills them one at a time. When downloads come out
+  /// from behind `FeatureFlags.downloadsEnabled`, resolve every episode of the season here
+  /// (and in `downloadSeason`) before reading `episode.files`, or both quietly do nothing.
   static func availableQualities(in season: Season) -> [String] {
     var seen = Set<String>()
     var result: [(label: String, resolution: Int)] = []

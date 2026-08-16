@@ -396,7 +396,11 @@ struct TabsNavigationView: View {
 
   private func fetchFolders() async -> [Bookmark] {
     do {
-      return try await appContext.contentService.fetchBookmarks().items
+      let fetched = try await appContext.contentService.fetchBookmarks().items
+      // The sidebar refresh doubles as the app's folder-list refresh — see
+      // `BookmarkFoldersStore`, which every card menu reads instead of fetching.
+      BookmarkFoldersStore.shared.adopt(fetched)
+      return fetched
         .filter { $0.count != "0" }
         .recentlyUpdatedFirst()
     } catch {

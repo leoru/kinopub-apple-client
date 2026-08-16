@@ -15,6 +15,7 @@
 		5CDA790E2BD84471ADAD5D9D /* ContentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A455BD91626C3A69A07FF16 /* ContentStore.swift */; };
 		68BB8FA83F27CECB0FFCA1E7 /* StorageSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831F62D766B34A0EEBB24C1C /* StorageSettingsView.swift */; };
 		6DEC18B89FE39E3461D9C4BE /* BookmarkMembershipStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA67574E8F59DCCBF4B88BF /* BookmarkMembershipStore.swift */; };
+		6DEC18B89FE39E3461D9C4BF /* BookmarkFoldersStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA67574E8F59DCCBF4B88C0 /* BookmarkFoldersStore.swift */; };
 		702A02E524E03828B24D58EE /* SectionVisibilityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52C3C1EAD68A9B19F26BA2E /* SectionVisibilityStore.swift */; };
 		84B06A5DC1674B8DBDF075FC /* DeviceIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673B11D8E07244CCADA6EBBB /* DeviceIdentity.swift */; };
 		9181898AA7F0D28971B9EAB2 /* DeviceCapabilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B122808656F8D05B7D97DC /* DeviceCapabilities.swift */; };
@@ -137,6 +138,7 @@
 		CCF3881E2A71885900242581 /* AuthorizationServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */; };
 		CCF388212A718ADE00242581 /* VideoContentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388202A718ADE00242581 /* VideoContentService.swift */; };
 		CCF388252A718AF300242581 /* VideoContentServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388242A718AF300242581 /* VideoContentServiceImpl.swift */; };
+		6DEC18B89FE39E3461D9C4C0 /* MediaLinksResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA67574E8F59DCCBF4B88C1 /* MediaLinksResolver.swift */; };
 		CCF388282A718BB600242581 /* AppContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF388272A718BB600242581 /* AppContext.swift */; };
 		CCF3882B2A718E6300242581 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3882A2A718E6300242581 /* Configuration.swift */; };
 		CCF3882F2A718EAA00242581 /* BundleConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF3882E2A718EAA00242581 /* BundleConfiguration.swift */; };
@@ -201,6 +203,7 @@
 		A1B2C3D42E5F60718293C003 /* NavigationFocusLabBridges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationFocusLabBridges.swift; sourceTree = "<group>"; };
 		A5945A0BAD187210B5696B83 /* CollectionDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionDetailView.swift; sourceTree = "<group>"; };
 		AAA67574E8F59DCCBF4B88BF /* BookmarkMembershipStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookmarkMembershipStore.swift; sourceTree = "<group>"; };
+		AAA67574E8F59DCCBF4B88C0 /* BookmarkFoldersStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookmarkFoldersStore.swift; sourceTree = "<group>"; };
 		AC55C398012BAC5D583D1A45 /* DeviceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceService.swift; sourceTree = "<group>"; };
 		AF84111EC8ACE8C4885E1A76 /* CollectionsServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsServiceImpl.swift; sourceTree = "<group>"; };
 		B52C3C1EAD68A9B19F26BA2E /* SectionVisibilityStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SectionVisibilityStore.swift; sourceTree = "<group>"; };
@@ -309,6 +312,7 @@
 		CCF3881D2A71885900242581 /* AuthorizationServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationServiceImpl.swift; sourceTree = "<group>"; };
 		CCF388202A718ADE00242581 /* VideoContentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoContentService.swift; sourceTree = "<group>"; };
 		CCF388242A718AF300242581 /* VideoContentServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoContentServiceImpl.swift; sourceTree = "<group>"; };
+		AAA67574E8F59DCCBF4B88C1 /* MediaLinksResolver.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MediaLinksResolver.swift; sourceTree = "<group>"; };
 		CCF388272A718BB600242581 /* AppContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContext.swift; sourceTree = "<group>"; };
 		CCF3882A2A718E6300242581 /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		CCF3882E2A718EAA00242581 /* BundleConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleConfiguration.swift; sourceTree = "<group>"; };
@@ -359,6 +363,7 @@
 			isa = PBXGroup;
 			children = (
 				AAA67574E8F59DCCBF4B88BF /* BookmarkMembershipStore.swift */,
+				AAA67574E8F59DCCBF4B88C0 /* BookmarkFoldersStore.swift */,
 			);
 			path = Bookmarks;
 			sourceTree = "<group>";
@@ -861,6 +866,7 @@
 			children = (
 				CCF388202A718ADE00242581 /* VideoContentService.swift */,
 				CCF388242A718AF300242581 /* VideoContentServiceImpl.swift */,
+				AAA67574E8F59DCCBF4B88C1 /* MediaLinksResolver.swift */,
 			);
 			path = VideoContent;
 			sourceTree = "<group>";
@@ -1070,6 +1076,7 @@
 				CC01461B2A783DF900F858AF /* NavigationState.swift in Sources */,
 				CCF2ABB42AED39E0000448A8 /* WindowSettings.swift in Sources */,
 				CCF388252A718AF300242581 /* VideoContentServiceImpl.swift in Sources */,
+				6DEC18B89FE39E3461D9C4C0 /* MediaLinksResolver.swift in Sources */,
 				CC0146352A78439600F858AF /* NavigationLinkProvider.swift in Sources */,
 				AA967A14831E15AEAAEED74F /* HLSAssetDownloadManager.swift in Sources */,
 				F08E8EEFDA71BBFFA2322126 /* HLSDownloadsStore.swift in Sources */,
@@ -1200,6 +1207,7 @@
 				F4B5C6D6EA4DAF6BCEA7DD54 /* CollectionDetailModel.swift in Sources */,
 				DBDB19B06210F598C2C28441 /* CollectionDetailView.swift in Sources */,
 				6DEC18B89FE39E3461D9C4BE /* BookmarkMembershipStore.swift in Sources */,
+				6DEC18B89FE39E3461D9C4BF /* BookmarkFoldersStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

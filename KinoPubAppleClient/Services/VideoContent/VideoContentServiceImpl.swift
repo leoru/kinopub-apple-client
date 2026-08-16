@@ -30,11 +30,16 @@ final class VideoContentServiceImpl: VideoContentService {
     return response
   }
 
-  func fetchDetails(for id: String) async throws -> SingleItemData<MediaItem> {
-    let request = ItemDetailsRequest(id: id)
+  func fetchDetails(for id: String, excludeLinks: Bool) async throws -> SingleItemData<MediaItem> {
+    let request = ItemDetailsRequest(id: id, excludeLinks: excludeLinks)
     let response = try await apiClient.performRequest(with: request,
                                                       decodingType: SingleItemData<MediaItem>.self)
     return response
+  }
+
+  func fetchMediaLinks(mediaId: Int) async throws -> MediaLinks {
+    let request = MediaLinksRequest(mediaId: mediaId)
+    return try await apiClient.performRequest(with: request, decodingType: MediaLinks.self)
   }
 
   func fetchSimilar(for id: String) async throws -> ArrayData<MediaItem> {

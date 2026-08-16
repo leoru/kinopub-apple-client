@@ -5,6 +5,7 @@
 //  Created by Kirill Kunst on 2.08.2023.
 //
 
+import Combine
 import Foundation
 import KinoPubBackend
 import OSLog
@@ -185,11 +186,24 @@ class MediaItemModel: ObservableObject {
     self.actionsService = actionsService
     self.metadataService = metadataService
     self.contentStore = contentStore
+    // Folder names for the hero's bookmark menu come from the shared store, which is
+    // restored from disk at launch — the page never asks the server for them. Following
+    // the store (rather than copying it once) means a folder created from a card menu
+    // on this same page shows up here too.
+    // Only the card can tell us this is episodic before the details call answers, and
+    // only for episodic items is `nolinks=1` worth it (a film's link block is small, and
+    // its `Video` is a struct we would have to write back through the item).
+    self.excludeLinksOnFetch = FeatureFlags.seriesDetailsWithoutLinks && (knownItem?.isEpisodicType ?? false)
+    BookmarkFoldersStore.shared.$folders.assign(to: &$folders)
     if let knownItem {
       self.mediaItem = knownItem
       AppContext.shared.localProgressStore.cacheItem(knownItem)
     }
   }
+
+  /// True when this page fetched its item with `nolinks=1` — episode links then arrive
+  /// per episode, through `MediaLinksResolver`.
+  private let excludeLinksOnFetch: Bool
 
   func fetchData() {
     loadFailed = false
@@ -199,22 +213,34 @@ class MediaItemModel: ObservableObject {
     moreWithActor = []
     moreFromDirectorLoaded = false
     moreWithActorLoaded = false
+    // Draw the library controls from what is already on disk, then correct them from
+    // the payload below. The old version raced the details call from its own Task and
+    // read `mediaItem.bookmarks` before it had arrived.
+    applyBookmarkState()
     Task {
       do {
-        mediaItem = try await itemsService.fetchDetails(for: "\(mediaItemId)").item
+        mediaItem = try await itemsService.fetchDetails(for: "\(mediaItemId)",
+                                                       excludeLinks: excludeLinksOnFetch).item
         let mediaId = mediaItem.id
         mediaItem.seasons = mediaItem.seasons?.map({ $0.mediaId = mediaId; return $0 })
         AppContext.shared.localProgressStore.cacheItem(mediaItem)
         isWatched = mediaItem.playbackAction == .playAgain
+        applyBookmarkState()
         // Without this the hero's follow control opened as "not following" on every
         // visit, whatever the account actually had, and the first tap unfollowed.
         isInWatchlist = mediaItem.inWatchlist ?? mediaItem.subscribed ?? false
         seedVoteCounts()
+        // What the payload actually carried, so a "nothing plays" report can be told
+        // apart from a link-resolution one without guessing.
+        Logger.app.info(
+          "details id=\(self.mediaItemId) nolinks=\(self.excludeLinksOnFetch) type=\(self.mediaItem.type) seasons=\(self.mediaItem.seasons?.count ?? 0) firstEpisodeFiles=\(self.mediaItem.seasons?.first?.episodes.first?.files.count ?? -1) videoFiles=\(self.mediaItem.videos?.first?.files.count ?? -1) trailer=\(self.mediaItem.trailerURL?.host ?? "none")"
+        )
         itemLoaded = true
         identity = MediaIdentity(mediaItem: mediaItem)
         // People shelves need credit names from the details payload — kick them
         // off as soon as we have them, in parallel with TMDB enrichment.
         Task { await loadPeopleShelves() }
+        Task { await loadRepresentativeLinks() }
         await loadExternalMetadata()
         // The "what's next" data lives on the latest season, not the first one —
         // and a long-running show should not fan out schedule fetches for every
@@ -230,9 +256,6 @@ class MediaItemModel: ObservableObject {
         moreFromDirectorLoaded = true
         moreWithActorLoaded = true
       }
-    }
-    Task {
-      await loadBookmarkState()
     }
     Task {
       await loadSimilar()
@@ -322,10 +345,12 @@ class MediaItemModel: ObservableObject {
 
   // MARK: - Actions
 
-  /// Bookmark state is secondary to the page, so a failure here is logged rather
-  /// than thrown at the user over the artwork. Membership comes from the item
-  /// payload + local store — never `get-item-folders`.
-  private func loadBookmarkState() async {
+  /// Bookmark state, entirely from what the page already has: membership from the item
+  /// payload (`bookmarks`) with the local store as the fallback, folder names from
+  /// `BookmarkFoldersStore`. Opening a title costs no bookmarks request — neither
+  /// `get-item-folders` nor the folder list, which only changes when the viewer
+  /// creates or deletes one.
+  private func applyBookmarkState() {
     if let bookmarks = mediaItem.bookmarks {
       let ids = Set(bookmarks.map(\.id))
       folderIDsContainingItem = ids
@@ -333,11 +358,19 @@ class MediaItemModel: ObservableObject {
     } else {
       folderIDsContainingItem = BookmarkMembershipStore.shared.folderIDs(for: mediaItemId)
     }
-    do {
-      folders = try await itemsService.fetchBookmarks().items
-    } catch {
-      Logger.app.error("Failed to load bookmark folders for \(self.mediaItemId): \(error)")
-    }
+  }
+
+  /// The quality chips, the resolution badge and the tech lines all read `detailFiles`,
+  /// which on a series is the *first episode's* files — empty when the page asked for
+  /// `nolinks=1`. One `media-links` call for that one episode keeps every one of them,
+  /// for a fraction of the link block we stopped downloading.
+  private func loadRepresentativeLinks() async {
+    guard excludeLinksOnFetch,
+          let episode = mediaItem.seasons?.first?.episodes.first,
+          episode.files.isEmpty else { return }
+    guard await MediaLinksResolver.shared.fill(episode, using: itemsService) else { return }
+    // `Episode` is a class held inside a struct: nothing `@Published` changed by itself.
+    objectWillChange.send()
   }
 
   /// Related items are a tail-end extra, so — like the bookmark state — a failure is
@@ -551,7 +584,9 @@ class MediaItemModel: ObservableObject {
         try await itemsService.toggleBookmark(itemId: mediaItemId, folderId: folderId)
         folderIDsContainingItem.insert(folderId)
         BookmarkMembershipStore.shared.replace(itemID: mediaItemId, folderIDs: folderIDsContainingItem)
-        folders = try await itemsService.fetchBookmarks().items
+        // The folder list itself changed — the one case where this page fetches it.
+        // `folders` follows the store, so the new folder lands in the menu here.
+        await BookmarkFoldersStore.shared.reload(using: itemsService)
         contentStore.invalidate(family: .bookmarks)
         presentHud(systemImage: "bookmark.fill", title: "Bookmarked")
       } catch {

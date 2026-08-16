@@ -56,6 +56,8 @@ class PlayerManager: ObservableObject {
   private var downloadedFilesDatabase: DownloadedFilesDatabase<DownloadMeta>
   private var rateObservation: NSKeyValueObservation?
   private var actionsService: UserActionsService
+  /// Only for resolving missing stream links — see `resolveStreamLinksIfNeeded`.
+  private let contentService: VideoContentService
   private var cues: [SubtitleCue] = []
   private var secondaryCues: [SubtitleCue] = []
   private var cueLoadTasks: [Task<Void, Never>] = []
@@ -129,11 +131,13 @@ class PlayerManager: ObservableObject {
   init(playItem: any PlayableItem,
        watchMode: WatchMode,
        downloadedFilesDatabase: DownloadedFilesDatabase<DownloadMeta>,
-       actionsService: UserActionsService) {
+       actionsService: UserActionsService,
+       contentService: VideoContentService = AppContext.shared.contentService) {
     self.playItem = playItem
     self.watchMode = watchMode
     self.actionsService = actionsService
     self.downloadedFilesDatabase = downloadedFilesDatabase
+    self.contentService = contentService
     rateObservation = player.observe(\.rate, options: [.new]) { [weak self] player, _ in
       DispatchQueue.main.async {
         self?.isPlaying = player.rate > 0
@@ -160,12 +164,19 @@ class PlayerManager: ObservableObject {
     guard !didPreparePlayback else { return }
     didPreparePlayback = true
 
+    await resolveStreamLinksIfNeeded()
+
     guard let source = fileURL else {
       Logger.app.error("No playable URL for item \(self.playItem.id) in \(String(describing: self.watchMode)) mode")
       playbackState = .failed("No playable link for this item".localized)
       return
     }
 
+    // The stream we are about to open, by host and kind — a TLS / reset failure from the
+    // CDN and "we picked the wrong link" look identical on screen otherwise.
+    Logger.app.info(
+      "play mode=\(String(describing: self.watchMode)) item=\(self.playItem.id) files=\(self.playItem.files.count) host=\(source.host ?? "local") kind=\(source.pathExtension)"
+    )
     let item = AVPlayerItem(asset: playbackAsset(for: source))
     // Cap adaptive HLS to the user's chosen quality. Harmless for local/trailer playback.
     if watchMode == .media, let maxResolution = StreamQuality.current.maxResolution {
@@ -186,6 +197,20 @@ class PlayerManager: ObservableObject {
     configureDefaultAudioWhenReady()
     rebuildTransportBarMenus()
 #endif
+  }
+
+  /// An episode that came from a `nolinks=1` details call has no files until now. One
+  /// `/v1/items/media-links` call fills it in place, and the subtitle tracks — configured
+  /// at init, when the episode still had none — are rebuilt from what arrived.
+  @MainActor
+  private func resolveStreamLinksIfNeeded() async {
+    // `fileURL == nil` rather than "files are empty": a downloaded episode plays from
+    // disk without any links, and must not spend a request to learn that.
+    guard watchMode == .media,
+          fileURL == nil,
+          let episode = playItem as? Episode else { return }
+    await MediaLinksResolver.shared.fill(episode, using: contentService)
+    configureSubtitles()
   }
 
   /// Media masters route through `HLSMasterResourceLoader` so the Audio picker gets

@@ -260,6 +260,18 @@ Details: skill `apple-chrome`.
   Use `CachedRemoteImage`, or `ArtworkImage` when the states need different geometry. `AsyncImage`
   is a regression and no longer appears anywhere in this repo. Local optimistic writes (hide, watched, bookmark) are
   authoritative until the server contradicts them.
+- **Bookmarks are answered locally.** `BookmarkMembershipStore` (item → folder ids) and
+  `BookmarkFoldersStore` (the folder list, persisted across launches) draw every bookmark control.
+  `GET /v1/bookmarks` belongs to the screens that list folders — Library, Bookmarks, the sidebar,
+  which hand their result back with `adopt(_:)` — and to the moment a folder is created or deleted.
+  **A detail page fetches neither**: membership is already on the item payload (`bookmarks`), and
+  `get-item-folders` is gone on purpose.
+- **A series detail page is fetched with `nolinks=1`.** Video links are most of a long
+  series' details payload and all but one episode's are thrown away, so `MediaItemModel`
+  asks without them (decided from the card's `type` — `isEpisodicType`) and
+  `MediaLinksResolver` fills a single `Episode` from `/v1/items/media-links?mid=` when it is
+  actually played. **New code that reads `episode.files` / `episode.subtitles` must resolve
+  first** — they are legitimately empty. Films still come with links.
 - tvOS purges `Caches/` when the app is not running — lean on longer in-memory TTLs, don't fight it,
   and don't pretend offline parity exists.
 - **New API calls go through `KinoPubBackend`** — Endpoint + model + service protocol + mock.

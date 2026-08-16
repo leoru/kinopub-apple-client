@@ -85,7 +85,11 @@ class BookmarksCatalog: ObservableObject {
 
   private func fetchFolders() async {
     do {
-      folders = try await contentService.fetchBookmarks().items
+      let fetched = try await contentService.fetchBookmarks().items
+      // Unfiltered into the shared store: an empty folder is still one you can file a
+      // title in from a card menu, even though this screen has nothing to draw for it.
+      BookmarkFoldersStore.shared.adopt(fetched)
+      folders = fetched
         .filter { $0.count != "0" }
         .recentlyUpdatedFirst()
       foldersFetchFailed = false
