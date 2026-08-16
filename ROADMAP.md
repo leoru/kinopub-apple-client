@@ -211,9 +211,15 @@ Media
 
 - `PlayableItem` — id, title, duration, image, source, progress, kind. An episode and a trailer
   differ by `kind` and nothing else, so they render through one rail.
-- `PlaybackVariant` — the *same* content encoded differently. kino.pub ships these as fake episodes:
-  item **124447** exposes `s0e1` / `s0e2` for 24 fps / 48 fps. They must not reach the episodes rail
-  as siblings of real episodes. Multi-part films are the other case of the same shape.
+- `PlaybackVariant` — the *same* content encoded differently. **Built and verified 2026-08-16
+  against the real `GET /v1/items/124447`** (fixture + tests in `KinoPubBackendTests`).
+  The `s0e1` / `s0e2` in the original note was **exactly right**, in the API's own notation: each
+  entry of `videos` carries `snumber: 0` and `number: 1…n`. There is no `seasons` key at all — the
+  "fake episodes" live in `videos` on a `subtype: "multi"` item, with their own `id` and a human
+  `title` ("24 fps", "48 fps"). **Multi-part films are this same mechanism**, not a second one.
+  Subtitles and audio are **per entry** (55 vs 0 on that title), and `duration.total` is their
+  **sum** while `average` is the film's runtime.
+  `MediaItem.playbackVariants` + `VersionsRailView`; they never reach the episodes rail.
 - The trailer is needed **before** the rail is, because the hero's Trailer button needs it.
 
 - [ ] Map the API before designing more UI here (one focused reverse-engineering pass, by proxying

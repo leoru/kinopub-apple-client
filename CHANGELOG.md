@@ -5,6 +5,39 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Films with several versions are playable, and stop being a tag (2026-08-16)
+
+- **`PlaybackVariant` + `VersionsRailView`.** A `subtype: "multi"` movie ships its encodings in
+  `videos` — several entries with `snumber: 0`, their own `id`, and a human `title` ("24 fps",
+  "48 fps"); director's cut and colour/black-and-white are the same shape. They now render as a
+  landscape rail directly under the hero, above the seasons rail, using the same card an episode
+  draws (`MediaCard(variant:)`) and the same TVUIKit media-item cell on tvOS. They are **not**
+  episodes and never enter that rail.
+- **`videos.first` was the bug.** Every film-level `PlayableItem` member — `files`, `metadata`,
+  `subtitles`, `audioTracks`, `watchableURL` — read `videos.first`, so on a two-version title the
+  second version was unreachable *and* Play resumed the first one at a position belonging to the
+  other encoding. They now read `MediaItem.primaryVideo`: the started-but-unfinished version, else
+  the first. `playbackAction` considers every version, not just one.
+- **A 2 h 24 min film was claiming 4 h 48 min.** `duration.total` is the sum of every *version*
+  (8634 + 8634 on item 124447), the same trap the code already documented one level up for series.
+  The runtime line now uses `duration.average` when a film has versions.
+- **Subtitles and audio are per version.** On item 124447 the 24 fps encoding carries 55 subtitle
+  tracks and the 48 fps one carries none — so reading them off `videos.first` handed the 48 fps
+  player a subtitle list that was not its own.
+- **`subtype: multi` is gone from the tag strip** (type · country · genre). It is not a fact about
+  the film in the way a country is — it says the film ships in several versions, which the rail now
+  says by listing them. Unknown subtypes still render: better an unexplained word than a dropped one.
+- **Verified against the real response.** `Fixtures/item_124447_multi.json` is the actual
+  `GET /v1/items/124447` payload (signed CDN URLs replaced, subtitle/audio/file lists trimmed —
+  nothing asserted on was changed), with `MultiVersionItemTests` covering decode, variant order and
+  ids, `metadata` shape, per-version subtitles, the runtime, and `playbackAction`.
+- **The ROADMAP's "fake episodes `s0e1`/`s0e2`" note was right all along** — that is the API's own
+  notation: every `videos` entry carries `snumber: 0` and `number: 1…n`. (An earlier draft of this
+  entry called the note wrong; it was not.) **Multi-part films are the same mechanism**, not a
+  second one — one `videos` array either way, and only the `title` string says which. So do not
+  infer semantics from the structure.
+- Not verified on a device: how the rail reads at ten feet, and how `.card` focus looks on it.
+
 ### A network log you can read on the device, and a launch that says what it is waiting for (2026-08-16)
 
 - **Settings › Diagnostics › Network log** — every request with headers, full request and response

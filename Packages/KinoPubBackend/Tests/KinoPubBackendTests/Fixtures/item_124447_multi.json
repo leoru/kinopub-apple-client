@@ -1,0 +1,269 @@
+{
+  "item": {
+    "ac3": 1,
+    "advert": false,
+    "bookmarks": [],
+    "cast": "Николас Галицин",
+    "comments": 0,
+    "countries": [
+      {
+        "id": 1,
+        "title": "США"
+      },
+      {
+        "id": 10,
+        "title": "Австралия"
+      },
+      {
+        "id": 14,
+        "title": "Канада"
+      },
+      {
+        "id": 40,
+        "title": "Исландия"
+      }
+    ],
+    "created_at": 1781928997,
+    "director": "Трэвис Найт",
+    "duration": {
+      "average": 8634,
+      "total": 17268
+    },
+    "finished": false,
+    "genres": [
+      {
+        "id": 2,
+        "title": "Боевик"
+      },
+      {
+        "id": 4,
+        "title": "Фантастика"
+      },
+      {
+        "id": 5,
+        "title": "Фэнтези"
+      },
+      {
+        "id": 8,
+        "title": "Приключения"
+      }
+    ],
+    "id": 124447,
+    "imdb": 427340,
+    "imdb_rating": 6.5,
+    "imdb_votes": 103149,
+    "kinopoisk": 88124,
+    "kinopoisk_rating": 6.2,
+    "kinopoisk_votes": 18410,
+    "langs": 8,
+    "plot": "Адам, 10-летний принц с планеты Этерния, терпит крушение на космическом корабле и попадает на Землю. Спустя 15 лет принц…",
+    "poor_quality": false,
+    "posters": {
+      "big": "https://m.staticpop.net/poster/item/big/124447.jpg",
+      "medium": "https://m.staticpop.net/poster/item/medium/124447.jpg",
+      "small": "https://m.staticpop.net/poster/item/small/124447.jpg",
+      "wide": "https://m.staticpop.net/poster/item/wide/124447.jpg"
+    },
+    "quality": 2160,
+    "rating": 94,
+    "rating_percentage": 63,
+    "rating_votes": 342,
+    "subtype": "multi",
+    "title": "Властелины вселенной / Masters of the Universe",
+    "tracklist": [],
+    "trailer": {
+      "file": "/trailers/3/94/2faa9259ef2aca3dbeea9c9a89a9ade6.mp4",
+      "id": 124447,
+      "url": "https://86feaca6-c052-436f-8b78-99cea0ec1571.ams-static-15.cdntogo.net/hls/aWQ9NTkxNjsyNTY1NDE1ODg2OzQ3MzMxNzI3OzA7MTc4Njg4NTUzNyZoPUppR0VLckU3Sm9za0ZpRUVkWS0wYmcmZT0xNzg2OTcxOTM3/trailers/3/94/2faa9259ef2aca3dbeea9c9a89a9ade6.mp4/master-v1a1.m3u8?loc=nl"
+    },
+    "type": "movie",
+    "updated_at": 1786074681,
+    "videos": [
+      {
+        "ac3": 1,
+        "audios": [
+          {
+            "author": {
+              "id": 2296,
+              "short_title": "",
+              "title": "Movie Dubbing"
+            },
+            "channels": 6,
+            "codec": "aac",
+            "id": 3829831,
+            "index": 1,
+            "lang": "rus",
+            "type": {
+              "id": 1,
+              "short_title": "DUB",
+              "title": "Дубляж"
+            }
+          },
+          {
+            "author": {
+              "id": 298,
+              "short_title": "",
+              "title": "LeDoyen"
+            },
+            "channels": 6,
+            "codec": "aac",
+            "id": 3829834,
+            "index": 2,
+            "lang": "ukr",
+            "type": {
+              "id": 1,
+              "short_title": "DUB",
+              "title": "Дубляж"
+            }
+          }
+        ],
+        "duration": 8634,
+        "files": [
+          {
+            "codec": "h264",
+            "file": "/1/0d/2d30bd15885c8e400d8c23ea377a0422.mp4",
+            "h": 800,
+            "quality": "1080p",
+            "quality_id": 3,
+            "url": {
+              "hls": "https://cdn.example/hls/1080p.m3u8",
+              "hls2": "https://cdn.example/hls2/1080p.m3u8",
+              "hls4": "https://cdn.example/hls4/1080p.m3u8",
+              "http": "https://cdn.example/http/1080p.m3u8"
+            },
+            "w": 1920
+          },
+          {
+            "codec": "h264",
+            "file": "/2/3d/e71e435f238415e6c9811653afe7a306.mp4",
+            "h": 534,
+            "quality": "720p",
+            "quality_id": 2,
+            "url": {
+              "hls": "https://cdn.example/hls/720p.m3u8",
+              "hls2": "https://cdn.example/hls2/720p.m3u8",
+              "hls4": "https://cdn.example/hls4/720p.m3u8",
+              "http": "https://cdn.example/http/720p.m3u8"
+            },
+            "w": 1280
+          }
+        ],
+        "id": 1149307,
+        "number": 1,
+        "snumber": 0,
+        "subtitles": [
+          {
+            "embed": false,
+            "file": "/c/a8/2841040.srt",
+            "forced": false,
+            "lang": "aze",
+            "shift": 0,
+            "url": "https://86feaca6-c052-436f-8b78-99cea0ec1571.ams-static-03.cdntogo.net/pd/aWQ9NTkxNjsyNTY1NDE1ODg2OzQ3MzMxNzI3OzExNDkzMDc7MTc4Njg4NTUzNyZoPW1PMndQekVhaHNGeG1VUE5PUTAxa2cmZT0xNzg2OTcxOTM3/subtitles/c/a8/2841040.srt"
+          },
+          {
+            "embed": false,
+            "file": "/2/ce/2841037.srt",
+            "forced": false,
+            "lang": "ara",
+            "shift": 0,
+            "url": "https://86feaca6-c052-436f-8b78-99cea0ec1571.ams-static-14.cdntogo.net/pd/aWQ9NTkxNjsyNTY1NDE1ODg2OzQ3MzMxNzI3OzExNDkzMDc7MTc4Njg4NTUzNyZoPW1PMndQekVhaHNGeG1VUE5PUTAxa2cmZT0xNzg2OTcxOTM3/subtitles/2/ce/2841037.srt"
+          }
+        ],
+        "thumbnail": "https://m.staticpop.net/thumb/d/aa/fbfdda8071272f52e34173399083bd27/4317000/480.jpg",
+        "title": "24 fps",
+        "tracks": 4,
+        "watched": 1,
+        "watching": {
+          "status": 1,
+          "time": 8634
+        }
+      },
+      {
+        "ac3": 1,
+        "audios": [
+          {
+            "author": {
+              "id": 2296,
+              "short_title": "",
+              "title": "Movie Dubbing"
+            },
+            "channels": 6,
+            "codec": "aac",
+            "id": 3843394,
+            "index": 1,
+            "lang": "rus",
+            "type": {
+              "id": 1,
+              "short_title": "DUB",
+              "title": "Дубляж"
+            }
+          },
+          {
+            "author": {
+              "id": 298,
+              "short_title": "",
+              "title": "LeDoyen"
+            },
+            "channels": 6,
+            "codec": "aac",
+            "id": 3843397,
+            "index": 2,
+            "lang": "ukr",
+            "type": {
+              "id": 1,
+              "short_title": "DUB",
+              "title": "Дубляж"
+            }
+          }
+        ],
+        "duration": 8634,
+        "files": [
+          {
+            "codec": "h264",
+            "file": "/6/8e/bf32b47b8d9b7965b851c27f0d0dcd28.mp4",
+            "h": 800,
+            "quality": "1080p",
+            "quality_id": 3,
+            "url": {
+              "hls": "https://cdn.example/hls/1080p.m3u8",
+              "hls2": "https://cdn.example/hls2/1080p.m3u8",
+              "hls4": "https://cdn.example/hls4/1080p.m3u8",
+              "http": "https://cdn.example/http/1080p.m3u8"
+            },
+            "w": 1920
+          },
+          {
+            "codec": "h264",
+            "file": "/9/a9/dc35d40502a0271c6e2d2405cbd0b890.mp4",
+            "h": 534,
+            "quality": "720p",
+            "quality_id": 2,
+            "url": {
+              "hls": "https://cdn.example/hls/720p.m3u8",
+              "hls2": "https://cdn.example/hls2/720p.m3u8",
+              "hls4": "https://cdn.example/hls4/720p.m3u8",
+              "http": "https://cdn.example/http/720p.m3u8"
+            },
+            "w": 1280
+          }
+        ],
+        "id": 1155958,
+        "number": 2,
+        "snumber": 0,
+        "subtitles": [],
+        "thumbnail": "https://m.staticpop.net/thumb/a/77/26b8da80b2789dd6d511d845057272e4/4317000/480.jpg",
+        "title": "48 fps",
+        "tracks": 4,
+        "watched": 1,
+        "watching": {
+          "status": 1,
+          "time": 8522
+        }
+      }
+    ],
+    "views": 68619,
+    "voice": null,
+    "year": 2026
+  },
+  "status": 200
+}

@@ -215,6 +215,8 @@ file, and delete the losers with the switch.
 - **One playable rail, not one section per content type.** Episode, trailer, part, version and extra
   share a shape (id, title, duration, image, source, progress, kind) and differ in one field, so
   they share a component. A trailer tile *is* an episode tile *is* a Continue Watching tile.
+- Versions of one film (`subtype: multi`) are `PlaybackVariant`, never episodes — one rail each,
+  never mixed. Why, and what the payload actually looks like: `PlaybackVariant.swift`.
 - **No compact title, no floating header logo** unless navigation chrome requires one.
 - Sections are data (kind + payload), empty ones simply absent, order defined in one place.
 - "Related" renders through the same shelf component Home uses.

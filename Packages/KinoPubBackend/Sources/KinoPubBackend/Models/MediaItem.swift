@@ -231,9 +231,51 @@ public extension MediaItem {
       return .play
     }
 
-    guard let video = videos?.first else { return .play }
+    guard let video = primaryVideo else { return .play }
     if video.isWatched { return .playAgain }
     return video.watchProgress.hasStarted ? .resume : .play
+  }
+
+  // MARK: - Versions of one film
+
+  /// The API declares a film with several encodings this way. It is *not* what decides
+  /// whether the versions rail appears — two `videos` are — but it is what the detail
+  /// page suppresses in the tag strip, since the rail says the same thing better.
+  var isMultiVersion: Bool {
+    subtype.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "multi"
+  }
+
+  /// The same film encoded differently — 24 / 48 fps, colour / black-and-white,
+  /// director's cut. **Empty unless there is more than one**, because a film with a
+  /// single video has no version to choose between and a one-tile rail is noise.
+  var playbackVariants: [PlaybackVariant] {
+    guard !isSeries, let videos, videos.count > 1 else { return [] }
+    return videos
+      .sorted { $0.number < $1.number }
+      .map { PlaybackVariant(video: $0, mediaId: id, movieTitle: localizedTitle) }
+  }
+
+  /// The version Play should open: the one already started but unfinished, else the
+  /// first.
+  ///
+  /// 🔴 **Nothing about a film may read `videos.first`.** Everything did — files,
+  /// subtitles, audio, resume point — so on item 124447 (24 fps / 48 fps) watching one
+  /// and pressing Play resumed the *other* at a position that was not its own, and its
+  /// subtitle list was the first entry's (55 tracks vs 0). Captured payload and the full
+  /// shape: `docs/providers/kinopub/video.md`, fixture + `MultiVersionItemTests`.
+  var primaryVideo: Video? {
+    guard let videos, !videos.isEmpty else { return nil }
+    if let inProgress = videos.first(where: { $0.watchProgress.hasStarted && !$0.isWatchedToEnd }) {
+      return inProgress
+    }
+    return videos.first
+  }
+
+  /// The variant Play should open, when there is a choice. Nil for a single-video film —
+  /// the caller plays the `MediaItem` itself, as it always did.
+  var primaryVariant: PlaybackVariant? {
+    guard !playbackVariants.isEmpty, let video = primaryVideo else { return nil }
+    return PlaybackVariant(video: video, mediaId: id, movieTitle: localizedTitle)
   }
 }
 
@@ -279,7 +321,7 @@ public extension MediaItem {
   }
   
   var watchableURL: URL {
-    URL(string: videos?.first?.files.first?.url.hls4 ?? "")!
+    URL(string: primaryVideo?.files.first?.url.hls4 ?? "")!
   }
   
 }
@@ -348,8 +390,13 @@ public extension MediaItem {
       // series — season count is what the Apple TV app shows.
       parts.append("\(seasons.count) \(seasons.count == 1 ? "season" : "seasons")")
     } else {
-      let duration = Duration.compact(seconds: Int(duration.total))
-      if !duration.isEmpty { parts.append(duration) }
+      // …and it sums every *version* for a multi-version film, which is the same
+      // nonsense one level down: item 124447 ships 24 fps and 48 fps at 8634 s each and
+      // reports `total: 17268`, so the page said 4 h 48 min for a 2 h 24 min film.
+      // `average` is the runtime of the film; `total` is the runtime of the payload.
+      let seconds = playbackVariants.isEmpty ? duration.total : duration.average
+      let formatted = Duration.compact(seconds: Int(seconds))
+      if !formatted.isEmpty { parts.append(formatted) }
     }
     return parts
   }
@@ -380,20 +427,22 @@ public extension MediaItem {
   }
 }
 
+/// All of this reads `primaryVideo`, not `videos.first`: on a multi-version film those
+/// are different videos as soon as the viewer has started one of them.
 extension MediaItem: PlayableItem {
   public var files: [FileInfo] {
-    videos?.first?.files ?? []
+    primaryVideo?.files ?? []
   }
-  
+
   public var metadata: WatchingMetadata {
-    WatchingMetadata(id: id, video: videos?.first?.number, season: nil)
+    WatchingMetadata(id: id, video: primaryVideo?.number, season: nil)
   }
 
   public var subtitles: [Subtitle] {
-    videos?.first?.subtitles ?? []
+    primaryVideo?.subtitles ?? []
   }
 
   public var audioTracks: [AudioTrackInfo] {
-    AudioTracks.catalog(videos?.first?.audios ?? [])
+    AudioTracks.catalog(primaryVideo?.audios ?? [])
   }
 }

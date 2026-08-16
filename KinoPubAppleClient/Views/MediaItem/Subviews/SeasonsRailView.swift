@@ -832,3 +832,111 @@ private struct UpcomingSeasonCard: View {
     .frame(maxWidth: .infinity, alignment: .top)
   }
 }
+
+/// The versions of one film — 24 / 48 fps, colour / black-and-white, director's cut —
+/// as the same landscape rail the episodes use.
+///
+/// It lives beside `SeasonsRailView` because it *is* that rail with a simpler spine: no
+/// season tabs, no schedules, no hide/watched actions. What it must never be is the
+/// episodes rail itself — kino.pub ships these as `videos` on a `subtype: "multi"` movie,
+/// and dropping them in among real episodes is exactly the confusion the playable graph
+/// in ROADMAP.md exists to prevent.
+///
+/// Before this, `videos.first` was the only version the app could reach; the other one
+/// existed in the payload and nowhere in the UI.
+struct VersionsRailView: View {
+
+  let variants: [PlaybackVariant]
+  let linkProvider: NavigationLinkProvider
+  /// The film's own artwork, for versions kino.pub gives no thumbnail of their own.
+  var stillURL: String? = nil
+  /// False while the hero owns the page — the header stays out from under the artwork,
+  /// the same rule the season tabs follow.
+  var showsChrome: Bool = true
+  var onSectionFocused: (() -> Void)? = nil
+
+  @Environment(\.dynamicTypeSize) private var typeSize
+#if os(tvOS)
+  @Environment(\.mediaNavigation) private var mediaNavigation
+#endif
+  @State private var railWidth: CGFloat = SeasonsRailView.referenceWidth
+
+  private var metrics: ShelfMetrics { .landscape(width: railWidth, typeSize: typeSize) }
+  private var cardWidth: CGFloat { metrics.cardWidth(in: railWidth) }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      if showsChrome {
+        SectionHeader("MediaItem_Versions",
+                      count: "\(variants.count)",
+                      leadingInset: metrics.inset)
+          .transition(.opacity)
+      }
+      rail
+    }
+    .animation(.easeOut(duration: 0.25), value: showsChrome)
+    .onGeometryChange(for: CGFloat.self) { proxy in
+      proxy.size.width
+    } action: { width in
+      if width > 0 { railWidth = width }
+    }
+  }
+
+#if os(tvOS)
+  /// The system wide media-item cell, like every other rail on this platform — a
+  /// hand-assembled tile here would be the banned shape even if it looked right.
+  private var rail: some View {
+    TVUIKitMediaItemRail(
+      items: variants.map(railItem(for:)),
+      contentInset: metrics.inset,
+      onSelect: { id in
+        guard let variant = variants.first(where: { $0.id == id }) else { return }
+        // A UIKit cell cannot host a `NavigationLink`; the same environment hook the
+        // other TVUIKit rails push through carries the identical route.
+        mediaNavigation?(linkProvider.player(for: variant))
+      },
+      onFocusedItem: { _ in onSectionFocused?() }
+    )
+    .focusSection()
+  }
+
+  private func railItem(for variant: PlaybackVariant) -> TVUIKitMediaItem {
+    let progress = variant.watchProgress
+    let status: TVUIKitMediaItemStatus = {
+      if variant.isWatched { return .watched }
+      // `fraction` is nil when the duration is unusable, and a progress bar drawn from a
+      // guessed denominator is worse than none.
+      if progress.hasStarted, let fraction = progress.fraction { return .inProgress(fraction) }
+      return .ready
+    }()
+    return TVUIKitMediaItem(
+      id: variant.id,
+      imageURL: URL(string: variant.thumbnail.isEmpty ? (stillURL ?? "") : variant.thumbnail),
+      caption: variant.title,
+      status: status,
+      timeLabel: variant.duration >= 60
+        ? Duration.compactHoursMinutes(seconds: variant.duration)
+        : nil
+    )
+  }
+#else
+  private var rail: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      LazyHStack(alignment: .top, spacing: metrics.gutter) {
+        ForEach(variants) { variant in
+          PlayerLink(route: linkProvider.player(for: variant),
+                     item: variant,
+                     mode: .media) {
+            MediaCardView(card: MediaCard(variant: variant, stillURL: stillURL),
+                          caption: .always)
+          }
+          .frame(width: cardWidth)
+          .buttonStyle(MediaCardButtonStyle())
+        }
+      }
+      .padding(.vertical, Metrics.landscapeFocusPadding)
+    }
+    .contentMargins(.horizontal, metrics.inset, for: .scrollContent)
+  }
+#endif
+}

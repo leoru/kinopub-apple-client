@@ -379,6 +379,17 @@ struct MediaItemView: View {
   @ViewBuilder
   private var contentSections: some View {
     VStack(alignment: .leading, spacing: MediaItemLayout.sectionSpacing) {
+      // Versions of one film sit where a series' episodes would: directly under the hero,
+      // because "what can I play right now" is the cheapest thing to reach on a remote.
+      // Empty for everything with one video, which is almost every film.
+      if !itemModel.mediaItem.playbackVariants.isEmpty {
+        VersionsRailView(variants: itemModel.mediaItem.playbackVariants,
+                         linkProvider: itemModel.linkProvider,
+                         stillURL: itemModel.mediaItem.posters.wideURL ?? itemModel.mediaItem.posters.medium,
+                         showsChrome: true,
+                         onSectionFocused: leaveHero)
+      }
+
       if let seasons = seasonsForDisplay, !seasons.isEmpty {
         SeasonsRailView(seasons: seasons,
                         linkProvider: itemModel.linkProvider,

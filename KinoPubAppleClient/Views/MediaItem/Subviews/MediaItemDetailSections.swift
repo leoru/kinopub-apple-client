@@ -1238,10 +1238,16 @@ struct MediaItemInfoColumns: View {
                 title: mediaItem.contentTypeTitleKey.localized,
                 filter: mediaItem.contentTypeFilter.map { LibraryFilter(contentType: $0) })
     ]
-    if let subtypeKey = mediaItem.contentSubtypeTitleKey {
-      tags.append(InfoValue(id: "subtype", title: subtypeKey.localized))
-    } else if let raw = mediaItem.contentSubtypeRaw {
-      tags.append(InfoValue(id: "subtype", title: raw))
+    // `multi` is not a genre-ish fact about the film, it is a statement that the film
+    // ships in several versions — and the versions rail above says that by listing them.
+    // A tag reading "Multi-part" beside the countries told the user nothing they could
+    // act on. Unknown subtypes still surface: better an unexplained word than a dropped one.
+    if !mediaItem.isMultiVersion {
+      if let subtypeKey = mediaItem.contentSubtypeTitleKey {
+        tags.append(InfoValue(id: "subtype", title: subtypeKey.localized))
+      } else if let raw = mediaItem.contentSubtypeRaw {
+        tags.append(InfoValue(id: "subtype", title: raw))
+      }
     }
 
     tags.append(contentsOf: mediaItem.countries
