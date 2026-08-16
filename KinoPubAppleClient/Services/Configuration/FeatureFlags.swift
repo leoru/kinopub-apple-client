@@ -40,10 +40,14 @@ enum FeatureFlags {
   /// A series detail page fetches its item with `nolinks=1` and resolves an episode's
   /// links from `/v1/items/media-links` when it is played (`MediaLinksResolver`).
   ///
-  /// A switch rather than a constant because it changes where playable links come from:
-  /// flipping it off restores the single fat details payload, which is the fastest way
-  /// to tell a link problem apart from a CDN / network one.
-  static let seriesDetailsWithoutLinks = true
+  /// **Off.** It saves real bytes on a long show — most of that payload is links, and at
+  /// most one episode's worth is ever used — but every playback path has to go and get a
+  /// link first, and the first attempt shipped with a decoder that could not read a
+  /// link-less `files` entry at all, so every series page said "Couldn't Load". The
+  /// machinery stays compiled and switchable; kino.pub is making `nolinks=1` the default
+  /// in a future API version, so this is what we flip when that lands — after watching a
+  /// series actually play with it on.
+  static let seriesDetailsWithoutLinks = false
 
   /// Our own combined IMDb + Kinopoisk score: poster plaque, hero pill, the detail
   /// "Rating" tile, and the card Rating placement / source settings. Off — IMDb and

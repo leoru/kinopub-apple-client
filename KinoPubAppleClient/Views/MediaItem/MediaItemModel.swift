@@ -186,15 +186,10 @@ class MediaItemModel: ObservableObject {
     self.actionsService = actionsService
     self.metadataService = metadataService
     self.contentStore = contentStore
-    // Folder names for the hero's bookmark menu come from the shared store, which is
-    // restored from disk at launch — the page never asks the server for them. Following
-    // the store (rather than copying it once) means a folder created from a card menu
-    // on this same page shows up here too.
     // Only the card can tell us this is episodic before the details call answers, and
     // only for episodic items is `nolinks=1` worth it (a film's link block is small, and
     // its `Video` is a struct we would have to write back through the item).
     self.excludeLinksOnFetch = FeatureFlags.seriesDetailsWithoutLinks && (knownItem?.isEpisodicType ?? false)
-    BookmarkFoldersStore.shared.$folders.assign(to: &$folders)
     if let knownItem {
       self.mediaItem = knownItem
       AppContext.shared.localProgressStore.cacheItem(knownItem)
@@ -217,6 +212,7 @@ class MediaItemModel: ObservableObject {
     // the payload below. The old version raced the details call from its own Task and
     // read `mediaItem.bookmarks` before it had arrived.
     applyBookmarkState()
+    followBookmarkFolders()
     Task {
       do {
         mediaItem = try await itemsService.fetchDetails(for: "\(mediaItemId)",
@@ -240,7 +236,6 @@ class MediaItemModel: ObservableObject {
         // People shelves need credit names from the details payload — kick them
         // off as soon as we have them, in parallel with TMDB enrichment.
         Task { await loadPeopleShelves() }
-        Task { await loadRepresentativeLinks() }
         await loadExternalMetadata()
         // The "what's next" data lives on the latest season, not the first one —
         // and a long-running show should not fan out schedule fetches for every
@@ -350,6 +345,25 @@ class MediaItemModel: ObservableObject {
   /// `BookmarkFoldersStore`. Opening a title costs no bookmarks request — neither
   /// `get-item-folders` nor the folder list, which only changes when the viewer
   /// creates or deletes one.
+  /// Folder names for the hero's bookmark menu come from the shared store, restored from
+  /// disk at launch — the page never asks the server for them. Following the store rather
+  /// than copying it once means a folder created from a card menu on this same page shows
+  /// up here too.
+  ///
+  /// Set up here, not in `init`: this model is built inside a view body
+  /// (`RouteDestination.detailsView`), and a subscription that delivers its current value
+  /// straight away publishes during that update — "Publishing changes from within view
+  /// updates is not allowed". `fetchData()` runs from `.task`, off the update.
+  private func followBookmarkFolders() {
+    guard folderSubscription == nil else { return }
+    folders = BookmarkFoldersStore.shared.folders
+    folderSubscription = BookmarkFoldersStore.shared.$folders
+      .dropFirst()
+      .sink { [weak self] in self?.folders = $0 }
+  }
+
+  private var folderSubscription: AnyCancellable?
+
   private func applyBookmarkState() {
     if let bookmarks = mediaItem.bookmarks {
       let ids = Set(bookmarks.map(\.id))
@@ -358,19 +372,6 @@ class MediaItemModel: ObservableObject {
     } else {
       folderIDsContainingItem = BookmarkMembershipStore.shared.folderIDs(for: mediaItemId)
     }
-  }
-
-  /// The quality chips, the resolution badge and the tech lines all read `detailFiles`,
-  /// which on a series is the *first episode's* files — empty when the page asked for
-  /// `nolinks=1`. One `media-links` call for that one episode keeps every one of them,
-  /// for a fraction of the link block we stopped downloading.
-  private func loadRepresentativeLinks() async {
-    guard excludeLinksOnFetch,
-          let episode = mediaItem.seasons?.first?.episodes.first,
-          episode.files.isEmpty else { return }
-    guard await MediaLinksResolver.shared.fill(episode, using: itemsService) else { return }
-    // `Episode` is a class held inside a struct: nothing `@Published` changed by itself.
-    objectWillChange.send()
   }
 
   /// Related items are a tail-end extra, so — like the bookmark state — a failure is

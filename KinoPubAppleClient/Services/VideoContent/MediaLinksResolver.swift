@@ -32,7 +32,9 @@ final class MediaLinksResolver {
   /// does not throw over a stream that may yet be resolvable from a local download.
   @discardableResult
   func fill(_ episode: Episode, using service: VideoContentService) async -> Bool {
-    guard episode.files.isEmpty else { return true }
+    // Not `files.isEmpty`: a `nolinks=1` payload still lists the quality ladder, it just
+    // gives no links for any rung of it.
+    guard !episode.files.hasPlayableURLs else { return true }
     guard let links = await links(forMediaId: episode.id, using: service) else { return false }
     episode.files = links.files
     // `nolinks` is documented as dropping video links; whether it also drops subtitle
@@ -43,7 +45,7 @@ final class MediaLinksResolver {
     Logger.app.info(
       "media-links mid=\(episode.id) files=\(links.files.count) subs=\(links.subtitles.count) best=\(links.files.first?.quality ?? "none")"
     )
-    return !episode.files.isEmpty
+    return episode.files.hasPlayableURLs
   }
 
   func links(forMediaId id: Int, using service: VideoContentService) async -> MediaLinks? {

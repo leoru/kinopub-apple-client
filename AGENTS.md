@@ -266,12 +266,13 @@ Details: skill `apple-chrome`.
   which hand their result back with `adopt(_:)` — and to the moment a folder is created or deleted.
   **A detail page fetches neither**: membership is already on the item payload (`bookmarks`), and
   `get-item-folders` is gone on purpose.
-- **A series detail page is fetched with `nolinks=1`.** Video links are most of a long
-  series' details payload and all but one episode's are thrown away, so `MediaItemModel`
-  asks without them (decided from the card's `type` — `isEpisodicType`) and
-  `MediaLinksResolver` fills a single `Episode` from `/v1/items/media-links?mid=` when it is
-  actually played. **New code that reads `episode.files` / `episode.subtitles` must resolve
-  first** — they are legitimately empty. Films still come with links.
+- **`nolinks=1` on a series detail page is off** (`FeatureFlags.seriesDetailsWithoutLinks`).
+  It is built and switchable — `MediaItemModel` asks without links when it knows the card is
+  episodic (`isEpisodicType`), and `MediaLinksResolver` fills one `Episode` from
+  `/v1/items/media-links?mid=` when it is played — and kino.pub will make it the default, so
+  it is what we flip then. **A `nolinks` payload still lists `files`, with no link bag under
+  any key**: never assume a file carries a URL, ask `hasPlayableURL` (requiring one failed
+  every series page with `keyNotFound 'urls'`). Films always come with links.
 - tvOS purges `Caches/` when the app is not running — lean on longer in-memory TTLs, don't fight it,
   and don't pretend offline parity exists.
 - **New API calls go through `KinoPubBackend`** — Endpoint + model + service protocol + mock.

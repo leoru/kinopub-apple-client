@@ -59,6 +59,41 @@ final class MediaLinksTests: XCTestCase {
     XCTAssertEqual(links.subtitles.first?.lang, "eng")
   }
 
+  /// The shape a `nolinks=1` details response actually returns: the ladder is described,
+  /// with no link bag under any key. This must decode — requiring one failed the whole
+  /// item at `item.seasons[0].episodes[0].files[0]` and left every series page on
+  /// "Couldn't Load".
+  func testDecodesALinklessFileAndReportsItUnplayable() throws {
+    let json = Data("""
+    {
+      "codec": "h264",
+      "file": "/e/0a/bf519a7514cb698066960a61a35f8b20.mp4",
+      "h": 1080,
+      "quality": "1080p",
+      "quality_id": 3,
+      "w": 1920
+    }
+    """.utf8)
+
+    let file = try JSONDecoder().decode(FileInfo.self, from: json)
+    XCTAssertEqual(file.quality, "1080p")
+    XCTAssertEqual(file.codec, "h264")
+    XCTAssertEqual(file.h, 1080)
+    XCTAssertFalse(file.hasPlayableURL)
+    XCTAssertFalse([file].hasPlayableURLs)
+  }
+
+  func testAFileWithLinksIsPlayable() throws {
+    let file = FileInfo(codec: "h264",
+                        w: 1920,
+                        h: 1080,
+                        quality: "1080p",
+                        qualityID: 3,
+                        url: URLInfo(http: "", hls: "", hls4: "https://host/x.m3u8", hls2: ""))
+    XCTAssertTrue(file.hasPlayableURL)
+    XCTAssertTrue([file].hasPlayableURLs)
+  }
+
   func testDecodesFilesFromTheItemsShapedUrlKey() throws {
     let json = Data("""
     {
