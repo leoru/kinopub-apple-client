@@ -399,6 +399,9 @@ public struct MediaCardView: View {
 #if os(macOS)
   @State private var isHovered = false
 #endif
+  /// The artwork's own width, so its height is derived rather than negotiated. Nil for
+  /// exactly one layout pass; `frame(height: nil)` leaves the natural size meanwhile.
+  @State private var artworkWidth: CGFloat?
 
   @AppStorage(MediaCardDisplayPreferences.ratingPlacementKey)
   private var ratingPlacementRaw = MediaCardDisplayPreferences.defaultRatingPlacement.rawValue
@@ -675,8 +678,33 @@ public struct MediaCardView: View {
           .allowsHitTesting(false)
       }
     }
-    .aspectRatio(aspect.ratio, contentMode: .fit)
+    // Height measured from the card's own width, never negotiated with the caption.
+    //
+    // This was `.aspectRatio(_:contentMode: .fit)`, which means "fit inside whatever
+    // you are offered" — so in a horizontal rail, where the row equalises card heights,
+    // a two-line caption ("S1, E1 + 2 more") ate into the artwork and the tile beside a
+    // one-line caption came out taller. Continue Watching showed both in the same row.
+    // A grid hid the bug because its rows leave height free.
+    //
+    // Width → height is the only direction that holds in every container.
     .frame(maxWidth: .infinity)
+    // Sized correctly on the *first* pass too. Without this the unmeasured frame is
+    // `height: nil` — the stack's natural size, which is far larger than the card —
+    // and the snap to the measured height rode the subtree's transaction animation,
+    // so every card scrolling into view zoomed down from giant. `.fit` gives the right
+    // box immediately; the measured frame below then holds it against a caption that
+    // would otherwise squeeze it.
+    .aspectRatio(aspect.ratio, contentMode: .fit)
+    .onGeometryChange(for: CGFloat.self) { proxy in
+      proxy.size.width
+    } action: { width in
+      if width > 0 { artworkWidth = width }
+    }
+    .frame(height: artworkWidth.map { $0 / aspect.ratio })
+    // Never animated: this is a layout fact arriving, not a state change worth showing.
+    // `ArtworkImage` sets an animation on its whole subtree for the image fade, and
+    // this frame was being carried along by it.
+    .animation(nil, value: artworkWidth)
     .opacity(dimsWatchedArtwork ? 0.72 : 1)
     .animation(.easeOut(duration: 0.2), value: showsPlayChrome)
 #if os(tvOS)
@@ -892,10 +920,60 @@ public struct MediaCardView: View {
           .multilineTextAlignment(.center)
           .frame(maxWidth: .infinity, alignment: .center)
       }
+
+      captionFiller
     }
     .frame(maxWidth: .infinity, alignment: .center)
+    // Never compressed. The artwork's height is pinned to its width now, so a row that
+    // equalises card heights has only the caption left to squeeze — which is what cut
+    // the second line off. Ideal height, always.
+    .fixedSize(horizontal: false, vertical: true)
     .opacity(caption == .always || cardFocused ? 1 : 0)
     .animation(.easeOut(duration: 0.12), value: cardFocused)
+  }
+
+  /// Blank lines padding the caption out to a constant number, so every card in a row
+  /// is exactly as tall as every other one.
+  ///
+  /// Reserved in *lines*, not points: a fixed height in points is what
+  /// `TVUIKitPosterMetrics.captionHeight` does on tvOS, and it only holds there because
+  /// that surface has one type size. Here the same caption is drawn at every Dynamic
+  /// Type setting, so the reserve has to be expressed in the thing that actually scales.
+  @ViewBuilder
+  private var captionFiller: some View {
+    let missing = Self.reservedCaptionLines(for: card) - captionLineCount
+    if missing > 0 {
+      ForEach(0..<missing, id: \.self) { _ in
+        Text(verbatim: " ")
+          .font(TypeScale.cardMeta)
+          .lineLimit(1)
+          .accessibilityHidden(true)
+      }
+    }
+  }
+
+  /// How many lines this card's caption actually draws.
+  private var captionLineCount: Int {
+    var lines = 1 // title
+    if card.watchedAt != nil { lines += 1 }
+    if !card.isLandscape,
+       showOriginalTitle || card.opensCollection,
+       let subtitle = card.subtitle, !subtitle.isEmpty, subtitle != card.title {
+      lines += 1
+    }
+    if card.isLandscape, landscapeEpisodeLine != nil { lines += 1 }
+    if showsCaptionScores { lines += 1 }
+    if !card.captionStats.isEmpty { lines += 1 }
+    if !captionMetaParts.isEmpty { lines += 1 }
+    return lines
+  }
+
+  /// The constant every card of this shape pads up to. Landscape cards carry at most a
+  /// title, a watched date and an episode line; posters carry a title plus one meta row
+  /// — reserving the worst case for posters too would leave a visible hole under most
+  /// of the catalogue, which is why the two shapes differ.
+  private static func reservedCaptionLines(for card: MediaCard) -> Int {
+    card.isLandscape ? 3 : 2
   }
 
   /// Title + optional caption chips hug as one group, then the group is centered.

@@ -494,13 +494,19 @@ class HomeCatalog: ObservableObject {
     return nil
   }
 
+  /// Continue Watching used to reach straight for the title's wide poster and never
+  /// look at the episode still it already had — so a row of series showed derived
+  /// `/item/wide/` URLs, many of which 404, beside History's real stills. Same rule
+  /// for both surfaces now; the fallback to a 2:3 `big` poster is gone, because
+  /// cropping one into a 16:9 box is what made the row look ragged.
   private static func landscapeImageURL(for item: WatchingItem,
                                         history: HistoryEntry?,
-                                        local: LocalWatchEntry?) -> String {
-    history?.item.posters?.wideURL
-      ?? local?.item.posters.wideURL
-      ?? item.posters.wideURL
-      ?? item.posters.big
+                                        local: LocalWatchEntry?) -> String? {
+    MediaCard.landscapeArtwork(
+      episodeStill: history?.media?.thumbnail,
+      posters: history?.item.posters ?? local?.item.posters ?? item.posters,
+      isSeries: item.type.contains("serial")
+    )
   }
 
   /// Prefer history/local S/E; for watchlist/following without a play head, next

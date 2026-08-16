@@ -437,11 +437,9 @@ struct HistoryView: View {
     let posters = entry.item.posters
     let wide = posters?.wideURL ?? posters?.big ?? posters?.medium ?? ""
     let isSeries = entry.isEpisode || (entry.item.type?.contains("serial") ?? false)
-    // A film's `media.thumbnail` is a frame grab from somewhere in the middle of it;
-    // the wide poster is artwork someone chose. Episodes keep their still, which is
-    // the point of an episode still.
-    let episodeStill = entry.media?.thumbnail.flatMap { $0.isEmpty ? nil : $0 }
-    let landscape = isSeries ? (episodeStill ?? wide) : (wide.isEmpty ? (episodeStill ?? "") : wide)
+    let landscape = MediaCard.landscapeArtwork(episodeStill: entry.media?.thumbnail,
+                                               posters: entry.item.posters,
+                                               isSeries: isSeries)
     var label: [String] = []
     if entry.isEpisode, let season = entry.media?.snumber, let episode = entry.media?.number {
       label.append("S\(season), E\(episode)")
@@ -456,7 +454,7 @@ struct HistoryView: View {
       subtitle: entry.item.title?.components(separatedBy: " / ").last,
       watchedAt: entry.lastSeenDate,
       progress: entry.progress,
-      landscapeImageURL: landscape.isEmpty ? nil : landscape,
+      landscapeImageURL: landscape,
       overlayLabel: label.isEmpty ? nil : label.joined(separator: " · "),
       itemID: entry.item.id,
       video: entry.media?.number,
