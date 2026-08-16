@@ -5,6 +5,32 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Device identity actually reaches kino.pub (2026-08-16)
+
+- **Every JSON body POST was a silent no-op.** `RequestBuilder` wrote a JSON body and set no
+  `Content-Type`, so URLSession stamped it `application/x-www-form-urlencoded`; kino.pub parsed no
+  parameters out of it and still answered `{"status":200}`. That is why `/v1/device/notify` kept
+  writing "unknown / unknown / unknown" and the streaming profile never moved. The builder now
+  labels the body `application/json` unless the endpoint sets its own header. Verified live against
+  `api.service-kp.com`: same body, header off → nothing changes; header on → applies.
+  Every body POST rode on this — notify, device settings, bookmark toggle, folder create/remove,
+  token refresh.
+- **`DeviceIdentity` has no model table.** Titles/models/OS names come from the system at runtime
+  (`UIDevice` / `WKInterfaceDevice` / `Host` + `sysctl`), so an unreleased device still reads
+  correctly. `hardware` is `"<family> (<identifier>[, chip])"` — `Mac (MacBookPro18,2, Apple M1 Max)`,
+  `iPhone (iPhone17,1)` — and the raw identifier keeps it exact. macOS `uname` is the *architecture*,
+  so the Mac model comes from `sysctl hw.model`; in a Simulator both are the host's, so
+  `SIMULATOR_MODEL_IDENTIFIER` wins. The OS moved to `software` (`"macOS 27.0, KinoPub v1.0 (1)"`),
+  where kino.pub's own docs put it. `DeviceIdentity.deviceName` is the single source for the
+  device's name — nothing else may invent one. macOS bidi isolates (U+2068/U+2069) around the
+  localized host name are stripped.
+- **Registration happens at activation, not on every launch.** `DeviceService.syncDeviceProfile(activated:)`
+  replaces `registerDeviceIdentity()` + `syncCapabilities()`. `AuthState.markSignedIn(activated:)`
+  separates a device-code exchange from a token refresh. Later launches no-op unless the payload
+  changed (rename, OS update, new build, new hardware) or the last attempt failed — see
+  `DeviceProfileRegistry`, cleared on logout. Re-pushing the profile every launch is what let the
+  capability sync clobber a streaming profile the user had just edited in Settings › Device.
+
 ### Concerts decode, and the PWA's API surface is written down (2026-08-16)
 
 - **The PWA's API surface is written into the vendor sheets, each note next to the method it

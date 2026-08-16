@@ -37,6 +37,15 @@ internal class RequestBuilder {
         }
         let bodyData = try? JSONSerialization.data(withJSONObject: parameters)
         request.httpBody = bodyData
+        // Label the body or kino.pub silently drops every parameter in it. URLSession
+        // stamps an unlabelled body `application/x-www-form-urlencoded`, so the API was
+        // handed JSON bytes claiming to be a form, parsed nothing, and still answered
+        // `{"status":200}` — which is exactly how `/v1/device/notify` kept writing
+        // "unknown / unknown / unknown" and the streaming profile never moved.
+        // Verified live: same body + this header applies; without it, nothing changes.
+        if request.value(forHTTPHeaderField: "Content-Type") == nil {
+          request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
       }
     }
 

@@ -35,6 +35,10 @@ final class AuthState: ObservableObject {
   @Published var userState: UserState
   /// Back-compat for call sites that still read the flag; mirrors `phase == .signedOut`.
   @Published var shouldShowAuthentication: Bool
+  /// True when this session began by exchanging a device code rather than by reviving a
+  /// Keychain token — the moment kino.pub expects a full device profile, and the only
+  /// one that re-registers it unconditionally.
+  @Published private(set) var didActivateDevice = false
 
   private var authService: AuthorizationService
   private var accessTokenService: AccessTokenService
@@ -91,11 +95,15 @@ final class AuthState: ObservableObject {
     await refreshToken()
   }
 
-  /// Device-activation screen got a token — enter the app.
-  func markSignedIn() {
+  /// Device-activation screen got a token — enter the app. `activated` separates that
+  /// from a token refresh, which reaches the same state without being a new device.
+  func markSignedIn(activated: Bool = false) {
     refreshRetryTask?.cancel()
     refreshRetryTask = nil
     refreshRetryAttempt = 0
+    if activated {
+      didActivateDevice = true
+    }
     phase = .signedIn
     userState = .authorized
     shouldShowAuthentication = false
@@ -165,6 +173,7 @@ final class AuthState: ObservableObject {
   }
 
   private func markSignedOut(reason: String) {
+    didActivateDevice = false
     phase = .signedOut
     userState = .unauthorized
     shouldShowAuthentication = true

@@ -65,6 +65,9 @@ final class AuthorizationServiceImpl: AuthorizationService {
   func logout(userInitiated: Bool) {
     accessTokenService.clear(userInitiated: userInitiated)
     BookmarkMembershipStore.shared.clear()
+    // The device record belonged to the account we just left — the next activation has
+    // to register its identity and streaming profile from scratch.
+    DeviceProfileRegistry.reset()
     // Do NOT clear ResponseCache — we only cache immutable reference lists
     // (genres/countries). Those never change per account on kino.pub.
   }

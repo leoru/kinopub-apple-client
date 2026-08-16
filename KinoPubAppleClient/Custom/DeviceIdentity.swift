@@ -3,184 +3,174 @@
 //  KinoPubAppleClient
 //
 //  Builds the title / hardware / software triple for `POST /v1/device/notify`.
-//  Middle ground between "unknown/unknown/unknown" and dumping raw utsname:
 //
-//    title:    "Alexander's MacBook" / Apple TV name
-//    hardware: "MacBook Pro M1 Max, macOS 27"
-//    software: "KinoPub, v0.56 (123)"
+//    title:    "Sasha's MacBook Pro" / "Apple TV" — whatever the *system* calls it
+//    hardware: "Mac (MacBookPro18,2, Apple M1 Max)" / "iPhone (iPhone17,1)"
+//    software: "macOS 26.1, KinoPub v0.56 (123)"
+//
+//  Everything here comes from the OS at runtime — no table of model identifiers to keep
+//  up to date, because the device list is a zoo and an unknown identifier must still
+//  produce a readable row. `hardware` keeps the raw identifier in parentheses so a new
+//  Apple TV or Mac is still exactly identifiable the day it ships.
 //
 //  Capability badges (HLS4 / region / 4K / HEVC / HDR) come from device *settings*
-//  via `DeviceService.syncCapabilities`, not from this notify payload.
+//  via `DeviceService`, not from this notify payload.
 //
 
 import Foundation
-#if canImport(UIKit)
+#if os(watchOS)
+import WatchKit
+#elseif canImport(UIKit)
 import UIKit
-#endif
-#if os(macOS)
-import IOKit
 #endif
 
 enum DeviceIdentity {
 
-  struct NotifyPayload {
+  struct NotifyPayload: Equatable {
     let title: String
     let hardware: String
     let software: String
   }
 
   static var current: NotifyPayload {
-    NotifyPayload(title: deviceTitle, hardware: hardwareLine, software: softwareLine)
+    NotifyPayload(title: deviceName, hardware: hardwareLine, software: softwareLine)
   }
 
   // MARK: - Fields
 
-  private static var deviceTitle: String {
-#if os(iOS) || os(tvOS)
-    let name = UIDevice.current.name.trimmingCharacters(in: .whitespacesAndNewlines)
-    return name.isEmpty ? defaultTitle : name
+  /// The name the system gives this device — the one string that must read the same
+  /// wherever the app shows it, so nothing else may invent its own.
+  ///
+  /// iOS/iPadOS 16+ answer with the model name ("iPhone") unless the app carries the
+  /// user-assigned-device-name entitlement; that is still the system's name for it and
+  /// beats anything we could synthesize.
+  static var deviceName: String {
+    let name: String
+#if os(watchOS)
+    name = WKInterfaceDevice.current().name
+#elseif canImport(UIKit)
+    name = UIDevice.current.name
 #elseif os(macOS)
-    let name = (Host.current().localizedName ?? "")
+    name = Host.current().localizedName ?? ""
+#else
+    name = ""
+#endif
+    let cleaned = sanitized(name)
+    return cleaned.isEmpty ? modelFamily : cleaned
+  }
+
+  /// `Host.current().localizedName` returns a localized name wrapped in bidi isolates
+  /// (U+2068/U+2069) — invisible to a whitespace trim, stray marks in kino.pub's list.
+  private static func sanitized(_ raw: String) -> String {
+    let scalars = raw.unicodeScalars.filter { $0.properties.generalCategory != .format }
+    return String(String.UnicodeScalarView(scalars))
       .trimmingCharacters(in: .whitespacesAndNewlines)
-    return name.isEmpty ? defaultTitle : name
-#else
-    return defaultTitle
-#endif
   }
 
-  private static var hardwareLine: String {
-    "\(friendlyModel), \(shortOSVersion)"
-  }
-
-  private static var softwareLine: String {
-    let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
-      ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String
-      ?? defaultTitle
-    let version = Bundle.main.appVersionLong
-    let build = Bundle.main.appBuild
-    if build != "⚠️", !build.isEmpty, build != version {
-      return "\(name), v\(version) (\(build))"
-    }
-    return "\(name), v\(version)"
-  }
-
-  private static var defaultTitle: String { "KinoPub" }
-
-  private static var shortOSVersion: String {
-    let v = ProcessInfo.processInfo.operatingSystemVersion
-#if os(tvOS)
-    return "tvOS \(v.majorVersion)"
-#elseif os(iOS)
-    return "iOS \(v.majorVersion)"
+  /// The system's own word for this class of device: "iPhone", "iPad", "Apple TV",
+  /// "Apple Watch", "Apple Vision Pro", "Mac".
+  static var modelFamily: String {
+    let model: String
+#if os(watchOS)
+    model = WKInterfaceDevice.current().model
+#elseif canImport(UIKit)
+    model = UIDevice.current.model
 #elseif os(macOS)
-    return "macOS \(v.majorVersion)"
+    model = "Mac"
 #else
-    return "Apple \(v.majorVersion)"
+    model = ""
+#endif
+    let cleaned = sanitized(model)
+    return cleaned.isEmpty ? "Apple" : cleaned
+  }
+
+  /// "iOS" / "iPadOS" / "tvOS" / "watchOS" / "visionOS" / "macOS", straight from the OS.
+  static var systemName: String {
+#if os(watchOS)
+    return WKInterfaceDevice.current().systemName
+#elseif canImport(UIKit)
+    return UIDevice.current.systemName
+#elseif os(macOS)
+    // AppKit has no equivalent of `UIDevice.systemName`, and every other spelling
+    // ("Mac OS X", "Version 26.1") is worse than the name Apple ships.
+    return "macOS"
+#else
+    return "Apple"
 #endif
   }
 
-  private static var friendlyModel: String {
-    let id = machineIdentifier
-    if let mapped = modelNames[id] { return mapped }
-#if os(iOS) || os(tvOS)
-    // "Apple TV" / "iPhone" is better than a bare unknown identifier.
-    let generic = UIDevice.current.model.trimmingCharacters(in: .whitespacesAndNewlines)
-    if !generic.isEmpty { return generic }
+  static var systemVersion: String {
+#if os(watchOS)
+    return WKInterfaceDevice.current().systemVersion
+#elseif canImport(UIKit)
+    return UIDevice.current.systemVersion
+#else
+    let version = ProcessInfo.processInfo.operatingSystemVersion
+    let short = "\(version.majorVersion).\(version.minorVersion)"
+    return version.patchVersion == 0 ? short : "\(short).\(version.patchVersion)"
 #endif
-#if os(macOS)
-    if let marketing = macModelFromIOKit(), !marketing.isEmpty {
-      return marketing
+  }
+
+  /// `MacBookPro18,2`, `AppleTV14,1`, `iPhone17,1`. Empty only if every source fails.
+  static var machineIdentifier: String {
+    // The Simulator's `uname` reports the host Mac's architecture ("arm64"); the device
+    // being simulated is in the environment instead.
+    if let simulated = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"],
+       !simulated.isEmpty {
+      return simulated
     }
-#endif
-    return id.isEmpty ? "Apple" : id
-  }
-
-  /// utsname machine id — e.g. `MacBookPro18,2`, `AppleTV14,1`.
-  private static var machineIdentifier: String {
+#if os(macOS)
+    // Same reason: on macOS `uname` is the architecture, and the model lives in sysctl.
+    return sysctl("hw.model") ?? ""
+#else
     var systemInfo = utsname()
     uname(&systemInfo)
-    let mirror = Mirror(reflecting: systemInfo.machine)
-    let identifier = mirror.children.reduce(into: "") { result, element in
-      guard let value = element.value as? Int8, value != 0 else { return }
-      result.append(Character(UnicodeScalar(UInt8(value))))
+    return withUnsafeBytes(of: &systemInfo.machine) { raw in
+      String(decoding: raw.prefix(while: { $0 != 0 }), as: UTF8.self)
     }
-    return identifier
+#endif
+  }
+
+  // MARK: - Lines
+
+  private static var hardwareLine: String {
+    var details: [String?] = [machineIdentifier]
+#if os(macOS)
+    // macOS exposes no marketing name anywhere, but it does expose the chip — which is
+    // what tells two identical-looking "Mac16,6" rows apart.
+    details.append(sysctl("machdep.cpu.brand_string"))
+#endif
+    let detail = details.compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+    return detail.isEmpty ? modelFamily : "\(modelFamily) (\(detail))"
+  }
+
+  /// kino.pub's own docs put the OS in `software` (`'software': 'iOS/8.3'`), so the app
+  /// build rides along behind it rather than pushing it into `hardware`.
+  private static var softwareLine: String {
+    // `INFOPLIST_KEY_CFBundleDisplayName` carries the shipping name ("Kinopub Soda"), so the
+    // literal is only a last resort — keep it in step with the build setting.
+    let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+      ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String
+      ?? "Kinopub Soda"
+    let version = Bundle.main.appVersionLong
+    let build = Bundle.main.appBuild
+    let app: String
+    if build != "⚠️", !build.isEmpty, build != version {
+      app = "\(name) v\(version) (\(build))"
+    } else {
+      app = "\(name) v\(version)"
+    }
+    return "\(systemName) \(systemVersion), \(app)"
   }
 
 #if os(macOS)
-  /// Best-effort marketing name from IOKit (`model` property). Often still an
-  /// identifier; `modelNames` covers the common Apple Silicon cases.
-  private static func macModelFromIOKit() -> String? {
-    let service = IOServiceGetMatchingService(
-      kIOMainPortDefault,
-      IOServiceMatching("IOPlatformExpertDevice")
-    )
-    guard service != 0 else { return nil }
-    defer { IOObjectRelease(service) }
-    guard let data = IORegistryEntryCreateCFProperty(
-      service,
-      "model" as CFString,
-      kCFAllocatorDefault,
-      0
-    )?.takeRetainedValue() as? Data else { return nil }
-    return String(data: data, encoding: .utf8)?
-      .trimmingCharacters(in: CharacterSet(charactersIn: "\0"))
-      .trimmingCharacters(in: .whitespacesAndNewlines)
+  private static func sysctl(_ name: String) -> String? {
+    var size = 0
+    guard sysctlbyname(name, nil, &size, nil, 0) == 0, size > 0 else { return nil }
+    var buffer = [CChar](repeating: 0, count: size)
+    guard sysctlbyname(name, &buffer, &size, nil, 0) == 0 else { return nil }
+    let value = String(cString: buffer).trimmingCharacters(in: .whitespacesAndNewlines)
+    return value.isEmpty ? nil : value
   }
 #endif
-
-  // Compact map — unknown ids fall back to the raw identifier / UIDevice.model.
-  // Expand as needed; this is only for the kino.pub devices list readability.
-  private static let modelNames: [String: String] = [
-    // Apple TV
-    "AppleTV5,3": "Apple TV HD",
-    "AppleTV6,2": "Apple TV 4K",
-    "AppleTV11,1": "Apple TV 4K",
-    "AppleTV14,1": "Apple TV 4K",
-    // MacBook Pro (Apple Silicon)
-    "MacBookPro17,1": "MacBook Pro M1",
-    "MacBookPro18,1": "MacBook Pro M1 Pro",
-    "MacBookPro18,2": "MacBook Pro M1 Max",
-    "MacBookPro18,3": "MacBook Pro M1 Pro",
-    "MacBookPro18,4": "MacBook Pro M1 Max",
-    "Mac14,5": "MacBook Pro M2 Max",
-    "Mac14,6": "MacBook Pro M2 Max",
-    "Mac14,7": "MacBook Pro M2",
-    "Mac14,9": "MacBook Pro M2 Pro",
-    "Mac14,10": "MacBook Pro M2 Pro",
-    "Mac15,3": "MacBook Pro M3",
-    "Mac15,6": "MacBook Pro M3 Pro",
-    "Mac15,7": "MacBook Pro M3 Pro",
-    "Mac15,8": "MacBook Pro M3 Max",
-    "Mac15,9": "MacBook Pro M3 Max",
-    "Mac15,10": "MacBook Pro M3 Max",
-    "Mac15,11": "MacBook Pro M3 Max",
-    "Mac16,1": "MacBook Pro M4",
-    "Mac16,5": "MacBook Pro M4 Pro",
-    "Mac16,6": "MacBook Pro M4 Max",
-    "Mac16,7": "MacBook Pro M4 Max",
-    "Mac16,8": "MacBook Pro M4 Pro",
-    // MacBook Air
-    "MacBookAir10,1": "MacBook Air M1",
-    "Mac14,2": "MacBook Air M2",
-    "Mac14,15": "MacBook Air M2",
-    "Mac15,12": "MacBook Air M3",
-    "Mac15,13": "MacBook Air M3",
-    "Mac16,12": "MacBook Air M4",
-    "Mac16,13": "MacBook Air M4",
-    // Mac mini / Studio / iMac
-    "Macmini9,1": "Mac mini M1",
-    "Mac14,3": "Mac mini M2",
-    "Mac14,12": "Mac mini M2 Pro",
-    "Mac16,10": "Mac mini M4",
-    "Mac16,11": "Mac mini M4 Pro",
-    "Mac13,1": "Mac Studio M1 Max",
-    "Mac13,2": "Mac Studio M1 Ultra",
-    "Mac14,13": "Mac Studio M2 Max",
-    "Mac14,14": "Mac Studio M2 Ultra",
-    "iMac21,1": "iMac M1",
-    "iMac21,2": "iMac M1",
-    "Mac15,4": "iMac M3",
-    "Mac15,5": "iMac M3",
-  ]
 }

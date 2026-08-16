@@ -148,7 +148,7 @@ class AuthModel: ObservableObject {
 
       do {
         try await authService.fetchToken(by: response)
-        authState.markSignedIn()
+        authState.markSignedIn(activated: true)
         Logger.app.debug("token requested")
         return true
       } catch let error as APIClientError where error.isAuthorizationPending {

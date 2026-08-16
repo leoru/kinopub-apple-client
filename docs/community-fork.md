@@ -58,14 +58,26 @@ keyed Kinopoisk **and** always-on `KinopoiskProxySource`.
 
 kino.pub’s account Devices list uses three notify fields + settings badges:
 
-| Field | Community (raw) | Ours (middle ground) |
+| Field | Community (raw) | Ours (system-derived, no model table) |
 | --- | --- | --- |
-| `title` | Host / `UIDevice.name` | same |
-| `hardware` | machine id (`MacBookPro18,2`) | `MacBook Pro M1 Max, macOS 27` |
-| `software` | `macOS Version … (Build …)` | `KinoPub, v0.56 (build)` |
-| badges | settings: HLS4 / region / 4K / HEVC / HDR | same via `syncCapabilities` |
+| `title` | Host / `UIDevice.name` | `DeviceIdentity.deviceName` — the system's name, bidi marks stripped |
+| `hardware` | machine id (`MacBookPro18,2`) | `Mac (MacBookPro18,2, Apple M1 Max)` / `iPhone (iPhone17,1)` |
+| `software` | `macOS Version … (Build …)` | `macOS 27.0, KinoPub v1.0 (1)` — OS first, per the API docs |
+| badges | settings: HLS4 / region / 4K / HEVC / HDR | same, via `syncDeviceProfile(activated:)` |
 
-Wired on authorize: `registerDeviceIdentity()` then `syncCapabilities()`.
+Nothing here is looked up in a table of model identifiers: an unknown device must still read
+correctly, so every part comes from the OS at runtime and the raw identifier rides along in
+parentheses. Two traps: on macOS `uname` returns the *architecture* (the model is `sysctl hw.model`),
+and in a Simulator both are the host Mac's — `SIMULATOR_MODEL_IDENTIFIER` is the simulated device.
+
+Wired on **activation**: `syncDeviceProfile(activated: true)`. A launch that only revived a Keychain
+token sends nothing unless the payload changed — `DeviceProfileRegistry` holds the fingerprint of
+the last successful registration and is cleared on logout. (kino.pub's docs suggest notifying every
+launch; we don't, because the capability write would keep overwriting a profile edited in Settings.)
+
+Body-POST parameters only land if the request says `Content-Type: application/json` — an unlabelled
+JSON body is treated as a form, parses to nothing, and still answers `{"status":200}`. `RequestBuilder`
+sets it; that was the bug behind "unknown / unknown / unknown".
 API notes: [`docs/archive/kinoapi-v1.3-ru/device.md`](archive/kinoapi-v1.3-ru/device.md) (prefer [kinoapi.com](https://kinoapi.com)).
 List/remove are on `DeviceService` — Profile chrome is `// DESIGN:` stub only.
 
@@ -73,7 +85,7 @@ List/remove are on `DeviceService` — Profile chrome is `// DESIGN:` stub only.
 
 ## Already ported (system)
 
-- [x] Vote / Collections / Device settings + syncCapabilities
+- [x] Vote / Collections / Device settings + `syncDeviceProfile(activated:)`
 - [x] Device notify identity (`DeviceIdentity` + `DeviceNotifyRequest` body POST)
 - [x] Device list/remove service APIs (`ManagedDevice`, no Settings UI yet)
 - [x] `LibraryFilter` client facets

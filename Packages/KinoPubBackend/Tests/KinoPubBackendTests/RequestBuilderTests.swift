@@ -55,6 +55,37 @@ class RequestBuilderTests: XCTestCase {
         XCTAssertEqual(request?.url, expectedURL)
     }
 
+    /// Without this header URLSession labels the body `x-www-form-urlencoded`, kino.pub
+    /// parses no parameters out of the JSON and answers 200 anyway — a silent no-op.
+    func testBuildRequest_WithBodyParameters_LabelsBodyAsJSON() {
+        let requestData = RequestData(path: "/v1/device/notify",
+                                      method: "POST",
+                                      parameters: ["title": "Mac"])
+        let request = requestBuilder.build(with: requestData)
+
+        XCTAssertEqual(request?.value(forHTTPHeaderField: "Content-Type"), "application/json")
+        XCTAssertEqual(request?.httpBody, #"{"title":"Mac"}"#.data(using: .utf8))
+    }
+
+    func testBuildRequest_WithExplicitContentType_KeepsEndpointHeader() {
+        let requestData = RequestData(path: "/v1/device/notify",
+                                      method: "POST",
+                                      headers: ["Content-Type": "application/x-www-form-urlencoded"],
+                                      parameters: ["title": "Mac"])
+        let request = requestBuilder.build(with: requestData)
+
+        XCTAssertEqual(request?.value(forHTTPHeaderField: "Content-Type"),
+                       "application/x-www-form-urlencoded")
+    }
+
+    /// Query-param POSTs carry no body, so they must not claim to.
+    func testBuildRequest_WithForcedGetParams_SetsNoContentType() {
+        let request = requestBuilder.build(with: RemoveDeviceRequest(id: 42))
+
+        XCTAssertNil(request?.value(forHTTPHeaderField: "Content-Type"))
+        XCTAssertNil(request?.httpBody)
+    }
+
     func testSimilarItemsRequest_EncodesIdAsQueryParam() {
         let request = requestBuilder.build(with: SimilarItemsRequest(id: "42"))
         XCTAssertEqual(request?.url,

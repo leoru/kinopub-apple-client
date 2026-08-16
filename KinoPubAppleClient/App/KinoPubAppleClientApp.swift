@@ -68,14 +68,15 @@ struct KinoPubAppleClientApp: App {
         // Dark-only until light is a deliberate pass (modernization Phase 0).
         // Info.plist UIUserInterfaceStyle=Dark covers system chrome; this covers SwiftUI.
         .preferredColorScheme(.dark)
-        // Register a readable device identity + advertise HEVC/4K/HDR once authorized
-        // so the kino.pub Devices list isn't "unknown / unknown" and streams match
-        // what AVPlayer can open.
+        // Register a readable device identity + advertise HEVC/4K/HDR at activation, so
+        // the kino.pub Devices list isn't "unknown / unknown" and streams match what
+        // AVPlayer can open. A launch that only revived a Keychain token sends nothing
+        // unless the profile itself changed (see DeviceProfileRegistry).
         .task(id: authState.userState) {
-          if authState.userState == .authorized {
-            await AppContext.shared.deviceService.registerDeviceIdentity()
-            await AppContext.shared.deviceService.syncCapabilities()
-          }
+          guard authState.userState == .authorized else { return }
+          await AppContext.shared.deviceService.syncDeviceProfile(
+            activated: authState.didActivateDevice
+          )
         }
 #if os(iOS)
         .task {
