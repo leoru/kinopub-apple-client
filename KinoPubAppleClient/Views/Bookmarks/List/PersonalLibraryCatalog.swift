@@ -144,7 +144,7 @@ class PersonalLibraryCatalog: ObservableObject {
   }
 
   private func fetchHistoryCards() async throws -> [MediaCard] {
-    let history = try await contentService.fetchHistory(page: nil).history
+    let history = try await contentService.fetchHistory(page: nil, perPage: 20).history
     return HistoryView.cards(from: history)
   }
 

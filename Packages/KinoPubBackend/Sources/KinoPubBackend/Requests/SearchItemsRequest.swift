@@ -12,11 +12,13 @@ public struct SearchItemsRequest: Endpoint {
   private var contentType: MediaType?
   private var page: Int?
   private var query: String?
+  private var perPage: Int?
 
-  public init(contentType: MediaType?, page: Int? = nil, query: String? = nil) {
+  public init(contentType: MediaType?, page: Int? = nil, query: String? = nil, perPage: Int? = nil) {
     self.contentType = contentType
     self.page = page
     self.query = query
+    self.perPage = perPage
   }
 
   public var path: String {
@@ -40,6 +42,10 @@ public struct SearchItemsRequest: Endpoint {
 
     if let query = query {
       params["q"] = query
+    }
+
+    if let perPage = perPage {
+      params["perpage"] = "\(perPage)"
     }
 
     return params

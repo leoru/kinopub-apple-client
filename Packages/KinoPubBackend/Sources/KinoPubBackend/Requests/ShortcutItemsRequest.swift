@@ -12,11 +12,13 @@ public struct ShortcutItemsRequest: Endpoint {
   private var shortcut: MediaShortcut
   private var contentType: MediaType
   private var page: Int?
+  private var perPage: Int?
 
-  public init(shortcut: MediaShortcut, contentType: MediaType, page: Int? = nil) {
+  public init(shortcut: MediaShortcut, contentType: MediaType, page: Int? = nil, perPage: Int? = nil) {
     self.shortcut = shortcut
     self.contentType = contentType
     self.page = page
+    self.perPage = perPage
   }
 
   public var path: String {
@@ -34,6 +36,10 @@ public struct ShortcutItemsRequest: Endpoint {
 
     if let page = page {
       params["page"] = "\(page)"
+    }
+
+    if let perPage = perPage {
+      params["perpage"] = "\(perPage)"
     }
 
     return params

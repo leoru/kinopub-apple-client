@@ -9,15 +9,17 @@ import Foundation
 import KinoPubBackend
 
 protocol VideoContentService {
-  func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?) async throws -> PaginatedData<MediaItem>
-  func search(query: String?, page: Int?) async throws -> PaginatedData<MediaItem>
+  func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?, perPage: Int?) async throws -> PaginatedData<MediaItem>
+  func search(query: String?, page: Int?, perPage: Int?) async throws -> PaginatedData<MediaItem>
   func fetchDetails(for id: String) async throws -> SingleItemData<MediaItem>
   func fetchSimilar(for id: String) async throws -> ArrayData<MediaItem>
   func fetchBookmarks() async throws -> ArrayData<Bookmark>
   func fetchBookmarkItems(id: String, page: Int?) async throws -> BookmarkFolderItemsData
   func fetchWatchingMovies() async throws -> ArrayData<WatchingItem>
   func fetchWatchingSerials(subscribedOnly: Bool) async throws -> ArrayData<WatchingItem>
-  func fetchHistory(page: Int?) async throws -> HistoryData
+  /// - Parameter perPage: raw history *entries*, not cards. History is one entry per
+  ///   play, so a page of 20 collapses to far fewer titles — see `LibrarySectionCatalog`.
+  func fetchHistory(page: Int?, perPage: Int) async throws -> HistoryData
   func fetchItems(filter: LibraryFilter, page: Int?) async throws -> PaginatedData<MediaItem>
   func fetchGenres(for type: MediaType?) async throws -> ArrayData<MediaGenre>
   func fetchCountries() async throws -> ArrayData<Country>
@@ -27,17 +29,31 @@ protocol VideoContentService {
   func fetchTVChannels() async throws -> [TVChannel]
 }
 
+extension VideoContentService {
+  /// Back-compat overloads for callers that don't tune page size. Home rails, the
+  /// background `StreamSurvey`, and the search screen keep the terse call and get the
+  /// server's default page; only the full-screen grids in `MediaCatalog` pass an
+  /// explicit `perPage` (see `CatalogPageSize`).
+  func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?) async throws -> PaginatedData<MediaItem> {
+    try await fetch(shortcut: shortcut, contentType: contentType, page: page, perPage: nil)
+  }
+
+  func search(query: String?, page: Int?) async throws -> PaginatedData<MediaItem> {
+    try await search(query: query, page: page, perPage: nil)
+  }
+}
+
 protocol VideoContentServiceProvider {
   var contentService: VideoContentService { get set }
 }
 
 struct VideoContentServiceMock: VideoContentService {
 
-  func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?) async throws -> PaginatedData<MediaItem> {
+  func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?, perPage: Int?) async throws -> PaginatedData<MediaItem> {
     return PaginatedData.mock(data: [])
   }
 
-  func search(query: String?, page: Int?) async throws -> PaginatedData<MediaItem> {
+  func search(query: String?, page: Int?, perPage: Int?) async throws -> PaginatedData<MediaItem> {
     return PaginatedData.mock(data: [])
   }
 
@@ -70,7 +86,7 @@ struct VideoContentServiceMock: VideoContentService {
     return ArrayData.mock(data: [])
   }
 
-  func fetchHistory(page: Int?) async throws -> HistoryData {
+  func fetchHistory(page: Int?, perPage: Int = 20) async throws -> HistoryData {
     return HistoryData.mock(data: [])
   }
 

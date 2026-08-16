@@ -175,7 +175,7 @@ struct HistoryView: View {
 
     do {
       let page = isFirstPage ? nil : pagination.map { $0.current + 1 }
-      let data = try await appContext.contentService.fetchHistory(page: page)
+      let data = try await appContext.contentService.fetchHistory(page: page, perPage: LibrarySectionCatalog.historyPerPage)
       let newCards = Self.cards(from: data.history)
       if isFirstPage {
         cards = newCards

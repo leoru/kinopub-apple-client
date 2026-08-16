@@ -16,15 +16,15 @@ final class VideoContentServiceImpl: VideoContentService {
     self.apiClient = apiClient
   }
 
-  func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?) async throws -> PaginatedData<MediaItem> {
-    let request = ShortcutItemsRequest(shortcut: shortcut, contentType: contentType, page: page)
+  func fetch(shortcut: MediaShortcut, contentType: MediaType, page: Int?, perPage: Int?) async throws -> PaginatedData<MediaItem> {
+    let request = ShortcutItemsRequest(shortcut: shortcut, contentType: contentType, page: page, perPage: perPage)
     let response = try await apiClient.performRequest(with: request,
                                                       decodingType: PaginatedData<MediaItem>.self)
     return response
   }
 
-  func search(query: String?, page: Int?) async throws -> PaginatedData<MediaItem> {
-    let request = SearchItemsRequest(contentType: nil, page: page, query: query)
+  func search(query: String?, page: Int?, perPage: Int?) async throws -> PaginatedData<MediaItem> {
+    let request = SearchItemsRequest(contentType: nil, page: page, query: query, perPage: perPage)
     let response = try await apiClient.performRequest(with: request,
                                                       decodingType: PaginatedData<MediaItem>.self)
     return response
@@ -71,8 +71,8 @@ final class VideoContentServiceImpl: VideoContentService {
     return response
   }
 
-  func fetchHistory(page: Int?) async throws -> HistoryData {
-    let request = HistoryRequest(page: page)
+  func fetchHistory(page: Int?, perPage: Int = 20) async throws -> HistoryData {
+    let request = HistoryRequest(page: page, perPage: perPage)
     return try await apiClient.performRequest(with: request,
                                               decodingType: HistoryData.self)
   }
