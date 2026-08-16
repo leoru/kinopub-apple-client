@@ -492,9 +492,18 @@ public final class TVUIKitMediaItemRailController: UIViewController {
 
 extension TVUIKitMediaItemRailController: UICollectionViewDataSourcePrefetching {
   public func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
-    TVUIKitRemoteImage.prefetch(indexPaths.compactMap { path in
+    TVUIKitRemoteImage.prefetch(imageURLs(at: indexPaths))
+  }
+
+  public func collectionView(_ collectionView: UICollectionView,
+                             cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+    TVUIKitRemoteImage.cancelPrefetch(imageURLs(at: indexPaths))
+  }
+
+  private func imageURLs(at indexPaths: [IndexPath]) -> [URL?] {
+    indexPaths.compactMap { path in
       items.indices.contains(path.item) ? items[path.item].imageURL : nil
-    })
+    }
   }
 }
 

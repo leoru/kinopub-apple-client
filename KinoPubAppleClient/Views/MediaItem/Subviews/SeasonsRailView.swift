@@ -802,19 +802,16 @@ private struct UpcomingSeasonCard: View {
 
   var body: some View {
     VStack(alignment: .center, spacing: 6) {
-      AsyncImage(url: poster) { phase in
-        Group {
-          if let image = phase.image {
-            image.resizable().aspectRatio(contentMode: .fill)
-          } else {
-            Color.KinoPub.placeholder
-          }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: stillHeight)
-        .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: Metrics.cardCornerRadius, style: .continuous))
-      }
+      CachedRemoteImage(
+        url: poster,
+        contentMode: .fill,
+        placeholder: { Color.KinoPub.placeholder },
+        failure: { Color.KinoPub.placeholder }
+      )
+      .frame(maxWidth: .infinity)
+      .frame(height: stillHeight)
+      .clipped()
+      .clipShape(RoundedRectangle(cornerRadius: Metrics.cardCornerRadius, style: .continuous))
 
       Text(String(format: "MediaItem_SeasonSingle".localized, number))
         .font(TypeScale.cardTitle)

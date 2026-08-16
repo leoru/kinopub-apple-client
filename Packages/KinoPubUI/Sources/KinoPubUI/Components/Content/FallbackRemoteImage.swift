@@ -2,18 +2,15 @@
 //  FallbackRemoteImage.swift
 //  KinoPubUI
 //
-//  Tries URLs in order (wide → big → poster). Uses URLSession so HTTP 404
-//  advances to the next candidate — AsyncImage often stays in `.empty` forever
-//  on a missing CDN object instead of reporting `.failure`.
+//  Tries URLs in order (wide → big → poster) and keeps the first that returns image
+//  bytes. The fallback chain is ours — no image library models "try these in order" —
+//  but each attempt goes through the shared `Artwork` pipeline, so a candidate that
+//  already failed or already loaded is answered from cache instead of refetched.
 //
 
 import SwiftUI
 import OSLog
-#if os(macOS)
-import AppKit
-#else
-import UIKit
-#endif
+import Nuke
 
 private let artLog = Logger(subsystem: "com.soda.kinopub", category: "Artwork")
 
@@ -62,30 +59,16 @@ public struct FallbackRemoteImage: View {
     for url in urls {
       if Task.isCancelled { return }
       do {
-        let (data, response) = try await URLSession.shared.data(from: url)
-        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-          artLog.debug("art HTTP \(http.statusCode) \(url.absoluteString, privacy: .public)")
-          continue
-        }
-        #if os(macOS)
-        guard let nsImage = NSImage(data: data) else {
-          artLog.debug("art decode fail \(url.absoluteString, privacy: .public)")
-          continue
-        }
-        image = Image(nsImage: nsImage)
-        #else
-        guard let uiImage = UIImage(data: data) else {
-          artLog.debug("art decode fail \(url.absoluteString, privacy: .public)")
-          continue
-        }
-        image = Image(uiImage: uiImage)
-        #endif
+        let loaded = try await Artwork.pipeline.image(for: Artwork.request(url))
+        image = Image(platformImage: loaded)
         artLog.debug("art OK \(url.absoluteString, privacy: .public)")
         #if DEBUG
         print("[Artwork] OK \(url.absoluteString)")
         #endif
         return
       } catch {
+        // A 404 on a `/wide/` derivation is the normal case this view exists for, not
+        // an incident — the next candidate usually paints.
         artLog.debug("art error \(url.absoluteString, privacy: .public): \(error.localizedDescription, privacy: .public)")
         #if DEBUG
         print("[Artwork] fail \(url.absoluteString) — \(error.localizedDescription)")

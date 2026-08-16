@@ -2,14 +2,16 @@
 //  StorageSettingsView.swift
 //  KinoPubAppleClient
 //
-//  Reports what's actually introspectable on disk today. There is no unified image
-//  cache yet (a feature-01 item), so this deliberately does not invent a number for
-//  one — only sources that are real get a row.
+//  Reports what's actually introspectable on disk today — only sources that are real
+//  get a row. Artwork is now one of them: every image on every platform goes through
+//  the `Artwork` pipeline, which owns its own caches and deliberately does not share
+//  `URLCache` with the API client, so the two numbers below never overlap.
 //
 
 import SwiftUI
 import Foundation
 import KinoPubKit
+import KinoPubUI
 
 #if !os(tvOS)
 
@@ -19,6 +21,8 @@ final class StorageSettingsModel: ObservableObject {
   @Published private(set) var hlsTempBytes: Int64 = 0
   @Published private(set) var urlCacheDiskBytes: Int = 0
   @Published private(set) var urlCacheMemoryBytes: Int = 0
+  @Published private(set) var artworkDiskBytes: Int = 0
+  @Published private(set) var artworkMemoryBytes: Int = 0
   @Published private(set) var downloadsCount = 0
   @Published private(set) var downloadsBytes: Int64 = 0
 
@@ -29,6 +33,8 @@ final class StorageSettingsModel: ObservableObject {
     hlsTempBytes = HLSAudioLabeler.legacyTemporaryDirectorySize
     urlCacheDiskBytes = URLCache.shared.currentDiskUsage
     urlCacheMemoryBytes = URLCache.shared.currentMemoryUsage
+    artworkDiskBytes = Artwork.diskBytes
+    artworkMemoryBytes = Artwork.memoryBytes
 
     if FeatureFlags.downloadsEnabled {
       let files = appContext.downloadedFilesDatabase.readData() ?? []
@@ -55,6 +61,12 @@ final class StorageSettingsModel: ObservableObject {
     urlCacheDiskBytes = 0
     urlCacheMemoryBytes = 0
   }
+
+  func clearArtworkCache() {
+    Artwork.clearCaches()
+    artworkDiskBytes = 0
+    artworkMemoryBytes = 0
+  }
 }
 
 struct StorageSettingsView: View {
@@ -66,6 +78,7 @@ struct StorageSettingsView: View {
     case rowSnapshots
     case hlsTemp
     case urlCache
+    case artwork
 
     var id: Self { self }
 
@@ -74,6 +87,7 @@ struct StorageSettingsView: View {
       case .rowSnapshots: return "Clear row cache?"
       case .hlsTemp: return "Clear HLS temp files?"
       case .urlCache: return "Clear network cache?"
+      case .artwork: return "Clear artwork cache?"
       }
     }
   }
@@ -101,6 +115,17 @@ struct StorageSettingsView: View {
       }
 
       Section {
+        LabeledContent("Disk", value: formatted(Int64(model.artworkDiskBytes)))
+        LabeledContent("Memory", value: formatted(Int64(model.artworkMemoryBytes)))
+        Button("Clear") { pendingClear = .artwork }
+          .disabled(model.artworkDiskBytes == 0 && model.artworkMemoryBytes == 0)
+      } header: {
+        Text("Artwork cache")
+      } footer: {
+        Text("Posters, stills and portraits. Disk holds each image once; memory holds them decoded at the sizes on screen. Clearing just means the next loads re-download.")
+      }
+
+      Section {
         LabeledContent("Disk", value: formatted(Int64(model.urlCacheDiskBytes)))
         LabeledContent("Memory", value: formatted(Int64(model.urlCacheMemoryBytes)))
         Button("Clear") { pendingClear = .urlCache }
@@ -108,7 +133,7 @@ struct StorageSettingsView: View {
       } header: {
         Text("Network cache")
       } footer: {
-        Text("Artwork and API responses cached by the system. Clearing just means the next loads re-download.")
+        Text("API responses cached by the system. Clearing just means the next loads refetch.")
       }
 
       if FeatureFlags.downloadsEnabled {
@@ -135,6 +160,7 @@ struct StorageSettingsView: View {
         case .rowSnapshots: model.clearRowSnapshots()
         case .hlsTemp: model.clearHLSTemp()
         case .urlCache: model.clearURLCache()
+        case .artwork: model.clearArtworkCache()
         }
         pendingClear = nil
       }

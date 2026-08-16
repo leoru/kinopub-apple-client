@@ -11,13 +11,18 @@ let package = Package(
       targets: ["KinoPubUI"])
   ],
   dependencies: [
-    .package(name: "KinoPubBackend", path: "../KinoPubBackend")
+    .package(name: "KinoPubBackend", path: "../KinoPubBackend"),
+    // Artwork pipeline. Everything Nuke-shaped stays behind `Artwork` /
+    // `CachedRemoteImage` / `TVUIKitRemoteImage` — no call site imports it.
+    .package(url: "https://github.com/kean/Nuke.git", from: "13.2.0")
   ],
   targets: [
     .target(
       name: "KinoPubUI",
       dependencies: [
-        .product(name: "KinoPubBackend", package: "KinoPubBackend")
+        .product(name: "KinoPubBackend", package: "KinoPubBackend"),
+        .product(name: "Nuke", package: "Nuke"),
+        .product(name: "NukeUI", package: "Nuke")
       ],
       // Declared explicitly: relying on SwiftPM to infer the asset catalogue meant
       // `Bundle.module` was not generated on every toolchain, and every

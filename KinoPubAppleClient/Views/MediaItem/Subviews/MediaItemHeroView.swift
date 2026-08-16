@@ -298,19 +298,9 @@ struct MediaItemHeroBackdrop: View {
   /// washed below it. Prefer `/wide/`, falling back to `medium` rather than `big` so
   /// a multi-MB 4K poster is never decoded into a full-screen layer.
   private var heroStill: some View {
-    AsyncImage(url: URL(string: heroStillURL),
-               transaction: Transaction(animation: .easeIn(duration: 0.3))) { phase in
-      if let image = phase.image {
-        image
-          .resizable()
-          .aspectRatio(contentMode: .fill)
-          .transition(.opacity)
-      } else {
-        Color.clear
-      }
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .clipped()
+    CachedRemoteImage(url: URL(string: heroStillURL), contentMode: .fill)
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .clipped()
   }
 
   /// Material over the still, revealed by a gradient mask. Only the stop opacities
@@ -336,20 +326,14 @@ struct MediaItemHeroBackdrop: View {
       let scale = max(geo.size.width / Self.blurBuffer.width,
                       geo.size.height / Self.blurBuffer.height) * 1.05
 
-      AsyncImage(url: URL(string: mediaItem.posters.small)) { image in
-        image
-          .resizable()
-          .aspectRatio(contentMode: .fill)
-          .frame(width: Self.blurBuffer.width, height: Self.blurBuffer.height)
-          .clipped()
-          .blur(radius: Self.blurRadius, opaque: true)
-          .saturation(1.4)
-          .scaleEffect(scale)
-          .frame(width: geo.size.width, height: geo.size.height)
-          .clipped()
-      } placeholder: {
-        Color.clear
-      }
+      CachedRemoteImage(url: URL(string: mediaItem.posters.small), contentMode: .fill)
+        .frame(width: Self.blurBuffer.width, height: Self.blurBuffer.height)
+        .clipped()
+        .blur(radius: Self.blurRadius, opaque: true)
+        .saturation(1.4)
+        .scaleEffect(scale)
+        .frame(width: geo.size.width, height: geo.size.height)
+        .clipped()
     }
   }
 
@@ -686,8 +670,9 @@ struct MediaItemHeroView: View {
     }
   }
 
-  /// wide → big → medium. Same chain as Home banners — list/detail payloads differ
-  /// and AsyncImage often never leaves `.empty` on a 404'd `/wide/`.
+  /// wide → big → medium. Same chain as Home banners — list/detail payloads differ and
+  /// a `/wide/` derivation frequently 404s, so one URL is not enough. See
+  /// `FallbackRemoteImage`.
   private var backdropCandidates: [URL] {
     var seen = Set<String>()
     var urls: [URL] = []
@@ -807,12 +792,12 @@ struct MediaItemHeroView: View {
   private var titleBlock: some View {
     // Optimistic hold: do not paint letters until enrichment has settled and any
     // logo URL has either drawn or failed. Bottom-aligned column keeps meta/actions put.
-    // 150ms opacity fade — same AsyncImage transaction pattern as the wide still.
+    // 150ms opacity fade — same transaction pattern as the wide still.
     Group {
       if !externalMetadataLoaded {
         EmptyView()
       } else if let titleLogoURL {
-        AsyncImage(
+        ArtworkImage(
           url: titleLogoURL,
           transaction: Transaction(animation: .easeOut(duration: 0.15))
         ) { phase in
@@ -827,8 +812,6 @@ struct MediaItemHeroView: View {
             titleTextBlock
               .transition(.opacity)
           case .empty:
-            EmptyView()
-          @unknown default:
             EmptyView()
           }
         }

@@ -49,14 +49,16 @@ public struct DownloadedItemView: View {
   }
   
   var image: some View {
-    AsyncImage(url: URL(string: mediaItem.imageUrl)) { image in
-      image.resizable()
-        .renderingMode(.original)
-        .posterStyle(size: .small, orientation: .vertical)
-    } placeholder: {
-      Color.KinoPub.placeholder
-        .frame(width: PosterStyle.Size.small.width,
-               height: PosterStyle.Size.small.height)
+    ArtworkImage(url: URL(string: mediaItem.imageUrl)) { phase in
+      if let image = phase.image {
+        image.resizable()
+          .renderingMode(.original)
+          .posterStyle(size: .small, orientation: .vertical)
+      } else {
+        Color.KinoPub.placeholder
+          .frame(width: PosterStyle.Size.small.width,
+                 height: PosterStyle.Size.small.height)
+      }
     }
     .cornerRadius(8)
   }

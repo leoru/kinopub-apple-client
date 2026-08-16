@@ -52,9 +52,12 @@ public enum ArtworkLog {
     logger.debug("✓ MEM  \(owner, privacy: .public) · \(url.lastPathComponent, privacy: .public)")
   }
 
-  public static func loaded(_ url: URL, bytes: Int) {
+  /// - Parameter from: which tier answered — `memory`, `disk` or `network`. More useful
+  ///   than a byte count now that the pipeline owns both caches: a rail that re-fetches
+  ///   over the network on every scroll pass is a cache-key bug, and this is where it shows.
+  public static func loaded(_ url: URL, from tier: String) {
     guard isEnabled else { return }
-    logger.debug("✓ LOAD \(url.lastPathComponent, privacy: .public) · \(bytes / 1024, privacy: .public) KB")
+    logger.debug("✓ LOAD \(url.lastPathComponent, privacy: .public) · \(tier, privacy: .public)")
   }
 
   public static func failed(_ url: URL, reason: String) {

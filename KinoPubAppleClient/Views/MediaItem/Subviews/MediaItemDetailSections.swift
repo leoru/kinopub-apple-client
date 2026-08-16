@@ -520,8 +520,8 @@ struct MediaItemCastSection: View {
 /// Poster-shaped portrait art shared by the cast rail and the person page hero.
 ///
 /// Keeps the last successful decode across URL changes (pushbr → TMDB, size
-/// upgrades) so `AsyncImage`'s `.empty` phase never flashes initials over a
-/// face that was already on screen. Same sticky approach as the sidebar profile.
+/// upgrades) so the loading phase never flashes initials over a face that was
+/// already on screen. Same sticky approach as `CachedRemoteImage`.
 struct CastAvatarView: View {
   let name: String
   var photoURL: URL? = nil
@@ -944,21 +944,28 @@ struct MediaItemPhotosSection: View {
         }
       }
       .sheet(item: $selectedStill) { still in
-        AsyncImage(url: still.url) { image in
-          image.resizable().aspectRatio(contentMode: .fit)
-        } placeholder: {
-          ProgressView()
-        }
+        CachedRemoteImage(
+          url: still.url,
+          contentMode: .fit,
+          placeholder: { ProgressView() },
+          // Not a second spinner: a still that failed must stop looking like one still loading.
+          failure: {
+            Image(systemName: "photo.badge.exclamationmark")
+              .font(.largeTitle)
+              .foregroundStyle(.secondary)
+          }
+        )
       }
     }
   }
 
   private func stillTile(url: URL?) -> some View {
-    AsyncImage(url: url) { image in
-      image.resizable().aspectRatio(contentMode: .fill)
-    } placeholder: {
-      Color.KinoPub.selectionBackground
-    }
+    CachedRemoteImage(
+      url: url,
+      contentMode: .fill,
+      placeholder: { Color.KinoPub.selectionBackground },
+      failure: { Color.KinoPub.selectionBackground }
+    )
     .frame(width: Self.tileWidth, height: Self.tileWidth * 9 / 16)
     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
   }

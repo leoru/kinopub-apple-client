@@ -764,21 +764,16 @@ public struct MediaCardView: View {
   }
 
   private var stillImage: some View {
-    // Clear + overlay is the reliable fill: AsyncImage's ideal size otherwise
+    // Clear + overlay is the reliable fill: the loader's ideal size otherwise
     // letterboxes inside the 16:9 lockup.
     Color.clear
       .overlay {
-        AsyncImage(url: URL(string: imageURL),
-                   transaction: Transaction(animation: .easeIn(duration: 0.25))) { phase in
-          if let image = phase.image {
-            image
-              .resizable()
-              .scaledToFill()
-              .transition(.opacity)
-          } else {
-            Color.KinoPub.placeholder
-          }
-        }
+        CachedRemoteImage(
+          url: URL(string: imageURL),
+          contentMode: .fill,
+          placeholder: { Color.KinoPub.placeholder },
+          failure: { Color.KinoPub.placeholder }
+        )
       }
       .clipped()
   }

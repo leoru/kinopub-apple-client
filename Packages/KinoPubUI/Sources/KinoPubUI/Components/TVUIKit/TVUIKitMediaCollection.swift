@@ -228,9 +228,18 @@ extension TVUIKitMediaCollectionController: UICollectionViewDataSourcePrefetchin
   }
 
   public func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
-    TVUIKitRemoteImage.prefetch(indexPaths.compactMap { path in
+    TVUIKitRemoteImage.prefetch(artworkURLs(at: indexPaths))
+  }
+
+  public func collectionView(_ collectionView: UICollectionView,
+                             cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+    TVUIKitRemoteImage.cancelPrefetch(artworkURLs(at: indexPaths))
+  }
+
+  private func artworkURLs(at indexPaths: [IndexPath]) -> [URL?] {
+    indexPaths.compactMap { path in
       cards.indices.contains(path.item) ? artworkURL(for: cards[path.item]) : nil
-    })
+    }
   }
 }
 

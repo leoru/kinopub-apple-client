@@ -28,6 +28,8 @@ semantic component is not a DRY violation; two components for one idea on one pl
 - **Docs are English-only.** UI strings are RU + EN through `Localizable.xcstrings`.
 - **Repo layout:** `KinoPubAppleClient/` (app), `Packages/KinoPub{UI,Backend,Kit,Metadata,Logging}/`,
   `workers/` (Cloudflare), `tools/` (offline crawlers/probes).
+- **Third-party SPM:** `KeychainAccess`, `PopupView`, `Reachability`, `Nuke` (artwork). Allowed —
+  see [Dependencies](#dependencies).
 
 ### Where to read more
 
@@ -241,7 +243,10 @@ Details: skill `apple-chrome`.
 - Deduplicate in-flight work; stale paints first, revalidation runs underneath. Never reuse eternal
   grey as both loading and failure.
 - **One store ownership model.** Do not invent a third cache beside `ContentStore` / `MetadataCache`
-  / the image pipeline without consolidating. Local optimistic writes (hide, watched, bookmark) are
+  / `Artwork` without consolidating. **All remote images go through `Artwork`** — one decoded memory
+  cache keyed by target size, one disk entry per URL, coalescing and prefetch, on every platform.
+  Use `CachedRemoteImage`, or `ArtworkImage` when the states need different geometry. `AsyncImage`
+  is a regression and no longer appears anywhere in this repo. Local optimistic writes (hide, watched, bookmark) are
   authoritative until the server contradicts them.
 - tvOS purges `Caches/` when the app is not running — lean on longer in-memory TTLs, don't fight it,
   and don't pretend offline parity exists.
@@ -275,6 +280,9 @@ If you find a comment or a doc referencing these, it is stale.
   `clipsToBounds`. Aspect-fill crops 2:3 art, and **clipping the image view kills the parallax** —
   the lockup moves content inside its own frame. Not obvious from the API; do not retry blind.
 - `PlexDataStore`-style optimistic Continue Watching mutation from a shelf.
+- The hand-rolled artwork cache: `TVUIKitRemoteImage`'s private `NSCache`, the `ArtworkFetcher`
+  coalescing actor, `preparingThumbnail` downsampling, and `AsyncImage` in `CachedRemoteImage`.
+  All four behaviours survive — `Artwork` provides them, on four platforms instead of one.
 
 Known bad, still present, do not polish: `HudToast` (rewrite, don't patch).
 
@@ -317,7 +325,7 @@ Deferred verification is allowed. Silent "everything landed" claims are not.
 | Up from a section jumps to the tab bar or fails | The hero band has no full-width `.focusSection()` |
 | Only the icon inside a button scales, and gains a shadow | `.hoverEffect(.highlight)` on an `icon + text` label — use `.card` |
 | Posters stranded enlarged, parallax-wiggling while unfocused | The system's coordinated unfocus animation never ran; several sibling collections in one page region is the suspect shape |
-| A tile repaints blank after recycling | `URLCache` holds bytes, not decoded images — the cell needs the synchronous decoded-image lookup |
+| A tile repaints blank after recycling | The cell skipped the synchronous `TVUIKitRemoteImage.cached(url:size:)` probe, or asked at a size no cell decodes at — a byte cache does not help, decoded ones are keyed by size |
 | Blur/choreography "only works for series" | Something is keyed to incidental content geometry instead of state |
 | The page moves a little, then stops; background changes but layout doesn't | A threshold copied from a swipe-driven Apple sample onto a focus-driven page |
 | macOS: sidebar and player on screen together | A play entry point used `NavigationLink` instead of `PlayerLink` |
@@ -335,6 +343,7 @@ went wrong by porting thresholds tuned for a swipe-driven page onto a focus-driv
 | Type scale | `Packages/KinoPubUI/Sources/KinoPubUI/Layout/TypeScale.swift` |
 | Glass helper | `Packages/KinoPubUI/Sources/KinoPubUI/DesignSystem/KinoGlass.swift` |
 | tvOS cells / rails / collection | `Packages/KinoPubUI/Sources/KinoPubUI/Components/TVUIKit/` |
+| Artwork cache (the only place Nuke is imported) | `Packages/KinoPubUI/Sources/KinoPubUI/Components/Content/ArtworkPipeline.swift` |
 | Expanding clipped content | `Packages/KinoPubUI/Sources/KinoPubUI/Components/InfoPopup*` |
 | Detail page | `KinoPubAppleClient/Views/MediaItem/` |
 | Routes / destinations | `KinoPubAppleClient/States/Navigation/` |
@@ -354,8 +363,8 @@ went wrong by porting thresholds tuned for a swipe-driven page onto a focus-driv
    from a reference app or mature library → minimal custom. Custom needs the missing API named,
    alternatives rejected, and the ongoing cost stated.
 4. **Borrow before build.** Apple public API → existing atoms in `KinoPubUI` → reference apps and
-   the `community` remote (backend slices only) → a mature library after a short capability review →
-   new in-house code. Do not add a dependency because a list of cool repos exists.
+   the `community` remote (backend slices only) → a mature library → new in-house code. See
+   [Dependencies](#dependencies).
 5. **Ambiguous visible UI gets 2–3 genuinely different, fully interactive variants** in
    `KinoPubUI/Previews/` behind `#if DEBUG`, on a named axis; promote one and delete the file.
    Predetermined system controls do not get variant theatre.
@@ -364,6 +373,23 @@ went wrong by porting thresholds tuned for a swipe-driven page onto a focus-driv
 8. **Record what you learned where it belongs** — skill `docs-upkeep`. Tick the ROADMAP line;
    append genuinely notable facts to `CHANGELOG.md`. README changes only for public positioning or
    a macro stage.
+
+### Dependencies
+
+**A third-party package is not a failure state, and nothing here bans one.** The
+one-component-per-idea and no-custom-chrome rules are about *our UI*; they say nothing about SPM.
+Read them as a dependency ban and you get the artwork split: tvOS had a hand-written decoded-image
+cache with size keys, a coalescing actor and a prefetcher, iOS/macOS had `AsyncImage` and none of
+it, and a fix on one side never reached the other. One package deleted both.
+
+Take one when it replaces code we would otherwise own and get wrong — not because the API is nicer,
+and never because a list of cool repos exists. Then:
+
+- **It stays behind our own type. No call site imports it.** `Artwork` / `CachedRemoteImage` /
+  `TVUIKitRemoteImage` are the only things that know Nuke exists, so replacing it is one file.
+- Pinned to a major (`from:`), and it must build on **all four platforms** before "done".
+- Declared in the package that needs it, not the app target, unless the app is its only user.
+- Exception: **telemetry** — see [Data and continuity](#data-and-continuity).
 
 ### Style
 

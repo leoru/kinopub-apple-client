@@ -5,6 +5,46 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### One artwork cache on Nuke, for all four platforms (2026-08-16)
+
+- **`Artwork` (`ArtworkPipeline.swift`) is the single image cache.** Decoded-image memory cache
+  keyed by *target size*, one disk entry per URL (`.storeOriginalData`), request coalescing and
+  prefetching — for tvOS, iOS, iPadOS and macOS at once. Backed by
+  [Nuke 13](https://github.com/kean/Nuke), pinned `from: "13.2.0"`, declared in `KinoPubUI`.
+- **What it replaced:** tvOS had all of that hand-written in `TVUIKitRemoteImage` (private
+  `NSCache`, an `ArtworkFetcher` actor for coalescing, `preparingThumbnail` downsampling);
+  iOS/macOS had `AsyncImage`, which caches **bytes** and pays a full decode on every recycled
+  tile — and which stays in `.empty` forever on a 404 instead of reporting failure. A fix on one
+  side never reached the other. `TVUIKitRemoteImage` keeps its three-function API
+  (`cached` / `load` / `prefetch`), so no cell changed.
+- **Nothing outside `KinoPubUI` imports Nuke.** `Artwork`, `ArtworkImage`, `CachedRemoteImage`,
+  `FallbackRemoteImage` and `TVUIKitRemoteImage` are the whole surface — swapping the library is
+  one file. The fallback chain (wide → big → poster) stays ours; no image library models it.
+- **`AsyncImage` is gone from the codebase** — all 14 remaining call sites moved over (media cards,
+  hero still, blurred poster and ambient backdrop, title logos, season stills, the stills rail and
+  its sheet, downloads, the UILab backdrop, two preview galleries). `ArtworkImage` is the primitive
+  with `AsyncImage`'s phase shape for the sites whose states need different geometry — a title logo
+  that fails becomes a text block — and `CachedRemoteImage` is that primitive configured, which is
+  what every other site uses.
+- **Prefetching stops at the data cache and is now cancellable.** The old fire-and-forget
+  `Task.detached` prefetch decoded at *full resolution* under a cache key no poster or wide cell
+  ever read, and could not be cancelled when the row scrolled away. All three prefetching
+  collections gained `cancelPrefetchingForItemsAt`.
+- **Artwork no longer shares `URLCache` with the API client** — the loader's session cache is off,
+  so Settings › Storage gained an **Artwork cache** row (disk + memory, clearable) and the Network
+  cache row is now API responses only. That file's "there is no unified image cache yet" note is
+  void.
+- `ArtworkLog.loaded(_:bytes:)` → `loaded(_:from:)`, reporting which tier answered
+  (memory / disk / network). A rail refetching over the network every scroll pass is a cache-key
+  bug, and that is where it shows.
+- **AGENTS.md gained a [Dependencies](AGENTS.md#dependencies) section.** There was never a ban on
+  third-party SPM — the repo already shipped `KeychainAccess`, `PopupView` and `Reachability` — but
+  the one-component-per-idea rules were readable as one, and that reading is what kept the artwork
+  stack split in two. The bar: it replaces code we would otherwise own, it stays behind our own
+  type, it is pinned to a major, and it builds on all four platforms. Telemetry stays the exception.
+- Verified: `xcodebuild build` green on tvOS 27 simulator, iOS Simulator and macOS. **Scroll
+  behaviour not yet watched on device.**
+
 ### Docs: one context file, five skills, and constraints that stop becoming requirements (2026-08-13)
 
 - **The documentation tree collapsed into [AGENTS.md](AGENTS.md) + [ROADMAP.md](ROADMAP.md) +

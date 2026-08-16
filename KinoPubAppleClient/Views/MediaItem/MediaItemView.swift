@@ -463,20 +463,14 @@ struct MediaItemView: View {
     ZStack {
       Color.KinoPub.background
 /// TODO IT MUST BE SAME IDENTICAL PICTURE - WIDE ONE. TVOS, IOS, MACOS, etc
-      AsyncImage(url: URL(string: itemModel.mediaItem.posters.medium)) { image in
-        image
-          .resizable()
-          .aspectRatio(contentMode: .fill)
-          .frame(width: Self.ambientBuffer.width, height: Self.ambientBuffer.height)
-          .clipped()
-          .blur(radius: Self.ambientBlur, opaque: true)
-          .saturation(1.6)
-          .drawingGroup()
-          .scaleEffect(Self.ambientScale)
-          .opacity(0.55)
-      } placeholder: {
-        Color.clear
-      }
+      CachedRemoteImage(url: URL(string: itemModel.mediaItem.posters.medium), contentMode: .fill)
+        .frame(width: Self.ambientBuffer.width, height: Self.ambientBuffer.height)
+        .clipped()
+        .blur(radius: Self.ambientBlur, opaque: true)
+        .saturation(1.6)
+        .drawingGroup()
+        .scaleEffect(Self.ambientScale)
+        .opacity(0.55)
 
       Color.KinoPub.background.opacity(0.55)
     }
@@ -587,14 +581,8 @@ private struct MediaItemTitleLogoHeader: View {
   @ViewBuilder
   private var content: some View {
     if let titleLogoURL {
-      AsyncImage(url: titleLogoURL) { image in
-        image
-          .resizable()
-          .scaledToFit()
-      } placeholder: {
-        Color.clear
-      }
-      .frame(maxWidth: Self.logoMaxWidth, maxHeight: Self.logoMaxHeight, alignment: .center)
+      CachedRemoteImage(url: titleLogoURL, contentMode: .fit)
+        .frame(maxWidth: Self.logoMaxWidth, maxHeight: Self.logoMaxHeight, alignment: .center)
     }
     // No lettered fallback. Spelling the title out here reads as a caption stuck to
     // the top of the page rather than as the title bar this is meant to be — artwork

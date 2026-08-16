@@ -740,7 +740,7 @@ private struct TypeStyleBackdropImage: View {
   var body: some View {
     Group {
       if let url = backdrop.imageURL {
-        AsyncImage(url: url) { phase in
+        ArtworkImage(url: url) { phase in
           switch phase {
           case .success(let image):
             image
@@ -751,8 +751,6 @@ private struct TypeStyleBackdropImage: View {
             meshFallback
           case .empty:
             meshFallback.overlay { ProgressView() }
-          @unknown default:
-            meshFallback
           }
         }
       } else {

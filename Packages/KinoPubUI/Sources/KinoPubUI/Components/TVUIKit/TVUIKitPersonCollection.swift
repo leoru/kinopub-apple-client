@@ -171,9 +171,18 @@ public final class TVUIKitPersonCollectionController: UIViewController {
 
 extension TVUIKitPersonCollectionController: UICollectionViewDataSourcePrefetching {
   public func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
-    TVUIKitRemoteImage.prefetch(indexPaths.compactMap { path in
+    TVUIKitRemoteImage.prefetch(photoURLs(at: indexPaths))
+  }
+
+  public func collectionView(_ collectionView: UICollectionView,
+                             cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+    TVUIKitRemoteImage.cancelPrefetch(photoURLs(at: indexPaths))
+  }
+
+  private func photoURLs(at indexPaths: [IndexPath]) -> [URL?] {
+    indexPaths.compactMap { path in
       people.indices.contains(path.item) ? people[path.item].photoURL : nil
-    })
+    }
   }
 }
 

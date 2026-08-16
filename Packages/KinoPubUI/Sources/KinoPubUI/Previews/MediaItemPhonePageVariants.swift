@@ -136,7 +136,7 @@ private struct PhoneTitleLogo: View {
   var maxHeight: CGFloat = 72
 
   var body: some View {
-    AsyncImage(url: PhonePageSample.titleLogo) { phase in
+    ArtworkImage(url: PhonePageSample.titleLogo) { phase in
       switch phase {
       case .success(let image):
         image
@@ -152,8 +152,6 @@ private struct PhoneTitleLogo: View {
         ProgressView()
           .tint(.white)
           .frame(height: maxHeight * 0.6)
-      @unknown default:
-        EmptyView()
       }
     }
   }

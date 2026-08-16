@@ -2,14 +2,19 @@
 //  CachedRemoteImage.swift
 //  KinoPubUI
 //
-//  Shared artwork atom: system URLCache via AsyncImage, distinct empty / failure /
-//  success phases, and a short fade-in. No eternal gray placeholder wash.
+//  Shared artwork atom: the `Artwork` pipeline, distinct empty / failure / success
+//  states, and a short fade-in. No eternal gray placeholder wash.
 //
 
 import SwiftUI
 
-/// Loads remote artwork with the same caching behaviour SwiftUI's `AsyncImage`
-/// already uses, while exposing loading and failure as separate visual states.
+/// The common artwork configuration: one content mode, distinct placeholder and failure,
+/// on the shared `Artwork` pipeline — decoded-image memory cache, one disk entry per URL,
+/// in-flight coalescing. Prefer it over `ArtworkImage` unless the states need different
+/// geometry.
+///
+/// This used to be `AsyncImage`, which caches bytes only and, on a 404, commonly stays
+/// in `.empty` forever instead of reporting a failure. Both are why `Artwork` exists.
 ///
 /// Keeps the last successful frame when `url` changes so a metadata refresh does
 /// not flash the placeholder over art that was already visible.
@@ -33,46 +38,30 @@ public struct CachedRemoteImage<Placeholder: View, Failure: View>: View {
   }
 
   public var body: some View {
-    AsyncImage(
+    ArtworkImage(
       url: url,
       transaction: Transaction(animation: .easeOut(duration: 0.25))
     ) { phase in
       switch phase {
       case .success(let image):
-        image
-          .resizable()
-          .aspectRatio(contentMode: contentMode)
+        resized(image)
           .transition(.opacity)
           .task(id: url) { sticky = image }
       case .failure:
-        if let sticky {
-          sticky
-            .resizable()
-            .aspectRatio(contentMode: contentMode)
-        } else {
-          failure()
-        }
+        if let sticky { resized(sticky) } else { failure() }
       case .empty:
-        if let sticky {
-          sticky
-            .resizable()
-            .aspectRatio(contentMode: contentMode)
-        } else {
-          placeholder()
-        }
-      @unknown default:
-        if let sticky {
-          sticky
-            .resizable()
-            .aspectRatio(contentMode: contentMode)
-        } else {
-          placeholder()
-        }
+        if let sticky { resized(sticky) } else { placeholder() }
       }
     }
     .onChange(of: url) { _, newURL in
       if newURL == nil { sticky = nil }
     }
+  }
+
+  private func resized(_ image: Image) -> some View {
+    image
+      .resizable()
+      .aspectRatio(contentMode: contentMode)
   }
 }
 

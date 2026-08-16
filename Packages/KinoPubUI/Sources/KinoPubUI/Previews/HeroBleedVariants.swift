@@ -109,16 +109,12 @@ private enum HeroBleedSample {
 }
 
 private var sampleArt: some View {
-  AsyncImage(url: HeroBleedSample.wideURL) { phase in
-    switch phase {
-    case .success(let image):
-      image
-        .resizable()
-        .aspectRatio(contentMode: .fill)
-    default:
-      Color.KinoPub.placeholder
-    }
-  }
+  CachedRemoteImage(
+    url: HeroBleedSample.wideURL,
+    contentMode: .fill,
+    placeholder: { Color.KinoPub.placeholder },
+    failure: { Color.KinoPub.placeholder }
+  )
 }
 
 // MARK: - A · Private variableBlur (shipping helper)
