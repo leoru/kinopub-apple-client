@@ -108,7 +108,7 @@ struct CatalogView: View {
           openURL: { openURL($0) }
         )
       },
-      paginationError: catalog.paginationFailed,
+      pagination: catalog.paginationState,
       onRetryPagination: {
         catalog.retryPagination()
       }

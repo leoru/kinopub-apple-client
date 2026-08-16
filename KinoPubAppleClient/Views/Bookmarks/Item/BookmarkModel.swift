@@ -7,6 +7,7 @@
 
 import Foundation
 import KinoPubBackend
+import KinoPubUI
 import OSLog
 import KinoPubLogging
 
@@ -21,6 +22,16 @@ class BookmarkModel: ObservableObject {
   @Published public var items: [MediaItem] = []
   @Published public private(set) var isLoading: Bool = false
   @Published public private(set) var paginationFailed: Bool = false
+  /// A page past the first is in flight — the first page has its own loading state.
+  @Published public private(set) var isLoadingMore: Bool = false
+
+  /// What the grid footer should say.
+  public var paginationState: PaginationState {
+    if isLoadingMore { return PaginationState(phase: .loading, loadedCount: items.count) }
+    if paginationFailed { return PaginationState(phase: .failed, loadedCount: items.count) }
+    guard let pagination, pagination.current >= pagination.total else { return .idle }
+    return PaginationState(phase: .complete, loadedCount: items.count)
+  }
   @Published public private(set) var pagination: Pagination?
 
   init(bookmark: Bookmark, itemsService: VideoContentService, errorHandler: ErrorHandler) {
@@ -54,6 +65,9 @@ class BookmarkModel: ObservableObject {
     }
     isFetching = true
     defer { isFetching = false }
+    // Only pages after the first: the first page owns the full-screen loading state.
+    isLoadingMore = !isFirstPage
+    defer { isLoadingMore = false }
 
     if isFirstPage { isLoading = true }
     defer { isLoading = false }

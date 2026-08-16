@@ -43,6 +43,11 @@ public struct MediaRowsView: View {
   /// A shelf was scrolled to its last loaded card. The row is named so the owner knows
   /// which one to page; the card is the edge it stopped at.
   private let onLoadMore: ((MediaRow, MediaCard) -> Void)?
+  /// Per-row paging state. A closure rather than a field on `MediaRow` because the row
+  /// is a value the catalog rebuilds on every assemble, while this changes underneath
+  /// it mid-scroll.
+  private let paginationProvider: ((MediaRow) -> PaginationState)?
+  private let onRetryPagination: ((MediaRow) -> Void)?
   /// Long-press menu for a card. Return an empty array to leave the card without one.
   /// `surface` distinguishes shelf lockups from featured banners (artwork URL, etc.).
   private let contextMenuProvider: ((MediaCard, MediaCardContextSurface) -> [MediaCardContextEntry])?
@@ -67,6 +72,8 @@ public struct MediaRowsView: View {
               onPlay: ((MediaCard) -> Void)? = nil,
               onRowAppear: ((MediaRow) -> Void)? = nil,
               onLoadMore: ((MediaRow, MediaCard) -> Void)? = nil,
+              paginationProvider: ((MediaRow) -> PaginationState)? = nil,
+              onRetryPagination: ((MediaRow) -> Void)? = nil,
               contextMenuProvider: ((MediaCard, MediaCardContextSurface) -> [MediaCardContextEntry])? = nil) {
     self.rows = rows
     self.bannerCards = bannerCards
@@ -74,6 +81,8 @@ public struct MediaRowsView: View {
     self.onPlay = onPlay
     self.onRowAppear = onRowAppear
     self.onLoadMore = onLoadMore
+    self.paginationProvider = paginationProvider
+    self.onRetryPagination = onRetryPagination
     self.contextMenuProvider = contextMenuProvider
   }
 
@@ -196,7 +205,9 @@ public struct MediaRowsView: View {
       caption: Self.cardCaption,
       focusedCard: $focusedCard,
       focusKey: { CardKey(row: row.id, card: $0.id) },
-      onNearEnd: onLoadMore.map { report in { card in report(row, card) } }
+      onNearEnd: onLoadMore.map { report in { card in report(row, card) } },
+      pagination: paginationProvider?(row) ?? .idle,
+      onRetryPagination: onRetryPagination.map { retry in { retry(row) } }
     )
     .onAppear { onRowAppear?(row) }
   }

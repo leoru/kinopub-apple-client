@@ -6,6 +6,7 @@
 import Foundation
 import Combine
 import KinoPubBackend
+import KinoPubUI
 import KinoPubLogging
 import OSLog
 
@@ -26,6 +27,16 @@ class LibraryCatalog: ObservableObject {
   /// True when a page past the first failed — loaded items stay on screen and the
   /// grid offers an inline retry at the bottom instead of swapping to an error screen.
   @Published public private(set) var paginationFailed: Bool = false
+  /// A page past the first is in flight — the first page has its own loading state.
+  @Published public private(set) var isLoadingMore: Bool = false
+
+  /// What the grid footer should say.
+  public var paginationState: PaginationState {
+    if isLoadingMore { return PaginationState(phase: .loading, loadedCount: items.count) }
+    if paginationFailed { return PaginationState(phase: .failed, loadedCount: items.count) }
+    guard let pagination, pagination.current >= pagination.total else { return .idle }
+    return PaginationState(phase: .complete, loadedCount: items.count)
+  }
   @Published public var query: String = ""
   @Published public var filter: LibraryFilter = LibraryFilter()
 
@@ -69,6 +80,9 @@ class LibraryCatalog: ObservableObject {
     }
     isFetching = true
     defer { isFetching = false }
+    // Only pages after the first: the first page owns the full-screen loading state.
+    isLoadingMore = !isFirstPage
+    defer { isLoadingMore = false }
 
     // A person's credits show a sort control and nothing else, so their pickers would
     // be two requests for lists nobody can open.

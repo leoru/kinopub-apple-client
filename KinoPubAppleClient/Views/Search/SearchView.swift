@@ -71,7 +71,7 @@ struct SearchView: View {
             },
             placeholderCount: showsPlaceholders ? Self.placeholderCount : 0,
             emptyMessage: showsEmptyMessage ? "No Results" : nil,
-            paginationError: catalog.paginationFailed,
+            pagination: catalog.paginationState,
             onRetryPagination: {
               catalog.retryPagination()
             }

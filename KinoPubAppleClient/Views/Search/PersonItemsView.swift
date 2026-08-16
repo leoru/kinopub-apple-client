@@ -54,7 +54,7 @@ struct PersonItemsView: View {
         )
       },
       emptyMessage: showsEmptyMessage ? "No Results" : nil,
-      paginationError: catalog.paginationFailed,
+      pagination: catalog.paginationState,
       onRetryPagination: { catalog.retryPagination() }
     ) {
       hero

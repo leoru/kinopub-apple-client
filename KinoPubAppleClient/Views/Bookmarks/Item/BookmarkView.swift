@@ -65,7 +65,7 @@ struct BookmarkView: View {
           openURL: { openURL($0) }
         )
       },
-      paginationError: model.paginationFailed,
+      pagination: model.paginationState,
       onRetryPagination: {
         model.retryPagination()
       }

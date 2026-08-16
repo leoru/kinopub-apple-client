@@ -23,7 +23,8 @@ public struct ContentItemsListView<Header: View>: View {
   /// A page past the first failed to load: the grid keeps its items and shows an
   /// inline retry where the missing page would have appeared — never a full-screen
   /// error in place of loaded content.
-  private let paginationError: Bool
+  /// Loading / failed / complete for the page after the last one shown.
+  private let pagination: PaginationState
   private let onRetryPagination: (() -> Void)?
   private let header: Header
 
@@ -73,7 +74,7 @@ public struct ContentItemsListView<Header: View>: View {
               contextMenuProvider: ((MediaItem) -> [MediaCardContextEntry])? = nil,
               placeholderCount: Int = 0,
               emptyMessage: LocalizedStringKey? = nil,
-              paginationError: Bool = false,
+              pagination: PaginationState = .idle,
               onRetryPagination: (() -> Void)? = nil,
               @ViewBuilder header: () -> Header) {
     self._items = items
@@ -82,7 +83,7 @@ public struct ContentItemsListView<Header: View>: View {
     self.contextMenuProvider = contextMenuProvider
     self.placeholderCount = placeholderCount
     self.emptyMessage = emptyMessage
-    self.paginationError = paginationError
+    self.pagination = pagination
     self.onRetryPagination = onRetryPagination
     self.header = header()
   }
@@ -138,9 +139,7 @@ public struct ContentItemsListView<Header: View>: View {
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-        if paginationError, let onRetryPagination {
-          paginationRetry(onRetryPagination)
-        }
+        PaginationFooter(state: pagination, onRetry: onRetryPagination)
       }
     }
     // Headers are supplied by callers; publishing the grid's own margin is what stops
@@ -194,9 +193,7 @@ public struct ContentItemsListView<Header: View>: View {
           .safeAreaPadding(.horizontal, metrics.gridInset(in: containerWidth))
           .padding(.vertical, Metrics.focusPadding)
 
-          if paginationError, let onRetryPagination {
-            paginationRetry(onRetryPagination)
-          }
+          PaginationFooter(state: pagination, onRetry: onRetryPagination)
         }
       }
     }
@@ -219,22 +216,6 @@ public struct ContentItemsListView<Header: View>: View {
     // under — see `.claude/skills/apple-chrome/SKILL.md`.
     .scrollEdgeEffectStyle(.automatic, for: .top)
 #endif
-  }
-
-  @ViewBuilder
-  private func paginationRetry(_ action: @escaping () -> Void) -> some View {
-    VStack(spacing: 12) {
-      Text("Couldn't Load More")
-        .font(TypeScale.cardSubtitle)
-        .foregroundStyle(Color.KinoPub.subtitle)
-      Button("Try Again", action: action)
-#if !os(tvOS)
-        .buttonStyle(.glass)
-        .controlSize(.large)
-#endif
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 24)
   }
 
   /// Same footprint as a real poster card (tile + caption line), inert so focus
@@ -263,7 +244,7 @@ public extension ContentItemsListView where Header == EmptyView {
        contextMenuProvider: ((MediaItem) -> [MediaCardContextEntry])? = nil,
        placeholderCount: Int = 0,
        emptyMessage: LocalizedStringKey? = nil,
-       paginationError: Bool = false,
+       pagination: PaginationState = .idle,
        onRetryPagination: (() -> Void)? = nil) {
     self.init(items: items,
               onLoadMoreContent: onLoadMoreContent,
@@ -271,7 +252,7 @@ public extension ContentItemsListView where Header == EmptyView {
               contextMenuProvider: contextMenuProvider,
               placeholderCount: placeholderCount,
               emptyMessage: emptyMessage,
-              paginationError: paginationError,
+              pagination: pagination,
               onRetryPagination: onRetryPagination,
               header: { EmptyView() })
   }

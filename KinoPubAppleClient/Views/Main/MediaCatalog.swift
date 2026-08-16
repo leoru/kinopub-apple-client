@@ -7,6 +7,7 @@
 
 import Foundation
 import KinoPubBackend
+import KinoPubUI
 import OSLog
 import KinoPubLogging
 import Combine
@@ -55,6 +56,17 @@ class MediaCatalog: ObservableObject {
   /// True when a page past the first failed — loaded items stay on screen and the
   /// grid offers an inline retry at the bottom instead of swapping to an error screen.
   @Published public private(set) var paginationFailed: Bool = false
+  /// True while a page *after* the first is in flight — the first page has its own
+  /// full-screen `isLoading`, and a spinner in both places at once reads as two loads.
+  @Published public private(set) var isLoadingMore: Bool = false
+
+  /// What the grid footer should say.
+  public var paginationState: PaginationState {
+    if isLoadingMore { return PaginationState(phase: .loading, loadedCount: items.count) }
+    if paginationFailed { return PaginationState(phase: .failed, loadedCount: items.count) }
+    guard let pagination, pagination.current >= pagination.total else { return .idle }
+    return PaginationState(phase: .complete, loadedCount: items.count)
+  }
   @Published public var pagination: Pagination?
   @Published public var contentType: MediaType = .movie
   @Published public var shortcut: MediaShortcut = .hot
@@ -94,6 +106,9 @@ class MediaCatalog: ObservableObject {
     }
     isFetching = true
     defer { isFetching = false }
+    // Only pages after the first: the first page owns the full-screen loading state.
+    isLoadingMore = !isFirstPage
+    defer { isLoadingMore = false }
 
     if isFirstPage { isLoading = true }
     defer { isLoading = false }

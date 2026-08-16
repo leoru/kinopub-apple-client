@@ -21,6 +21,17 @@ class CollectionsModel: ObservableObject {
   @Published public private(set) var loadFailed: Bool = false
   @Published public private(set) var loadError: Error?
   @Published public private(set) var paginationError: Bool = false
+  /// A page past the first is in flight. Published so the grid footer can say so —
+  /// `isFetchingMore` below is the reentrancy guard and stays private.
+  @Published public private(set) var isLoadingMore: Bool = false
+
+  /// What the grid footer should say.
+  var paginationState: PaginationState {
+    if isLoadingMore { return PaginationState(phase: .loading, loadedCount: cards.count) }
+    if paginationError { return PaginationState(phase: .failed, loadedCount: cards.count) }
+    guard let pagination, pagination.current >= pagination.total else { return .idle }
+    return PaginationState(phase: .complete, loadedCount: cards.count)
+  }
 
   private var authState: AuthState
   private var errorHandler: ErrorHandler
@@ -88,6 +99,8 @@ class CollectionsModel: ObservableObject {
   private func fetchNextPage() async {
     guard let pagination, !isFetchingMore else { return }
     isFetchingMore = true
+    isLoadingMore = true
+    defer { isLoadingMore = false }
     defer { isFetchingMore = false }
     do {
       let data = try await collectionsService.fetchCollections(page: pagination.current + 1, sort: "views-")

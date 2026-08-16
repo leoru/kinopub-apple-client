@@ -27,6 +27,9 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
   /// The rail reached its last loaded card. The shelf does not know what "more" means
   /// — it reports the edge and the owner decides whether there is a next page.
   private let onNearEnd: ((MediaCard) -> Void)?
+  /// Whether the next page is loading, failed, or there is no next page.
+  private let pagination: PaginationState
+  private let onRetryPagination: (() -> Void)?
 
   @Environment(\.dynamicTypeSize) private var typeSize
   @Environment(\.usesTVUIKitPosters) private var usesTVUIKitPosters
@@ -50,7 +53,9 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     focusedCard: FocusState<FocusKey?>.Binding? = nil,
     focusKey: ((MediaCard) -> FocusKey)? = nil,
     onCardFocused: (() -> Void)? = nil,
-    onNearEnd: ((MediaCard) -> Void)? = nil
+    onNearEnd: ((MediaCard) -> Void)? = nil,
+    pagination: PaginationState = .idle,
+    onRetryPagination: (() -> Void)? = nil
   ) {
     self.title = title
     self.count = count
@@ -68,6 +73,8 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     self.focusKey = focusKey
     self.onCardFocused = onCardFocused
     self.onNearEnd = onNearEnd
+    self.pagination = pagination
+    self.onRetryPagination = onRetryPagination
   }
 
   private var isLandscape: Bool {
@@ -88,6 +95,12 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     isLandscape
       ? .landscape(width: containerWidth, typeSize: typeSize, safeArea: containerSafeArea)
       : .posters(width: containerWidth, typeSize: typeSize, safeArea: containerSafeArea)
+  }
+
+  /// The artwork box only: captions sit under the card, and the tile has no caption.
+  private var tailTileHeight: CGFloat {
+    let width = metrics.cardWidth(in: containerWidth)
+    return isLandscape ? width / CardAspect.landscape.ratio : width / CardAspect.poster.ratio
   }
 
   private var railFocusPadding: CGFloat {
@@ -128,7 +141,10 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     // user has to travel through on the way down the page, and which no Apple tvOS
     // app has. "See all" belongs in the row itself — a trailing card — not in its
     // title. See `docs/archive/plans/detail-page-choreography.md` phase 6.
-    SectionHeader(title: title, count: count, showsChevron: false)
+    HStack(spacing: 10) {
+      SectionHeader(title: title, count: count, showsChevron: false)
+      PaginationHeaderBadge(state: pagination)
+    }
 #else
     if let destination {
       NavigationLink(value: destination) {
@@ -217,6 +233,16 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
               guard CatalogLoadMore.isThresholdID(card.id, lastID: cards.last?.id) else { return }
               onNearEnd?(card)
             }
+        }
+
+        // Where "still loading" / "that's all" / "tap to retry" lives on a rail. Sized
+        // like a card so the row keeps its rhythm, and absent entirely when there is
+        // nothing to say — a permanent tail tile would read as a broken last card.
+        if pagination.isWorthShowing {
+          PaginationTailTile(state: pagination, onRetry: onRetryPagination)
+            .wrapped()
+            .frame(width: metrics.cardWidth(in: containerWidth))
+            .frame(height: tailTileHeight)
         }
       }
       .padding(.horizontal, metrics.inset)

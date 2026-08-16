@@ -49,7 +49,7 @@ struct CollectionsView: View {
         navigationLinkProvider: { card in
           Route.collection(CollectionMediaCard.routeCollection(from: card))
         },
-        paginationError: model.paginationError,
+        pagination: model.paginationState,
         onRetryPagination: { model.retryPagination() }
       )
     }
