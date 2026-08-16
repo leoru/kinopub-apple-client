@@ -57,6 +57,13 @@ struct RouteDestination: View {
       CollectionDetailView.make(collection: collection,
                                 context: appContext,
                                 errorHandler: errorHandler)
+    case .shortcutItems(let shortcut, let contentType, let title):
+      ShortcutItemsView.make(shortcut: shortcut,
+                             contentType: contentType,
+                             title: title,
+                             context: appContext,
+                             authState: authState,
+                             errorHandler: errorHandler)
     case .player(let item):
 #if os(macOS)
       MacPlayerRouteGuard(item: item, mode: .media)

@@ -26,6 +26,10 @@ enum Route: Hashable {
   case collections
   /// One collection's full item grid (`GET /v1/collections/view`).
   case collection(Collection)
+  /// One Home shelf ("Hot Movies", "Fresh Series", …) opened as its own full,
+  /// paginated grid — the shelf's "see all". `title` carries the already-localized
+  /// row name so the pushed page and the row header read identically.
+  case shortcutItems(MediaShortcut, MediaType, title: String)
 
   func hash(into hasher: inout Hasher) {
     switch self {
@@ -60,6 +64,11 @@ enum Route: Hashable {
     case .collection(let collection):
       hasher.combine(10)
       hasher.combine(collection)
+    case .shortcutItems(let shortcut, let type, let title):
+      hasher.combine(11)
+      hasher.combine(shortcut)
+      hasher.combine(type)
+      hasher.combine(title)
     }
   }
 
@@ -87,6 +96,8 @@ enum Route: Hashable {
       return true
     case (.collection(let a), .collection(let b)):
       return a == b
+    case (.shortcutItems(let a, let at, let atitle), .shortcutItems(let b, let bt, let btitle)):
+      return a == b && at == bt && atitle == btitle
     default:
       return false
     }

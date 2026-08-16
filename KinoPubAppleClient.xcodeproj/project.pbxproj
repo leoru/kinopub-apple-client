@@ -24,10 +24,10 @@
 		9BB427D377EF668A2FFC1A10 /* KinopoiskSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8639E780102725D87EED78BB /* KinopoiskSettingsSection.swift */; };
 		9F6F94A15ADEFE2F79EFD2E3 /* SectionsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CCB33005E595A30B2B59E06 /* SectionsSettingsView.swift */; };
 		A1B2C3D42E5F60718293A002 /* RouteDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293A001 /* RouteDestination.swift */; };
-		A1B2C3D42E5F60718293C004 /* NavigationFocusLabBridges.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293C003 /* NavigationFocusLabBridges.swift */; };
-		A1B2C3D42E5F60718293C002 /* NavigationFocusLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293C001 /* NavigationFocusLabView.swift */; };
-		A1B2C3D42E5F60718293B002 /* RouteStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293B001 /* RouteStack.swift */; };
 		A1B2C3D42E5F60718293A004 /* PlaybackSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293A003 /* PlaybackSession.swift */; };
+		A1B2C3D42E5F60718293B002 /* RouteStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293B001 /* RouteStack.swift */; };
+		A1B2C3D42E5F60718293C002 /* NavigationFocusLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293C001 /* NavigationFocusLabView.swift */; };
+		A1B2C3D42E5F60718293C004 /* NavigationFocusLabBridges.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293C003 /* NavigationFocusLabBridges.swift */; };
 		A33EDB761E32D7E524DDAB0F /* ActorImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A9752C15D23B6E4419BA5E1 /* ActorImageProvider.swift */; };
 		A7EDB3D1A6A6B06830D80416 /* KinopoiskKeySettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F6301ED273E06AFCEBCC48 /* KinopoiskKeySettingsModel.swift */; };
 		AA967A14831E15AEAAEED74F /* HLSAssetDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C70AA7F1483953DE245D765 /* HLSAssetDownloadManager.swift */; };
@@ -91,6 +91,7 @@
 		CCA100012C6F000100000301 /* MediaItemHeroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000302 /* MediaItemHeroView.swift */; };
 		CCA100012C6F000100000401 /* SeasonsRailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000402 /* SeasonsRailView.swift */; };
 		CCA100012C6F000100000501 /* CatalogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000502 /* CatalogView.swift */; };
+		CCFF000000000000000A0001 /* ShortcutItemsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFF000000000000000A0002 /* ShortcutItemsView.swift */; };
 		CCA100012C6F000100000601 /* MediaItemDetailSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000602 /* MediaItemDetailSections.swift */; };
 		CCA100012C6F000100000701 /* LibraryCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000702 /* LibraryCatalog.swift */; };
 		CCA100012C6F000100000703 /* LibraryFiltersBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000704 /* LibraryFiltersBar.swift */; };
@@ -192,10 +193,10 @@
 		8A9752C15D23B6E4419BA5E1 /* ActorImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActorImageProvider.swift; sourceTree = "<group>"; };
 		A10A0594FE3A3EF35AA32EDD /* CollectionDetailModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionDetailModel.swift; sourceTree = "<group>"; };
 		A1B2C3D42E5F60718293A001 /* RouteDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteDestination.swift; sourceTree = "<group>"; };
-		A1B2C3D42E5F60718293C003 /* NavigationFocusLabBridges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationFocusLabBridges.swift; sourceTree = "<group>"; };
-		A1B2C3D42E5F60718293C001 /* NavigationFocusLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationFocusLabView.swift; sourceTree = "<group>"; };
-		A1B2C3D42E5F60718293B001 /* RouteStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteStack.swift; sourceTree = "<group>"; };
 		A1B2C3D42E5F60718293A003 /* PlaybackSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSession.swift; sourceTree = "<group>"; };
+		A1B2C3D42E5F60718293B001 /* RouteStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteStack.swift; sourceTree = "<group>"; };
+		A1B2C3D42E5F60718293C001 /* NavigationFocusLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationFocusLabView.swift; sourceTree = "<group>"; };
+		A1B2C3D42E5F60718293C003 /* NavigationFocusLabBridges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationFocusLabBridges.swift; sourceTree = "<group>"; };
 		A5945A0BAD187210B5696B83 /* CollectionDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionDetailView.swift; sourceTree = "<group>"; };
 		AAA67574E8F59DCCBF4B88BF /* BookmarkMembershipStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookmarkMembershipStore.swift; sourceTree = "<group>"; };
 		AC55C398012BAC5D583D1A45 /* DeviceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceService.swift; sourceTree = "<group>"; };
@@ -260,6 +261,7 @@
 		CCA100012C6F000100000302 /* MediaItemHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemHeroView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000402 /* SeasonsRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonsRailView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000502 /* CatalogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogView.swift; sourceTree = "<group>"; };
+		CCFF000000000000000A0002 /* ShortcutItemsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutItemsView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000602 /* MediaItemDetailSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemDetailSections.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000702 /* LibraryCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryCatalog.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000704 /* LibraryFiltersBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFiltersBar.swift; sourceTree = "<group>"; };
@@ -663,6 +665,7 @@
 			isa = PBXGroup;
 			children = (
 				CCA100012C6F000100000502 /* CatalogView.swift */,
+				CCFF000000000000000A0002 /* ShortcutItemsView.swift */,
 			);
 			path = Catalog;
 			sourceTree = "<group>";
@@ -1131,6 +1134,7 @@
 				CCA100012C6F000100000301 /* MediaItemHeroView.swift in Sources */,
 				CCA100012C6F000100000401 /* SeasonsRailView.swift in Sources */,
 				CCA100012C6F000100000501 /* CatalogView.swift in Sources */,
+				CCFF000000000000000A0001 /* ShortcutItemsView.swift in Sources */,
 				CCA100012C6F000100000601 /* MediaItemDetailSections.swift in Sources */,
 				CCA100012C6F000100000B03 /* MediaItemAboutLayouts.swift in Sources */,
 				CCA100012C6F000100000701 /* LibraryCatalog.swift in Sources */,
@@ -1339,7 +1343,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KinoPubAppleClient/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = KinoPub;
+				INFOPLIST_KEY_CFBundleDisplayName = "Kinopub Soda";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSVideoSubscriberAccountUsageDescription = "";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -1388,7 +1392,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = KinoPubAppleClient/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = KinoPub;
+				INFOPLIST_KEY_CFBundleDisplayName = "Kinopub Soda";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSVideoSubscriberAccountUsageDescription = "";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;

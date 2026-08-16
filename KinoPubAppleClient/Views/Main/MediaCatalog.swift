@@ -10,6 +10,25 @@ import KinoPubBackend
 import OSLog
 import KinoPubLogging
 import Combine
+#if canImport(UIKit)
+import UIKit
+#endif
+
+/// How many items the full-screen catalog grids (Movies / Series tabs and the pushed
+/// "see all" pages) request per page. Roomy screens show many rows at once, so a
+/// 20-item page paginates visibly as you scroll; 50 keeps it seamless. iPhone stays at
+/// 20 to keep payloads light. Home rails and the background `StreamSurvey` keep the
+/// server default — they call the terse `fetch`/`search` overloads, not this.
+@MainActor
+enum CatalogPageSize {
+  static var grid: Int {
+#if os(macOS) || os(tvOS)
+    50
+#else
+    UIDevice.current.userInterfaceIdiom == .pad ? 50 : 20
+#endif
+  }
+}
 
 @MainActor
 class MediaCatalog: ObservableObject {
@@ -17,6 +36,10 @@ class MediaCatalog: ObservableObject {
   private var authState: AuthState
   private var errorHandler: ErrorHandler
   private var itemsService: VideoContentService
+  /// Page size for these grids: 50 on roomy screens (Mac / tvOS / iPad), 20 on iPhone,
+  /// so a screenful doesn't paginate visibly. Fixed at birth — the idiom can't change
+  /// under a live view. See `CatalogPageSize`.
+  private let perPage: Int
   private var bag = Set<AnyCancellable>()
   private var isFetching = false
 
@@ -44,11 +67,16 @@ class MediaCatalog: ObservableObject {
   init(itemsService: VideoContentService,
        authState: AuthState,
        errorHandler: ErrorHandler,
-       contentType: MediaType = .movie) {
+       contentType: MediaType = .movie,
+       shortcut: MediaShortcut = .hot) {
     self.itemsService = itemsService
+    self.perPage = CatalogPageSize.grid
     self.authState = authState
     self.errorHandler = errorHandler
     self.contentType = contentType
+    // Assigned before `subscribe()` so the `$shortcut.dropFirst()` sink doesn't fire a
+    // spurious refresh when a catalog is pinned to a non-default shortcut at birth.
+    self.shortcut = shortcut
     subscribe()
   }
 
@@ -73,10 +101,10 @@ class MediaCatalog: ObservableObject {
     do {
       let page = isFirstPage ? nil : pagination!.current + 1
       if !query.isEmpty {
-        let data = try await itemsService.search( query: query, page: page)
+        let data = try await itemsService.search(query: query, page: page, perPage: perPage)
         handleData(data, isFirstPage: isFirstPage)
       } else {
-        let data = try await itemsService.fetch(shortcut: shortcut, contentType: contentType, page: page)
+        let data = try await itemsService.fetch(shortcut: shortcut, contentType: contentType, page: page, perPage: perPage)
         handleData(data, isFirstPage: isFirstPage)
       }
       loadFailed = false
