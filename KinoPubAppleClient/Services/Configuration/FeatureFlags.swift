@@ -49,6 +49,23 @@ enum FeatureFlags {
   /// series actually play with it on.
   static let seriesDetailsWithoutLinks = false
 
+  /// The muted trailer that starts by itself behind the detail hero (macOS today —
+  /// iPhone is off for legibility, tvOS by the no-blur-over-video policy).
+  ///
+  /// Off means no second `AVPlayer` is ever built and no trailer stream is fetched, not
+  /// a hidden video layer. Up-to-fullscreen then has nothing to open, and the Trailer
+  /// button still plays the real thing through the system player.
+  static let heroAmbientTrailerEnabled = false
+
+  /// The artwork behind a detail page: the blurred-poster wash on iOS / macOS, and on
+  /// tvOS the full-bleed hero still with its fold material.
+  ///
+  /// Off means the page sits on the plain app background and neither the wide still nor
+  /// the blur buffer is decoded — the hero's own foreground (title, actions, poster) is
+  /// untouched. **On tvOS that is the whole picture behind the page**, so expect a bare
+  /// page there, not a subtler one.
+  static let detailAmbientBackdropEnabled = false
+
   /// Our own combined IMDb + Kinopoisk score: poster plaque, hero pill, the detail
   /// "Rating" tile, and the card Rating placement / source settings. Off — IMDb and
   /// Kinopoisk show only under their own logos meanwhile.

@@ -145,10 +145,13 @@ struct MediaItemView: View {
       // - iPhone: off (short band, chrome on top — legibility / battery).
       // - tvOS: off for now (1C) — video without scrims looked broken; Trailer button
       //   still opens the real player. Revisit when the hero pass lands.
-      // - macOS: on.
+      // - macOS: on, unless `FeatureFlags.heroAmbientTrailerEnabled` says otherwise —
+      //   the guard below is what keeps an off flag from building the player at all.
 #if os(macOS)
       .task(id: itemModel.itemLoaded ? itemModel.mediaItem.trailerURL : nil) {
-        guard itemModel.itemLoaded, let url = itemModel.mediaItem.trailerURL else { return }
+        guard FeatureFlags.heroAmbientTrailerEnabled,
+              itemModel.itemLoaded,
+              let url = itemModel.mediaItem.trailerURL else { return }
         try? await Task.sleep(for: .seconds(MediaItemHeroView.trailerLeadIn))
         guard !Task.isCancelled else { return }
         trailer.start(url: url)
@@ -454,19 +457,36 @@ struct MediaItemView: View {
 
   @ViewBuilder
   private var pageBackground: some View {
+    if FeatureFlags.detailAmbientBackdropEnabled {
 #if os(tvOS)
-    if itemModel.itemLoaded {
-      // Passing `heroPhase` itself, not `heroPhase.isHeroOnScreen` — the latter would
-      // read the value here, inside `MediaItemView.body`, and reintroduce the exact
-      // dependency `MediaItemHeroPhase` exists to avoid.
-      MediaItemHeroBackdrop(mediaItem: itemModel.mediaItem,
-                            trailer: trailer,
-                            phase: heroPhase)
-    } else {
-      ambientBackground
-    }
+      if itemModel.itemLoaded {
+        // Passing `heroPhase` itself, not `heroPhase.isHeroOnScreen` — the latter would
+        // read the value here, inside `MediaItemView.body`, and reintroduce the exact
+        // dependency `MediaItemHeroPhase` exists to avoid.
+        MediaItemHeroBackdrop(mediaItem: itemModel.mediaItem,
+                              trailer: trailer,
+                              phase: heroPhase)
+      } else {
+        ambientBackground
+      }
 #else
-    ambientBackground
+      ambientBackground
+#endif
+    } else {
+      genericBackground
+    }
+  }
+
+  /// What the page sits on with `detailAmbientBackdropEnabled` off: the app background
+  /// and nothing else — no still, no blur buffer, nothing decoded for it.
+  private var genericBackground: some View {
+    Color.KinoPub.background
+#if os(macOS)
+      // Same reason as `ambientBackground`: ignoring horizontally paints under the
+      // sidebar and makes every rail look clipped.
+      .ignoresSafeArea(edges: .top)
+#else
+      .ignoresSafeArea()
 #endif
   }
 
