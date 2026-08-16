@@ -2267,6 +2267,40 @@
         }
       }
     },
+    "Group By" : {
+      "comment" : "History list view options",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group By"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Группировка"
+          }
+        }
+      }
+    },
+    "Group By Date" : {
+      "comment" : "History list view options",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group By Date"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Группировать по дате"
+          }
+        }
+      }
+    },
     "HD" : {
       "localizations" : {
         "en" : {
@@ -2388,6 +2422,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Вид истории"
+          }
+        }
+      }
+    },
+    "History Tiles (experiment)" : {
+      "comment" : "History list view options",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History Tiles (experiment)"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Плитки истории (эксперимент)"
+          }
+        }
+      }
+    },
+    "History_Group_ByShow" : {
+      "comment" : "History list view options",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By Title"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "По тайтлу"
+          }
+        }
+      }
+    },
+    "History_Group_None" : {
+      "comment" : "History list view options",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don't Group"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не группировать"
+          }
+        }
+      }
+    },
+    "History_Section_Day" : {
+      "comment" : "History list view options",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By Day"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "По дням"
+          }
+        }
+      }
+    },
+    "History_Section_Month" : {
+      "comment" : "History list view options",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By Month"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "По месяцам"
+          }
+        }
+      }
+    },
+    "History_Section_None" : {
+      "comment" : "History list view options",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Sections"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Без разделов"
+          }
+        }
+      }
+    },
+    "History_Section_Undated" : {
+      "comment" : "History list view options",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Earlier"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ранее"
           }
         }
       }
@@ -5456,6 +5610,78 @@
     "Other" : {
 
     },
+    "Pagination_AllLoaded" : {
+      "comment" : "Pagination state shown at the end of a paginated grid or rail",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All %lld loaded"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загружено всё — %lld"
+          }
+        }
+      }
+    },
+    "Pagination_AllLoaded_Short" : {
+      "comment" : "Pagination state shown at the end of a paginated grid or rail",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "all loaded"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "это всё"
+          }
+        }
+      }
+    },
+    "Pagination_Failed" : {
+      "comment" : "Pagination state shown at the end of a paginated grid or rail",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't Load More"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось загрузить дальше"
+          }
+        }
+      }
+    },
+    "Pagination_Failed_Short" : {
+      "comment" : "Pagination state shown at the end of a paginated grid or rail",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to retry"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажми, чтобы повторить"
+          }
+        }
+      }
+    },
     "Pause to translate" : {
       "comment" : "A heading displayed above the translation interface.",
       "isCommentAutoGenerated" : true
@@ -6170,6 +6396,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Вторые субтитры"
+          }
+        }
+      }
+    },
+    "Section By" : {
+      "comment" : "History list view options",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Section By"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Разделы"
           }
         }
       }
@@ -6951,6 +7195,23 @@
       "comment" : "A toggle that enables or disables TMDB data enrichment.",
       "isCommentAutoGenerated" : true
     },
+    "Today" : {
+      "comment" : "History list view options",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сегодня"
+          }
+        }
+      }
+    },
     "Total duration" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7304,6 +7565,23 @@
         }
       }
     },
+    "View Options" : {
+      "comment" : "History list view options",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View Options"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вид"
+          }
+        }
+      }
+    },
     "votes" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7493,6 +7771,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Да"
+          }
+        }
+      }
+    },
+    "Yesterday" : {
+      "comment" : "History list view options",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yesterday"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вчера"
           }
         }
       }

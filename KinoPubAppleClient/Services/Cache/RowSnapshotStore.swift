@@ -42,7 +42,11 @@ final class RowSnapshotStore {
       ?? URL(fileURLWithPath: NSTemporaryDirectory())
     let dir = directory ?? caches.appendingPathComponent("KinoPubContentStore", isDirectory: true)
     try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-    self.fileURL = dir.appendingPathComponent("rows.json")
+    // Versioned filename. A snapshot written before `MediaCard.watchedAt` existed
+    // decodes cleanly with a nil date, which is worse than not decoding at all: the
+    // whole history list silently files itself under "Earlier" until the TTL expires.
+    // Bumping the name retires those snapshots instead of reasoning about them.
+    self.fileURL = dir.appendingPathComponent("rows-v2.json")
   }
 
   func loadAll() -> [RowKey: RowState] {

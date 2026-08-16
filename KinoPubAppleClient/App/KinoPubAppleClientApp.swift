@@ -28,7 +28,6 @@ struct KinoPubAppleClientApp: App {
   
 #if os(macOS)
   @State private var windowSettings = WindowSettings()
-  @AppStorage(HistoryCardLayout.storageKey) private var historyCardLayout: String = HistoryCardLayout.landscape.rawValue
 #endif
   
 #if os(iOS) || os(tvOS)
@@ -108,15 +107,7 @@ struct KinoPubAppleClientApp: App {
       // Harmless with classic `.tabBarOnly` (no sidebar chrome).
       CommandGroup(replacing: .sidebar) { }
       // Into the system View menu — `CommandMenu("View")` would add a second View.
-      CommandGroup(after: .toolbar) {
-        Divider()
-        Picker("History Layout", selection: $historyCardLayout) {
-          ForEach(HistoryCardLayout.allCases) { layout in
-            Text(LocalizedStringKey(layout.titleKey)).tag(layout.rawValue)
-          }
-        }
-        .pickerStyle(.inline)
-      }
+      ListArrangementCommands()
     }
 #endif
 
@@ -211,6 +202,46 @@ private struct AboutCommands: Commands {
   }
 }
 
+/// The View menu's list-arrangement items, shaped the way Finder and Notes shape
+/// theirs: named submenus holding a checked list, not a stack of pickers spilled
+/// straight into View. Disabled — not hidden — when the front screen has no list to
+/// arrange, which is what tells a user the items exist at all.
+private struct ListArrangementCommands: Commands {
+  @AppStorage(HistoryGrouping.storageKey) private var grouping: String = HistoryGrouping.none.rawValue
+  @AppStorage(HistorySectioning.storageKey) private var sectioning: String = HistorySectioning.month.rawValue
+  @FocusedValue(\.showsListArrangement) private var showsArrangement: Bool?
+
+  private var isEnabled: Bool { showsArrangement == true }
+
+  var body: some Commands {
+    CommandGroup(after: .toolbar) {
+      Divider()
+      Menu("Group By") {
+        Picker("Group By", selection: $grouping) {
+          ForEach(HistoryGrouping.allCases) { option in
+            Text(LocalizedStringKey(option.titleKey)).tag(option.rawValue)
+          }
+        }
+      .pickerStyle(.inline)
+      .labelsHidden()
+      }
+      .disabled(!isEnabled)
+
+      // Apple's own wording for this shape — Notes calls it "Group By Date".
+      Menu("Group By Date") {
+        Picker("Group By Date", selection: $sectioning) {
+          ForEach(HistorySectioning.allCases) { option in
+            Text(LocalizedStringKey(option.titleKey)).tag(option.rawValue)
+          }
+        }
+        .pickerStyle(.inline)
+        .labelsHidden()
+      }
+      .disabled(!isEnabled)
+    }
+  }
+}
+
 private struct SettingsCommands: Commands {
   @Environment(\.openWindow) private var openWindow
 
@@ -227,6 +258,7 @@ private struct SettingsCommands: Commands {
 #if DEBUG
 private struct UILabCommands: Commands {
   @Environment(\.openWindow) private var openWindow
+  @AppStorage(HistoryCardLayout.storageKey) private var historyCardLayout: String = HistoryCardLayout.landscape.rawValue
 
   var body: some Commands {
     // Window menu — next to Settings / About style utility windows.
@@ -238,6 +270,16 @@ private struct UILabCommands: Commands {
       Button("UI Lab — Adaptable Sidebar") {
         openWindow(id: UILabWindow.id, value: UILabChrome.adaptableSidebar)
       }
+      Divider()
+      // Landscape vs poster tiles in history. An experiment, not a shipped option: it
+      // is named after one screen and there is no general list/cards choice behind it
+      // yet, so it stays out of the View menu until there is.
+      Picker("History Tiles (experiment)", selection: $historyCardLayout) {
+        ForEach(HistoryCardLayout.allCases) { layout in
+          Text(LocalizedStringKey(layout.titleKey)).tag(layout.rawValue)
+        }
+      }
+      .pickerStyle(.inline)
     }
   }
 }

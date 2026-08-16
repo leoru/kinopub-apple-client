@@ -97,6 +97,12 @@ struct MainView: View {
       onLoadMore: { row, _ in
         catalog.loadMore(rowID: row.id)
       },
+      paginationProvider: { row in
+        catalog.paginationState(rowID: row.id, loadedCount: row.cards.count)
+      },
+      onRetryPagination: { row in
+        catalog.retryPagination(rowID: row.id)
+      },
       contextMenuProvider: { card, surface in
         guard !card.opensCollection else { return [] }
         return menuEntries(for: card, surface: surface, isContinueWatching: card.isLandscape)

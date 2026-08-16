@@ -31,6 +31,18 @@ final class LibrarySectionCatalog: ObservableObject {
   @Published private(set) var loadError: Error?
   /// A page past the first failed: keep what is on screen, offer an inline retry.
   @Published private(set) var paginationFailed = false
+  /// A page past the first is in flight.
+  @Published private(set) var isLoadingMore = false
+
+  /// What the grid footer should say. `.complete` needs a `pagination` to be sure —
+  /// the unpaginated sections never reach it and stay `.idle`.
+  var paginationState: PaginationState {
+    if isLoadingMore { return PaginationState(phase: .loading, loadedCount: cards.count) }
+    if paginationFailed { return PaginationState(phase: .failed, loadedCount: cards.count) }
+    guard section.isPaginated, let pagination, pagination.current >= pagination.total
+    else { return .idle }
+    return PaginationState(phase: .complete, loadedCount: cards.count)
+  }
 
   private(set) var section: LibrarySection = .watchlist
 
@@ -146,8 +158,8 @@ final class LibrarySectionCatalog: ObservableObject {
     Task { await loadPage(next) }
   }
 
-  /// Raw history *entries* per request. History is one row per play, and
-  /// `HistoryView.cards(from:)` collapses them to one card per title — so a page of 20
+  /// Raw history *entries* per request. History is one row per play, and under
+  /// `HistoryGrouping.byShow` those collapse to one card per title — so a page of 20
   /// entries can easily be three cards for someone part-way through a season. 50 keeps
   /// the grid filling in one round trip instead of three.
   ///
@@ -165,6 +177,8 @@ final class LibrarySectionCatalog: ObservableObject {
     guard !isFetchingPage else { return }
     isFetchingPage = true
     defer { isFetchingPage = false }
+    isLoadingMore = true
+    defer { isLoadingMore = false }
 
     var page = page
     var barren = 0
@@ -175,11 +189,11 @@ final class LibrarySectionCatalog: ObservableObject {
         let result = try await Self.page(page, of: section, using: contentService)
         guard section == self.section else { return }
 
-        // **The bug this fixes.** `cards(from:)` deduplicates by title *within one
-        // page*, and history repeats a title across pages for every episode watched.
         // Appending blind put duplicate ids into the grid, where `ForEach` keeps the
         // first and silently drops the rest: three requests, nothing new on screen —
-        // and, because the last card never changed, its `onAppear` kept asking.
+        // and, because the last card never changed, its `onAppear` kept asking. Still
+        // needed with grouping off: two pages can carry the same play, and ids are
+        // synthesised from the entry precisely so identical plays collide here.
         let known = Set(cards.map(\.id))
         let fresh = result.cards.filter { !known.contains($0.id) }
 
@@ -208,6 +222,7 @@ final class LibrarySectionCatalog: ObservableObject {
 
   // MARK: - Fetching
 
+
   private struct PageResult {
     var cards: [MediaCard]
     var pagination: Pagination?
@@ -230,7 +245,8 @@ final class LibrarySectionCatalog: ObservableObject {
       return PageResult(cards: items.map { card(for: $0, isSeries: false) }, pagination: nil)
     case .history:
       let data = try await service.fetchHistory(page: page, perPage: historyPerPage)
-      return PageResult(cards: HistoryView.cards(from: data.history), pagination: data.pagination)
+      return PageResult(cards: HistoryView.cards(from: data.history, grouping: HistoryGrouping.current),
+                        pagination: data.pagination)
     case .folder(let id):
       let data = try await service.fetchBookmarkItems(id: "\(id)", page: page)
       return PageResult(cards: data.items.map(MediaCard.init), pagination: data.pagination)

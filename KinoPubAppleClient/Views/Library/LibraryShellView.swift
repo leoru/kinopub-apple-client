@@ -24,6 +24,12 @@ struct LibraryShellView: View {
   @StateObject private var model: LibraryModel
   @StateObject private var catalog: LibrarySectionCatalog
   @StateObject private var cardMenu = MediaCardMenuCoordinator()
+  @AppStorage(HistoryGrouping.storageKey) private var historyGrouping: String = HistoryGrouping.none.rawValue
+  @AppStorage(HistorySectioning.storageKey) private var historySectioning: String = HistorySectioning.month.rawValue
+
+  private var sectioning: HistorySectioning {
+    HistorySectioning(rawValue: historySectioning) ?? .month
+  }
 
   init(model: @autoclosure @escaping () -> LibraryModel,
        catalog: @autoclosure @escaping () -> LibrarySectionCatalog) {
@@ -57,11 +63,50 @@ struct LibraryShellView: View {
       await model.load()
     }
     .task { await cardMenu.refreshFolders() }
+    .task(id: historyGrouping) {
+      guard model.selection == .history, catalog.isLoaded else { return }
+      await catalog.refresh()
+    }
     // Section switches are cheap when the cache is warm — `activate` paints from the
     // store first and only refetches past the TTL.
     .task(id: model.selection) {
       await catalog.activate(model.selection)
     }
+    // Only Recently Watched has anything to arrange, so the View menu's items go dim
+    // on every other section rather than staying live and doing nothing.
+    .focusedSceneValue(\.showsListArrangement, model.selection == .history)
+#if os(iOS)
+    // Only Recently Watched has anything to arrange, so the control only appears there.
+    // macOS reaches the same two options through the View menu.
+    .toolbar {
+      if model.selection == .history {
+        ToolbarItem(placement: .topBarTrailing) {
+          Menu {
+          Menu {
+              Picker("Group By", selection: $historyGrouping) {
+                ForEach(HistoryGrouping.allCases) { option in
+                  Text(LocalizedStringKey(option.titleKey)).tag(option.rawValue)
+                }
+              }
+            } label: {
+              Label("Group By", systemImage: "rectangle.stack")
+            }
+            Menu {
+              Picker("Group By Date", selection: $historySectioning) {
+                ForEach(HistorySectioning.allCases) { option in
+                  Text(LocalizedStringKey(option.titleKey)).tag(option.rawValue)
+                }
+              }
+            } label: {
+              Label("Group By Date", systemImage: "calendar")
+            }
+          } label: {
+            Label("View Options", systemImage: "line.3.horizontal.decrease.circle")
+          }
+        }
+      }
+    }
+#endif
     .alert("New Bookmark", isPresented: $model.isCreatingFolder) {
       TextField("Folder name", text: $model.newFolderName)
       Button("Create") { model.confirmNewFolder() }
@@ -227,7 +272,10 @@ struct LibraryShellView: View {
             openURL: { openURL($0) }
           )
         },
-        paginationError: catalog.paginationFailed,
+        sections: model.selection == .history
+          ? sectioning.sections(for: catalog.cards)
+          : [],
+        pagination: catalog.paginationState,
         onRetryPagination: { catalog.retryPagination() }
       )
     }

@@ -46,11 +46,33 @@ class HomeCatalog: ObservableObject {
     var loaded: Int
     var total: Int
     var isLoading = false
+    var didFail = false
 
     var hasMore: Bool { loaded < total }
   }
 
-  private var cursors: [String: PageCursor] = [:]
+  /// `@Published` so a shelf redraws its tail tile when paging starts, fails or runs
+  /// out — the cursor was private state until it had something to say on screen.
+  @Published private var cursors: [String: PageCursor] = [:]
+
+  /// What the shelf for `rowID` should be showing at its trailing edge.
+  func paginationState(rowID: String, loadedCount: Int) -> PaginationState {
+    guard rowID != Self.continueWatchingRowID, let cursor = cursors[rowID] else {
+      // Continue Watching is not paginated, so it is never mid-load and never "all of
+      // it" — it is simply a list.
+      return .idle
+    }
+    if cursor.isLoading { return PaginationState(phase: .loading, loadedCount: loadedCount) }
+    if cursor.didFail { return PaginationState(phase: .failed, loadedCount: loadedCount) }
+    if !cursor.hasMore { return PaginationState(phase: .complete, loadedCount: loadedCount) }
+    return .idle
+  }
+
+  /// The tail tile's retry. Clears the failure so `loadMore` stops declining.
+  func retryPagination(rowID: String) {
+    cursors[rowID]?.didFail = false
+    loadMore(rowID: rowID)
+  }
 
   /// Empty until the first fetch lands — the screen shows a spinner rather than
   /// stand-in artwork, the way the Apple TV app waits.
@@ -155,7 +177,8 @@ class HomeCatalog: ObservableObject {
   /// what the user touched last. "Page 2" of that has no meaning on the server.
   func loadMore(rowID: String) {
     guard rowID != Self.continueWatchingRowID else { return }
-    guard var cursor = cursors[rowID], cursor.hasMore, !cursor.isLoading else { return }
+    guard var cursor = cursors[rowID], cursor.hasMore, !cursor.isLoading, !cursor.didFail
+    else { return }
 
     cursor.isLoading = true
     cursors[rowID] = cursor
@@ -174,10 +197,13 @@ class HomeCatalog: ObservableObject {
         }
         self.store.appendCards(cards, for: try self.storeKey(forRow: rowID))
         self.cursors[rowID]?.loaded = next
+        self.cursors[rowID]?.didFail = false
         self.assembleRows()
       } catch {
-        // Leave the cursor where it was — the next scroll to the end retries. A failed
-        // page must not look like the end of the catalogue.
+        // The cursor stays where it was, so a retry asks for the same page again. It is
+        // flagged rather than silently retried on the next scroll: a failed page that
+        // looks like the end of the catalogue is the thing being fixed here.
+        self.cursors[rowID]?.didFail = true
         Logger.app.debug("HomeCatalog: page \(next) of \(rowID) failed: \(error)")
       }
     }

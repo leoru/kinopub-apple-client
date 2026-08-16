@@ -145,7 +145,9 @@ class PersonalLibraryCatalog: ObservableObject {
 
   private func fetchHistoryCards() async throws -> [MediaCard] {
     let history = try await contentService.fetchHistory(page: nil, perPage: 20).history
-    return HistoryView.cards(from: history)
+    // Always collapsed here: this is a preview shelf, and twenty cards of the same
+    // series in a row would crowd out every other title the user has watched.
+    return HistoryView.cards(from: history, grouping: .byShow)
   }
 
   private func fetchFolders() async -> [Bookmark] {

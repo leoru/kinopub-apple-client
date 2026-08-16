@@ -33,6 +33,11 @@ public struct MediaCard: Identifiable, Hashable, Codable {
   public let posterURL: String
   public let title: String
   public let subtitle: String?
+  /// When this was watched, for history surfaces. **On the card, not beside it**: the
+  /// card is what `ContentStore` snapshots, so a date kept in a parallel map is lost
+  /// the moment page 1 is served from cache — which is what put a warm-cache history
+  /// list entirely into the "Earlier" section.
+  public let watchedAt: Date?
   /// External catalogue scores. Prefer this over pulling fields off `MediaItem`.
   public let scores: MediaScores
 
@@ -137,6 +142,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
               posterURL: String,
               title: String,
               subtitle: String? = nil,
+              watchedAt: Date? = nil,
               scores: MediaScores? = nil,
               imdbRating: Double? = nil,
               imdbVotes: Int? = nil,
@@ -175,6 +181,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     self.posterURL = posterURL
     self.title = title
     self.subtitle = subtitle
+    self.watchedAt = watchedAt
     self.scores = scores ?? MediaScores(
       imdb: imdbRating,
       imdbVotes: imdbVotes,
@@ -218,6 +225,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     posterURL = try c.decode(String.self, forKey: .posterURL)
     title = try c.decode(String.self, forKey: .title)
     subtitle = try c.decodeIfPresent(String.self, forKey: .subtitle)
+    watchedAt = try c.decodeIfPresent(Date.self, forKey: .watchedAt)
     scores = MediaScores(
       imdb: try c.decodeIfPresent(Double.self, forKey: .imdbRating),
       imdbVotes: try c.decodeIfPresent(Int.self, forKey: .imdbVotes),
@@ -263,6 +271,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     try c.encode(posterURL, forKey: .posterURL)
     try c.encode(title, forKey: .title)
     try c.encodeIfPresent(subtitle, forKey: .subtitle)
+    try c.encodeIfPresent(watchedAt, forKey: .watchedAt)
     try c.encodeIfPresent(scores.imdb, forKey: .imdbRating)
     try c.encodeIfPresent(scores.imdbVotes, forKey: .imdbVotes)
     try c.encodeIfPresent(scores.kinopoisk, forKey: .kinopoiskRating)
@@ -299,7 +308,7 @@ public struct MediaCard: Identifiable, Hashable, Codable {
   }
 
   private enum CodingKeys: String, CodingKey {
-    case id, posterURL, title, subtitle, imdbRating, imdbVotes, kinopoiskRating, kinopoiskVotes
+    case id, posterURL, title, subtitle, watchedAt, imdbRating, imdbVotes, kinopoiskRating, kinopoiskVotes
     case progress, badge, backdropURL, metaLine, overview
     case landscapeImageURL, overlayLabel, itemID, video, season, mediaID
     case isWatched, isSeries, isInHistory, isInWatchlist, is4K, isHDR
@@ -816,6 +825,17 @@ public struct MediaCardView: View {
   private var captionBlock: some View {
     VStack(alignment: .center, spacing: 4) {
       titleRow
+
+      // History's "when did I watch this" line. Shown on landscape cards too, which
+      // the original-title rule below deliberately excludes — a history row without a
+      // date is the one thing this caption exists to say.
+      if let watchedAt = card.watchedAt {
+        Text(watchedAt.formatted(date: .abbreviated, time: .shortened))
+          .font(TypeScale.cardMeta)
+          .foregroundStyle(Color.KinoPub.subtitle)
+          .lineLimit(1)
+          .frame(maxWidth: .infinity, alignment: .center)
+      }
 
       // Original title is poster-only — landscape captions stay a single title line.
       // Collection covers reuse `subtitle` for the updated date; always show it

@@ -13,7 +13,11 @@ public struct MediaCardsListView: View {
   public var onLoadMoreContent: (MediaCard) -> Void
   public var navigationLinkProvider: (MediaCard) -> any Hashable
   public var contextMenuProvider: ((MediaCard) -> [MediaCardContextEntry])?
-  private let paginationError: Bool
+  /// Loading / failed / complete for the page after the last one shown.
+  private let pagination: PaginationState
+  /// Optional headed groups. Empty means one flat grid — the shape every caller had
+  /// before, and still the default.
+  private let sections: [MediaCardSection]
   private let onRetryPagination: (() -> Void)?
 
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -47,13 +51,15 @@ public struct MediaCardsListView: View {
               onLoadMoreContent: @escaping (MediaCard) -> Void,
               navigationLinkProvider: @escaping (MediaCard) -> any Hashable,
               contextMenuProvider: ((MediaCard) -> [MediaCardContextEntry])? = nil,
-              paginationError: Bool = false,
+              sections: [MediaCardSection] = [],
+              pagination: PaginationState = .idle,
               onRetryPagination: (() -> Void)? = nil) {
     self.cards = cards
     self.onLoadMoreContent = onLoadMoreContent
     self.navigationLinkProvider = navigationLinkProvider
     self.contextMenuProvider = contextMenuProvider
-    self.paginationError = paginationError
+    self.sections = sections
+    self.pagination = pagination
     self.onRetryPagination = onRetryPagination
   }
 
@@ -87,9 +93,7 @@ public struct MediaCardsListView: View {
       )
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-      if paginationError, let onRetryPagination {
-        paginationRetry(onRetryPagination)
-      }
+      PaginationFooter(state: pagination, onRetry: onRetryPagination)
     }
     .onGeometryChange(for: CGFloat.self) { proxy in
       proxy.size.width
@@ -99,32 +103,47 @@ public struct MediaCardsListView: View {
   }
 #endif
 
+  private func grid(of cards: [MediaCard]) -> some View {
+    LazyVGrid(columns: gridColumns, spacing: metrics.gutter) {
+      ForEach(cards) { card in
+        NavigationLink(value: navigationLinkProvider(card)) {
+          MediaCardView(card: card, caption: Self.cardCaption)
+            .onAppear { onLoadMoreContent(card) }
+        }
+#if os(tvOS)
+        .buttonStyle(.borderless)
+        .focused($focusedItemID, equals: card.id)
+#else
+        .buttonStyle(MediaCardButtonStyle())
+#endif
+        .modifier(MediaCardContextMenuModifier(
+          isEnabled: contextMenuProvider != nil,
+          entriesProvider: { contextMenuProvider?(card) ?? [] }
+        ))
+      }
+    }
+  }
+
   private var swiftUIGrid: some View {
     ScrollView {
-      LazyVGrid(columns: gridColumns, spacing: metrics.gutter) {
-        ForEach(cards) { card in
-          NavigationLink(value: navigationLinkProvider(card)) {
-            MediaCardView(card: card, caption: Self.cardCaption)
-              .onAppear { onLoadMoreContent(card) }
+      if sections.isEmpty {
+        grid(of: cards)
+          .safeAreaPadding(.horizontal, metrics.inset)
+          .padding(.vertical, Metrics.focusPadding)
+      } else {
+        // One `LazyVGrid` per section rather than pinned headers over a single grid:
+        // a section header inside a grid spans one column, not the row.
+        LazyVStack(alignment: .leading, spacing: metrics.gutter) {
+          ForEach(sections) { section in
+            SectionHeader(title: section.title, leadingInset: metrics.inset)
+            grid(of: section.cards)
+              .safeAreaPadding(.horizontal, metrics.inset)
           }
-#if os(tvOS)
-          .buttonStyle(.borderless)
-          .focused($focusedItemID, equals: card.id)
-#else
-          .buttonStyle(MediaCardButtonStyle())
-#endif
-          .modifier(MediaCardContextMenuModifier(
-            isEnabled: contextMenuProvider != nil,
-            entriesProvider: { contextMenuProvider?(card) ?? [] }
-          ))
         }
+        .padding(.vertical, Metrics.focusPadding)
       }
-      .safeAreaPadding(.horizontal, metrics.inset)
-      .padding(.vertical, Metrics.focusPadding)
 
-      if paginationError, let onRetryPagination {
-        paginationRetry(onRetryPagination)
-      }
+      PaginationFooter(state: pagination, onRetry: onRetryPagination)
     }
     .onGeometryChange(for: CGFloat.self) { proxy in
       proxy.size.width
@@ -142,19 +161,21 @@ public struct MediaCardsListView: View {
 #endif
   }
 
-  @ViewBuilder
-  private func paginationRetry(_ action: @escaping () -> Void) -> some View {
-    VStack(spacing: 12) {
-      Text("Couldn't Load More")
-        .font(TypeScale.cardSubtitle)
-        .foregroundStyle(Color.KinoPub.subtitle)
-      Button("Try Again", action: action)
-#if !os(tvOS)
-        .buttonStyle(.glass)
-        .controlSize(.large)
-#endif
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 24)
+}
+
+/// One headed group in a card grid — history broken up by day or month.
+///
+/// The heading is a plain string, already formatted: the package has no business
+/// knowing this app's date rules, the same reason `MediaCard+Episode` takes its
+/// `dateLabel` pre-formatted.
+public struct MediaCardSection: Identifiable {
+  public let id: String
+  public let title: String
+  public let cards: [MediaCard]
+
+  public init(id: String, title: String, cards: [MediaCard]) {
+    self.id = id
+    self.title = title
+    self.cards = cards
   }
 }
