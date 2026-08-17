@@ -248,6 +248,10 @@ public final class TMDBSource: MetadataSource, @unchecked Sendable {
     meta.homepage = details.homepage.flatMap { $0.isEmpty ? nil : URL(string: $0) }
     meta.budget = (details.budget ?? 0) > 0 ? details.budget : nil
     meta.revenue = (details.revenue ?? 0) > 0 ? details.revenue : nil
+    // Zero means "nobody voted" here as it does everywhere else in this app, not a
+    // title the audience scored 0.0.
+    meta.tmdbRating = (details.voteAverage ?? 0) > 0 ? details.voteAverage : nil
+    meta.tmdbVotes = (details.voteCount ?? 0) > 0 ? details.voteCount : nil
 
     // TV shows report their distribution service (HBO, Netflix...) as `networks`,
     // not `production_companies` — that's who made it, not who's streaming it,

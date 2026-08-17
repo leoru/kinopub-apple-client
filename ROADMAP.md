@@ -328,7 +328,13 @@ enrichment settles, assuming a logo will load, and paints text only when there i
 image fails.
 
 - [x] TMDB cast photos / characters / logos / air dates · Kinopoisk awards / facts / stills / RU names
-- [ ] Reviews UI section (data may already be on `TitleMetadata`)
+- [x] Ratings **and** Reviews as one `BlockCard` rail + full-list page, iOS/macOS, running beside
+      the shipped tile row until one wins. Sheet:
+      [docs/providers/kinopoisk-proxy.md](docs/providers/kinopoisk-proxy.md). Reviews are still page 1 of N
+- [x] Aggregate weighs IMDb + Kinopoisk + TMDB + kino.pub thumbs, by turnout
+- [ ] Settings: tick which rating sources count and weigh them (`RatingWeights` is in place and
+      defaults to all-on, equal — only the pane and its persistence are missing)
+- [ ] The rest of the detail page onto `BlockCard` — facts, photos, information columns (not tvOS)
 - [ ] Surface TMDB tagline / box office / company logos; Kinopoisk premiere dates
 - [ ] Deeper person-bio enrichment (deferred id strategy)
 - [ ] Decide the recommendations approach — Trakt scrobble, local taste, editorial-only, or none

@@ -7,6 +7,7 @@
 
 import Foundation
 import KinoPubBackend
+import KinoPubMetadata
 
 /// Single destination vocabulary for every tab stack. Stacks stay per-tab; the
 /// cases and `Equatable`/`Hashable` rules are shared so deep links and Back titles
@@ -30,6 +31,8 @@ enum Route: Hashable {
   /// paginated grid — the shelf's "see all". `title` carries the already-localized
   /// row name so the pushed page and the row header read identically.
   case shortcutItems(MediaShortcut, MediaType, title: String)
+  /// A detail page's Ratings and Reviews block, opened in full.
+  case ratingsAndReviews(RatingsAndReviews)
 
   func hash(into hasher: inout Hasher) {
     switch self {
@@ -69,6 +72,9 @@ enum Route: Hashable {
       hasher.combine(shortcut)
       hasher.combine(type)
       hasher.combine(title)
+    case .ratingsAndReviews(let payload):
+      hasher.combine(12)
+      hasher.combine(payload)
     }
   }
 
@@ -98,9 +104,51 @@ enum Route: Hashable {
       return a == b
     case (.shortcutItems(let a, let at, let atitle), .shortcutItems(let b, let bt, let btitle)):
       return a == b && at == bt && atitle == btitle
+    case (.ratingsAndReviews(let a), .ratingsAndReviews(let b)):
+      return a == b
     default:
       return false
     }
+  }
+}
+
+/// Everything the Ratings and Reviews page needs, already loaded.
+///
+/// A payload struct rather than seven associated values, and **not** `TitleMetadata`
+/// itself: the route has to be `Hashable`, and making the whole merged-metadata type
+/// conform would drag a dozen models into it that have no reason to be comparable.
+/// Only the fields the page renders travel.
+struct RatingsAndReviews: Hashable {
+  let item: MediaItem
+  let reviews: [Review]
+  let summary: ReviewsSummary?
+  let tmdbRating: Double?
+  let tmdbVotes: Int?
+  let likeCount: Int
+  let dislikeCount: Int
+
+  init(item: MediaItem,
+       metadata: TitleMetadata,
+       likeCount: Int,
+       dislikeCount: Int) {
+    self.item = item
+    self.reviews = metadata.reviews
+    self.summary = metadata.reviewsSummary
+    self.tmdbRating = metadata.tmdbRating
+    self.tmdbVotes = metadata.tmdbVotes
+    self.likeCount = likeCount
+    self.dislikeCount = dislikeCount
+  }
+
+  /// The slice of `TitleMetadata` the ratings card and review cards read, rebuilt on
+  /// the far side of the route.
+  var metadata: TitleMetadata {
+    var meta = TitleMetadata()
+    meta.reviews = reviews
+    meta.reviewsSummary = summary
+    meta.tmdbRating = tmdbRating
+    meta.tmdbVotes = tmdbVotes
+    return meta
   }
 }
 

@@ -13,49 +13,152 @@ import UIKit
 import AppKit
 #endif
 
+// MARK: - Plural forms
+
+/// Which plural form the running locale wants for `count` — **0 = one, 1 = few,
+/// 2 = many**. RU/UK/BE and LT have three, English two.
+///
+/// One implementation, because the season/episode units and the review count were
+/// about to hold two copies of the same rule.
+func localizedPluralForm(_ count: Int) -> Int {
+  let lang = Locale.current.language.languageCode?.identifier ?? "en"
+  let mod100 = count % 100
+  let mod10 = count % 10
+  if ["ru", "uk", "be"].contains(lang) {
+    if (11...14).contains(mod100) { return 2 }
+    if mod10 == 1 { return 0 }
+    if (2...4).contains(mod10) { return 1 }
+    return 2
+  }
+  if lang == "lt" {
+    if mod10 == 1 && mod100 != 11 { return 0 }
+    if (2...9).contains(mod10) && !(10...19).contains(mod100) { return 1 }
+    return 2
+  }
+  return count == 1 ? 0 : 2
+}
+
+/// "53 рецензии" / "53 reviews" — the declined unit, not a capitalised section title
+/// glued to a number.
+func localizedReviewsUnit(_ count: Int) -> String {
+  switch localizedPluralForm(count) {
+  case 0: return "MediaItem_UnitReviewOne".localized
+  case 1: return "MediaItem_UnitReviewFew".localized
+  default: return "MediaItem_UnitReviewMany".localized
+  }
+}
+
+/// Real, localized warnings a title carries — no invented advisory copy (the mockup
+/// this page's badge cards were sketched from writes a sentence per film; kino.pub
+/// sends two flags), only what the payload actually says. Shared so the info table and
+/// the Parental Advisory card below cannot list these two differently.
+/// System preferred languages plus the app's second-subtitle choice — the set the
+/// Languages card and the info table's Languages column both keep expanded by
+/// default. One function so the two cannot rank a language differently.
+func mediaItemPreferredLanguages() -> [String] {
+  var languages = Locale.preferredLanguages
+  let second = SubtitlePreferences.secondSubtitleLanguage
+  if !languages.contains(where: { SubtitleTracks.matches(language: $0, second) }) {
+    languages.append(second)
+  }
+  return languages
+}
+
+func mediaItemAdvisories(_ mediaItem: MediaItem) -> [String] {
+  var result: [String] = []
+  if mediaItem.advert { result.append("MediaItem_ContainsAds".localized) }
+  if mediaItem.poorQuality { result.append("MediaItem_PoorQuality".localized) }
+  return result
+}
+
 // MARK: - Ratings
 
-/// Score tiles: our aggregate first, then one per source, then internal views.
-/// Pointer platforms open the source page when a real URL exists; aggregate and
-/// views tiles are display-only.
-struct MediaItemRatingsSection: View {
+extension MediaScores {
+  /// Every input a **detail page** has: kino.pub's own payload (IMDb, Kinopoisk),
+  /// TMDB's audience score from enrichment, and the community thumbs from the vote
+  /// endpoint. Cards elsewhere only ever have the first two — see `MediaScores`.
+  static func detail(_ item: MediaItem,
+                     metadata: TitleMetadata,
+                     likeCount: Int,
+                     dislikeCount: Int) -> MediaScores {
+    MediaScores(item).adding(tmdb: metadata.tmdbRating,
+                             tmdbVotes: metadata.tmdbVotes,
+                             kinopubLikes: likeCount,
+                             kinopubDislikes: dislikeCount)
+  }
+}
 
-  let mediaItem: MediaItem
-  /// Hidden while the hero/trailer owns the page — same chrome gate as season tabs,
-  /// so "Ratings" doesn't caption the wide art peeking under the hero.
-  var showsHeader: Bool = true
-  var onSectionFocused: (() -> Void)? = nil
-  /// tvOS: when non-nil, the first tile accepts `.content` page entry focus.
-  var pageEntryFocus: FocusState<MediaItemFocusTarget?>.Binding? = nil
-  @Environment(\.openURL) private var openURL
+/// What counts as a rating source, in one place: the tvOS tile row and the
+/// pointer-platform ratings card are two renderings of the same list, and "a source
+/// earns a tile" is a rule neither of them gets to hold privately.
+enum RatingSources {
 
-  fileprivate struct Score: Identifiable {
+  struct Score: Identifiable {
     let id: String
     let logo: MediaScoreLogo.Source
     /// Nil when the source has voters but has not published a score yet — Kinopoisk
     /// counts votes long before it prints a number.
     let value: Double?
     let votes: Int?
+    /// What the tile prints. Not derived from `value` in the view, because kino.pub's
+    /// score is a percentage to read and a 0…10 number to average.
+    let display: String
+    /// Turnout beside the score, short enough to sit in a chip: `1.4K`, `24.5K`.
+    var votesCompact: String? {
+      guard let votes, votes > 0 else { return nil }
+      return votes.formatted(.number.notation(.compactName))
+    }
+    /// The same count in full, for a row that has the width for it.
+    var votesGrouped: String? {
+      guard let votes, votes > 0 else { return nil }
+      return votes.formatted(.number.grouping(.automatic))
+    }
+    /// The source's own page. Nil on tvOS — there is no browser to hand it to — and
+    /// nil for any source we hold no id for.
+    let url: URL?
   }
 
-  private var aggregate: Rating? {
-    guard FeatureFlags.combinedRatingEnabled else { return nil }
-    return MediaScores(mediaItem).aggregate
-  }
-
-  private var aggregateVotes: Int {
-    MediaScores(mediaItem).totalVotes
-  }
-
-  private var scores: [Score] {
-    let bundle = MediaScores(mediaItem)
+  /// Every source that has something to say about this title, **ordered by vote count,
+  /// biggest audience first.** The order used to be the order the cases were written
+  /// in, which put a source with 300 voters ahead of one with 300 000 on every title.
+  ///
+  /// The same four that feed the aggregate — a tile the user can see and a number the
+  /// user cannot audit must not come from two different lists.
+  static func scores(for mediaItem: MediaItem,
+                     metadata: TitleMetadata = TitleMetadata(),
+                     likeCount: Int = 0,
+                     dislikeCount: Int = 0) -> [Score] {
+    let bundle = MediaScores.detail(mediaItem,
+                                    metadata: metadata,
+                                    likeCount: likeCount,
+                                    dislikeCount: dislikeCount)
     return [
-      Self.score(id: "IMDb", logo: .imdb, value: bundle.imdb, votes: bundle.imdbVotes),
-      Self.score(id: "Кинопоиск",
-                 logo: .kinopoisk,
-                 value: bundle.kinopoisk,
-                 votes: bundle.kinopoiskVotes)
-    ].compactMap { $0 }
+      score(id: "IMDb",
+            logo: .imdb,
+            value: bundle.imdbScore,
+            votes: bundle.imdbVotes,
+            url: imdbURL(mediaItem)),
+      score(id: "Кинопоиск",
+            logo: .kinopoisk,
+            value: bundle.kinopoiskScore,
+            votes: bundle.kinopoiskVotes,
+            url: kinopoiskURL(mediaItem)),
+      score(id: "TMDB",
+            logo: .tmdb,
+            value: bundle.tmdbScore,
+            votes: bundle.tmdbVotes,
+            url: tmdbURL(mediaItem, metadata: metadata)),
+      // Printed as the share that liked it, which is what the thumbs mean — the 0…10
+      // form exists so it can be averaged with the rest, not so it can be read.
+      score(id: "KinoPub",
+            logo: .kinopub,
+            value: bundle.kinopubScore,
+            votes: bundle.kinopubVotes,
+            url: nil,
+            display: bundle.kinopubScore.map { "\(Int(($0 * 10).rounded()))%" })
+    ]
+      .compactMap { $0 }
+      .sorted { ($0.votes ?? 0) > ($1.votes ?? 0) }
   }
 
   /// A source earns a tile once it has *either* a score or voters. Votes without a
@@ -64,11 +167,90 @@ struct MediaItemRatingsSection: View {
   private static func score(id: String,
                             logo: MediaScoreLogo.Source,
                             value: Double?,
-                            votes: Int?) -> Score? {
+                            votes: Int?,
+                            url: URL?,
+                            display: String? = nil) -> Score? {
     let isRated = (value ?? 0) > 0
     let hasVoters = (votes ?? 0) > 0
     guard isRated || hasVoters else { return nil }
-    return Score(id: id, logo: logo, value: isRated ? value : nil, votes: votes)
+    let printed = display ?? value.map { String(format: "%.1f", $0) } ?? "—"
+    return Score(id: id,
+                 logo: logo,
+                 value: isRated ? value : nil,
+                 votes: votes,
+                 display: isRated ? printed : "—",
+                 url: url)
+  }
+
+#if os(tvOS)
+  private static func imdbURL(_ mediaItem: MediaItem) -> URL? { nil }
+  private static func kinopoiskURL(_ mediaItem: MediaItem) -> URL? { nil }
+  private static func tmdbURL(_ mediaItem: MediaItem, metadata: TitleMetadata) -> URL? { nil }
+#else
+  private static func imdbURL(_ mediaItem: MediaItem) -> URL? {
+    guard let id = mediaItem.imdb, id > 0 else { return nil }
+    return URL(string: "https://www.imdb.com/title/tt\(String(format: "%07d", id))/")
+  }
+
+  private static func kinopoiskURL(_ mediaItem: MediaItem) -> URL? {
+    guard let id = mediaItem.kinopoisk, id > 0 else { return nil }
+    let kind = mediaItem.isSeries ? "series" : "film"
+    return URL(string: "https://www.kinopoisk.ru/\(kind)/\(id)/")
+  }
+
+  private static func tmdbURL(_ mediaItem: MediaItem, metadata: TitleMetadata) -> URL? {
+    guard let id = metadata.tmdbId, id > 0 else { return nil }
+    let kind = mediaItem.isSeries ? "tv" : "movie"
+    return URL(string: "https://www.themoviedb.org/\(kind)/\(id)")
+  }
+#endif
+}
+
+/// Score tiles: our aggregate first, then one per source, then internal views.
+/// Pointer platforms open the source page when a real URL exists; aggregate and
+/// views tiles are display-only.
+///
+/// **The shipped, validated row — on every platform.** The ratings card inside
+/// `MediaItemRatingsAndReviewsSection` is the experiment running beside it, not its
+/// replacement; this one goes when that one wins, and not a moment earlier.
+struct MediaItemRatingsSection: View {
+
+  let mediaItem: MediaItem
+  /// Carries TMDB's audience score, which is not on the kino.pub payload.
+  var externalMetadata: TitleMetadata = TitleMetadata()
+  /// The community thumbs — kino.pub's own rating, and one of the four the aggregate
+  /// weighs.
+  var likeCount: Int = 0
+  var dislikeCount: Int = 0
+  /// Hidden while the hero/trailer owns the page — same chrome gate as season tabs,
+  /// so "Ratings" doesn't caption the wide art peeking under the hero.
+  var showsHeader: Bool = true
+  var onSectionFocused: (() -> Void)? = nil
+  /// tvOS: when non-nil, the first tile accepts `.content` page entry focus.
+  var pageEntryFocus: FocusState<MediaItemFocusTarget?>.Binding? = nil
+  @Environment(\.openURL) private var openURL
+
+  private var bundle: MediaScores {
+    MediaScores.detail(mediaItem,
+                       metadata: externalMetadata,
+                       likeCount: likeCount,
+                       dislikeCount: dislikeCount)
+  }
+
+  private var aggregate: Rating? {
+    guard FeatureFlags.combinedRatingEnabled else { return nil }
+    return bundle.aggregate
+  }
+
+  private var aggregateVotes: Int {
+    bundle.totalVotes
+  }
+
+  private var scores: [RatingSources.Score] {
+    RatingSources.scores(for: mediaItem,
+                         metadata: externalMetadata,
+                         likeCount: likeCount,
+                         dislikeCount: dislikeCount)
   }
 
   private var hasContent: Bool {
@@ -96,7 +278,7 @@ struct MediaItemRatingsSection: View {
             }
             ForEach(Array(scores.enumerated()), id: \.element.id) { index, score in
               RatingTile(score: score,
-                         url: scoreURL(score),
+                         url: score.url,
                          openURL: openURL,
                          onSectionFocused: onSectionFocused,
                          pageEntryFocus: aggregate == nil && index == 0 ? pageEntryFocus : nil)
@@ -122,22 +304,6 @@ struct MediaItemRatingsSection: View {
       }
       .animation(.easeOut(duration: 0.35), value: showsHeader)
     }
-  }
-
-  private func scoreURL(_ score: Score) -> URL? {
-#if os(tvOS)
-    return nil
-#else
-    switch score.logo {
-    case .imdb:
-      guard let id = mediaItem.imdb, id > 0 else { return nil }
-      return URL(string: "https://www.imdb.com/title/tt\(String(format: "%07d", id))/")
-    case .kinopoisk:
-      guard let id = mediaItem.kinopoisk, id > 0 else { return nil }
-      let kind = mediaItem.isSeries ? "series" : "film"
-      return URL(string: "https://www.kinopoisk.ru/\(kind)/\(id)/")
-    }
-#endif
   }
 
 #if os(tvOS)
@@ -215,7 +381,7 @@ private struct AggregateRatingTile: View {
 }
 
 private struct RatingTile: View {
-  let score: MediaItemRatingsSection.Score
+  let score: RatingSources.Score
   let url: URL?
   let openURL: OpenURLAction
   var onSectionFocused: (() -> Void)? = nil
@@ -242,10 +408,9 @@ private struct RatingTile: View {
 
   private var tileContent: some View {
     HStack(alignment: .center, spacing: 10) {
-      MediaScoreLogo(score.logo, height: MediaItemRatingsSection.iconSize, style: .color)
-        .frame(width: MediaItemRatingsSection.iconSize, height: MediaItemRatingsSection.iconSize)
+      MediaScoreLogo(score.logo, height: MediaItemRatingsSection.iconSize, style: .compact)
 
-      Text(score.value.map { String(format: "%.1f", $0) } ?? "—")
+      Text(score.display)
         .font(MediaItemRatingsSection.valueFont)
         // .monospacedDigit()
         .foregroundStyle(Color.KinoPub.subtitle)
@@ -1052,6 +1217,9 @@ struct MediaItemCommunityVoteSection: View {
 
 // MARK: - Facts
 
+/// Same shape as `MediaItemReviewsSection`: a horizontal `BlockRail` of `BlockCard`s.
+/// Facts have no headline, author or date to lead with — the fact *is* the body — so
+/// each card is `FillingText` alone, taking whatever height the rail gives it.
 struct MediaItemFactsSection: View {
   let facts: [Fact]
   var onSectionFocused: (() -> Void)? = nil
@@ -1060,129 +1228,1122 @@ struct MediaItemFactsSection: View {
     if !facts.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
         MediaItemSectionHeader("Facts")
-        VStack(alignment: .leading, spacing: 12) {
+        BlockRail(height: BlockMetrics.textCardHeight,
+                  inset: MediaItemLayout.horizontalInset) {
           ForEach(facts) { fact in
-            FactRow(fact: fact, onSectionFocused: onSectionFocused)
+            FactCard(fact: fact, onSectionFocused: onSectionFocused)
           }
         }
-        .padding(.horizontal, MediaItemLayout.horizontalInset)
       }
     }
   }
+}
+
+/// One fact or goof. A spoiler card starts as its own reveal control — `BlockCard`'s
+/// `.interactive` kind, the same "whole card is the control" pattern the ratings and
+/// review cards use — and becomes a plain `.flat` card once tapped, in place.
+private struct FactCard: View {
+  let fact: Fact
+  var onSectionFocused: (() -> Void)? = nil
+  @State private var isRevealed = false
+
+  private var isHidden: Bool { fact.isSpoiler && !isRevealed }
+
+  private var kind: BlockCardKind {
+    isHidden ? .interactive(action: { isRevealed = true }) : .flat
+  }
+
+  var body: some View {
+    BlockCard(kind, width: BlockMetrics.textCardWidth, fillsHeight: true) {
+      VStack(alignment: .leading, spacing: 6) {
+        if fact.isSpoiler {
+          Label("MediaItem_FactSpoiler", systemImage: "eye.slash")
+            .font(TypeScale.detailBody.weight(.semibold))
+            .foregroundStyle(.secondary)
+        }
+        if isHidden {
+          Spacer(minLength: 0)
+          Text("Tap to reveal spoiler")
+            .font(TypeScale.detailBody)
+            .foregroundStyle(.secondary)
+          Spacer(minLength: 0)
+        } else {
+          FillingText(fact.text, font: TypeScale.detailBody)
+            .foregroundStyle(Color.KinoPub.text)
+        }
+      }
+    }
+#if os(tvOS)
+    .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+  }
+}
+
+// MARK: - Ratings and reviews
+
+/// **One block section for both.** What a title scored and what people wrote about it
+/// are the same question asked twice, so they are one rail: the ratings card leads,
+/// then the review tally, then the reviews themselves — the App Store's shape.
+///
+/// This replaces the standalone `MediaItemRatingsSection` row on the pointer
+/// platforms; that row survives for tvOS, where individually focusable tiles beat one
+/// card the remote cannot step into.
+///
+/// The rail is capped rather than complete on purpose — a card here is a *preview* of
+/// a review, and the page behind the header is where you read one. The cap is also
+/// what the source hands us in one page (`ReviewsSummary.total` is usually larger),
+/// so the tally card and the card count legitimately disagree.
+struct MediaItemRatingsAndReviewsSection: View {
+  let mediaItem: MediaItem
+  var externalMetadata: TitleMetadata = TitleMetadata()
+  var summary: ReviewsSummary? = nil
+  /// kino.pub's own score in this version — the community thumbs, folded into the
+  /// ratings card as a source rather than living as a pair of pills.
+  var likeCount: Int = 0
+  var dislikeCount: Int = 0
+  /// The section's page. Every card in the rail opens it too, so the whole block has
+  /// exactly one destination.
+  var destination: (any Hashable)? = nil
+  var onSectionFocused: (() -> Void)? = nil
+  @Environment(\.openURL) private var openURL
+
+  private var reviews: [Review] { externalMetadata.reviews }
+  private var visible: [Review] { Array(reviews.prefix(Self.limit)) }
+
+  private var hasRatings: Bool {
+    !RatingSources.scores(for: mediaItem,
+                          metadata: externalMetadata,
+                          likeCount: likeCount,
+                          dislikeCount: dislikeCount).isEmpty
+  }
+
+  /// The source's total when it reported one, otherwise what we actually hold.
+  private var reviewCount: Int {
+    let total = summary.map(\.total) ?? 0
+    return total > 0 ? total : reviews.count
+  }
+
+  var body: some View {
+    if hasRatings || !visible.isEmpty {
+      VStack(alignment: .leading, spacing: 12) {
+        // **One title, one destination, always.** The header used to read "Ratings"
+        // until reviews arrived and then change under the user — enrichment is async,
+        // so a title derived from what has loaded is a title that flickers. No count
+        // beside it either: the ratings card prints it next to the score.
+        MediaItemSectionHeader("MediaItem_RatingsAndReviews", destination: destination)
+        BlockRail(height: BlockMetrics.textCardHeight,
+                  inset: MediaItemLayout.horizontalInset) {
+          if hasRatings {
+            MediaItemRatingsCard(mediaItem: mediaItem,
+                                 externalMetadata: externalMetadata,
+                                 likeCount: likeCount,
+                                 dislikeCount: dislikeCount,
+                                 reviewCount: reviewCount,
+                                 destination: destination)
+          }
+          ForEach(visible) { review in
+            ReviewCard(review: review,
+                       destination: destination,
+                       onSectionFocused: onSectionFocused)
+          }
+        }
+      }
+    }
+  }
+
+  static let limit = 10
 }
 
 // MARK: - Reviews
 
+/// Reviews on their own, the shape that shipped before the ratings merge: header with
+/// the count and a chevron, rail of cards led by the tally.
+///
+/// **Kept while the block experiment runs.** `MediaItemRatingsAndReviewsSection` is
+/// the variant under test; this is the one it is being tested against, and deleting
+/// the incumbent before the replacement is settled is how a comparison stops being
+/// possible. One of the two goes when the switch in `MediaItemView` does.
 struct MediaItemReviewsSection: View {
   let reviews: [Review]
+  var summary: ReviewsSummary? = nil
+  /// The full-list page. `nil` leaves the header plain — see `MediaItemSectionHeader`.
+  var destination: (any Hashable)? = nil
   var onSectionFocused: (() -> Void)? = nil
 
   private var visible: [Review] { Array(reviews.prefix(Self.limit)) }
 
+  private var headerCount: String? {
+    let total = summary.map(\.total) ?? 0
+    let count = total > 0 ? total : reviews.count
+    return count > 0 ? count.formatted(.number.grouping(.automatic)) : nil
+  }
+
   var body: some View {
     if !visible.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
-        MediaItemSectionHeader("Reviews")
-        VStack(alignment: .leading, spacing: 16) {
+        MediaItemSectionHeader("Reviews", count: headerCount, destination: destination)
+        BlockRail(height: BlockMetrics.textCardHeight,
+                  inset: MediaItemLayout.horizontalInset) {
+          if let summary, !summary.isEmpty {
+            ReviewsSummaryCard(summary: summary)
+          }
           ForEach(visible) { review in
-            ReviewRow(review: review, onSectionFocused: onSectionFocused)
+            ReviewCard(review: review, onSectionFocused: onSectionFocused)
           }
         }
-        .padding(.horizontal, MediaItemLayout.horizontalInset)
       }
     }
   }
 
-  static let limit = 5
+  static let limit = 10
 }
 
-private struct ReviewRow: View {
-  let review: Review
-  var onSectionFocused: (() -> Void)? = nil
+/// The rail's leading card: the aggregate — as a number and as stars — the votes and
+/// review counts under it, then the row of sources it was computed from.
+///
+/// **The whole card is the control** — it hovers, it presses, and it opens the
+/// section's page. Nothing inside it is separately clickable: the per-source links
+/// move to the popup or to buttons of their own, so there is never a small target
+/// sitting inside a big one competing for the same press.
+///
+/// Deliberately **not** here: views, which are a popularity number and not a rating,
+/// and a Rate control, which is a decision still to come.
+struct MediaItemRatingsCard: View {
+  let mediaItem: MediaItem
+  var externalMetadata: TitleMetadata = TitleMetadata()
+  /// kino.pub's own rating in this version: the community thumbs as one percentage,
+  /// under the kino.pub mark, beside IMDb / Kinopoisk / TMDB.
+  var likeCount: Int = 0
+  var dislikeCount: Int = 0
+  /// How many reviews the source counted, printed with the ratings — it belongs to
+  /// the score, not to a card of its own that nothing can open.
+  var reviewCount: Int = 0
+  /// Where the card goes. `nil` leaves it flat rather than interactive-and-inert.
+  var destination: (any Hashable)? = nil
+  /// Off on the page, where the sources get full rows of their own underneath.
+  var showsSources: Bool = true
+  /// Which shape the sources take. Two live at once on purpose while the look is
+  /// unsettled; the loser goes with this property.
+  var layout: SourceLayout = .table
+
+  enum SourceLayout {
+    /// One source per line, fixed columns. Survives a growing source list.
+    case table
+    /// All sources on one line. Compact, but it is already tight at four.
+    case chips
+  }
+
+  private var bundle: MediaScores {
+    MediaScores.detail(mediaItem,
+                       metadata: externalMetadata,
+                       likeCount: likeCount,
+                       dislikeCount: dislikeCount)
+  }
+
+  private var aggregate: Rating? {
+    guard FeatureFlags.combinedRatingEnabled else { return nil }
+    return bundle.aggregate
+  }
+
+  private var scores: [RatingSources.Score] {
+    RatingSources.scores(for: mediaItem,
+                         metadata: externalMetadata,
+                         likeCount: likeCount,
+                         dislikeCount: dislikeCount)
+  }
+
+  private var countsLine: String {
+    var parts: [String] = []
+    let votes = bundle.totalVotes
+    if votes > 0 {
+      parts.append("\(votes.formatted(.number.grouping(.automatic))) \("Ratings".localized)")
+    }
+    if reviewCount > 0 {
+      parts.append("\(reviewCount.formatted(.number.grouping(.automatic))) \(localizedReviewsUnit(reviewCount))")
+    }
+    return parts.joined(separator: " · ")
+  }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      HStack(spacing: 10) {
-        if let sentiment = sentimentLabel {
-          Text(sentiment)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Color.KinoPub.subtitle)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(Color.KinoPub.selectionBackground.opacity(0.5),
-                        in: Capsule(style: .continuous))
+    BlockCard(kind, width: BlockMetrics.textCardWidth, fillsHeight: true) {
+      VStack(alignment: .leading, spacing: 4) {
+        if let aggregate {
+          HStack(alignment: .center, spacing: 12) {
+            Text(aggregate.formatted)
+              .font(.system(.largeTitle, design: .rounded, weight: .semibold))
+              .foregroundStyle(Color.KinoPub.text)
+              .fixedSize()
+            // Always orange, never the tier colour: stars are the shape of "how good",
+            // and a green or grey star row reads as a second, contradicting signal.
+            StarRatingRow(value: aggregate.rounded / 2, tint: .orange, font: TypeScale.detailBody)
+          }
+          if !countsLine.isEmpty {
+            // Truncates rather than hugs: it is the one line here long enough to
+            // outgrow the card, and a card that grows to fit a vote count breaks the rail.
+            Text(countsLine)
+              .font(TypeScale.detailBody)
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+          }
         }
-        Text(review.author)
-          .font(.subheadline.weight(.semibold))
-          .foregroundStyle(Color.KinoPub.text)
-          .lineLimit(1)
-        if let date = review.date, !date.isEmpty {
-          Text(date)
-            .font(.caption)
-            .foregroundStyle(Color.KinoPub.subtitle)
-            .lineLimit(1)
+
+        if showsSources {
+          Spacer(minLength: 12)
+          sources
         }
       }
-      if !review.title.isEmpty {
-        Text(review.title)
-          .font(.headline)
-          .foregroundStyle(Color.KinoPub.text)
-          .fixedSize(horizontal: false, vertical: true)
-      }
-      Text(truncatedBody)
-        .font(.body)
-        .foregroundStyle(Color.KinoPub.subtitle)
-        .fixedSize(horizontal: false, vertical: true)
     }
-#if os(tvOS)
-    .focusable(true)
-    .reportMediaItemSectionFocus(onSectionFocused)
+  }
+
+  /// The same four sources, ordered by audience size, in whichever shape is under
+  /// test. Both read one list, so the number above them cannot disagree with either.
+  @ViewBuilder
+  private var sources: some View {
+    switch layout {
+    case .table:
+      // Fixed columns, one source per line. The chip row ran out of width at four
+      // sources and will run out harder at six — and the sources are not going to
+      // stop arriving.
+      VStack(alignment: .leading, spacing: 6) {
+        ForEach(scores) { score in
+          tableRow(score)
+        }
+      }
+    case .chips:
+      HStack(spacing: 14) {
+        ForEach(scores) { score in
+          sourceChip(score)
+        }
+        Spacer(minLength: 0)
+      }
+    }
+  }
+
+  private var kind: BlockCardKind {
+    guard let destination else { return .flat }
+    return .link(value: destination)
+  }
+
+  /// `value | mark + name | turnout`, each column a width decided here rather than by
+  /// whichever title happens to be on screen — so four rows read as a table and not as
+  /// four differently-indented lines.
+  private func tableRow(_ score: RatingSources.Score) -> some View {
+    HStack(spacing: 8) {
+      Text(score.display)
+        .frame(width: Self.valueColumn, alignment: .leading)
+
+      MediaScoreLogo(score.logo, height: Self.logoHeight, style: .compact)
+        .frame(width: Self.markColumn, alignment: .leading)
+
+      Text(score.id)
+        .foregroundStyle(.secondary)
+
+      Spacer(minLength: 8)
+
+      if let votes = score.votesGrouped {
+        Text(votes)
+          .foregroundStyle(.secondary)
+      }
+    }
+    .font(TypeScale.detailBody)
+    .foregroundStyle(Color.KinoPub.text)
+    // Every cell keeps its own width. Letting the row squeeze them is what broke the
+    // chips into "6." / "4" on two lines.
+    .lineLimit(1)
+    .fixedSize(horizontal: false, vertical: true)
+    .accessibilityElement(children: .combine)
+  }
+
+  /// The compact stack, kept while the two are being compared. kino.pub wears its own
+  /// mark here rather than a thumbs glyph: the chip sits in a row of brand logos, and
+  /// a lone SF Symbol among them reads as a different kind of thing.
+  private func sourceChip(_ score: RatingSources.Score) -> some View {
+    HStack(spacing: 5) {
+      MediaScoreLogo(score.logo, height: Self.logoHeight, style: .compact)
+      Text(score.display)
+        .font(TypeScale.detailBody)
+        .foregroundStyle(Color.KinoPub.text)
+      if let votes = score.votesCompact {
+        Text("(\(votes))")
+          .font(TypeScale.detailBody)
+          .foregroundStyle(.secondary)
+      }
+    }
+    .lineLimit(1)
+    .fixedSize(horizontal: true, vertical: false)
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel(Text(score.id))
+  }
+
+  /// Wide enough for "100%" and "10.0" at body size, so the marks line up.
+  static let valueColumn: CGFloat = 44
+  /// Wide enough for the IMDb wordmark at `logoHeight`, which is the widest mark.
+  static let markColumn: CGFloat = 40
+  static let logoHeight: CGFloat = 16
+}
+
+/// The sources as full rows, for the page — where there is width for the name spelled
+/// out, the turnout ungrouped, and the link the chips in the card deliberately do not
+/// carry. A chip says "8.5"; a row says which 8.5, from how many people, and where to
+/// go and read about it.
+struct MediaItemRatingSourceRows: View {
+  let scores: [RatingSources.Score]
+
+  @Environment(\.openURL) private var openURL
+
+  var body: some View {
+    BlockCard {
+      VStack(alignment: .leading, spacing: 0) {
+        ForEach(Array(scores.enumerated()), id: \.element.id) { index, score in
+          if index > 0 {
+            Divider().opacity(0.4)
+          }
+          row(score)
+        }
+      }
+    }
+  }
+
+  @ViewBuilder
+  private func row(_ score: RatingSources.Score) -> some View {
+    let content = HStack(spacing: 12) {
+      Text(score.display)
+        .frame(width: Self.valueColumn, alignment: .leading)
+
+      MediaScoreLogo(score.logo, height: Self.logoHeight, style: .compact)
+        .frame(width: Self.markColumn, alignment: .leading)
+
+      HStack(spacing: 6) {
+        Text(score.id)
+          .foregroundStyle(.secondary)
+        if score.url != nil {
+          Image(systemName: "arrow.up.right")
+            .foregroundStyle(.tertiary)
+        }
+      }
+
+      Spacer(minLength: 12)
+
+      if let votes = score.votesGrouped {
+        Text(votes)
+          .foregroundStyle(.secondary)
+      } else {
+        Text("MediaItem_NotEnoughRatings")
+          .foregroundStyle(.secondary)
+      }
+    }
+      .font(TypeScale.detailBody)
+      .foregroundStyle(Color.KinoPub.text)
+      // Cells keep their own width; the row is what flexes.
+      .lineLimit(1)
+      .fixedSize(horizontal: false, vertical: true)
+      .padding(.vertical, 8)
+      .contentShape(Rectangle())
+
+    if let url = score.url {
+      Button { openURL(url) } label: { content }
+        .buttonStyle(.plain)
+#if !os(tvOS)
+        .pointingHandCursorOnHover()
 #endif
+    } else {
+      content
+    }
   }
 
-  private var truncatedBody: String {
-    let trimmed = review.body.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard trimmed.count > 420 else { return trimmed }
-    let end = trimmed.index(trimmed.startIndex, offsetBy: 420)
-    return String(trimmed[..<end]).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
+  /// Same columns as the card's table, one step wider — the page has the room, and
+  /// two tables of the same thing must not line up differently.
+  static let valueColumn: CGFloat = 52
+  static let logoHeight: CGFloat = 20
+  /// A fixed column for marks of wildly different widths, so the names line up.
+  static let markColumn: CGFloat = 52
+}
+
+/// The rail's leading card: how many opinions there are and how they split. The
+/// counts are the source's, over the whole review set — not over the cards beside it.
+struct ReviewsSummaryCard: View {
+  let summary: ReviewsSummary
+  /// Narrower than a review card in the rail; `nil` lets it run full width on the
+  /// page, where it is a header rather than the first item of a row.
+  var width: CGFloat? = BlockMetrics.textCardWidth * 0.62
+
+  var body: some View {
+    BlockCard(width: width, fillsHeight: width != nil) {
+      VStack(alignment: .leading, spacing: 6) {
+        Text(summary.total.formatted(.number.grouping(.automatic)))
+          .font(.system(.largeTitle, design: .rounded, weight: .semibold))
+          .foregroundStyle(Color.KinoPub.text)
+          .fixedSize()
+        Text("Reviews")
+          .font(TypeScale.detailBody)
+          .foregroundStyle(Color.KinoPub.text)
+
+        Spacer(minLength: 12)
+
+        // Plural keys, not the singular `Positive` the card badge uses: these label a
+        // count of reviews, and Russian declines the adjective for it.
+        breakdownRow("MediaItem_ReviewsPositive", count: summary.positive)
+        breakdownRow("MediaItem_ReviewsNeutral", count: summary.neutral)
+        breakdownRow("MediaItem_ReviewsNegative", count: summary.negative)
+      }
+    }
   }
 
-  private var sentimentLabel: String? {
-    switch review.sentiment?.uppercased() {
+  @ViewBuilder
+  private func breakdownRow(_ title: LocalizedStringKey, count: Int) -> some View {
+    if count > 0 {
+      HStack(spacing: 8) {
+        Text(title)
+          .foregroundStyle(.secondary)
+        Spacer(minLength: 8)
+        Text(count.formatted(.number.grouping(.automatic)))
+          .foregroundStyle(Color.KinoPub.text)
+      }
+      .font(TypeScale.detailBody)
+      .lineLimit(1)
+    }
+  }
+}
+
+/// One review, in the two modes every block card is heading for.
+///
+/// - `.compact` — what fits in a rail: the headline, as much body as the height
+///   allows, and the two facts worth a glance (how it was meant, when). No nickname,
+///   no vote tallies, no source. A preview earns its space by being readable, not by
+///   carrying every field at four points smaller.
+/// - `.expanded` — the whole record: full body, who wrote it, when, how many people
+///   found it useful, where it came from, and the controls that go with it.
+///
+/// One component, configured. The rail passes `.compact`; the page passes `.expanded`.
+struct ReviewCard: View {
+
+  enum Mode {
+    case compact
+    case expanded
+  }
+
+  let review: Review
+  var mode: Mode = .compact
+  /// Where the card goes. `nil` leaves it flat rather than interactive-and-inert.
+  var destination: (any Hashable)? = nil
+  /// The title's page at the source, for "read the rest where it was written".
+  var sourceURL: URL? = nil
+  var onSectionFocused: (() -> Void)? = nil
+
+  @Environment(\.openURL) private var openURL
+
+  private var kind: BlockCardKind {
+    guard mode == .compact, let destination else { return .flat }
+    return .link(value: destination)
+  }
+
+  var body: some View {
+    switch mode {
+    case .compact:
+      BlockCard(kind, width: BlockMetrics.textCardWidth, fillsHeight: true) {
+        compactBody
+      }
+#if os(tvOS)
+      .focusable(true)
+      .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+    case .expanded:
+      BlockCard { expandedBody }
+    }
+  }
+
+  // MARK: Compact
+
+  private var compactBody: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      // Hugs: the headline is drawn at whatever length it is. Clamping it to one line
+      // cut half the titles mid-word for a line the body did not get back anyway.
+      Text(headline)
+        .font(TypeScale.detailBody.weight(.semibold))
+        .foregroundStyle(Color.KinoPub.text)
+        .fixedSize(horizontal: false, vertical: true)
+
+      // Fills whatever is left between the headline and the footer, and ellipsises on
+      // the last line that fits — a fixed line count either stopped short of the
+      // bottom or got clipped mid-glyph, differently at every Dynamic Type size.
+      FillingText(collapsedBody, font: TypeScale.detailBody)
+        .foregroundStyle(Color.KinoPub.text)
+
+      // One size for the whole card. The footer used to be `.caption`, which made the
+      // card read as three different documents stacked.
+      HStack(spacing: 8) {
+        if let sentiment = review.sentimentTitle {
+          Text(sentiment)
+            .font(TypeScale.detailBody.weight(.semibold))
+            .foregroundStyle(review.sentimentColor)
+        }
+        Spacer(minLength: 8)
+        if let date = review.displayDate {
+          Text(date)
+            .font(TypeScale.detailBody)
+            .foregroundStyle(.secondary)
+        }
+      }
+      .lineLimit(1)
+      .fixedSize(horizontal: false, vertical: true)
+    }
+  }
+
+  // MARK: Expanded
+
+  private var expandedBody: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(alignment: .firstTextBaseline, spacing: 8) {
+        if !review.title.isEmpty {
+          Text(review.title)
+            .font(TypeScale.detailBody.weight(.semibold))
+            .foregroundStyle(Color.KinoPub.text)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        Spacer(minLength: 8)
+        if let sentiment = review.sentimentTitle {
+          Text(sentiment)
+            .font(TypeScale.detailBody.weight(.semibold))
+            .foregroundStyle(review.sentimentColor)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+        }
+      }
+
+      // `stripHTML` turns the source's `<br />` pairs back into blank lines, so the
+      // author's paragraphing survives here — which is the point of the expanded mode
+      // and exactly what the compact one collapses away.
+      Text(review.body)
+        .font(TypeScale.detailBody)
+        .foregroundStyle(Color.KinoPub.text)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+
+      // One size, one weight, all the way down — the footer is not a legal notice.
+      HStack(spacing: 12) {
+        Text(review.author)
+          .foregroundStyle(.secondary)
+        if let date = review.displayDate {
+          Text(date)
+            .foregroundStyle(.secondary)
+        }
+        Spacer(minLength: 8)
+        // The source's own tallies, not controls: nothing here posts a vote back to
+        // Kinopoisk, and a button that only looks like one is worse than a number.
+        if review.helpfulVotes > 0 || review.unhelpfulVotes > 0 {
+          Label(review.helpfulVotes.formatted(.number.grouping(.automatic)),
+                systemImage: "hand.thumbsup")
+            .foregroundStyle(.secondary)
+          Label(review.unhelpfulVotes.formatted(.number.grouping(.automatic)),
+                systemImage: "hand.thumbsdown")
+            .foregroundStyle(.secondary)
+        }
+        if let sourceURL {
+          Button {
+            openURL(sourceURL)
+          } label: {
+            Label("MediaItem_ReviewSourceKinopoisk", systemImage: "arrow.up.right")
+          }
+          .buttonStyle(.plain)
+          .foregroundStyle(.secondary)
+#if !os(tvOS)
+          .pointingHandCursorOnHover()
+#endif
+        }
+      }
+      .font(TypeScale.detailBody)
+      .lineLimit(1)
+      .fixedSize(horizontal: false, vertical: true)
+    }
+  }
+
+  /// Roughly half of a title's reviews carry no headline, so the author stands in —
+  /// a card whose first line is blank reads as a loading card.
+  private var headline: String {
+    review.title.isEmpty ? review.author : review.title
+  }
+
+  /// Paragraph breaks are what the expanded card is for. In a card four lines tall a
+  /// blank line is a quarter of the preview spent on nothing, so the compact mode
+  /// flattens them to single spaces.
+  private var collapsedBody: String {
+    review.body
+      .replacingOccurrences(of: "\\s*\\n+\\s*", with: " ", options: .regularExpression)
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+}
+
+extension Review {
+  /// `POSITIVE` / `NEGATIVE` / `NEUTRAL`, localized. Nil for anything else the source
+  /// starts sending.
+  var sentimentTitle: String? {
+    switch sentiment?.uppercased() {
     case "POSITIVE": return "Positive".localized
     case "NEGATIVE": return "Negative".localized
     case "NEUTRAL": return "Neutral".localized
     default: return nil
     }
   }
+
+  /// The one place colour is allowed on these cards. Sentiment is the only field a
+  /// reader scans rather than reads, and green/red is the convention it already has —
+  /// everything else on the card stays material and hierarchical styles.
+  var sentimentColor: Color {
+    switch sentiment?.uppercased() {
+    case "POSITIVE": return .green
+    case "NEGATIVE": return .red
+    default: return .secondary
+    }
+  }
+
+  /// The posting date in the reader's format. Falls back to the source's `YYYY-MM-DD`
+  /// prefix when the timestamp was in a shape we do not parse.
+  var displayDate: String? {
+    if let postedAt {
+      return postedAt.formatted(.dateTime.day().month(.abbreviated).year())
+    }
+    guard let date, date.count >= 10 else { return date }
+    return String(date.prefix(10))
+  }
 }
 
-private struct FactRow: View {
-  let fact: Fact
+// MARK: - Technical and advisory cards
+
+/// Three quick-glance cards, **ordered by what a viewer decides with, not by what we
+/// happen to compute first**: can whoever's in the room watch this at all (age,
+/// advisories) → can *you* understand it (languages, subtitles) → what it technically
+/// is (quality, codec). The old order put the least consequential category first
+/// because that was the easiest one to derive — this file's whole point is that
+/// ordering is a decision, not a byproduct.
+///
+/// Same shape as Reviews and Facts — a `BlockRail` of `BlockCard`s — because a
+/// glance-first fact deserves the same weight as a review, not a smaller font buried
+/// in a table.
+///
+/// **Only real signals get a badge.** kino.pub carries no HDR / Dolby Vision / Dolby
+/// Atmos flag, so those stay absent rather than guessed — the rule `aboutBadges`
+/// already followed, here for the same reason. Their icon assets (`dolby-vision`,
+/// `dolby-atmos`, `tv-ma`, `R`, `subtitle`) sit unused in `Media.xcassets` on purpose:
+/// waiting on a real source (an HLS `VIDEO-RANGE` probe, an MPAA/age-board field), not
+/// wired to a fabricated one. `MediaCapabilityBadges.isHDR` is the same story — real,
+/// but only ever filled from a probed playlist, which the detail page does not fetch.
+/// `#Preview("Video card, with a Dolby signal")` below shows the two real Dolby
+/// assets rendered against made-up data — **illustration only**, never reachable from
+/// `videoBadges`, so a real user can never see a badge we cannot back.
+///
+/// Tapping a card opens the shared `InfoPopup` — the same "the clipped thing is the
+/// trigger" mechanism `AboutColumn` / `AboutLegendColumn` already use — with every
+/// badge spelled out in a full sentence, not a page of its own to navigate to.
+struct MediaItemBadgeCardsSection: View {
+  let mediaItem: MediaItem
+  var externalMetadata: TitleMetadata = TitleMetadata()
   var onSectionFocused: (() -> Void)? = nil
-  @State private var isRevealed = false
+
+  private var advisories: [String] { mediaItemAdvisories(mediaItem) }
+  private var ageRating: String? { externalMetadata.ageRating }
+
+  private var preferredLanguages: [String] { mediaItemPreferredLanguages() }
+  private var audioGroups: [MediaLanguageGroup] {
+    mediaItem.audioLanguageGroups(preferredLanguages: preferredLanguages)
+  }
+  private var subtitleGroups: [MediaLanguageGroup] {
+    mediaItem.subtitleLanguageGroups(preferredLanguages: preferredLanguages)
+  }
+
+  private var videoBadges: [VideoBadge] {
+    var badges: [VideoBadge] = []
+    let caps = MediaCapabilityBadges.from(item: mediaItem)
+
+    if let quality = mediaItem.qualityDisplay {
+      let glyph: CapabilityGlyph.Source = caps.is4K ? .quality4K : (caps.isHD ? .qualityHD : .qualitySD)
+      badges.append(VideoBadge(id: "quality", glyph: glyph, label: quality,
+                                   explanation: "MediaItem_LegendQuality".localized))
+    }
+    if mediaItem.is3D {
+      badges.append(VideoBadge(id: "3d", glyph: .stereoscopic3D, label: "3D".localized,
+                                   explanation: "MediaItem_Legend3D".localized))
+    }
+    if let ac3 = mediaItem.ac3, ac3 > 0 {
+      // No dedicated brand asset for AC-3 — the catalogue's "AAC" glyph names a
+      // different codec, and drawing it here would say something untrue.
+      badges.append(VideoBadge(id: "ac3", systemImage: "waveform", label: "AC3",
+                                   explanation: "MediaItem_LegendAC3".localized))
+    }
+    // No general "Subtitles" badge here — the Languages card shows a CC glyph on
+    // every language that actually has one, which says more than a title-wide flag.
+    if mediaItem.detailAudioTracks.contains(where: \.isAudioDescription) {
+      badges.append(VideoBadge(id: "ad", glyph: .audioDescription,
+                                   label: "MediaItem_LegendADName".localized,
+                                   explanation: "MediaItem_LegendAD".localized))
+    }
+    return badges
+  }
 
   var body: some View {
-    Group {
-      if fact.isSpoiler && !isRevealed {
-        Button {
-          isRevealed = true
-        } label: {
-          Text("Tap to reveal spoiler")
-            .italic()
-            .foregroundStyle(Color.KinoPub.subtitle)
+    if ageRating != nil || !advisories.isEmpty || !audioGroups.isEmpty
+      || !subtitleGroups.isEmpty || !videoBadges.isEmpty {
+      BlockRail(height: BlockMetrics.textCardHeight,
+                inset: MediaItemLayout.horizontalInset) {
+        if ageRating != nil || !advisories.isEmpty {
+          ParentalAdvisoryCard(ageRating: ageRating,
+                               advisories: advisories,
+                               onSectionFocused: onSectionFocused)
         }
-        .buttonStyle(.plain)
-      } else {
-        Text(fact.text)
+        if !audioGroups.isEmpty || !subtitleGroups.isEmpty {
+          LanguagesCard(audioGroups: audioGroups,
+                        subtitleGroups: subtitleGroups,
+                        preferredLanguages: preferredLanguages,
+                        onSectionFocused: onSectionFocused)
+        }
+        if !videoBadges.isEmpty {
+          VideoCard(badges: videoBadges,
+                   qualityLines: mediaItem.videoTechLines,
+                   onSectionFocused: onSectionFocused)
+        }
+      }
+    }
+  }
+}
+
+/// A signal drawn as an icon + spelled-out label, with the sentence behind it for the
+/// popup. `glyph` is a `CapabilityGlyph` — a catalogue pill with its own border baked
+/// in; `systemImage` is the fallback for a real signal that has no brand mark of its
+/// own.
+struct VideoBadge: Identifiable {
+  let id: String
+  var glyph: CapabilityGlyph.Source? = nil
+  /// Fallback for a real signal with no brand mark of its own (AC-3).
+  var systemImage: String? = nil
+  let label: String
+  let explanation: String
+}
+
+private struct VideoCard: View {
+  let badges: [VideoBadge]
+  /// Every distinct file this title actually offers — `"1080p · h264 · 1920×1080"`
+  /// per line, already built by `MediaItem.videoTechLines`. Collapsed view shows only
+  /// the top badge; the popup lists all of them, because "what am I about to
+  /// download" is a download-quality decision, not a glance.
+  var qualityLines: [String] = []
+  var onSectionFocused: (() -> Void)? = nil
+
+  var body: some View {
+    BlockCard(width: BlockMetrics.textCardWidth, fillsHeight: true) {
+      VStack(alignment: .leading, spacing: 12) {
+        Text("MediaItem_VideoCard")
+          .font(TypeScale.detailBody.weight(.semibold))
           .foregroundStyle(Color.KinoPub.text)
-          .fixedSize(horizontal: false, vertical: true)
+
+        VStack(alignment: .leading, spacing: 10) {
+          ForEach(badges) { badge in
+            HStack(spacing: 10) {
+              icon(for: badge)
+              Text(badge.label)
+                .font(TypeScale.detailBody)
+                .foregroundStyle(Color.KinoPub.text)
+            }
+          }
+        }
+      }
+    }
+    .expandsIntoInfoPopup(title: Text("MediaItem_VideoCard")) {
+      VStack(alignment: .leading, spacing: InfoPopupMetrics.contentSpacing) {
+        ForEach(badges) { badge in
+          HStack(alignment: .top, spacing: 14) {
+            icon(for: badge, height: Self.popupIconHeight)
+            VStack(alignment: .leading, spacing: 2) {
+              Text(badge.label)
+                .font(InfoPopupMetrics.bodyFont.weight(.semibold))
+                .foregroundStyle(Color.KinoPub.text)
+              Text(badge.explanation)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+          }
+        }
+        if qualityLines.count > 1 {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("MediaItem_VideoQuality")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 6) {
+              ForEach(Array(qualityLines.enumerated()), id: \.offset) { _, line in
+                Text(line)
+                  .font(InfoPopupMetrics.bodyFont)
+                  .foregroundStyle(Color.KinoPub.text)
+              }
+            }
+          }
+        }
       }
     }
 #if os(tvOS)
-    .focusable(true)
     .reportMediaItemSectionFocus(onSectionFocused)
 #endif
+  }
+
+  @ViewBuilder
+  private func icon(for badge: VideoBadge, height: CGFloat = VideoCard.iconHeight) -> some View {
+    if let glyph = badge.glyph {
+      CapabilityGlyph(glyph, height: height)
+        .foregroundStyle(Color.KinoPub.text)
+    } else if let systemImage = badge.systemImage {
+      Image(systemName: systemImage)
+        .font(.system(size: height * 0.8, weight: .semibold))
+        .foregroundStyle(Color.KinoPub.text)
+        .frame(width: height, alignment: .center)
+    }
+  }
+
+  static let iconHeight: CGFloat = 15
+  static let popupIconHeight: CGFloat = 20
+}
+
+#if DEBUG
+/// **Illustration only — not reachable from real data.** `videoBadges` never builds a
+/// Dolby entry; this exists so the Video card's look with a fuller signal set can be
+/// judged before any of those signals exist. The two Dolby marks are real assets
+/// (`CapabilityGlyph.Source.dolbyVision` / `.dolbyAtmos`) rendered against fabricated
+/// badge data — delete this preview once a real HDR/Dolby source is wired and the
+/// badge list can show it honestly instead.
+#Preview("Video card, with a Dolby signal (illustration)") {
+  VideoCard(badges: [
+    VideoBadge(id: "dolby-vision", glyph: .dolbyVision, label: "Dolby Vision",
+              explanation: "A wider colour and brightness range, mastered per scene."),
+    VideoBadge(id: "dolby-atmos", glyph: .dolbyAtmos, label: "Dolby Atmos",
+              explanation: "Object-based surround sound with height channels."),
+    VideoBadge(id: "quality", glyph: .quality4K, label: "2160p",
+              explanation: "MediaItem_LegendQuality".localized),
+    VideoBadge(id: "ac3", systemImage: "waveform", label: "AC3",
+              explanation: "MediaItem_LegendAC3".localized)
+  ], qualityLines: [
+    "1080p · h264 · 1920×800",
+    "720p · h264 · 1280×534",
+    "480p · h264 · 720×300"
+  ])
+  .padding()
+  .background(Color.KinoPub.background)
+  .preferredColorScheme(.dark)
+}
+#endif
+
+/// The checkmark and the age together, then **always** the sentence that says what an
+/// age rating even is (`MediaItem_LegendAgeRating`) — decoded on the card itself, not
+/// filed behind a tap. Whatever real advisory kino.pub sent follows; never an invented
+/// content sentence, so a title with an age rating but no advisories reads "16+ —
+/// Age classification for this title." and stops there rather than manufacturing a
+/// reason for the number.
+private struct ParentalAdvisoryCard: View {
+  let ageRating: String?
+  let advisories: [String]
+  var onSectionFocused: (() -> Void)? = nil
+
+  private var canExpand: Bool { ageRating != nil || !advisories.isEmpty }
+
+  var body: some View {
+    BlockCard(width: BlockMetrics.textCardWidth, fillsHeight: true) {
+      VStack(alignment: .leading, spacing: 10) {
+        Text("MediaItem_AgeRating")
+          .font(TypeScale.detailBody.weight(.semibold))
+          .foregroundStyle(Color.KinoPub.text)
+
+        if let ageRating {
+          HStack(spacing: 8) {
+            CapabilityGlyph(.ageRatingCheckmark, height: 22)
+              .foregroundStyle(.green)
+            Text(ageRating)
+              .font(.system(.title2, design: .rounded, weight: .semibold))
+              .foregroundStyle(Color.KinoPub.text)
+          }
+          Text("MediaItem_LegendAgeRating")
+            .font(TypeScale.detailBody)
+            .foregroundStyle(.secondary)
+        }
+
+        if !advisories.isEmpty {
+          FillingText(advisories.joined(separator: " · "), font: TypeScale.detailBody)
+            .foregroundStyle(.secondary)
+        }
+      }
+    }
+    .expandsIntoInfoPopup(title: Text("MediaItem_AgeRating"), isEnabled: canExpand) {
+      VStack(alignment: .leading, spacing: InfoPopupMetrics.contentSpacing) {
+        if let ageRating {
+          HStack(spacing: 10) {
+            CapabilityGlyph(.ageRatingCheckmark, height: 28)
+              .foregroundStyle(.green)
+            Text(ageRating)
+              .font(.system(.largeTitle, design: .rounded, weight: .semibold))
+              .foregroundStyle(Color.KinoPub.text)
+          }
+          Text("MediaItem_LegendAgeRating")
+            .font(InfoPopupMetrics.bodyFont)
+            .foregroundStyle(.secondary)
+        }
+        if !advisories.isEmpty {
+          VStack(alignment: .leading, spacing: 6) {
+            ForEach(advisories, id: \.self) { advisory in
+              Text(advisory)
+                .font(InfoPopupMetrics.bodyFont)
+                .foregroundStyle(Color.KinoPub.text)
+            }
+          }
+        }
+      }
+    }
+#if os(tvOS)
+    .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+  }
+}
+
+// MARK: Languages card
+
+/// Audio and subtitles, shortest-useful-answer first: per language only the **best**
+/// dub available (`AudioTracks` orders kinds DUB → MVO → DVO → VO → AVO → Orig, so
+/// that is simply the first summary line), with everyone else folded into "+N
+/// languages" until the card is opened. A title with a proper dub and eight
+/// single-voice localizations should say "Russian · Dubbed", not list all nine.
+///
+/// No SDH badge next to CC: kino.pub's subtitle payload does not distinguish a
+/// hard-of-hearing track from a translated one, so a per-language "CC" is what the
+/// data actually supports today — printing "SDH" beside it would claim a distinction
+/// we cannot make. That changes once OpenSubtitles (or another source that tags SDH)
+/// is wired in; nothing here needs to change but the badge list.
+///
+/// The flag is `FlagGlyph(code: group.key, …)` — an approximate, deliberately-accepted
+/// one: a language is not a country, and "Russian" only has one plausible flag while
+/// "English" does not. The asset set (`flag_<iso 639-1 code>`) lives in `Media.xcassets`
+/// and is added separately from this file; a code with no matching asset draws nothing.
+private struct LanguagesCard: View {
+  let audioGroups: [MediaLanguageGroup]
+  let subtitleGroups: [MediaLanguageGroup]
+  let preferredLanguages: [String]
+  var onSectionFocused: (() -> Void)? = nil
+
+  private var subtitleKeys: Set<String> { Set(subtitleGroups.map(\.key)) }
+  private var audioKeys: Set<String> { Set(audioGroups.map(\.key)) }
+
+  private var shown: (visible: [MediaLanguageGroup], hiddenCount: Int) {
+    LanguageListVisibility.partition(audioGroups, preferredLanguages: preferredLanguages)
+  }
+
+  /// Languages the collapsed card says nothing about at all — hidden audio languages
+  /// plus subtitle-only languages, which the partition above never counts.
+  private var moreCount: Int {
+    let hiddenAudio = max(0, audioGroups.count - shown.visible.count)
+    let subtitleOnly = subtitleGroups.filter { !audioKeys.contains($0.key) }.count
+    return hiddenAudio + subtitleOnly
+  }
+
+  var body: some View {
+    BlockCard(width: BlockMetrics.textCardWidth, fillsHeight: true) {
+      VStack(alignment: .leading, spacing: 10) {
+        Text("Languages")
+          .font(TypeScale.detailBody.weight(.semibold))
+          .foregroundStyle(Color.KinoPub.text)
+
+        VStack(alignment: .leading, spacing: 8) {
+          ForEach(shown.visible) { group in
+            row(group, showsSubtitleBadge: subtitleKeys.contains(group.key))
+          }
+        }
+
+        if moreCount > 0 {
+          Text("+ \(moreCount) \(localizedLanguagesUnit(moreCount))")
+            .font(TypeScale.detailBody)
+            .foregroundStyle(.secondary)
+        }
+      }
+    }
+    .expandsIntoInfoPopup(title: Text("Languages")) {
+      VStack(alignment: .leading, spacing: InfoPopupMetrics.contentSpacing) {
+        if !audioGroups.isEmpty {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("MediaItem_Voice")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 10) {
+              ForEach(audioGroups) { group in
+                expandedRow(group, showsSubtitleBadge: subtitleKeys.contains(group.key))
+              }
+            }
+          }
+        }
+        let subtitleOnly = subtitleGroups.filter { !audioKeys.contains($0.key) }
+        if !subtitleOnly.isEmpty {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Subtitles")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+            Text(subtitleOnly.map(\.name).joined(separator: ", "))
+              .font(InfoPopupMetrics.bodyFont)
+              .foregroundStyle(Color.KinoPub.text)
+              .fixedSize(horizontal: false, vertical: true)
+          }
+        }
+      }
+    }
+#if os(tvOS)
+    .reportMediaItemSectionFocus(onSectionFocused)
+#endif
+  }
+
+  private func row(_ group: MediaLanguageGroup, showsSubtitleBadge: Bool) -> some View {
+    HStack(alignment: .top, spacing: 10) {
+      FlagGlyph(code: group.key, diameter: Self.flagDiameter)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(group.name)
+          .font(TypeScale.detailBody)
+          .foregroundStyle(Color.KinoPub.text)
+        if let best = group.detailLines.first {
+          Text(best)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+      }
+      Spacer(minLength: 8)
+      if showsSubtitleBadge {
+        CapabilityGlyph(.closedCaptions, height: 14)
+          .foregroundStyle(.secondary)
+      }
+    }
+  }
+
+  private func expandedRow(_ group: MediaLanguageGroup, showsSubtitleBadge: Bool) -> some View {
+    HStack(alignment: .top, spacing: 12) {
+      FlagGlyph(code: group.key, diameter: Self.expandedFlagDiameter)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(group.name)
+          .font(InfoPopupMetrics.bodyFont.weight(.semibold))
+          .foregroundStyle(Color.KinoPub.text)
+        ForEach(Array(group.detailLines.enumerated()), id: \.offset) { _, line in
+          Text(line)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+      }
+      Spacer(minLength: 8)
+      if showsSubtitleBadge {
+        CapabilityGlyph(.closedCaptions, height: 16)
+          .foregroundStyle(.secondary)
+      }
+    }
+  }
+
+  /// `group.key` is a lowercase ISO 639-1 code (`SubtitleTracks.languageKey`) — the
+  /// same string `FlagGlyph` reads as `flag_<code>`. A code with no matching asset
+  /// simply draws nothing; the row still reads fine without it.
+  static let flagDiameter: CGFloat = 20
+  static let expandedFlagDiameter: CGFloat = 24
+}
+
+private func localizedLanguagesUnit(_ count: Int) -> String {
+  switch localizedPluralForm(count) {
+  case 0: return "MediaItem_UnitLanguageOne".localized
+  case 1: return "MediaItem_UnitLanguageFew".localized
+  default: return "MediaItem_UnitLanguageMany".localized
   }
 }
 
@@ -1209,14 +2370,7 @@ struct MediaItemInfoColumns: View {
 
   /// System preferred languages plus the app's second-subtitle choice — the set the
   /// Languages column keeps expanded by default.
-  private var preferredLanguages: [String] {
-    var languages = Locale.preferredLanguages
-    let second = SubtitlePreferences.secondSubtitleLanguage
-    if !languages.contains(where: { SubtitleTracks.matches(language: $0, second) }) {
-      languages.append(second)
-    }
-    return languages
-  }
+  private var preferredLanguages: [String] { mediaItemPreferredLanguages() }
 
   /// The strip above the table: what this title **is** and where it comes from —
   /// type, country, genre. These are the only information values that ever led
@@ -1560,26 +2714,9 @@ struct MediaItemInfoColumns: View {
 
   private enum UnitKind { case season, episode, special }
 
-  /// Grammatically correct unit for the running locale: RU/UK/BE and LT have three
-  /// plural forms, English two.
+  /// Grammatically correct unit for the running locale.
   private static func unit(_ count: Int, _ kind: UnitKind) -> String {
-    let lang = Locale.current.language.languageCode?.identifier ?? "en"
-    let mod100 = count % 100
-    let mod10 = count % 10
-    let form: Int  // 0 = one, 1 = few, 2 = many
-    if ["ru", "uk", "be"].contains(lang) {
-      if (11...14).contains(mod100) { form = 2 }
-      else if mod10 == 1 { form = 0 }
-      else if (2...4).contains(mod10) { form = 1 }
-      else { form = 2 }
-    } else if lang == "lt" {
-      if mod10 == 1 && mod100 != 11 { form = 0 }
-      else if (2...9).contains(mod10) && !(10...19).contains(mod100) { form = 1 }
-      else { form = 2 }
-    } else {
-      form = count == 1 ? 0 : 2
-    }
-
+    let form = localizedPluralForm(count)
     let key: String
     switch (kind, form) {
     case (.season, 0): key = "MediaItem_UnitSeasonOne"
@@ -1698,12 +2835,7 @@ struct MediaItemInfoColumns: View {
     )
   }
 
-  private var advisories: [String] {
-    var result: [String] = []
-    if mediaItem.advert { result.append("MediaItem_ContainsAds".localized) }
-    if mediaItem.poorQuality { result.append("MediaItem_PoorQuality".localized) }
-    return result
-  }
+  private var advisories: [String] { mediaItemAdvisories(mediaItem) }
 
   /// The legend. Only badges we can actually justify from the payload — kino.pub
   /// carries no HDR / Dolby Vision flag, so those are absent rather than guessed.
@@ -1922,150 +3054,6 @@ struct MediaItemInfoColumns: View {
             .fixedSize(horizontal: false, vertical: true)
         }
       }
-    }
-  }
-
-  // MARK: Languages
-
-  /// Audio and subtitles, shortest-useful-answer first: per language only the **best**
-  /// dub available (`AudioTracks` orders kinds DUB → MVO → DVO → VO → AVO → Orig, so
-  /// that is simply the first summary line), with the rest folded into a "+N" until
-  /// the card is opened. A title with a proper dub and eight single-voice
-  /// localizations should say "Russian · Dubbed", not list all nine.
-  private struct LanguagesCard: View {
-    let audioGroups: [MediaLanguageGroup]
-    let subtitleGroups: [MediaLanguageGroup]
-    let preferredLanguages: [String]
-    var onSectionFocused: (() -> Void)? = nil
-
-    @State private var showsAllAudio = false
-    @State private var showsAllSubtitles = false
-
-    /// Expanding shows every language *and* every dub kind within each language.
-    private var isExpanded: Bool { showsAllAudio && showsAllSubtitles }
-
-    private var collapsedAudio: (visible: [MediaLanguageGroup], hiddenCount: Int) {
-      LanguageListVisibility.partition(audioGroups, preferredLanguages: preferredLanguages)
-    }
-
-    private var collapsedSubtitles: (visible: [MediaLanguageGroup], hiddenCount: Int) {
-      LanguageListVisibility.partition(subtitleGroups, preferredLanguages: preferredLanguages)
-    }
-
-    private var audioPartition: (visible: [MediaLanguageGroup], hiddenCount: Int) {
-      showsAllAudio ? (audioGroups, 0) : collapsedAudio
-    }
-
-    private var subtitlePartition: (visible: [MediaLanguageGroup], hiddenCount: Int) {
-      showsAllSubtitles ? (subtitleGroups, 0) : collapsedSubtitles
-    }
-
-    /// Dub kinds hidden by the collapsed view, across every visible language.
-    private var hiddenKindCount: Int {
-      audioPartition.visible.reduce(0) { $0 + max(0, $1.detailLines.count - 1) }
-    }
-
-    private var canExpand: Bool {
-      guard !isExpanded else { return false }
-      return collapsedAudio.hiddenCount >= 2
-        || collapsedSubtitles.hiddenCount >= 2
-        || hiddenKindCount > 0
-    }
-
-    var body: some View {
-      Button {
-        guard canExpand else { return }
-        showsAllAudio = true
-        showsAllSubtitles = true
-      } label: {
-        VStack(alignment: .leading, spacing: MediaItemInfoColumns.sectionSpacing) {
-          Text("Languages")
-            .font(MediaItemInfoColumns.cardTitleFont)
-            .foregroundStyle(.secondary)
-
-          if !audioGroups.isEmpty {
-            audioSection(groups: audioPartition.visible,
-                         moreCount: audioPartition.hiddenCount)
-          }
-          if !subtitleGroups.isEmpty {
-            subtitleSection(groups: subtitlePartition.visible,
-                            moreCount: subtitlePartition.hiddenCount)
-              .padding(.top, MediaItemInfoColumns.subtitleExtraTop)
-          }
-        }
-        .padding(MediaItemInfoColumns.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-          RoundedRectangle(cornerRadius: MediaItemInfoColumns.cardCornerRadius, style: .continuous)
-            .fill(.thinMaterial)
-        }
-      }
-      .buttonStyle(DetailTileStyle.buttonStyle)
-#if os(tvOS)
-      .reportMediaItemSectionFocus(onSectionFocused)
-#endif
-    }
-
-    @ViewBuilder
-    private func audioSection(groups: [MediaLanguageGroup], moreCount: Int) -> some View {
-      VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageNameToKindSpacing) {
-        Text("MediaItem_Voice")
-          .font(MediaItemInfoColumns.captionFont)
-          .foregroundStyle(Color.KinoPub.subtitle)
-
-        VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageGroupSpacing) {
-          ForEach(groups) { group in
-            // Collapsed: the best kind only (the list is already ranked, so that is
-            // line 0). Expanded: every kind this language has.
-            let lines = isExpanded ? group.detailLines : Array(group.detailLines.prefix(1))
-            VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageNameToKindSpacing) {
-              Text(group.name)
-                .font(MediaItemInfoColumns.valueFont)
-                .foregroundStyle(Color.KinoPub.text)
-              ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                Text(line)
-                  .font(MediaItemInfoColumns.detailFont)
-                  .foregroundStyle(Color.KinoPub.text)
-                  .fixedSize(horizontal: false, vertical: true)
-              }
-            }
-          }
-        }
-
-        // One count for both kinds of "there is more here" — extra languages and the
-        // extra dubs folded away inside the ones on screen.
-        let hidden = moreCount + hiddenKindCount
-        if hidden > 0, !isExpanded {
-          moreLabel(hidden)
-        }
-      }
-    }
-
-    @ViewBuilder
-    private func subtitleSection(groups: [MediaLanguageGroup], moreCount: Int) -> some View {
-      VStack(alignment: .leading, spacing: MediaItemInfoColumns.languageNameToKindSpacing) {
-        Text("Subtitles")
-          .font(MediaItemInfoColumns.captionFont)
-          .foregroundStyle(Color.KinoPub.subtitle)
-
-        Text(groups.map(\.name).joined(separator: ", "))
-          .font(MediaItemInfoColumns.plainValueFont)
-          .foregroundStyle(Color.KinoPub.text)
-          .fixedSize(horizontal: false, vertical: true)
-
-        if moreCount >= 2 {
-          moreLabel(moreCount)
-        }
-      }
-    }
-
-    private func moreLabel(_ count: Int) -> some View {
-      HStack(spacing: 6) {
-        Text("and \(count) more")
-        Image(systemName: "chevron.down")
-      }
-      .font(MediaItemInfoColumns.captionFont)
-      .foregroundStyle(Color.KinoPub.subtitle.opacity(0.85))
     }
   }
 
@@ -2305,9 +3293,6 @@ struct MediaItemInfoColumns: View {
 #if os(tvOS)
   static let columnSpacing: CGFloat = 60
   static let sectionSpacing: CGFloat = 22
-  static let languageGroupSpacing: CGFloat = 12
-  static let languageNameToKindSpacing: CGFloat = 3
-  static let subtitleExtraTop: CGFloat = 8
   static let stackSpacing: CGFloat = 4
   static let footerSpacing: CGFloat = 28
   static let cardPadding: CGFloat = 32
@@ -2318,9 +3303,6 @@ struct MediaItemInfoColumns: View {
 #else
   static let columnSpacing: CGFloat = 28
   static let sectionSpacing: CGFloat = 16
-  static let languageGroupSpacing: CGFloat = 8
-  static let languageNameToKindSpacing: CGFloat = 1
-  static let subtitleExtraTop: CGFloat = 8
   static let stackSpacing: CGFloat = 2
   static let footerSpacing: CGFloat = 20
   static let cardPadding: CGFloat = 16
@@ -2342,7 +3324,6 @@ struct MediaItemInfoColumns: View {
   static let captionFont: Font = TypeScale.detailBody
   static let valueFont: Font = TypeScale.detailBody.weight(.medium)
   static let plainValueFont: Font = TypeScale.detailBody
-  static let detailFont: Font = TypeScale.detailBody
 }
 
 /// Rating-tile cousin for footer source chips — light plate, hover brighten, press scale.
@@ -2382,14 +3363,37 @@ private struct SourceChipButtonStyle: ButtonStyle {
 struct MediaItemSectionHeader: View {
   private let title: LocalizedStringKey
   private let count: String?
+  /// Where the whole section opens. `nil` — and always on tvOS — leaves the header
+  /// plain text: a navigating header on a remote is one more focus stop above every
+  /// row, which is why `MediaPosterShelf` fences it the same way.
+  private let destination: (any Hashable)?
 
-  init(_ title: LocalizedStringKey, count: String? = nil) {
+  init(_ title: LocalizedStringKey, count: String? = nil, destination: (any Hashable)? = nil) {
     self.title = title
     self.count = count
+    self.destination = destination
   }
 
   var body: some View {
-    SectionHeader(title, count: count, leadingInset: MediaItemLayout.horizontalInset)
+#if os(tvOS)
+    header(showsChevron: false)
+#else
+    if let destination {
+      NavigationLink(value: destination) {
+        header(showsChevron: true)
+      }
+      .buttonStyle(RowHeaderButtonStyle())
+    } else {
+      header(showsChevron: false)
+    }
+#endif
+  }
+
+  private func header(showsChevron: Bool) -> some View {
+    SectionHeader(title,
+                  count: count,
+                  showsChevron: showsChevron,
+                  leadingInset: MediaItemLayout.horizontalInset)
   }
 }
 

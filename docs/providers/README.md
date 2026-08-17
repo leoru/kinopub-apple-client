@@ -29,6 +29,7 @@ time, in app code, at runtime.
 | --- | --- | --- | --- |
 | kino.pub | [kinopub/](kinopub/) | base source | Library, streaming, dubs, quality, account. Authoritative for those, only those. The vendor's own docs, verbatim, one file per area — our verified findings are marked 🔎 inside them |
 | TMDB | **[tmdb.md](tmdb.md)** | partial (worker proxy) | Sheet written and probed live. Field inventory shows we map ~18 of 33 movie fields and 6 of 20 append slots; zero appends at season/episode/person level; `discover`, `trending`, `changes`, `search` never touched |
+| Kinopoisk proxy (`kpapp.link`) | **[kinopoisk-proxy.md](kinopoisk-proxy.md)** | yes (keyless) | Four endpoints, no auth, Kinopoisk id only: facts, reviews, staff, images. Sheet written from live captures. Gaps are named there — reviews are page 1 of N, `BLOOPER` facts and all non-actor crew are dropped |
 | Kinopoisk Unofficial | partial, `tools/kinopoisk-metadata/` | partial (user key) | **OpenAPI: `https://kinopoiskapiunofficial.tech/documentation/api/openapi.json`** — the full surface, generate the sheet from it. **500 requests/day**, so a full pass ≈ a month; import the existing pull, do not repeat it. Offline pipeline already models far more than the app calls |
 | tvoe | raw pull in `tools/tvoe_data/` | no | 4 348 titles with genres/persons/videos/images. Metadata source, availability source, or both — undecided |
 | Apple (uts-api) | — | no | The Apple TV catalogue API Subler uses; storefronts, shelves, images, ratings, cast, seasons. Keyless, broad, best single "where to watch" source |

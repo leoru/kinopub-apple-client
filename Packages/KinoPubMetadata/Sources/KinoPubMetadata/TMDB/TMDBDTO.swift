@@ -76,6 +76,10 @@ struct TMDBTitleDetails: Codable, Sendable {
   let lastAirDate: String?
   /// Movie-only: the world premiere date TMDB knows.
   let releaseDate: String?
+  /// TMDB's own audience score, 0…10, and how many people it is from. A title with a
+  /// handful of votes still reports an average, so the count travels with it.
+  let voteAverage: Double?
+  let voteCount: Int?
 
   enum CodingKeys: String, CodingKey {
     case id, overview, tagline, homepage, status, genres, budget, revenue, networks
@@ -94,6 +98,8 @@ struct TMDBTitleDetails: Codable, Sendable {
     case firstAirDate = "first_air_date"
     case lastAirDate = "last_air_date"
     case releaseDate = "release_date"
+    case voteAverage = "vote_average"
+    case voteCount = "vote_count"
   }
 }
 

@@ -7,6 +7,7 @@
 
 import Foundation
 import KinoPubBackend
+import KinoPubMetadata
 
 protocol NavigationLinkProvider {
   func link(for item: MediaItem) -> any Hashable
@@ -18,6 +19,8 @@ protocol NavigationLinkProvider {
   func person(for person: MediaPerson) -> any Hashable
   /// A collection shelf's header — the collection's own page.
   func collection(_ collection: Collection) -> any Hashable
+  /// A detail page's Ratings and Reviews block — the same content, unclamped.
+  func ratingsAndReviews(_ payload: RatingsAndReviews) -> any Hashable
 }
 
 /// One provider for every tab stack — destinations are always `Route`.
@@ -29,6 +32,9 @@ struct AppRoutesLinkProvider: NavigationLinkProvider {
   func season(for season: Season) -> any Hashable { Route.season(season) }
   func person(for person: MediaPerson) -> any Hashable { Route.person(person) }
   func collection(_ collection: Collection) -> any Hashable { Route.collection(collection) }
+  func ratingsAndReviews(_ payload: RatingsAndReviews) -> any Hashable {
+    Route.ratingsAndReviews(payload)
+  }
 }
 
 typealias MainRoutesLinkProvider = AppRoutesLinkProvider

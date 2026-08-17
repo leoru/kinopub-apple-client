@@ -29,7 +29,7 @@ public enum ArtworkLog {
   }()
 
   private static let logger = Logger(
-    subsystem: Bundle.main.bundleIdentifier ?? "KinoPub",
+    subsystem: Bundle.main.bundleIdentifier ?? "Kinopub Soda",
     category: "artwork"
   )
 

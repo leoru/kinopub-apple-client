@@ -66,7 +66,7 @@ public enum TypeScale {
 #if os(tvOS)
       .system(.caption2, design: .rounded, weight: .heavy)
 #else
-      .system(.footnote, design: .rounded, weight: .heavy)
+      .system(.body, design: .rounded, weight: .bold)
 #endif
   }()
 
@@ -75,10 +75,10 @@ public enum TypeScale {
   /// as `ratingBadge`.
   public static let ratingAggregate: Font = {
 #if os(tvOS)
-      .system(.title3, design: .rounded, weight: .heavy)
+      .system(.title3, design: .rounded, weight: .bold)
 
 #else
-      .system(.title, design: .rounded, weight: .heavy)
+      .system(.largeTitle, design: .rounded, weight: .semibold)
 
 #endif
   }()

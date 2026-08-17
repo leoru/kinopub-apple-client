@@ -528,7 +528,11 @@ class MediaItemModel: ObservableObject {
   }
 
   private func fetchPersonShelf(person: MediaPerson, onlyType: MediaType?) async -> [MediaItem] {
-    let filter = LibraryFilter(contentType: onlyType, sort: .kinopoiskRating, person: person)
+      let filter = LibraryFilter(
+        contentType: onlyType,
+        sort: .year,
+        person: person
+      )
     do {
       let items = try await itemsService.fetchItems(filter: filter, page: nil).items
         .filter { $0.filmIdentity != mediaItem.filmIdentity }

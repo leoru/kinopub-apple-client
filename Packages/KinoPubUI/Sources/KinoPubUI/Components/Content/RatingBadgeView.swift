@@ -25,18 +25,22 @@ public enum RatingFeature {
 public struct Rating {
     public let value: Double
 
-    /// Combines the two sources, **weighted by how many people voted**. 6.0 from 4,867
-    /// voters next to 1.0 from 7 is a 6.0 title, not the 3.5 a plain mean of the two
-    /// numbers would print. A source that reports no count still counts, but as a single
-    /// vote, so it can never outweigh a real audience. Zero means "not rated" in the API,
-    /// so it counts as missing.
-    public init?(scores: MediaScores) {
-        let sources = [
-            (scores.imdb ?? 0, scores.imdbVotes ?? 0),
-            (scores.kinopoisk ?? 0, scores.kinopoiskVotes ?? 0)
-        ]
-            .filter { $0.0 > 0 }
-            .map { (score: $0.0, weight: Double(max($0.1, 1))) }
+    /// Combines **every source the caller supplied**, weighted by how many people
+    /// voted. 6.0 from 4,867 voters next to 1.0 from 7 is a 6.0 title, not the 3.5 a
+    /// plain mean would print. A source that reports no count still counts, but as a
+    /// single vote, so it can never outweigh a real audience. Zero means "not rated"
+    /// in the API, so it counts as missing.
+    ///
+    /// `weights` is the user's say over that: a multiplier per source, `0` to leave
+    /// one out. Everything is on and equal by default — see `RatingWeights`.
+    public init?(scores: MediaScores, weights: RatingWeights = .default) {
+        let sources = scores.inputs
+            .compactMap { input -> (score: Double, weight: Double)? in
+                guard let score = input.score, score > 0 else { return nil }
+                let weight = Double(max(input.votes ?? 0, 1)) * weights.weight(for: input.id)
+                guard weight > 0 else { return nil }
+                return (score, weight)
+            }
         guard !sources.isEmpty else { return nil }
         let total = sources.reduce(0) { $0 + $1.weight }
         value = sources.reduce(0) { $0 + $1.score * $1.weight } / total
@@ -96,7 +100,14 @@ public extension Rating.Tier {
         case .awarded:
             return AnyShapeStyle(Color.yellow.gradient)
         case .good:
-            return AnyShapeStyle(Color.green.gradient)
+            return AnyShapeStyle(
+                LinearGradient(
+                    colors: [.gray.opacity(0.3), .black.opacity(0.45)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+//            return AnyShapeStyle(Color.green.gradient)
         case .average:
             return AnyShapeStyle(
                 LinearGradient(
@@ -106,7 +117,14 @@ public extension Rating.Tier {
                 )
             )
         case .poor:
-            return AnyShapeStyle(Color.red.gradient)
+            return AnyShapeStyle(
+                LinearGradient(
+                    colors: [.gray.opacity(0.3), .black.opacity(0.45)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+//            return AnyShapeStyle(Color.red.gradient)
         }
     }
 
@@ -123,9 +141,9 @@ public extension Rating.Tier {
 /// Вспомогательный градиент для обводки бейджей ("эффект дешевого стеклышка")
 private let badgeGlassStroke = LinearGradient(
     stops: [
-        .init(color: .white.opacity(0.8), location: 0.0),
+        .init(color: .white.opacity(0.4), location: 0.0),
         .init(color: .white.opacity(0), location: 0.4),
-        .init(color: .white, location: 1.0)
+        .init(color: .white.opacity(0.4), location: 1.0)
     ],
     startPoint: .topLeading,
     endPoint: .bottomTrailing
@@ -145,7 +163,7 @@ public struct RatingBadgeView: View {
     
     private var contentColor: Color {
         if showBackground {
-            return rating.tier.common ? .white : .black
+            return rating.tier.showsWings ? .black : .white
         } else {
             return rating.tier.color
         }
@@ -175,8 +193,8 @@ public struct RatingBadgeView: View {
         )
         .overlay {
             if showBackground {
-                RoundedRectangle(cornerRadius: 6.5)
-                    .strokeBorder(badgeGlassStroke, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(badgeGlassStroke, lineWidth: 0.5)
             }
         }
     }
@@ -202,6 +220,55 @@ public struct RatingBadgeView: View {
     #endif
 }
 
+/// Five stars filled to a fraction — the App Store's shape for "how good, at a
+/// glance", next to the number that says it precisely.
+///
+/// Takes a **0…5** value, so a 10-point `Rating` is halved by the caller rather than
+/// this view guessing which scale it was handed. The empty stars are `.quaternary`
+/// (a hierarchical style, not a colour), and the filled ones take the tier colour the
+/// rest of the app already gives that score.
+public struct StarRatingRow: View {
+    private let value: Double
+    private let tint: Color
+    private let font: Font
+
+    public init(value: Double, tint: Color = .yellow, font: Font = .title) {
+        self.value = value
+        self.tint = tint
+        self.font = font
+    }
+
+    /// Convenience for the 10-point aggregate every score in this app is on.
+    public init(rating: Rating, font: Font = .title) {
+        self.init(value: rating.rounded / 2, tint: rating.tier.color, font: font)
+    }
+
+    public var body: some View {
+        HStack(spacing: 2) {
+            ForEach(0..<5, id: \.self) { index in
+                Image(systemName: symbol(at: index))
+            }
+        }
+        .foregroundStyle(tint)
+        .font(font)
+        .accessibilityElement()
+        .accessibilityLabel(Text(String(format: "%.1f", clamped)))
+    }
+
+    private var clamped: Double { min(max(value, 0), 5) }
+
+    /// Rounded to the nearest half so a star is full, half or empty — the three
+    /// symbols the system draws. A continuous mask over five filled stars can paint
+    /// 0.13 of a star, which is a fill percentage, not a rating.
+    private func symbol(at index: Int) -> String {
+        let halves = (clamped * 2).rounded()
+        let filled = Double(index) * 2
+        if halves >= filled + 2 { return "star.fill" }
+        if halves >= filled + 1 { return "star.leadinghalf.filled" }
+        return "star"
+    }
+}
+
 /// Large aggregate score for the detail ratings row: coloured digits and laurel
 /// wings when the tier earns them — not the poster capsule.
 public struct AggregateRatingLabel: View {
@@ -217,7 +284,7 @@ public struct AggregateRatingLabel: View {
     
     private var contentColor: Color {
         if showBackground {
-            return rating.tier.common ? .white : .black
+            return rating.tier.showsWings ? .black : .white
         } else {
             return rating.tier.color
         }
@@ -237,8 +304,8 @@ public struct AggregateRatingLabel: View {
                 wing(mirrored: true)
             }
         }
-        .padding(.horizontal, showBackground ? 18 : (showBackground && showWings) ? 8 : 0)
-        .padding(.vertical, showBackground ? 6 : 0)
+        .padding(.horizontal, (showBackground && showWings) ? 8 : showBackground ? 12 : 0)
+        .padding(.vertical, showBackground ? 4 : 0)
         .background(
             showBackground ? rating.tier.background : AnyShapeStyle(Color.clear),
             in: Capsule()
@@ -246,7 +313,7 @@ public struct AggregateRatingLabel: View {
         .overlay {
             if showBackground {
                 Capsule()
-                    .strokeBorder(badgeGlassStroke, lineWidth: 1)
+                    .strokeBorder(badgeGlassStroke, lineWidth: 0.5)
             }
         }
     }
@@ -265,7 +332,7 @@ public struct AggregateRatingLabel: View {
     static let wingHeight: CGFloat = 40
     static let wingSpacing: CGFloat = 8
     #else
-    static let wingHeight: CGFloat = 22
+    static let wingHeight: CGFloat = 30
     static let wingSpacing: CGFloat = 4
     #endif
 }
@@ -276,19 +343,19 @@ public struct AggregateRatingLabel: View {
             if let rating = Rating(imdb: score, kinopoisk: score) {
                 HStack(spacing: 30) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Badge").font(.caption).foregroundColor(.gray)
+                        Text("Badge").font(.callout).foregroundColor(.gray)
                         RatingBadgeView(rating: rating)
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Aggregate").font(.caption).foregroundColor(.gray)
+                        Text("Aggregate").font(.callout).foregroundColor(.gray)
                         AggregateRatingLabel(rating: rating)
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("No BG").font(.caption).foregroundColor(.gray)
+                        Text("No BG").font(.callout).foregroundColor(.gray)
                         RatingBadgeView(rating: rating, showBackground: false, showWings: true)
-                    }
+                    } 
                 }
             }
         }

@@ -189,24 +189,66 @@ public struct Fact: Sendable, Hashable, Identifiable {
 public struct Review: Sendable, Hashable, Identifiable {
   public var id: String { "\(author)-\(title)-\(date ?? "")" }
   public let author: String
+  /// Often empty — roughly half the reviews on a title carry no headline at all.
   public let title: String
   public let body: String
   public let sentiment: String?
+  /// The source's timestamp verbatim (`2022-02-18T21:51:09`). Kept because the id is
+  /// built from it, and because it is the only thing that survives a format we stop
+  /// recognising.
   public let date: String?
+  /// The same instant, parsed. Nil when the source's format is not one we read.
+  public let postedAt: Date?
+  /// "Was this review useful?" — Kinopoisk's `positiveRating` / `negativeRating`.
+  /// Not the review's own sentiment: a negative review can be widely agreed with.
+  public let helpfulVotes: Int
+  public let unhelpfulVotes: Int
+  /// The **review's** id at the source, not the title's. Nothing links to a single
+  /// review yet — it is here because the payload carries it and the expanded card is
+  /// where a permalink would go.
+  public let sourceId: Int?
 
   public init(
     author: String,
     title: String,
     body: String,
     sentiment: String? = nil,
-    date: String? = nil
+    date: String? = nil,
+    postedAt: Date? = nil,
+    helpfulVotes: Int = 0,
+    unhelpfulVotes: Int = 0,
+    sourceId: Int? = nil
   ) {
     self.author = author
     self.title = title
     self.body = body
     self.sentiment = sentiment
     self.date = date
+    self.postedAt = postedAt
+    self.helpfulVotes = helpfulVotes
+    self.unhelpfulVotes = unhelpfulVotes
+    self.sourceId = sourceId
   }
+}
+
+/// How many reviews a title has, as the source counts them.
+///
+/// `total` is **not** `reviews.count`: the proxy pages its reviews and we carry the
+/// first page only, so the header can say "11" while the rail holds ten cards.
+public struct ReviewsSummary: Sendable, Hashable {
+  public let total: Int
+  public let positive: Int
+  public let negative: Int
+  public let neutral: Int
+
+  public init(total: Int, positive: Int, negative: Int, neutral: Int) {
+    self.total = total
+    self.positive = positive
+    self.negative = negative
+    self.neutral = neutral
+  }
+
+  public var isEmpty: Bool { total <= 0 && positive <= 0 && negative <= 0 && neutral <= 0 }
 }
 
 public struct TrailerRef: Sendable, Hashable {
@@ -265,6 +307,8 @@ public struct TitleMetadata: Sendable {
   public var stills: [StillImage] = []
   public var facts: [Fact] = []
   public var reviews: [Review] = []
+  /// The source's own counts for `reviews`, which are a first page, not the whole set.
+  public var reviewsSummary: ReviewsSummary?
   public var nextEpisode: EpisodeRef?
   public var lastEpisode: EpisodeRef?
   public var status: String?
@@ -289,6 +333,11 @@ public struct TitleMetadata: Sendable {
   public var revenue: Int?
   public var productionCompanies: [ProductionCompany] = []
   public var tmdbId: Int?
+  /// TMDB's own audience score (0…10) and its vote count. A third rating source
+  /// beside kino.pub's IMDb and Kinopoisk numbers — **not** folded into the aggregate
+  /// `Rating`, which stays the two sources it has always weighed.
+  public var tmdbRating: Double?
+  public var tmdbVotes: Int?
   public var attribution: Set<MetadataSourceID> = []
   /// Every raw HTTP call any source made for this title, across the whole merge —
   /// concatenated, not "fill gap" like the other fields. Dev/debug only.
@@ -312,6 +361,7 @@ public struct TitleMetadata: Sendable {
     if stills.isEmpty { stills = other.stills }
     if facts.isEmpty { facts = other.facts }
     if reviews.isEmpty { reviews = other.reviews }
+    if reviewsSummary == nil { reviewsSummary = other.reviewsSummary }
     if nextEpisode == nil { nextEpisode = other.nextEpisode }
     if lastEpisode == nil { lastEpisode = other.lastEpisode }
     if status == nil { status = other.status }
@@ -331,6 +381,8 @@ public struct TitleMetadata: Sendable {
     if revenue == nil { revenue = other.revenue }
     if productionCompanies.isEmpty { productionCompanies = other.productionCompanies }
     if tmdbId == nil { tmdbId = other.tmdbId }
+    if tmdbRating == nil { tmdbRating = other.tmdbRating }
+    if tmdbVotes == nil { tmdbVotes = other.tmdbVotes }
     attribution.formUnion(other.attribution)
     debugLog.append(contentsOf: other.debugLog)
   }

@@ -5,6 +5,203 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Flags, a Video rename, full quality list, CC moved to Languages (2026-08-17)
+
+- **`FlagGlyph`** (`KinoPubUI`): a round flag keyed by ISO 639-1 language code or
+  ISO 3166-1 country code — both resolve to `flag_<code>` in `Media.xcassets`, so the
+  same view will serve a language row and a country tag later. The asset set is added
+  separately (by hand); a code with no matching file draws nothing rather than a
+  broken-image glyph — checked via `UIImage(named:in:)` / `NSBundle.image(forResource:)`
+  before deciding whether to draw. `LanguagesCard`'s rows lead with one now.
+- **"Technical" is `MediaItem_VideoCard` → "Video"** (`TechnicalCard`/`TechnicalBadge`
+  renamed to `VideoCard`/`VideoBadge` to match). Left `MediaItem_Technical` alone —
+  that key still titles a column in the separate, still-switchable `MediaItemAboutLayouts`
+  experiment, and renaming its text would have relabelled a different section.
+- **The Subtitles badge left the Video card** — the Languages card already puts a CC
+  glyph on every language that actually has one, which says more than a title-wide
+  flag did.
+- **The Video card's popup lists every quality the title offers**, not just the top
+  one: `mediaItem.videoTechLines` (`"1080p · h264 · 1920×1080"` per distinct file),
+  shown only when there is more than one — "what am I about to download" is a
+  quality-picking decision, not a glance.
+- No SDH badge yet, but not never: kino.pub's payload cannot tell a hard-of-hearing
+  track from a translated one today; once OpenSubtitles (or another SDH-tagging
+  source) is wired, only the badge list changes.
+
+### The badge cards got a third card, a real order, and less to hide behind (2026-08-17)
+
+- 🔴 **Reordered by what a viewer decides with, not by what was easiest to compute.**
+  The rail was Technical → Age Rating; it is now **Age Rating → Languages → Technical**
+  — can whoever's in the room watch this at all, can *you* understand it, and only
+  then what it technically is. The old order buried the one card that gates the other
+  two behind the one nobody actually opens first.
+- **Languages joins the rail** (`LanguagesCard`) — the card the mockup showed and the
+  page never had. Best dub per preferred language (reused, not reinvented: same
+  `AudioTracks` DUB→MVO→DVO→VO→AVO→Orig ranking, same `LanguageListVisibility`
+  collapsing), a CC glyph on any language that also has subtitles, "+N languages" for
+  the rest, full breakdown in the popup. **Superseded a dead, never-instantiated
+  `LanguagesCard`** that duplicated this exact job inside `MediaItemInfoColumns` — one
+  live implementation now, and five now-orphaned metrics (`languageGroupSpacing`,
+  `languageNameToKindSpacing`, `subtitleExtraTop`, `detailFont`) deleted with it.
+- **The Age Rating card decodes itself without a tap now.** `MediaItem_LegendAgeRating`
+  ("Возрастная категория тайтла.") used to live only behind the popup; a title with no
+  advisory flags — most of them — showed a bare checkmark and a number, which is what
+  read as empty. It's inline under the number always, same as the popup, so the
+  collapsed card says something even when kino.pub gave us nothing else to add.
+- **A DEBUG-only illustration, not a shipped guess.** `CapabilityGlyph` gained
+  `.dolbyVision` / `.dolbyAtmos` — real assets — and a
+  `#Preview("Technical card, with a Dolby signal (illustration)")` renders them against
+  fabricated badge data, explicitly marked non-reachable from `technicalBadges`. This
+  is "look at it without wiring it to a real source" done the way the repo's own rule
+  requires: a real user can never see a badge the app cannot back, only whoever opens
+  the preview can.
+- `mediaItemPreferredLanguages()` joins `mediaItemAdvisories(_:)` as a second shared
+  free function — the language-ranking logic was about to exist in the info table and
+  the new card as two copies.
+
+### Technical and Parental Advisory cards, on the same block shape (2026-08-17)
+
+- **`MediaItemBadgeCardsSection`** (iOS/macOS): a `BlockRail` of two `BlockCard`s, right
+  after Facts/Reviews and before the untouched info table — a Technical card (quality,
+  3D, AC-3, subtitles, audio description, each as an icon + spelled-out label) and a
+  Parental Advisory card (the age rating under a checkmark, plus whatever real
+  advisory kino.pub sent). Same component the ratings/reviews/facts rails already use;
+  nothing about the table or `InfoFooter` beneath it changed.
+- 🔴 **Only a real signal gets a badge.** kino.pub sends no HDR / Dolby Vision / Dolby
+  Atmos / MPAA flag, so those stay off — the same rule `aboutBadges` already followed,
+  restated here because the mockup this was sketched from draws exactly those. Their
+  icon assets (`dolby-vision`, `dolby-atmos`, `tv-ma`, `R`, `subtitle`) are in
+  `Media.xcassets`, unreferenced, on purpose — see `MediaItemBadgeCardsSection`'s doc
+  comment for where they plug in once a real source exists.
+  `MediaCapabilityBadges.isHDR` is real but only ever filled from a probed HLS
+  `VIDEO-RANGE`, which the detail page does not fetch.
+- **`CapabilityGlyph`** (`KinoPubUI`): the app target cannot reach `Bundle.module` —
+  every catalogue image before this went through a public wrapper defined inside
+  `KinoPubUI` (`MediaScoreLogo`, the "wing" icon), and this is the same idiom for the
+  quality/3D/CC/AD/checkmark pills. Fixed height, free width, `.template` tint.
+- **Tapping a card opens the shared `InfoPopup`** — the same "the clipped thing is the
+  trigger" mechanism `AboutColumn` / `AboutLegendColumn` already use — not a page, and
+  not a new expansion mechanism. Each badge gets its full sentence there
+  (`MediaItem_Legend*`, already localized, plus a new `MediaItem_Legend3D`).
+- Parental Advisory never writes a sentence we were not given: an age rating with no
+  advisory flags draws the number alone rather than manufacturing a reason for it.
+- `mediaItemAdvisories(_:)` replaces the `advisories` logic that was about to exist in
+  two places (`MediaItemInfoColumns` and the new card) — one function, both callers.
+
+### One card shape for the page's blocks, tried on Ratings and Reviews first (2026-08-17)
+
+- **`BlockCard` / `BlockRail` / `BlockMetrics`** (`KinoPubUI`) — the card every block-shaped section
+  on iOS/macOS is meant to be built from. Two kinds, **one look**: `.interactive` (the card is the
+  control) and `.flat` (the card is a surface holding its own rows — the table shape). One
+  component configured, not a card per section; the next blocks (facts, photos, information
+  columns) go on the same one. tvOS compiles but is not a customer — its media surfaces are TVUIKit,
+  and the section is not shown there.
+- **Fill is a `Material`, never a colour.** The detail page sits on an ambient wash of the title's
+  own artwork, so a fixed grey stops belonging to it. Hover deepens the material
+  (`.regular` → `.thick`) instead of tinting — that is the only "raised" move available without
+  introducing a colour the page did not have. Not `kinoGlass`: glass is chrome floating *over*
+  content, and a block card **is** content. Materials do their own Reduce Transparency degradation.
+- 🔴 **Scores and opinions as one section** (`MediaItemRatingsAndReviewsSection`), the App Store's
+  shape: a fixed-height rail of ratings card → review cards. **An experiment running beside the
+  shipped row, not replacing it** — `MediaItemRatingsSection` is still on the page, on every
+  platform, and so is `MediaItemReviewsSection`. Deleting the validated thing before the replacement
+  is settled is how a comparison stops being possible; both go through one switch in `MediaItemView`
+  when one wins.
+- **The block is identical on every title**: one title (always "Ratings and Reviews"), one
+  destination, always present. A header derived from what has loaded flickers, because enrichment is
+  async — the chevron used to appear halfway through. **Every card in the rail opens the same page**
+  through `BlockCard`'s new `.link` kind, so the block has exactly one destination and the cards
+  visibly hover and press.
+- **Nothing inside a card is separately clickable.** The per-source links move to the popup or to
+  buttons of their own; a small target inside a big one competing for the same press is the thing
+  the card shape exists to avoid.
+- **The ratings card**: the aggregate as a number (`largeTitle`, rounded, **semibold**) and as
+  `StarRatingRow` (new in `KinoPubUI`; takes a 0…5 value so nothing guesses the scale), stars
+  **always orange** — a green or grey star row reads as a second signal contradicting the number.
+  Under it, one `.body` line of "N Ratings · N рецензий"; the source chips are `.body` too.
+- **kino.pub's own score is the community thumbs as one percentage** under the app's own mark —
+  a thumbs system measures the share that liked it, and a lone SF Symbol in a row of brand logos
+  reads as a different kind of thing. Display only until the Rate control is designed.
+- **Sources are ordered by vote count**, biggest audience first. The order used to be the order the
+  cases were written in, which put 300 voters ahead of 300 000 on every title.
+- **Views are not a rating** and are not in the card; the review count is not a card of its own,
+  because a tally with nothing to expand had no reason to be tappable.
+- 🔴 **The aggregate weighs four sources now**, not two: IMDb, Kinopoisk, TMDB and kino.pub.
+  `Rating.init?(scores:weights:)` iterates `MediaScores.inputs` instead of naming two fields, so a
+  fifth source is data. Vote-weighting keeps it honest — on a title with 280k IMDb voters, adding
+  TMDB's 1 536 and kino.pub's 560 moved 8.34 to 8.33.
+- **TMDB is a rating source.** `vote_average` / `vote_count` were arriving on every details call and
+  being dropped; `TitleMetadata.tmdbRating` / `.tmdbVotes` now, with a `.tmdb` case on
+  `MediaScoreLogo.Source` (the asset was already there).
+- **kino.pub is a rating source**: `likes / (likes + dislikes)`, printed as a percentage and
+  averaged on the 0…10 scale, under the app's own mark (`kinopub` asset added to `KinoPubUI`).
+  A thumbs system runs high — that is real, and turnout weighting is what stops it mattering.
+- **`RatingWeights` exists and is all-on, equal.** A multiplier per source, `0` to exclude, so the
+  settings pane this is heading for — tick what you trust, weigh one above another — changes a
+  stored value rather than the shape of the calculation. "All sources, equally" is now a written
+  default rather than the absence of a decision.
+- **A card and the page it opens can differ by a tenth.** kino.pub's payload carries IMDb and
+  Kinopoisk only; TMDB arrives with enrichment and the thumbs with the vote endpoint, so a poster
+  badge aggregates two sources and the detail page four. Documented on `MediaScores` — the
+  alternative is plumbing enrichment through every shelf to buy one decimal place.
+- Both rating renderings read one `RatingSources`: which sources earn a tile, their order, what each
+  prints, and where each links are one rule, not two copies of it.
+- **Review cards have two modes, one component.** `.compact` in the rail — headline, body, sentiment,
+  date, and nothing else; a preview earns its space by being readable, not by carrying every field
+  at four points smaller. `.expanded` on the page — full body with the author's paragraphing intact,
+  nickname, turnout tallies, and a link to the source. `Review` carries `sourceId` now too.
+- **`FillingText`** (`KinoPubUI`): text that takes every line the box allows and ellipsises on the
+  last one that fits. `lineLimit(5)` is a fixed count against a box measured in points — it either
+  stopped short of the bottom or asked for a line the frame had no room for, differently at every
+  Dynamic Type size. Compact review bodies also flatten paragraph breaks: in a four-line preview a
+  blank line is a quarter of it spent on nothing.
+- **Sentiment is the one coloured thing on these cards** — green / red / secondary. It is the only
+  field a reader scans rather than reads, and it already has that convention; everything else stays
+  materials and hierarchical styles.
+- **`StarRatingRow` draws `star.fill` / `star.leadinghalf.filled` / `star`**, rounded to the nearest
+  half. The mask over five filled stars it replaced could paint 0.13 of a star, which is a fill
+  percentage, not a rating.
+- **Score marks are fixed in height and free in width** (`MediaScoreLogo.Style.compact`, the
+  `*_small` vector set). Boxing every one into `height × height` letterboxed the wide wordmarks down
+  to nothing.
+- 🔴 **A number never wraps.** `6.4` came out as "6." over "4" and `(35K)` as "(35" over "K)",
+  because nothing said the cells keep their own width and the row squeezed them. Every score cell
+  is `lineLimit(1)` and sized to itself now; the one line allowed to truncate is the votes/reviews
+  count, which is the only one long enough to outgrow the card — and a card that grows to fit a
+  vote count breaks the rail.
+- **Sources are a table by default**, one per line, fixed columns (`value | mark | name | turnout`)
+  shared between the card and the page so the two do not line up differently. The one-line chip row
+  is kept as `MediaItemRatingsCard.SourceLayout.chips` — it was already tight at four sources and
+  the sources are not going to stop arriving.
+- **One size, regular weight, throughout.** Chip values, counters, review footers and the reviews
+  tally were `.caption` / `.caption2` / semibold, which made a card read as three documents stacked.
+  Everything is `TypeScale.detailBody` at regular now; only a review's **title and sentiment** are
+  semibold, and only the aggregate digits are larger. Review bodies are primary text, not secondary.
+- **A review's title hugs.** Clamping it to one line cut half the headlines mid-word for a line the
+  body never got back.
+- `localizedPluralForm` is now one function (was inline in the season/episode unit helper), and
+  `MediaItem_UnitReview{One,Few,Many}` decline the review count — "53 рецензии", not "53 Рецензии".
+- Review cards are flat: a card that highlights under the pointer and then does nothing is worse
+  than one that does not offer, and what "expand" means has not been designed.
+- 🔴 **The proxy was already sending things we threw away.** `positiveRating` / `negativeRating`
+  (usefulness votes — *not* the review's sentiment: one capture is a NEGATIVE review at 23 useful /
+  79 not), and the page totals. `Review` now carries `helpfulVotes` / `unhelpfulVotes` / `postedAt`,
+  and `TitleMetadata.reviewsSummary` carries the totals. **`ReviewsSummary.total` is not
+  `reviews.count`** — the endpoint pages and we hold page 1, so the header count and the card count
+  legitimately disagree.
+- **`stripHTML` recovers paragraphs.** Review bodies arrive as `<br />\r\n<br />` between
+  paragraphs; dropping those with the rest of the tags glued a 4 000-character review into one
+  unbroken wall. Line breaks are restored first, runs collapsed to one blank line.
+- **`date` has no zone offset** (`2022-02-18T21:51:09`), so there is no instant to recover. Parsed
+  in the current calendar's zone, which keeps the wall-clock day Kinopoisk itself prints — UTC would
+  shift it by the offset.
+- **Sheet first, as the rule says:** [docs/providers/kinopoisk-proxy.md](docs/providers/kinopoisk-proxy.md)
+  documents all four `kpapi` endpoints from live captures, including the fields we deliberately
+  leave (`BLOOPER` facts, non-actor crew, review paging).
+- Verified: builds on macOS, iOS and tvOS. **Not seen running** — the iOS 26.0 simulator runtime
+  cannot load this build at all (`dyld: Symbol not found: …glassEffect…`, an SDK/runtime mismatch
+  that predates this change).
+
 ### Watching reported the wrong id, and reported it too early (2026-08-17)
 
 - 🔴 **Continue Watching asks the series itself which episode is next.** Nothing else can answer it:

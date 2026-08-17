@@ -415,9 +415,24 @@ struct MediaItemView: View {
                         })
       }
 
+      // The shipped ratings row, on every platform. It is the validated one; the
+      // block experiment below runs beside it, not instead of it.
       MediaItemRatingsSection(mediaItem: itemModel.mediaItem,
+                              externalMetadata: itemModel.externalMetadata,
+                              likeCount: itemModel.likeCount,
+                              dislikeCount: itemModel.dislikeCount,
                               showsHeader: true,
                               onSectionFocused: leaveHero)
+#if !os(tvOS)
+      // Experiment: scores and opinions as one block section.
+      MediaItemRatingsAndReviewsSection(mediaItem: itemModel.mediaItem,
+                                        externalMetadata: itemModel.externalMetadata,
+                                        summary: itemModel.externalMetadata.reviewsSummary,
+                                        likeCount: itemModel.likeCount,
+                                        dislikeCount: itemModel.dislikeCount,
+                                        destination: ratingsAndReviewsDestination,
+                                        onSectionFocused: leaveHero)
+#endif
       MediaItemCommunityVoteSection(likeCount: itemModel.likeCount,
                                     dislikeCount: itemModel.dislikeCount,
                                     myVote: itemModel.myVote,
@@ -433,9 +448,10 @@ struct MediaItemView: View {
                              onSectionFocused: leaveHero)
         .detailFocusSection("awards")
       // Where to go next comes before the reading matter: the shelves are the page's
-      // recommendations, and stills, trivia and other people's opinions are the tail
-      // you reach only if you are still here. Everything about *this* title (ratings,
-      // vote, cast, awards) stays above them.
+      // recommendations, and stills and trivia are the tail you reach only if you are
+      // still here. Everything about *this* title (ratings and reviews, vote, cast,
+      // awards) stays above them. Reviews used to be in this tail; they moved up into
+      // the ratings block on the pointer platforms.
       MediaItemRelatedRowsSection(rows: itemModel.relatedRows,
                                   relatedItem: { itemModel.relatedItem(forCardID: $0) },
                                   linkProvider: itemModel.linkProvider,
@@ -449,14 +465,39 @@ struct MediaItemView: View {
 #if !os(tvOS)
       MediaItemFactsSection(facts: itemModel.externalMetadata.facts,
                             onSectionFocused: leaveHero)
+      // Both variants are on the page while the block experiment runs: the merged
+      // Ratings and Reviews block above, and the standalone Reviews section here,
+      // where it shipped. Comparing them needs both visible; one of them goes with
+      // this comment.
       MediaItemReviewsSection(reviews: itemModel.externalMetadata.reviews,
+                              summary: itemModel.externalMetadata.reviewsSummary,
+                              destination: ratingsAndReviewsDestination,
                               onSectionFocused: leaveHero)
+      // Same rail shape as Facts/Reviews, for the two things worth a glance before
+      // the table below: what this release technically is, and whether it's OK for
+      // the room. `InfoFooter` (Uploaded / Last Update / source credit), inside
+      // `MediaItemInfoColumns`, is untouched.
+      MediaItemBadgeCardsSection(mediaItem: itemModel.mediaItem,
+                                externalMetadata: itemModel.externalMetadata,
+                                onSectionFocused: leaveHero)
 #endif
       MediaItemInfoColumns(mediaItem: itemModel.mediaItem,
                            externalMetadata: itemModel.externalMetadata,
                            onSectionFocused: leaveHero)
         .detailFocusSection("about")
     }
+  }
+
+  /// Always present. The block's header and every card in it lead to the same page,
+  /// and that has to be true before the reviews arrive as well as after — a chevron
+  /// that appears halfway through enrichment is a control the user watched grow.
+  private var ratingsAndReviewsDestination: any Hashable {
+    itemModel.linkProvider.ratingsAndReviews(
+      RatingsAndReviews(item: itemModel.mediaItem,
+                        metadata: itemModel.externalMetadata,
+                        likeCount: itemModel.likeCount,
+                        dislikeCount: itemModel.dislikeCount)
+    )
   }
 
   @ViewBuilder

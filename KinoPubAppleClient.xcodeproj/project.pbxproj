@@ -102,6 +102,7 @@
 		CCA100012C6F000100000A05 /* MediaCardMenuAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000A06 /* MediaCardMenuAlerts.swift */; };
 		CCA100012C6F000100000B01 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000B02 /* HistoryView.swift */; };
 		CCA100012C6F000100000B03 /* MediaItemAboutLayouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000B04 /* MediaItemAboutLayouts.swift */; };
+		CCA100012C6F000100000B05 /* MediaItemReviewsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000B06 /* MediaItemReviewsPage.swift */; };
 		CCA100012C6F000100000C01 /* WatchlistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C02 /* WatchlistView.swift */; };
 		CCA100012C6F000100000C03 /* RecentlyWatchedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C04 /* RecentlyWatchedView.swift */; };
 		CCA100012C6F000100000C05 /* BookmarkFolderTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA100012C6F000100000C06 /* BookmarkFolderTabView.swift */; };
@@ -276,6 +277,7 @@
 		CCA100012C6F000100000A06 /* MediaCardMenuAlerts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCardMenuAlerts.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000B02 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000B04 /* MediaItemAboutLayouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemAboutLayouts.swift; sourceTree = "<group>"; };
+		CCA100012C6F000100000B06 /* MediaItemReviewsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemReviewsPage.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C02 /* WatchlistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchlistView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C04 /* RecentlyWatchedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentlyWatchedView.swift; sourceTree = "<group>"; };
 		CCA100012C6F000100000C06 /* BookmarkFolderTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkFolderTabView.swift; sourceTree = "<group>"; };
@@ -410,6 +412,7 @@
 				CCA100012C6F000100000402 /* SeasonsRailView.swift */,
 				CCA100012C6F000100000602 /* MediaItemDetailSections.swift */,
 				CCA100012C6F000100000B04 /* MediaItemAboutLayouts.swift */,
+				CCA100012C6F000100000B06 /* MediaItemReviewsPage.swift */,
 				CCA100012C6F000100000302 /* MediaItemHeroView.swift */,
 			);
 			path = Subviews;
@@ -1147,6 +1150,7 @@
 				CCFF000000000000000A0001 /* ShortcutItemsView.swift in Sources */,
 				CCA100012C6F000100000601 /* MediaItemDetailSections.swift in Sources */,
 				CCA100012C6F000100000B03 /* MediaItemAboutLayouts.swift in Sources */,
+				CCA100012C6F000100000B05 /* MediaItemReviewsPage.swift in Sources */,
 				CCA100012C6F000100000701 /* LibraryCatalog.swift in Sources */,
 				CCA100012C6F000100000901 /* PersonItemsView.swift in Sources */,
 				CCA100012C6F000100000A01 /* MediaCardContextMenus.swift in Sources */,

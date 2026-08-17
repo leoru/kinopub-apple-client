@@ -8,6 +8,7 @@
 import SwiftUI
 import KinoPubBackend
 import KinoPubKit
+import KinoPubMetadata
 import KinoPubUI
 
 struct RouteDestination: View {
@@ -64,6 +65,8 @@ struct RouteDestination: View {
                              context: appContext,
                              authState: authState,
                              errorHandler: errorHandler)
+    case .ratingsAndReviews(let payload):
+      MediaItemRatingsAndReviewsPage(payload: payload)
     case .player(let item):
 #if os(macOS)
       MacPlayerRouteGuard(item: item, mode: .media)

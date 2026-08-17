@@ -13,11 +13,31 @@ public struct MediaScoreLogo: View {
   public enum Source: String {
     case imdb
     case kinopoisk
+    case tmdb
+    /// Us. A rating source like any other now that the community thumbs feed the
+    /// aggregate, so it wears a logo in the same row rather than a thumbs glyph.
+    case kinopub
 
     fileprivate var colorAssetName: String {
       switch self {
       case .imdb: return "imdb_lol"
       case .kinopoisk: return "kinopoisk_lol"
+      // One asset each, already the brand's colours — there is no template variant,
+      // so `.template` falls back to the same file and tints it.
+      case .tmdb: return "tmdb"
+      case .kinopub: return "kinopub_small"
+      }
+    }
+
+    /// Vector marks drawn for small sizes, one per source. Their aspect ratios differ
+    /// wildly — the IMDb wordmark is wide, the kino.pub mark is nearly square — which
+    /// is the whole reason `.compact` refuses to clamp width.
+    fileprivate var compactAssetName: String {
+      switch self {
+      case .imdb: return "imdb_small"
+      case .kinopoisk: return "kinopoisk_small"
+      case .tmdb: return "tmdb_small"
+      case .kinopub: return "kinopub_small"
       }
     }
   }
@@ -27,6 +47,8 @@ public struct MediaScoreLogo: View {
     case template
     /// Full-colour brand mark from the asset catalogue.
     case color
+    /// The mark drawn for score chips and mini rating rows.
+    case compact
   }
 
   private let source: Source
@@ -39,12 +61,24 @@ public struct MediaScoreLogo: View {
     self.style = style
   }
 
+  /// **Height is fixed, width follows the artwork.** A logo row lines up on the
+  /// baseline of the marks, not on a grid of equal squares — boxing every one into
+  /// `height × height` letterboxed the wide wordmarks down to nothing.
   public var body: some View {
-    Image(style == .color ? source.colorAssetName : source.rawValue, bundle: .module)
-      .renderingMode(style == .color ? .original : .template)
+    Image(assetName, bundle: .module)
+      .renderingMode(style == .template ? .template : .original)
       .resizable()
       .aspectRatio(contentMode: .fit)
       .frame(height: height)
+      .fixedSize(horizontal: true, vertical: false)
+  }
+
+  private var assetName: String {
+    switch style {
+    case .template: return source.rawValue
+    case .color: return source.colorAssetName
+    case .compact: return source.compactAssetName
+    }
   }
 }
 

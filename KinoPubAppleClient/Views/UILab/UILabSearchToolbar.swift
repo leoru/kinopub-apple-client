@@ -395,6 +395,7 @@ struct UILabToolbarFilterMenus: ToolbarContent {
       ) {
         Button("Any") { filters.contentType = nil }
         Divider()
+          
         ForEach(UILabContentType.allCases) { type in
           Button(type.title) { filters.contentType = type }
         }

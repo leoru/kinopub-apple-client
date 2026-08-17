@@ -81,7 +81,8 @@ actually is.
 | id, imdb_id, title, original_title, original_language, overview, tagline, homepage, status, runtime, budget, revenue, release_date | scalars | ✅ |
 | poster_path, backdrop_path | str | ✅ |
 | genres | `[{id,name}]` | — kino.pub's genres used instead; TMDB ids are the join key to `/discover` |
-| **popularity, vote_average, vote_count** | float/int | **— the ratings we do not capture** |
+| vote_average, vote_count | float/int | ✅ `TitleMetadata.tmdbRating` / `.tmdbVotes` — a third rating source beside IMDb and Kinopoisk. **Not folded into the aggregate `Rating`**, which still weighs those two only |
+| **popularity** | float | **— not captured** |
 | **belongs_to_collection** | `{id,name,poster_path,backdrop_path}` | **— franchise grouping, free** |
 | production_companies, production_countries, spoken_languages, origin_country | arrays | ✅ companies only |
 | adult, video, **softcore** | bool | — (`softcore` undocumented) |
@@ -164,8 +165,8 @@ append slots we already pay for and leave empty.
 the same plus `episode_groups` for TV. This alone unlocks the reviews section, availability,
 localized titles, TMDB-native recommendations, and franchise grouping — with no new round trips.
 
-**2. Stop discarding fields we already receive.** `vote_average`/`vote_count` at title, season and
-episode level; `popularity` and `order` on credits (the ranking the top-30 rule needs); `roles[]`
+**2. Stop discarding fields we already receive.** `vote_average`/`vote_count` at **season and
+episode** level (title level is taken now); `popularity` and `order` on credits (the ranking the top-30 rule needs); `roles[]`
 for actors with several characters; `belongs_to_collection`; `wikidata_id` and `tvdb_id`; keyword
 **ids**; image dimensions and community votes so a "best artwork" choice is defensible instead of
 first-wins.

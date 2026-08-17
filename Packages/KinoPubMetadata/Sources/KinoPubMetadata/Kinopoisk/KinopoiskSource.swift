@@ -281,8 +281,17 @@ public final class KinopoiskSource: MetadataSource, @unchecked Sendable {
   }
 
   /// Facts arrive with embedded `<a href=...>` markup and numeric HTML entities.
+  ///
+  /// Review bodies arrive as `<br />\r\n<br />` between paragraphs — the only
+  /// structure a Kinopoisk review has. Dropping those with the rest of the tags glued
+  /// a 4 000-character review into one unbroken wall, so line breaks are recovered
+  /// first and runs of them collapsed to a single blank line.
   static func stripHTML(_ raw: String) -> String {
-    var text = raw.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+    var text = raw.replacingOccurrences(of: "\r\n", with: "\n")
+    text = text.replacingOccurrences(of: "<br\\s*/?>|</p\\s*>",
+                                     with: "\n",
+                                     options: [.regularExpression, .caseInsensitive])
+    text = text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
     let entities: [String: String] = [
       "&#160;": " ", "&nbsp;": " ", "&amp;": "&", "&quot;": "\"",
       "&#39;": "'", "&laquo;": "«", "&raquo;": "»",
@@ -290,6 +299,8 @@ public final class KinopoiskSource: MetadataSource, @unchecked Sendable {
     for (entity, replacement) in entities {
       text = text.replacingOccurrences(of: entity, with: replacement)
     }
+    text = text.replacingOccurrences(of: "[ \\t]+\\n", with: "\n", options: .regularExpression)
+    text = text.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
     return text.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 }

@@ -7,6 +7,9 @@ import Foundation
 ///
 /// Endpoints (verified live, no auth):
 ///   `https://kpapp.link/kpapi/films/<kinopoiskId>/{facts,reviews,staff,images}`
+///
+/// Every field the four return, what we take and what we leave:
+/// `docs/providers/kinopoisk-proxy.md`.
 public final class KinopoiskProxySource: MetadataSource, @unchecked Sendable {
   public let id: MetadataSourceID = .kinopoiskProxy
 
@@ -103,10 +106,37 @@ public final class KinopoiskProxySource: MetadataSource, @unchecked Sendable {
         title: (item.title ?? "").trimmingCharacters(in: .whitespaces),
         body: body,
         sentiment: item.type,
-        date: item.date
+        date: item.date,
+        postedAt: item.date.flatMap(Self.parseTimestamp),
+        helpfulVotes: max(0, item.positiveRating ?? 0),
+        unhelpfulVotes: max(0, item.negativeRating ?? 0),
+        sourceId: item.kinopoiskId
       )
     }
+    if let page {
+      let summary = ReviewsSummary(
+        total: max(0, page.total ?? 0),
+        positive: max(0, page.totalPositiveReviews ?? 0),
+        negative: max(0, page.totalNegativeReviews ?? 0),
+        neutral: max(0, page.totalNeutralReviews ?? 0)
+      )
+      part.reviewsSummary = summary.isEmpty ? nil : summary
+    }
     return part
+  }
+
+  /// `2022-02-18T21:51:09` — no zone offset, so there is no instant to recover. We
+  /// read it in the **current** calendar's zone, which keeps the wall-clock date the
+  /// author's page shows; anything else shifts the printed day by the offset.
+  private static let timestampFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+    return formatter
+  }()
+
+  private static func parseTimestamp(_ raw: String) -> Date? {
+    timestampFormatter.date(from: raw)
   }
 
   // MARK: - Network
@@ -148,9 +178,20 @@ public final class KinopoiskProxySource: MetadataSource, @unchecked Sendable {
     let author: String?
     let title: String?
     let description: String?
+    /// "Useful / not useful" tallies, not the review's sentiment.
+    let positiveRating: Int?
+    let negativeRating: Int?
   }
 
+  /// `totalPages` is decoded and unused on purpose: it is the field that says the
+  /// counts below describe more reviews than `items` holds. Nothing here asks for
+  /// page 2 — see `docs/providers/kinopoisk-proxy.md`, "Known gaps".
   private struct ProxyReviewsPage: Decodable {
+    let total: Int?
+    let totalPages: Int?
+    let totalPositiveReviews: Int?
+    let totalNegativeReviews: Int?
+    let totalNeutralReviews: Int?
     let items: [ProxyReview]
   }
 
