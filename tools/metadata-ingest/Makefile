@@ -7,6 +7,7 @@
 #   make omdb       RT + Metacritic. LAZY, 1000/day, needs OMDB_API_KEY
 #   make stats      what is in the record right now
 #   make fresh      rebuild from zero
+#   make test       regression suite (no network, no dumps needed)
 #   make backup     SQL dump, for git
 #
 # Every target is re-runnable. Stopping a fetch halfway and re-running loses
@@ -16,7 +17,7 @@ PY ?= python3
 DB ?= data/record.db
 LIMIT ?=
 
-.PHONY: all import exports tmdb omdb stats fresh backup clean
+.PHONY: all import exports tmdb omdb test stats fresh backup clean
 
 all: import exports stats
 
@@ -49,6 +50,9 @@ else
 	@echo "say what to fetch:  make omdb LIMIT=200   |   make omdb TITLES=41,905"
 	@exit 1
 endif
+
+test:
+	@$(PY) tests.py
 
 stats:
 	@$(PY) ingest.py --db $(DB) --stats

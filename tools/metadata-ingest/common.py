@@ -144,6 +144,8 @@ def enrich_title(conn, title_id, *, kind=None, title_ru=None,
 
 def resolve_person(conn, *, name_ru=None, name_en=None, ids: dict | None = None):
     """Find or create a person. Ids win; names match within one alphabet only."""
+    norm_ru, norm_en = match_key(name_ru), match_key(name_en)
+
     for namespace, value in (ids or {}).items():
         if value in (None, "", 0):
             continue
@@ -152,9 +154,17 @@ def resolve_person(conn, *, name_ru=None, name_en=None, ids: dict | None = None)
             (namespace, str(value)),
         ).fetchone()
         if row:
+            # Fill whichever spelling this caller brought. Finding the person by
+            # id and then dropping their Russian name defeats the entire
+            # id-join strategy: two passes in two languages are *supposed* to
+            # meet here and leave a pair behind.
+            if name_ru or name_en:
+                conn.execute(
+                    "UPDATE person SET name_ru=COALESCE(name_ru,?), name_en=COALESCE(name_en,?),"
+                    " norm_ru=COALESCE(norm_ru,?), norm_en=COALESCE(norm_en,?) WHERE id=?",
+                    (name_ru, name_en, norm_ru, norm_en, row["person_id"]),
+                )
             return row["person_id"]
-
-    norm_ru, norm_en = match_key(name_ru), match_key(name_en)
     for column, needle in (("norm_en", norm_en), ("norm_ru", norm_ru)):
         if not needle:
             continue
