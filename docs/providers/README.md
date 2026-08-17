@@ -36,13 +36,46 @@ time, in app code, at runtime.
 | iTunes Search | — | no | Keyless, trivial, good artwork and descriptions; store coverage only |
 | IMDb (public datasets) | — | no | Only free source of **per-episode** IMDb ratings. Batch dump, not an API |
 | TheTVDB | — | no | Episode-level authority where TMDB is thin; Subler has a working client |
-| OMDb | **[omdb.md](omdb.md)** | fetcher ready, needs a key | Sheet written from docs only, **nothing probed** — no key yet. One flat record per title; the only thing nothing else gives us is **Rotten Tomatoes + Metacritic**. IMDb id only, so it never resolves identity. **1 000/day**, i.e. 53 days for one pass, so it is lazy by construction and has no sweep mode. Errors arrive as HTTP 200 with `Response:"False"` |
+| OMDb | **[omdb.md](omdb.md)** | 🔎 probed, fetcher live | 150 real responses captured. **RT + Metacritic, and only for movies** — 136/138 movies had RT, 1/11 series did. Geography turned out irrelevant (France, Japan, Hong Kong, Jordan all covered). IMDb id only, so it never resolves identity. **1 000/day** = 53 days for one pass, so it is lazy by construction with no sweep mode. Errors arrive as HTTP 200 with `Response:"False"` |
 | Trakt | — | no | Watched state, progress, recommendations. Needs user OAuth |
 | Simkl / MDBList | — | no | List and rating aggregation; both appear in every comparable project |
 | Shikimori / MAL / AniList | — | no | Anime, where the general sources are weakest and id mapping is hardest |
 | Plex / Jellyfin | — | no | User-linked libraries, not metadata sources |
+| **IntroDB** | — | no | Intro/outro markers by IMDb id — the general source for what we currently have only for tvoe's own encodes. Working client in `Lume/Services/Network/IntroDBClient.swift` |
+| **TVmaze** | — | no | Keyless, episode-level: air dates, schedules, per-episode artwork. Where TMDB is thin on TV. Client in `Plozz/Sources/MetadataKit/TVmazeArtworkProvider.swift` |
+| **Wikidata / Wikipedia** | — | no | The id bridge between everything, plus person bios. We already capture `wikidata_id` from TMDB and do nothing with it. `WikidataArtworkProvider.swift`, `WikipediaArtworkProvider.swift` |
+| **Kitsu** | — | no | Anime, alongside AniList/MAL. `KitsuArtworkProvider.swift` |
+| **OpenSubtitles** | — | no | Subtitles. `Lume/Services/Network/OpenSubtitlesClient.swift` |
+| Overseerr / Jellyseerr | — | no | Request management, not a metadata source. `Plozz/Sources/SeerService/` |
 
 "no" means candidate, not commitment. Order is set by stage 5+ of the plan.
+
+## What the reference projects already solved
+
+Working clients exist for most of the table above, in three local repos. Lift models and request
+shapes from them rather than re-deriving from vendor docs — but read the policy first: **a client
+that belongs server-side does not get copied into the app** because it exists in Swift somewhere
+else.
+
+| Repo | Providers with working clients |
+| --- | --- |
+| `Plozz/Sources/` | TMDB, TheTVDB (v4), TVmaze, AniList, Kitsu, MAL, Simkl, Wikidata, Wikipedia, OMDb, Trakt, YouTube trailers |
+| `Lume/Services/Network/` | TMDB, Trakt, MDBList, IntroDB, OpenSubtitles |
+| `CrossWatch/providers/` | Trakt, Simkl, MDBList, Plex, Jellyfin, Emby, AniList |
+
+**The part worth copying is not the clients — it is `Plozz/Sources/MetadataKit`'s runtime.** It has,
+as separate files, exactly the registry properties our policy demands and our pipeline still lacks:
+
+- `RateLimiter` + `ProviderCircuitBreaker` — per-provider isolation, so a dead source degrades only
+  its own fields ("providers cannot block each other").
+- `ResilientEnrichmentProvider` — fallback chains between providers for one field.
+- `ArtworkRouter` / `OverviewRouter` — per-field precedence, routed by content type. This is our
+  "declared precedence" table as code.
+- `KeylessIDResolver` — identity resolution that needs no key, which is the cheap half of our
+  identity ladder.
+- `ProviderResultCache` + `MetadataCacheBudgetPolicy` + `MetadataDiskCache` — a cache with a budget,
+  rather than an unbounded directory.
+- `RelatedTitleMatcher` / `RelatedTitlesResolver` — similarity without a recommendations API.
 
 ## Sheet template
 

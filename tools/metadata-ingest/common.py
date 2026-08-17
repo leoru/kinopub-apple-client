@@ -185,12 +185,50 @@ def resolve_person(conn, *, name_ru=None, name_en=None, ids: dict | None = None)
 
 
 def add_rating(conn, title_id, source, value, votes, *, season=None, episode=None, scale=10.0):
+    """Write a rating, but never let a staler number win.
+
+    Vote counts only ever grow, which makes them a free monotonic clock: a
+    payload reporting *fewer* votes than we hold is older than what we have,
+    whatever its own timestamp claims. Blind INSERT OR REPLACE would let a
+    cached CDN response quietly walk a rating backwards.
+    """
     if value in (None, "", 0) and votes in (None, 0):
         return
+    stamp = now()
+    existing = conn.execute(
+        "SELECT value, votes, first_seen_at, changed_at FROM rating"
+        " WHERE title_id=? AND source=? AND COALESCE(season,-1)=? AND COALESCE(episode,-1)=?",
+        (title_id, source, -1 if season is None else season,
+         -1 if episode is None else episode),
+    ).fetchone()
+
+    if existing is None:
+        conn.execute(
+            "INSERT INTO rating(title_id,source,season,episode,value,votes,scale,fetched_at,"
+            "first_seen_at,changed_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (title_id, source, season, episode, value, votes, scale, stamp, stamp, stamp),
+        )
+        return
+
+    if (votes is not None and existing["votes"] is not None and votes < existing["votes"]):
+        # Older than what we hold. Record that we looked, keep the better number.
+        conn.execute(
+            "UPDATE rating SET fetched_at=? WHERE title_id=? AND source=?"
+            " AND COALESCE(season,-1)=? AND COALESCE(episode,-1)=?",
+            (stamp, title_id, source, -1 if season is None else season,
+             -1 if episode is None else episode),
+        )
+        return
+
+    moved = (value != existing["value"]) or (votes != existing["votes"])
     conn.execute(
-        "INSERT OR REPLACE INTO rating(title_id,source,season,episode,value,votes,scale,fetched_at)"
-        " VALUES (?,?,?,?,?,?,?,?)",
-        (title_id, source, season, episode, value, votes, scale, now()),
+        "UPDATE rating SET value=COALESCE(?,value), votes=COALESCE(?,votes), scale=?,"
+        " fetched_at=?, first_seen_at=COALESCE(first_seen_at,?), changed_at=?"
+        " WHERE title_id=? AND source=? AND COALESCE(season,-1)=? AND COALESCE(episode,-1)=?",
+        (value, votes, scale, stamp, stamp,
+         stamp if moved else (existing["changed_at"] or stamp),
+         title_id, source, -1 if season is None else season,
+         -1 if episode is None else episode),
     )
 
 

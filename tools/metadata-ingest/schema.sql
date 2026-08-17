@@ -124,15 +124,22 @@ CREATE TABLE IF NOT EXISTS image (
 );
 
 -- Every source kept side by side with its vote count. Never pre-averaged.
+-- Three timestamps because they answer three different questions, and the
+-- votes rule below needs all of them:
+--   first_seen_at — when this source first had an opinion about this title
+--   checked_at    — when we last confirmed the value, changed or not
+--   changed_at    — when the number itself last moved
 CREATE TABLE IF NOT EXISTS rating (
-  title_id   INTEGER NOT NULL REFERENCES title(id),
-  source     TEXT NOT NULL,            -- imdb | kinopoisk | kinopub | tvoe | tmdb | critics
-  season     INTEGER,                  -- NULL = whole title
-  episode    INTEGER,
-  value      REAL,
-  votes      INTEGER,
-  scale      REAL NOT NULL DEFAULT 10.0,
-  fetched_at TEXT NOT NULL
+  title_id      INTEGER NOT NULL REFERENCES title(id),
+  source        TEXT NOT NULL,         -- imdb | kinopoisk | kinopub | tvoe | tmdb | critics
+  season        INTEGER,               -- NULL = whole title
+  episode       INTEGER,
+  value         REAL,
+  votes         INTEGER,
+  scale         REAL NOT NULL DEFAULT 10.0,
+  fetched_at    TEXT NOT NULL,         -- kept as the legacy name for checked_at
+  first_seen_at TEXT,
+  changed_at    TEXT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_rating
   ON rating(title_id, source, COALESCE(season,-1), COALESCE(episode,-1));
