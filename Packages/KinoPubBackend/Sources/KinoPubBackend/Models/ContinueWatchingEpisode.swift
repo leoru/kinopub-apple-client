@@ -36,15 +36,20 @@ public struct ContinueWatchingEpisode: Equatable, Sendable {
   /// - Parameters:
   ///   - local: the play head this device remembers, and whether it ran to the credits.
   ///   - history: the newest `/v1/history` row for this title, same question.
+  ///   - finishedInSeason: **every** episode of that season history says was watched to
+  ///     the end — not just the newest row.
   ///   - watchedCount: `/v1/watching/serials`' count of watched episodes in the series.
   ///   - total: how many episodes it lists.
   ///
-  /// Order of trust: an episode someone is in the middle of beats a count, and a count
-  /// beats "the one after whatever history mentioned last" — the count is the server's
-  /// own answer and survives episodes watched on another device.
+  /// An episode someone is in the middle of wins outright. Otherwise the answer is one
+  /// past **the furthest episode any source calls finished** — history rows are ordered
+  /// by when they were played, not by episode number, so "the last row + 1" offered E3
+  /// on a series whose E1–E4 were all watched. Taking the maximum also survives a
+  /// truncated history: 20 rows deep, an old E1 may be gone while E4 is still there.
   public static func forSeries(
     local: (season: Int?, episode: Int?, isFinished: Bool)?,
     history: (season: Int?, episode: Int?, isFinished: Bool)?,
+    finishedInSeason: Set<Int> = [],
     watchedCount: Int?,
     total: Int?
   ) -> ContinueWatchingEpisode {
@@ -56,18 +61,23 @@ public struct ContinueWatchingEpisode: Equatable, Sendable {
     }
 
     let season = history?.season ?? local?.season
-    if let watchedCount, watchedCount > 0 {
-      let next = watchedCount + 1
-      if let total, next > total { return .nothingLeft }
-      return ContinueWatchingEpisode(season: season, episode: next, isResuming: false)
+    // Each source is a *lower bound* on how far the viewer got, so the furthest one
+    // wins: the server count knows about other devices, history knows about episodes
+    // the count has not caught up with yet.
+    var reached = finishedInSeason.max() ?? 0
+    if let watchedCount { reached = max(reached, watchedCount) }
+    if let history, history.isFinished, let episode = history.episode {
+      reached = max(reached, episode)
     }
-    // No count to go by: step past whatever was last seen. Better than offering it
-    // again, and the detail page corrects the season if the step crossed one.
-    if let last = history?.episode ?? local?.episode {
-      let next = last + 1
-      if let total, next > total { return .nothingLeft }
-      return ContinueWatchingEpisode(season: season, episode: next, isResuming: false)
+    if let local, local.isFinished, let episode = local.episode {
+      reached = max(reached, episode)
     }
-    return ContinueWatchingEpisode(season: season, episode: nil, isResuming: false)
+    guard reached > 0 else {
+      return ContinueWatchingEpisode(season: season, episode: nil, isResuming: false)
+    }
+
+    let next = reached + 1
+    if let total, next > total { return .nothingLeft }
+    return ContinueWatchingEpisode(season: season, episode: next, isResuming: false)
   }
 }

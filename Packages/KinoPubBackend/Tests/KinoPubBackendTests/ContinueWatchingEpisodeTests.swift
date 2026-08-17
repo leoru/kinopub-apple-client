@@ -15,6 +15,7 @@ final class ContinueWatchingEpisodeTests: XCTestCase {
     let next = ContinueWatchingEpisode.forSeries(
       local: nil,
       history: (season: 1, episode: 2, isFinished: true),
+      finishedInSeason: [1, 2, 3, 4],
       watchedCount: 4,
       total: 10
     )
@@ -28,6 +29,7 @@ final class ContinueWatchingEpisodeTests: XCTestCase {
     let next = ContinueWatchingEpisode.forSeries(
       local: nil,
       history: (season: 2, episode: 6, isFinished: false),
+      finishedInSeason: [1, 2, 3, 4, 5],
       watchedCount: 12,
       total: 23
     )
@@ -41,6 +43,7 @@ final class ContinueWatchingEpisodeTests: XCTestCase {
     let next = ContinueWatchingEpisode.forSeries(
       local: (season: 1, episode: 7, isFinished: false),
       history: (season: 1, episode: 2, isFinished: true),
+      finishedInSeason: [1, 2],
       watchedCount: 4,
       total: 10
     )
@@ -48,12 +51,13 @@ final class ContinueWatchingEpisodeTests: XCTestCase {
     XCTAssertTrue(next.isResuming)
   }
 
-  /// A count from the server survives episodes watched on another device, so it beats
-  /// "one after the last thing this device saw".
-  func testWatchedCountLeadsWhenEverythingKnownIsFinished() {
+  /// A count from the server survives episodes watched on another device, so when it
+  /// is the furthest signal it wins.
+  func testWatchedCountLeadsWhenItIsFurthest() {
     let next = ContinueWatchingEpisode.forSeries(
       local: (season: 1, episode: 2, isFinished: true),
       history: (season: 1, episode: 2, isFinished: true),
+      finishedInSeason: [1, 2],
       watchedCount: 8,
       total: 10
     )
@@ -61,10 +65,39 @@ final class ContinueWatchingEpisodeTests: XCTestCase {
     XCTAssertFalse(next.isResuming)
   }
 
+  /// 🔴 The bug on screen: E1–E4 all watched, E2 replayed most recently, and the
+  /// server's own count still said 2. History is ordered by *when*, not by episode
+  /// number, so the newest row is not the furthest one.
+  func testFurthestFinishedEpisodeWinsOverTheNewestRow() {
+    let next = ContinueWatchingEpisode.forSeries(
+      local: nil,
+      history: (season: 1, episode: 2, isFinished: true),
+      finishedInSeason: [1, 2, 3, 4],
+      watchedCount: 2,
+      total: 10
+    )
+    XCTAssertEqual(next.episode, 5, "E1–E4 are done; E5 is the first unwatched one")
+  }
+
+  /// History is 20 rows deep, so an old E1 may be long gone while E4 is still there —
+  /// which is why this takes the maximum rather than looking for the first gap.
+  func testTruncatedHistoryStillLandsPastTheFurthestFinished() {
+    let next = ContinueWatchingEpisode.forSeries(
+      local: nil,
+      history: (season: 2, episode: 9, isFinished: true),
+      finishedInSeason: [9],
+      watchedCount: nil,
+      total: nil
+    )
+    XCTAssertEqual(next.episode, 10)
+    XCTAssertEqual(next.season, 2)
+  }
+
   func testStepsPastTheLastSeenEpisodeWithoutACount() {
     let next = ContinueWatchingEpisode.forSeries(
       local: nil,
       history: (season: 3, episode: 4, isFinished: true),
+      finishedInSeason: [4],
       watchedCount: nil,
       total: nil
     )
@@ -78,6 +111,7 @@ final class ContinueWatchingEpisodeTests: XCTestCase {
     let next = ContinueWatchingEpisode.forSeries(
       local: nil,
       history: (season: 1, episode: 10, isFinished: true),
+      finishedInSeason: [8, 9, 10],
       watchedCount: 10,
       total: 10
     )

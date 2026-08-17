@@ -380,6 +380,7 @@ class HomeCatalog: ObservableObject {
     let watchlistIDs = Set(watchlist.map(\.id))
     var lastSeen = ContinueWatchingOrder.lastSeenByItemID(history)
     let newestEntry = Self.newestEntryByItemID(history)
+    let finishedEpisodes = Self.finishedEpisodesByItemID(history)
     let historyIDs = Set(history.map(\.item.id))
     let localEntries = AppContext.shared.localProgressStore.allEntries()
     let localByID = Dictionary(uniqueKeysWithValues: localEntries.map { ($0.id, $0) })
@@ -416,9 +417,22 @@ class HomeCatalog: ObservableObject {
     return ordered.compactMap {
       Self.card(for: $0,
                 history: newestEntry[$0.id],
+                finishedEpisodes: finishedEpisodes[$0.id] ?? [:],
                 local: localByID[$0.id],
                 isInHistory: historyIDs.contains($0.id) || localByID[$0.id] != nil,
                 isInWatchlist: watchlistIDs.contains($0.id))
+    }
+  }
+
+  /// Item id → season → the episodes that season's history rows ran to the credits.
+  /// The full picture history can give, rather than only its most recent row.
+  private static func finishedEpisodesByItemID(_ history: [HistoryEntry]) -> [Int: [Int: Set<Int>]] {
+    history.reduce(into: [Int: [Int: Set<Int>]]()) { result, entry in
+      guard entry.isEpisode,
+            entry.watchProgress?.isFinished == true,
+            let season = entry.media?.snumber,
+            let number = entry.media?.number else { return }
+      result[entry.item.id, default: [:]][season, default: []].insert(number)
     }
   }
 
@@ -435,6 +449,7 @@ class HomeCatalog: ObservableObject {
   /// S/E label and resume bar; local progress fills gaps before the server catches up.
   private static func card(for item: WatchingItem,
                            history: HistoryEntry?,
+                           finishedEpisodes: [Int: Set<Int>],
                            local: LocalWatchEntry?,
                            isInHistory: Bool,
                            isInWatchlist: Bool) -> MediaCard? {
@@ -448,9 +463,14 @@ class HomeCatalog: ObservableObject {
     if isSeries {
       // The newest history row is where the viewer *was*, not what to play next: on a
       // finished episode this offered it again, with its full runtime under it.
+      // Which season the viewer is in, and everything history says they finished in it.
+      // History is ordered by when a row was played, so the newest row is not the
+      // furthest episode: E1–E4 watched, E2 replayed last, and "last + 1" said E3.
+      let currentSeason = history?.media?.snumber ?? local?.season
       let next = ContinueWatchingEpisode.forSeries(
         local: local.map { ($0.season, $0.episode, $0.watch.isFinished) },
         history: history.map { ($0.media?.snumber, $0.media?.number, $0.watchProgress?.isFinished ?? false) },
+        finishedInSeason: currentSeason.flatMap { finishedEpisodes[$0] } ?? [],
         watchedCount: item.watched,
         total: item.total
       )
