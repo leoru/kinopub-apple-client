@@ -43,18 +43,15 @@ public enum MediaAuthorRole: String, Sendable {
 /// type check is how a rule ends up applied on the detail page and forgotten on the
 /// poster, and how the same word gets two labels on two surfaces.
 ///
-/// Surfaces this is meant to cover, and where each stands:
+/// Surfaces it answers for today: detail sections (`showsCastPortraits`,
+/// `showsAuthorShelf`), labels (`castSectionTitleKey`, `authorCaptionKey`,
+/// `authorShelfTitleKey(count:)`) and the hero's written fields (`showsHeroCastLine`).
+/// The poster and the horizontal card have no kind-specific rule yet — when one is
+/// decided it becomes a property here, never an `if` in the cell.
 ///
-/// | Surface | Decided |
-/// | --- | --- |
-/// | Detail sections — which appear at all | `showsCastPortraits`, `showsAuthorShelf` |
-/// | Labels — what a section, a shelf or a field is called | `castSectionTitleKey`, `authorCaptionKey`, `authorShelfTitleKey(count:)` |
-/// | Hero — the written fields under the synopsis | `showsHeroCastLine` |
-/// | Poster (vertical) | nothing yet — add here when it is decided, not in the cell |
-/// | Playable object (horizontal) | nothing yet — same rule |
-///
-/// Add a case or a property here when a new rule arrives; do not grow a second one of
-/// these next to a view.
+/// **The rules themselves are product, and are written down as such:**
+/// `docs/product/media-presentation.md`. This type implements them; it is not where
+/// they are decided.
 public struct MediaPresentationProfile: Equatable, Sendable {
 
   public let kind: MediaPresentationKind

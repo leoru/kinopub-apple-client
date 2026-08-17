@@ -7,39 +7,29 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ### One profile decides what a type or genre changes on screen (2026-08-17)
 
-- **`MediaPresentationProfile` (KinoPubBackend) is where type/genre presentation rules live.** Views
+**The rules themselves are product, and live in
+[docs/product/media-presentation.md](docs/product/media-presentation.md)** — not here, and not in
+AGENTS.md. What shipped:
+
+- **`MediaPresentationProfile` (KinoPubBackend) is the only place a type/genre rule may live.** Views
   ask `mediaItem.presentation`; a view that tests `type == "concert"` itself is the defect the type
   exists to prevent — such a rule lands on one surface and is missed on the poster, the card and the
-  label next to it. Four kinds: `fiction`, `documentary`, `performance`, `anime`. Type decides first
-  (`documovie` / `docuserial` → documentary, `concert` → performance), genre second.
-- **The cast rail is actors, and fiction only.** Directors led it before — the one section that
-  exists because of faces, opening with people the audience knows by name and not by face. They are
-  a **Credits** row now, always, on every kind. `MediaItemCastSection` is `MediaItem_CastSection`
-  ("В ролях"); `Cast & Crew` is **dead** as a string key.
-- **No faces at all** for a concert, a stand-up set, a documentary, a `tvshow` or anything animated
-  (anime *and* cartoons): no rail, no "Starring" line in the hero, and their cast joins the
-  Credits card (`MediaItem_Credits` / "Титры") in the information table beside qualities and
-  languages.
-- **Genres 101 (stand-up) and 23 (Мультфильм)** are the ids confirmed to us; anime / documentary /
-  stand-up otherwise match on the genre *title* in RU and EN, because we hold no genre-id table.
-  The real one is `filter.genres` in `kpapp.link/config.json` (see
-  [docs/providers/kinopub/references.md](docs/providers/kinopub/references.md)) and folding it in
-  would retire the string matching.
-- **Director = creator for `serial` / `docuserial` / `tvshow` / `documovie`** (`MediaAuthorRole`),
-  which is what the Credits row and the shelf header say: "More by This Director" / "More from
-  These Directors" / "…This Creator" / "…These Creators". No name in the header — with several
-  credited people there is none to print.
-- **The author shelf asks for every credited director at once** (capped at 3):
-  `MediaPerson.group(names:role:)` joins them with commas, which is `/v1/items`' OR on
-  `director` / `cast`. A grouped shelf gets no header link — there is no one person page to open.
-  Concerts and stand-up get no author shelf at all.
-- **Undecided, on purpose:** posters and horizontal cards keep the default treatment. Add the rule
-  to the profile when it is decided — not to the cell.
+  label next to it. Kinds: `fiction`, `documentary`, `performance`, `animation`, `show`, plus
+  `MediaAuthorRole` (director vs creator).
+- `Cast & Crew` is **dead** as a string key — the rail is actors-only and reads `MediaItem_CastSection`
+  ("В ролях"). New keys: `MediaItem_Credits`, `MediaItem_CreditsParticipants`, `MediaItem_Creators`,
+  `MediaItem_MoreBy{Director,Directors,Creator,Creators}`.
+- **`MediaPerson.group(names:role:)`** joins several credited names with commas, which is `/v1/items`'
+  OR on `director` / `cast` — one request for everything any of them made. `isGroup` marks it as a
+  query and not a person: nothing may open a person page for it.
+- **Genres are matched by id where we know one** (101 stand-up, 23 animation) and by RU/EN title
+  otherwise, because we hold no genre-id table. The real one is `filter.genres` in
+  `kpapp.link/config.json` (see [docs/providers/kinopub/references.md](docs/providers/kinopub/references.md));
+  folding it in would retire the string matching.
 - **One card per film** in person shelves and on the person page: `MediaItem.filmIdentity` +
   `collapsingFilmVariants` collapse the 3D and flat entries of one title (they share a Kinopoisk /
-  IMDb id). Shelves are picked by Kinopoisk rating, shown newest first, ties by views — a rating is
-  only as good as the crowd behind it and kino.pub does not guarantee a vote count. The library
-  grid and search do **not** collapse: a "3D" type filter asks for exactly those entries.
+  IMDb id). The library grid and search do **not** collapse: a "3D" type filter asks for exactly
+  those entries.
 
 ### Device identity actually reaches kino.pub (2026-08-16)
 

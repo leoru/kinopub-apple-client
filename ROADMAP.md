@@ -245,19 +245,13 @@ Media
       film. A score is only as good as the crowd behind it and we cannot count on a vote count
       being there — 5 Kinopoisk votes must not outrank a million on IMDb — while "how many people
       here opened it" is never missing and is already the "known for" signal
-- [x] **Type/genre presentation is one profile**, `MediaPresentationProfile`. The cast rail is
-      actors only and fiction only — directors are always a Credits line, never a portrait.
-      Documentary / concert / stand-up (101) / animation (23, anime) / `tvshow` get no faces and no
-      hero "Starring" line, and list their people in the **Credits** card instead. Views ask the
-      profile, never `type`
-- [x] The author shelf covers **every** credited director at once (`director=A,B` is OR), titled by
-      role and count — "More by This Director" … "More from These Creators"; `serial` /
-      `docuserial` / `tvshow` / `documovie` credit creators. Concerts and stand-up get no such shelf
+- [x] **Type/genre presentation is one profile**, `MediaPresentationProfile` — cast rail, hero
+      credit lines, Credits card, author shelf. The rules themselves:
+      [docs/product/media-presentation.md](docs/product/media-presentation.md)
 - [ ] Fold `filter.genres` from `kpapp.link/config.json` into the app so the profile matches genre
       **ids** instead of RU/EN title strings — and so genre pickers stop needing a request
-- [ ] Decide the remaining presentation surfaces per kind: poster (vertical) and playable object
-      (horizontal card). Until then they take the fiction default. Open too: the actor shelf still
-      names the person ("More with Крис Пратт") while the author shelf names the role
+- [ ] Close the two open questions in that product doc: the poster / horizontal-card treatment per
+      kind, and whether the actor shelf names the person while the author shelf names the role
 - [ ] "Known for" ordering proper for person shelves — lead with the films the person is known for
       instead of the chronological fallback. Note the shelf is still *selected* server-side by
       `sort=-kinopoisk_rating`, so a title kino.pub has no Kinopoisk id for can be missing from

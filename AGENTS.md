@@ -43,6 +43,7 @@ semantic component is not a DRY violation; two components for one idea on one pl
 | Metadata aggregator, providers, enrichment | skill `metadata-service` |
 | Where a new fact or decision belongs | skill `docs-upkeep` |
 | What we are building next | [ROADMAP.md](ROADMAP.md) |
+| What the product *does* — decided behavior, per feature | [docs/product/](docs/product/) |
 | Provider capability sheets | [docs/providers/](docs/providers/) |
 | Community fork rules | [docs/community-fork.md](docs/community-fork.md) |
 | Dated history — evidence, never law | [docs/archive/](docs/archive/) |
@@ -223,16 +224,10 @@ file, and delete the losers with the switch.
 - **No compact title, no floating header logo** unless navigation chrome requires one.
 - Sections are data (kind + payload), empty ones simply absent, order defined in one place.
 - "Related" renders through the same shelf component Home uses.
-- 🔴 **How a type or genre changes presentation is `MediaPresentationProfile`, never an `if type
-  == …` in a view.** A view asks the profile; a rule written into one view is applied on the detail
-  page and forgotten on the poster, the card and the label beside it. Decided so far:
-  **the cast rail is actors, fiction only** — directors are a Credits line, never a portrait
-  (people know the name, not the face, and they were taking its first slot); a concert, a stand-up
-  set (genre 101), a documentary, a `tvshow` and anything animated (genre 23, anime) put their
-  people in the **Credits** card in the information table and drop the hero's "Starring" line.
-  Directors are **creators** for `serial` / `docuserial` / `tvshow` / `documovie`, which is what
-  their Credits row and their "More by…" shelf say. The per-surface table, and which surfaces are
-  still undecided, live in that type's doc comment.
+- 🔴 **A rule that depends on a title's type or genre lives in `MediaPresentationProfile`, never as
+  an `if type == …` in a view** — written into one view it lands on the detail page and is missed on
+  the poster, the card and the label beside it. *What* each kind shows is product, not architecture:
+  [docs/product/media-presentation.md](docs/product/media-presentation.md).
 
 ## Chrome
 

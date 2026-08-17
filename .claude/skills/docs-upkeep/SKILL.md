@@ -15,6 +15,7 @@ in the right place at the right size.
 | What you have | Where it goes |
 | --- | --- |
 | A rule that applies to any surface, or a trap that costs real time | **AGENTS.md** — one line, with the cost |
+| A decision about what the product *does* in one feature | **docs/product/** — one file per feature area, every rule tagged `idea` / `prd` / `verified` |
 | A rule that only matters while doing one kind of work | The matching **skill** |
 | Something we are going to build, or just built | **ROADMAP.md** — tick the box, or add one |
 | A shipped fact a future agent needs (a deleted type, a changed contract, a landed decision) | **CHANGELOG.md** under Unreleased |
@@ -25,6 +26,13 @@ in the right place at the right size.
 Nothing else exists. Do not create a new top-level document, a new folder, or a fifth "policy" —
 if a fact does not fit one of the rows above, it probably belongs in a code comment next to the
 thing it describes.
+
+**Business rules are not AGENTS.md material** (2026-08-17, user's call). "Only fiction gets a rail
+of faces" is a product decision one feature cares about; putting it in the file every agent reads on
+every task is a cost paid forever by everyone who will never touch that feature. AGENTS.md keeps the
+*architectural* half — "this kind of rule lives in one profile, never as an `if` in a view" — and
+links to `docs/product/`. If a rule you are about to add to AGENTS.md would still be true with the
+product's behavior changed, it belongs there; if it *is* the behavior, it belongs in docs/product/.
 
 ## The bar for a line in AGENTS.md
 
