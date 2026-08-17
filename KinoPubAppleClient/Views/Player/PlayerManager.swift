@@ -72,6 +72,8 @@ class PlayerManager: ObservableObject {
   private var seekObservation: NSKeyValueObservation?
   private var playbackFailureObserver: NSObjectProtocol?
   private var endOfPlaybackObserver: NSObjectProtocol?
+  /// Set once the resume point has been asked for, so a re-entering view cannot ask twice.
+  private var didFetchWatchMark = false
   /// Resume point waiting for the item to become `readyToPlay` (fetch often races prepare).
   private var pendingResumeTime: TimeInterval?
   private static let loaderQueue = DispatchQueue(label: "com.soda.kinopub.hls-master-loader")
@@ -242,6 +244,10 @@ class PlayerManager: ObservableObject {
         case .readyToPlay:
           self.playbackState = .ready
           self.applyPendingSeekIfPossible()
+          // Nothing is said to the server until there is something to play. The view
+          // used to ask on appear — before the player had an item, on a title the
+          // viewer had not started.
+          Task { await self.fetchWatchMark() }
         case .failed:
           self.playbackState = .failed(Self.failureMessage(for: item))
         default:
@@ -492,7 +498,7 @@ class PlayerManager: ObservableObject {
 
   /// Local resume on every observer tick (~10s); server `marktime` every ~30s of progress.
   func saveWatchMark(time: TimeInterval) {
-    guard watchMode == .media else { return }
+    guard watchMode == .media, canReportWatching else { return }
 
     let duration = player.currentItem?.duration.seconds ?? 0
     AppContext.shared.localProgressStore.recordProgress(
@@ -525,7 +531,7 @@ class PlayerManager: ObservableObject {
   /// reported via `marktime`, so we send one final marktime at the full duration and clear the
   /// local resume point so Continue Watching drops it immediately.
   private func markFinished() {
-    guard watchMode == .media else { return }
+    guard watchMode == .media, canReportWatching else { return }
     let duration = player.currentItem?.duration.seconds ?? 0
     guard duration.isFinite, duration > 0 else { return }
     AppContext.shared.localProgressStore.clear(id: playItem.metadata.id)
@@ -545,9 +551,27 @@ class PlayerManager: ObservableObject {
   /// Pick up where the title was left off. There is no prompt any more: the remembered
   /// time is where playback resumes, and the transport bar's own scrubber is right there
   /// for anyone who meant to start over.
+  /// True when we know which **item** is playing. An episode that reached the player
+  /// without its series id would otherwise be reported under its media id, which the
+  /// API answers 404 to — and would silently write onto a different title if that
+  /// number happened to be a real item id.
+  private var canReportWatching: Bool {
+    guard playItem.metadata.isResolved else {
+      Logger.app.error(
+        "watching skipped: unresolved item id for video=\(self.playItem.metadata.video ?? -1) season=\(self.playItem.metadata.season ?? -1)"
+      )
+      return false
+    }
+    return true
+  }
+
+  /// The resume point, asked for **once playback has actually started**. It used to be
+  /// requested from `onAppear`, which asked the server about a title the viewer had not
+  /// begun watching and often before the player had an item at all.
   @MainActor
   func fetchWatchMark() async {
-    guard watchMode == .media else { return }
+    guard watchMode == .media, canReportWatching, !didFetchWatchMark else { return }
+    didFetchWatchMark = true
 
     var remoteContinueTime: TimeInterval = 0
     do {

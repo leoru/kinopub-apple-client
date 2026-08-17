@@ -79,8 +79,18 @@ public extension Episode {
 
 extension Episode: PlayableItem {
   public var trailer: Trailer? { nil }
+  /// 🔴 **`id` here is the item's, never the episode's.** `/v1/watching`,
+  /// `/v1/watching/marktime` and `/v1/watching/toggle` all key on the item
+  /// (`id=87940&season=1&video=2`), while `Episode.id` is a *media* id — the thing
+  /// `MediaLinksRequest(mid:)` takes. Passing the media id answered **404** on
+  /// `/v1/watching?id=928900&season=1&video=2` (seen live 2026-08-17), and a media id
+  /// that happens to collide with a real item id would have written progress onto
+  /// somebody else's title instead.
+  ///
+  /// Unstamped episodes therefore report `0`, and `WatchingMetadata.isResolved` is what
+  /// the player checks before it says anything to the server.
   public var metadata: WatchingMetadata {
-    WatchingMetadata(id: mediaId ?? id, video: number, season: seasonNumber)
+    WatchingMetadata(id: mediaId ?? 0, video: number, season: seasonNumber)
   }
   // `subtitles` already declared on Episode
 

@@ -5,6 +5,19 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Watching reported the wrong id, and reported it too early (2026-08-17)
+
+- 🔴 **`/v1/watching*` keys on the *item* id, never the episode's.** `Episode.metadata` fell back to
+  its own id when the season had not been stamped, so `GET /v1/watching?id=928900&season=1&video=2`
+  answered 404 (928900 is episode 2's *media* id; the series is 87940). Setting `Season.mediaId` now
+  stamps every episode in it, `Episode.metadata` reports `0` rather than guessing, and
+  `WatchingMetadata.isResolved` is what `PlayerManager` checks before saying anything to the server.
+  A media id that collides with a real item id would have written progress onto another title.
+  `MediaItem.downloadableItems` carried the same bug.
+- **Nothing is reported before playback starts.** `fetchWatchMark()` ran from `onAppear` on all three
+  platforms — before the player had an item, about a title the viewer had not begun. It now fires
+  once, on `readyToPlay`, from the player itself.
+
 ### One profile decides what a type or genre changes on screen (2026-08-17)
 
 **The rules themselves are product, and live in

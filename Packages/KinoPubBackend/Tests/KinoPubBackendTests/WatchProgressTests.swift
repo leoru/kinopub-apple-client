@@ -139,3 +139,47 @@ final class WatchProgressTests: XCTestCase {
     XCTAssertFalse(WatchProgress(position: 100, duration: 0).isResumable)         // live
   }
 }
+
+/// The id every `/v1/watching*` call must carry is the **item's**, never the episode's.
+/// `/v1/watching?id=928900&season=1&video=2` answered 404 live: 928900 is the media id
+/// of episode 2, and the item is 87940.
+final class WatchingMetadataIdentityTests: XCTestCase {
+
+  private func episode(id: Int, number: Int) -> Episode {
+    Episode(id: id, title: "Трек \(number)", thumbnail: "", duration: 3064, tracks: 1,
+            number: number, ac3: 0, audios: [], watched: 0,
+            watching: EpisodeWatching(status: 0, time: 0), subtitles: [], files: [])
+  }
+
+  private func season(mediaId: Int?) -> Season {
+    let episodes = [
+      episode(id: 928899, number: 1),
+      episode(id: 928900, number: 2)
+    ]
+    let season = Season(id: 1, title: "Сезон 1", number: 1,
+                        watching: SeasonWatching(status: 0), episodes: episodes)
+    season.mediaId = mediaId
+    return season
+  }
+
+  func testStampingASeasonStampsItsEpisodes() {
+    let season = self.season(mediaId: 87940)
+    XCTAssertEqual(season.episodes.map(\.mediaId), [87940, 87940])
+  }
+
+  func testEpisodeReportsTheItemIdNotItsOwn() {
+    let episode = season(mediaId: 87940).episodes[1]
+    XCTAssertEqual(episode.id, 928900)
+    XCTAssertEqual(episode.metadata.id, 87940)
+    XCTAssertEqual(episode.metadata.video, 2)
+    XCTAssertTrue(episode.metadata.isResolved)
+  }
+
+  /// An unstamped episode must report *nothing* rather than its own media id — that id
+  /// may well be a real item id belonging to some other title.
+  func testUnstampedEpisodeIsUnresolvedRatherThanWrong() {
+    let episode = season(mediaId: nil).episodes[1]
+    XCTAssertNotEqual(episode.metadata.id, episode.id)
+    XCTAssertFalse(episode.metadata.isResolved)
+  }
+}

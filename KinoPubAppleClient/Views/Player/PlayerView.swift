@@ -67,9 +67,6 @@ struct PlayerView: View {
       UIApplication.shared.isIdleTimerDisabled = true
       UIDevice.current.setValue(UIInterfaceOrientation.landscapeLeft.rawValue, forKey: "orientation")
       AppDelegate.orientationLock = .landscape
-      Task {
-        await playerManager.fetchWatchMark()
-      }
     })
     .onDisappear(perform: {
       UIApplication.shared.isIdleTimerDisabled = false
@@ -82,18 +79,8 @@ struct PlayerView: View {
     // The player is a full-screen surface, not a browse tab — the tab strip has no place
     // over it. Back/Menu leaves, the same as on the detail page.
     .toolbar(.hidden, for: .tabBar)
-    .onAppear {
-      Task {
-        await playerManager.fetchWatchMark()
-      }
-    }
 #endif
 #if os(macOS)
-    .onAppear {
-      Task {
-        await playerManager.fetchWatchMark()
-      }
-    }
     // Closing the window has to stop the sound with it. Only safe to hang off
     // `onDisappear` on macOS: on iOS this view stays mounted underneath AVKit's
     // full-screen presentation, and pausing there would stop playback on the way in.

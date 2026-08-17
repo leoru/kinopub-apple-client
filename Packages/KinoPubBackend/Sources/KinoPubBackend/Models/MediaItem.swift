@@ -315,7 +315,8 @@ public extension MediaItem {
         DownloadableMediaItem(name: "S\(season.number)E\(episode.number)",
                               files: episode.files,
                               mediaItem: self,
-                              watchingMetadata: WatchingMetadata(id: episode.id, video: episode.number, season: season.number))
+                              // The item's id, not the episode's — see `Episode.metadata`.
+                              watchingMetadata: WatchingMetadata(id: self.id, video: episode.number, season: season.number))
       })
     }) ?? []
   }

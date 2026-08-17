@@ -21,7 +21,13 @@ public class Season: Codable, Hashable, Identifiable {
   public let number: Int
   public let watching: SeasonWatching
   public let episodes: [Episode]
-  public var mediaId: Int? = nil
+  /// The **item** id this season belongs to — the id every `/v1/watching*` call wants.
+  /// Setting it stamps the episodes too: an `Episode` holds no reference to its season,
+  /// and the one that forgot to be stamped fell back to its own media id and asked the
+  /// API about a title that was not this one.
+  public var mediaId: Int? = nil {
+    didSet { episodes.forEach { $0.mediaId = mediaId } }
+  }
   
   public init(id: Int,
        title: String,
