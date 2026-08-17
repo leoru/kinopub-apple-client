@@ -29,7 +29,13 @@ public struct ItemsRequest: Endpoint {
     if let type = filter.contentType {
       params["type"] = type.rawValue
     }
-    if let genreID = filter.genreID {
+    // Commas are OR on `genre` — several genres ask for anything filed under any of
+    // them. **Not true of `cast` / `director`**: those match the field as written, so a
+    // comma there matches nothing and each name needs its own request (verified against
+    // the live API 2026-08-17 — `director=Фил Лорд,Кристофер Миллер` answers empty).
+    if !filter.genreIDs.isEmpty {
+      params["genre"] = filter.genreIDs.map(String.init).joined(separator: ",")
+    } else if let genreID = filter.genreID {
       params["genre"] = "\(genreID)"
     }
     if let countryID = filter.countryID {
@@ -43,8 +49,8 @@ public struct ItemsRequest: Endpoint {
     if let period = filter.period {
       params["period"] = period.rawValue
     }
-    // `cast` / `director`, matched on the name as it appears in the credits. Commas
-    // and pluses are this parameter's OR and AND, so a single name goes as written.
+    // `cast` / `director`, matched on the name as it appears in the credits — one name
+    // per request, see the note above.
     // (`cast`, not the docs' `actor` — see `MediaPerson.Role.itemsQueryParameter`.)
     if let person = filter.person {
       params[person.role.itemsQueryParameter] = person.name

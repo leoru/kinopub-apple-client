@@ -100,21 +100,28 @@ public struct MediaPresentationProfile: Equatable, Sendable {
 
   // MARK: - Related shelves
 
+  /// Whether the cast is worth a shelf at all. **Not for animation**: kino.pub's `cast`
+  /// on a cartoon or an anime is the voice actors, and "More with Уэмура Юто" over a
+  /// wall of unrelated anime is a shelf built on a name the viewer never heard and a
+  /// face that was never on screen.
+  public var showsCastShelf: Bool { kind != .animation }
+
   /// Who the cast shelf asks for, and what it accepts back.
   public var castShelf: CastShelfPolicy {
     switch kind {
-    // The people on stage *are* the title. Ask all of them, and ask for concerts:
-    // a singer's filmography is not what someone watching a concert wants next.
+    // The people on stage *are* the title. Ask them for concerts: a singer's
+    // filmography is not what someone watching a concert wants next.
     case .concert:
-      return CastShelfPolicy(usesEveryName: true, onlyType: .concert, preferredTypes: [])
+      return CastShelfPolicy(nameLimit: 2, onlyType: .concert, preferredTypes: [])
     // A comic's other work is the interesting answer, and it is usually a film or a
     // series rather than another set — so nothing is filtered out, only ordered.
     case .standup:
-      return CastShelfPolicy(usesEveryName: true, onlyType: nil,
-                             preferredTypes: [.movie, .serial])
-    // A film's cast list is fifteen names; ORing them asks for half the catalogue.
-    case .fiction, .documentary, .animation, .show:
-      return CastShelfPolicy(usesEveryName: false, onlyType: nil, preferredTypes: [])
+      return CastShelfPolicy(nameLimit: 2, onlyType: nil, preferredTypes: [.movie, .serial])
+    // The billed lead. Two names is a shelf; a film credits fifteen.
+    case .fiction, .documentary, .show:
+      return CastShelfPolicy(nameLimit: 1, onlyType: nil, preferredTypes: [])
+    case .animation:
+      return CastShelfPolicy(nameLimit: 0, onlyType: nil, preferredTypes: [])
     }
   }
 
@@ -130,12 +137,19 @@ public struct MediaPresentationProfile: Equatable, Sendable {
     }
   }
 
-  /// The genre shelf is the floor under the related area: whatever else came back
-  /// empty, "more of this kind of thing" can always be asked for. The type is kept —
-  /// someone on a TV show wants other shows, not a film that shares a genre with it.
+  /// The genre shelf is the last resort under the related area: it fires only when
+  /// credits, collections and similar all came back with nothing, which is the normal
+  /// state of a TV show, a concert or a stand-up set and the rare state of a film.
   ///
-  /// Which genre, when a title has six: the one that decided its kind, else the first.
-  /// A stand-up set is filed under Comedy *and* 101, and 101 is the one worth asking.
+  /// **How many genres.** A film asks for one — "more comedy" under a comedy is a
+  /// truism, and its other shelves carry the page anyway. Everything else asks for all
+  /// of them at once (`genre=5,23,101` is OR), because a title filed under six genres
+  /// is described by the combination and not by whichever one came first.
+  public var genreShelfUsesEveryGenre: Bool { kind != .fiction }
+
+  /// Which genre leads when only one is asked for: the one that decided the title's
+  /// kind — a stand-up set is filed under Comedy *and* 101, and 101 is the one worth
+  /// asking about.
   public var signatureGenreIDs: Set<Int> {
     switch kind {
     case .standup: return Self.standupGenreIDs
@@ -147,16 +161,16 @@ public struct MediaPresentationProfile: Equatable, Sendable {
 
 /// How a title's cast becomes a shelf query.
 public struct CastShelfPolicy: Equatable, Sendable {
-  /// Every credited name at once (a concert's performers, a set's participants) or the
-  /// first billed one alone.
-  public let usesEveryName: Bool
+  /// How many credited names the shelf asks about — **one request each**, so this is
+  /// also how many requests it costs. Zero means no cast shelf.
+  public let nameLimit: Int
   /// Narrow the query to a single type where the type is the point.
   public let onlyType: MediaType?
   /// Not a filter — an ordering. These float to the front of whatever comes back.
   public let preferredTypes: [MediaType]
 
-  public init(usesEveryName: Bool, onlyType: MediaType?, preferredTypes: [MediaType]) {
-    self.usesEveryName = usesEveryName
+  public init(nameLimit: Int, onlyType: MediaType?, preferredTypes: [MediaType]) {
+    self.nameLimit = nameLimit
     self.onlyType = onlyType
     self.preferredTypes = preferredTypes
   }

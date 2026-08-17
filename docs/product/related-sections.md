@@ -9,24 +9,33 @@ Order, top to bottom — each shelf absent when its query came back empty:
 | # | Shelf | Query |
 | --- | --- | --- |
 | 1 | Similar | `/v1/items/similar` |
-| 2 | Author — "More by This Director" / "…These Creators" | `director=` every credited name (max 3) |
-| 3 | Cast | `cast=`, per the rules below |
+| 2 | Author — "More by This Director" / "…These Creators" | `director=`, **one request per name**, max 2, merged |
+| 3 | Cast | `cast=`, same one-per-name rule, per the rules below |
 | 4 | Collections — one shelf per collection, titled by it | which collections hold this item, then each collection's items |
-| 5 | Genre floor | same type + one genre |
+| 5 | Genre floor | same type + genres, **only when 1–4 all came back empty** |
+
+**verified 2026-08-17 — a comma does not work on `cast` / `director`.** They match the credits field
+as written, so `director=Фил Лорд,Кристофер Миллер` answers an empty list where either name alone
+answers a filmography. Two names is two requests, merged and collapsed by film. `genre` is the
+opposite: a comma there *is* OR, which is what the floor uses.
 
 ## The cast shelf, per kind
 
-**prd — Concert:** ask **every** performer, and ask for **concerts** (`type=concert&cast=…`). A
-singer's filmography is not what someone who just watched a concert wants next. Header: *More by
-This Artist* / *More from These Artists*.
+**prd — Concert:** ask the **two** billed performers, and ask for **concerts**
+(`type=concert&cast=…`). A singer's filmography is not what someone who just watched a concert wants
+next. Header: *More by This Artist* / *More from These Artists*.
 
-**prd — Stand-up:** ask **every** participant, with no type filter, and float **films and series**
-to the front. A comic's other work is the interesting answer and it is usually not another set.
-Header: *More by This Comedian* / *More from These Comedians*. **idea:** inside that ordering, put
-stand-up first when the participant has some.
+**prd — Stand-up:** ask the **two** billed participants, with no type filter, and float **films and
+series** to the front. A comic's other work is the interesting answer and it is usually not another
+set. Header: *More by This Comedian* / *More from These Comedians*. **idea:** inside that ordering,
+put stand-up first when the participant has some.
 
-**prd — Everything else:** the first billed actor only, named in the header (*More with …*). ORing
-fifteen credited names asks for half the catalogue.
+**prd — Animation (anime and cartoons): no cast shelf at all.** kino.pub's `cast` on anything drawn
+is the **voice actors** — a shelf headed "More with Уэмура Юто" is a name the viewer never heard
+over a face that was never on screen.
+
+**prd — Everything else:** the first billed actor only, named in the header (*More with …*). Two
+names is a shelf; a film credits fifteen, and each one would be its own request.
 
 Preference is an **ordering, never a filter** — nothing is hidden, it only stops leading.
 
@@ -42,16 +51,25 @@ a failure means no collection shelves and a log line (`item collections id=… c
 
 ## The genre floor
 
-**prd** — when *nothing* above produced a shelf, ask for more of the same **type** and one genre,
-by Kinopoisk rating. Someone on a TV show wants other shows, not a film that shares a genre with it,
-so the type is kept — `/tvshow?genre=123`, in the web client's terms.
+**prd — last resort, and it must actually be last.** It fires only when similar, both credit shelves
+*and* the collections have **answered** and all came back empty. Waiting for the answer, not for the
+value, is the whole rule: firing early asked for the genres of `MediaItem.mock()` and put a
+"More in Comedy" shelf of cartoons on a concert page.
 
-Which genre, when a title carries six: the one that **decided its kind** (stand-up over the Comedy
-it is also filed under, animation over Adventure), else the first credited. `/v1/items` takes one
-genre per request.
+**prd — the same type is kept.** Someone on a TV show wants other shows, not a film that shares a
+genre with it — `/tvshow?genre=…`, in the web client's terms.
 
-**idea — category/categories.** "Same type *and* its categories/genres" was asked for; only one
-genre is queryable today, so the rest of that is unbuilt.
+**prd — how many genres.** A film asks for **one**: "more comedy" under a comedy is a truism and its
+other shelves carry the page. Everything else asks for **all of them at once** (max 4, comma-OR),
+because a title filed under six genres is described by the combination, not by whichever one came
+first. The single-genre pick is the one that **decided the kind** (stand-up over the Comedy it is
+also filed under), else the first credited. If the multi-genre request answers nothing, it retries
+with that one genre rather than leaving the page bare.
+
+**prd — sorted by what is new** (`-created`), not by the all-time top of a genre. The point is what
+there is to watch now.
+
+**idea — country.** Adding it to the floor's query was suggested; not built.
 
 ## Shared rules
 
@@ -62,6 +80,11 @@ artwork.
 
 ## Verification
 
-All of the above is **prd** — it builds on tvOS and iOS, the rules are unit-tested
-(`RelatedShelfPolicyTests`, `PreferredTypesTests`), and none of it has been watched on a device.
-The collections endpoint in particular has never answered us once.
+The comma behavior on `cast` / `director` is **verified** — seen answering empty on a live request.
+Everything else is **prd**: it builds on tvOS and iOS and the rules are unit-tested
+(`RelatedShelfPolicyTests`, `CreditQueryTests`, `ShelfQueryParameterTests`, `PreferredTypesTests`),
+but the shelves themselves have only been looked at in the running app, and:
+
+- the collections endpoint has never answered us once;
+- `genre=5,23,101` as OR is **unverified** — the fallback exists because of that. `genre floor
+  id=… genres=… items=…` in the log is what will settle it.

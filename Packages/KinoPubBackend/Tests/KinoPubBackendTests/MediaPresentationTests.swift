@@ -118,33 +118,6 @@ final class MediaPresentationTests: XCTestCase {
   }
 }
 
-// MARK: - Several credited names as one query
-
-final class MediaPersonGroupTests: XCTestCase {
-
-  /// A comma is `/v1/items`' OR on `director` / `cast`, so two directors ask for
-  /// everything either of them made.
-  func testGroupJoinsNamesForTheQuery() throws {
-    let group = try XCTUnwrap(MediaPerson.group(names: ["Фил Лорд", "Кристофер Миллер"],
-                                                role: .director))
-    XCTAssertEqual(group.name, "Фил Лорд,Кристофер Миллер")
-    XCTAssertTrue(group.isGroup)
-    XCTAssertEqual(group.names, ["Фил Лорд", "Кристофер Миллер"])
-  }
-
-  func testSingleNameIsNotAGroup() throws {
-    let one = try XCTUnwrap(MediaPerson.group(names: ["Джеймс Ганн"], role: .director))
-    XCTAssertFalse(one.isGroup)
-    XCTAssertEqual(one.names, ["Джеймс Ганн"])
-    XCTAssertEqual(one, MediaPerson(name: "Джеймс Ганн", role: .director))
-  }
-
-  func testEmptyNamesProduceNoQuery() {
-    XCTAssertNil(MediaPerson.group(names: [], role: .director))
-    XCTAssertNil(MediaPerson.group(names: ["", "  "], role: .director))
-  }
-}
-
 // MARK: - Related shelves
 
 final class RelatedShelfPolicyTests: XCTestCase {
@@ -156,45 +129,142 @@ final class RelatedShelfPolicyTests: XCTestCase {
     )
   }
 
+  private func standup() -> MediaPresentationProfile {
+    profile(type: "movie", genres: [(1, "Комедия"), (101, "Стендап")])
+  }
+
+  private func anime() -> MediaPresentationProfile {
+    profile(type: "serial", genres: [(2, "Аниме")])
+  }
+
+  // MARK: Who the cast shelf asks for
+
   /// A singer's filmography is not what someone watching a concert wants next, so the
-  /// query is every performer, narrowed to concerts.
-  func testConcertAsksEveryPerformerForConcerts() {
+  /// two people on stage are asked for their concerts.
+  func testConcertAsksItsPerformersForConcerts() {
     let policy = profile(type: "concert").castShelf
-    XCTAssertTrue(policy.usesEveryName)
+    XCTAssertEqual(policy.nameLimit, 2)
     XCTAssertEqual(policy.onlyType, .concert)
     XCTAssertTrue(policy.preferredTypes.isEmpty)
   }
 
   /// A comic's films and series are the interesting answer — preferred, not filtered:
   /// nothing is hidden, it is only ordered.
-  func testStandupAsksEveryoneAndPrefersFilmsAndSeries() {
-    let policy = profile(type: "movie", genres: [(101, "Стендап")]).castShelf
-    XCTAssertTrue(policy.usesEveryName)
+  func testStandupAsksItsParticipantsAndPrefersFilmsAndSeries() {
+    let policy = standup().castShelf
+    XCTAssertEqual(policy.nameLimit, 2)
     XCTAssertNil(policy.onlyType)
     XCTAssertEqual(policy.preferredTypes, [.movie, .serial])
   }
 
-  /// ORing a film's fifteen credited names asks for half the catalogue.
-  func testFilmAsksAboutItsLeadOnly() {
-    XCTAssertFalse(profile(type: "movie").castShelf.usesEveryName)
-    XCTAssertFalse(profile(type: "tvshow").castShelf.usesEveryName)
+  /// Two names is a shelf; a film credits fifteen, and each name is its own request.
+  func testNoKindAsksAboutMoreThanTwoNames() {
+    for kind in MediaPresentationKind.allCases {
+      let limit = MediaPresentationProfile(kind: kind).castShelf.nameLimit
+      XCTAssertLessThanOrEqual(limit, 2, "\(kind)")
+    }
+    XCTAssertEqual(profile(type: "movie").castShelf.nameLimit, 1)
+    XCTAssertEqual(profile(type: "tvshow").castShelf.nameLimit, 1)
+  }
+
+  /// kino.pub's `cast` on anything drawn is the voice actors: a name the viewer never
+  /// heard, over a face that was never on screen.
+  func testAnimationGetsNoCastShelfAtAll() {
+    XCTAssertFalse(anime().showsCastShelf)
+    XCTAssertEqual(anime().castShelf.nameLimit, 0)
+    XCTAssertFalse(profile(type: "movie", genres: [(23, "Мультфильм")]).showsCastShelf)
+    for kind in [MediaPresentationKind.fiction, .documentary, .concert, .standup, .show] {
+      XCTAssertTrue(MediaPresentationProfile(kind: kind).showsCastShelf, "\(kind)")
+    }
   }
 
   func testStageKindsGetARoleWordedCastHeader() {
     XCTAssertEqual(profile(type: "concert").castShelfTitleKey(count: 1), "MediaItem_MoreFromArtist")
     XCTAssertEqual(profile(type: "concert").castShelfTitleKey(count: 2), "MediaItem_MoreFromArtists")
-    let standup = profile(type: "movie", genres: [(101, "Стендап")])
-    XCTAssertEqual(standup.castShelfTitleKey(count: 1), "MediaItem_MoreFromComedian")
-    XCTAssertEqual(standup.castShelfTitleKey(count: 4), "MediaItem_MoreFromComedians")
+    XCTAssertEqual(standup().castShelfTitleKey(count: 1), "MediaItem_MoreFromComedian")
+    XCTAssertEqual(standup().castShelfTitleKey(count: 2), "MediaItem_MoreFromComedians")
     // Everywhere else the shelf names the actor instead of the role.
     XCTAssertNil(profile(type: "movie").castShelfTitleKey(count: 1))
   }
 
+  // MARK: The genre floor
+
+  /// A film asks for one genre — "more comedy" under a comedy is a truism, and its
+  /// other shelves carry the page. Everything else is described by the combination.
+  func testOnlyFilmsAskForASingleGenre() {
+    XCTAssertFalse(profile(type: "movie").genreShelfUsesEveryGenre)
+    XCTAssertFalse(profile(type: "3d").genreShelfUsesEveryGenre)
+    for type in ["tvshow", "concert", "documovie", "docuserial"] {
+      XCTAssertTrue(profile(type: type).genreShelfUsesEveryGenre, type)
+    }
+    XCTAssertTrue(anime().genreShelfUsesEveryGenre)
+    XCTAssertTrue(standup().genreShelfUsesEveryGenre)
+  }
+
   /// A stand-up set is filed under Comedy *and* 101; 101 is the one worth asking for.
   func testSignatureGenreOutranksTheFirstOne() {
-    XCTAssertEqual(profile(type: "movie", genres: [(101, "Стендап")]).signatureGenreIDs, [101])
-    XCTAssertEqual(profile(type: "movie", genres: [(23, "Мультфильм")]).signatureGenreIDs, [23])
+    XCTAssertEqual(standup().signatureGenreIDs, [101])
+    XCTAssertEqual(anime().signatureGenreIDs, [23])
     XCTAssertTrue(profile(type: "movie").signatureGenreIDs.isEmpty)
+  }
+}
+
+// MARK: - One request per credited name
+
+final class CreditQueryTests: XCTestCase {
+
+  /// 🔴 The API matches `director` against the credits as written: a comma-joined pair
+  /// matches nothing. Each name is its own request.
+  func testEachNameBecomesItsOwnPerson() {
+    let people = MediaPerson.each(of: ["Фил Лорд", "Кристофер Миллер"],
+                                  role: .director, limit: 2)
+    XCTAssertEqual(people.map(\.name), ["Фил Лорд", "Кристофер Миллер"])
+    XCTAssertTrue(people.allSatisfy { !$0.name.contains(",") })
+  }
+
+  func testLimitCapsHowManyRequestsAShelfCosts() {
+    let cast = ["A", "B", "C", "D", "E"]
+    XCTAssertEqual(MediaPerson.each(of: cast, role: .actor, limit: 1).count, 1)
+    XCTAssertEqual(MediaPerson.each(of: cast, role: .actor, limit: 2).count, 2)
+    XCTAssertTrue(MediaPerson.each(of: cast, role: .actor, limit: 0).isEmpty)
+  }
+
+  func testBlankNamesNeverBecomeAQuery() {
+    XCTAssertTrue(MediaPerson.each(of: ["", "   "], role: .director, limit: 2).isEmpty)
+    XCTAssertEqual(MediaPerson.each(of: ["", " Джеймс Ганн "], role: .director, limit: 2)
+      .map(\.name), ["Джеймс Ганн"])
+  }
+}
+
+// MARK: - Query parameters
+
+final class ShelfQueryParameterTests: XCTestCase {
+
+  private func params(_ filter: LibraryFilter) -> [String: String] {
+    (ItemsRequest(filter: filter, page: nil).parameters as? [String: String]) ?? [:]
+  }
+
+  /// Commas *are* OR on `genre` — this is the one parameter where several values in one
+  /// request is the point.
+  func testSeveralGenresGoAsOneCommaSeparatedValue() {
+    XCTAssertEqual(params(LibraryFilter(genreIDs: [5, 23, 101]))["genre"], "5,23,101")
+  }
+
+  func testSingleGenreStillWorksAndGenreIDsWins() {
+    XCTAssertEqual(params(LibraryFilter(genreID: 7))["genre"], "7")
+    XCTAssertEqual(params(LibraryFilter(genreID: 7, genreIDs: [1, 2]))["genre"], "1,2")
+  }
+
+  /// A credit query carries exactly one name — never a joined list.
+  func testCreditQueryCarriesOneName() {
+    let filter = LibraryFilter(person: MediaPerson(name: "Фил Лорд", role: .director))
+    XCTAssertEqual(params(filter)["director"], "Фил Лорд")
+    XCTAssertNil(params(filter)["cast"])
+  }
+
+  /// The genre floor asks for what is new, not for the all-time top of a genre.
+  func testGenreFloorSortIsFreshness() {
+    XCTAssertEqual(MediaSortOrder.recentlyAdded.apiValue, "-created")
   }
 }
 

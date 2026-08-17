@@ -950,7 +950,10 @@ struct MediaItemHeroView: View {
     if !isSeries {
       let directors = mediaItem.directorNames.prefix(Self.creditNameLimit)
       if !directors.isEmpty {
-        lines.append(("Director", directors.joined(separator: ", ")))
+        // The same word the Credits card and the "More by…" shelf use — the hero read
+        // "Director" over a title whose shelf below it said "More by This Creator".
+        lines.append((mediaItem.presentation.authorCaptionKey,
+                      directors.joined(separator: ", ")))
       }
     }
     return lines

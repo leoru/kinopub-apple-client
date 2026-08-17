@@ -14,18 +14,25 @@ AGENTS.md. What shipped:
 - **`MediaPresentationProfile` (KinoPubBackend) is the only place a type/genre rule may live.** Views
   ask `mediaItem.presentation`; a view that tests `type == "concert"` itself is the defect the type
   exists to prevent — such a rule lands on one surface and is missed on the poster, the card and the
-  label next to it. Kinds: `fiction`, `documentary`, `performance`, `animation`, `show`, plus
+  label next to it. Kinds: `fiction`, `documentary`, `concert`, `standup`, `animation`, `show`, plus
   `MediaAuthorRole` (director vs creator).
 - `Cast & Crew` is **dead** as a string key — the rail is actors-only and reads `MediaItem_CastSection`
   ("В ролях"). New keys: `MediaItem_Credits`, `MediaItem_CreditsParticipants`, `MediaItem_Creators`,
   `MediaItem_MoreBy{Director,Directors,Creator,Creators}`.
-- **`MediaPerson.group(names:role:)`** joins several credited names with commas, which is `/v1/items`'
-  OR on `director` / `cast` — one request for everything any of them made. `isGroup` marks it as a
-  query and not a person: nothing may open a person page for it.
 - **Genres are matched by id where we know one** (101 stand-up, 23 animation) and by RU/EN title
   otherwise, because we hold no genre-id table. The real one is `filter.genres` in
   `kpapp.link/config.json` (see [docs/providers/kinopub/references.md](docs/providers/kinopub/references.md));
   folding it in would retire the string matching.
+- 🔴 **A comma on `cast` / `director` matches nothing** — verified live 2026-08-17, against what the
+  vendor docs claim: `director=Фил Лорд,Кристофер Миллер` answers an empty list where either name
+  alone answers a filmography. A shelf covering two people is **two requests merged**
+  (`MediaPerson.each(of:role:limit:)`); the earlier `MediaPerson.group(names:role:)` is **dead**.
+  On `genre` we do use a comma as OR (`LibraryFilter.genreIDs`) — still unverified, so the genre
+  shelf falls back to a single genre when the multi-genre request answers nothing.
+- **The genre floor waits for every other shelf to have *answered*, not to be empty.** Firing on
+  "still empty" ran it against `MediaItem.mock()` while the details were in flight, and put a
+  "More in Comedy" shelf of cartoons on a concert page. `similarLoaded` / `collectionsLoaded` join
+  the two credit flags as the gate, and the row's id now carries the genre ids it asked for.
 - **The related area is a plan, not three hard-wired shelves** — similar → author → cast →
   collections → a genre floor that only fires when everything else came back empty, so no type opens
   a page that recommends nothing. `CastShelfPolicy` says who the cast shelf asks for and what floats

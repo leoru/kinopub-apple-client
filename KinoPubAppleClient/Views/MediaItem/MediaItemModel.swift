@@ -86,6 +86,15 @@ class MediaItemModel: ObservableObject {
   /// that recommends nothing.
   @Published public var moreInGenre: [MediaItem] = []
   @Published public var moreInGenreTitle: String?
+  /// The genres actually asked for — part of the row's id, so a shelf can never be
+  /// mistaken for the previous page's.
+  private(set) var moreInGenreGenreIDs: [Int] = []
+
+  /// Answered-or-failed flags. The genre floor waits on **all** of them: "still empty"
+  /// and "came back empty" are different states, and firing on the first one asked for
+  /// comedies while a concert's payload was still in flight.
+  private var similarLoaded = false
+  private var collectionsLoaded = false
 
   /// One collection the current title belongs to, with what is in it.
   public struct CollectionShelf: Identifiable {
@@ -123,52 +132,51 @@ class MediaItemModel: ObservableObject {
 
   public var isBookmarked: Bool { !folderIDsContainingItem.isEmpty }
 
-  /// Everyone in the `director` field, as one query — a film by two directors asks for
-  /// both, so the shelf is what *they* made rather than what the first-listed one did.
-  /// Capped: the names go into the query string, and a title crediting eight people is
-  /// a listing nobody scrolls anyway.
+  /// The people behind the author shelf — **one request each**, because `/v1/items`
+  /// matches `director` against the credits as written and a comma-joined pair matches
+  /// nothing (verified live). Two names, so a co-directed film asks about both without
+  /// turning a shelf into a crawl.
   ///
-  /// Nil where the shelf has no meaning — a concert's director is a TV credit nobody
+  /// Empty where the shelf has no meaning — a concert's director is a TV credit nobody
   /// follows (`MediaPresentationProfile.showsAuthorShelf`).
-  public var shelfAuthors: MediaPerson? {
-    guard mediaItem.presentation.showsAuthorShelf else { return nil }
-    return MediaPerson.group(names: Array(mediaItem.directorNames.prefix(Self.authorQueryLimit)),
-                             role: .director)
+  public var shelfAuthors: [MediaPerson] {
+    guard mediaItem.presentation.showsAuthorShelf else { return [] }
+    return MediaPerson.each(of: mediaItem.directorNames,
+                            role: .director,
+                            limit: Self.creditQueryLimit)
   }
 
-  /// How the author shelf is labelled: director or creator, one or several. The name
-  /// is not in it — with more than one there is no single name to print, and the page
-  /// already says whose page it is.
+  /// How the author shelf is labelled: director or creator, one or several. With two
+  /// names there is no single one to print, so the header names the role instead.
   public var authorShelfTitle: String {
-    let profile = mediaItem.presentation
-    let count = shelfAuthors?.names.count ?? 0
-    return profile.authorShelfTitleKey(count: count).localized
+    mediaItem.presentation.authorShelfTitleKey(count: shelfAuthors.count).localized
   }
 
-  private static let authorQueryLimit = 3
-
-  /// Who the cast shelf asks for. A film asks about its lead — ORing fifteen names
-  /// returns half the catalogue — while a concert or a stand-up set asks about
-  /// everyone on stage, because that *is* the title (`CastShelfPolicy`).
-  public var shelfCast: MediaPerson? {
-    let policy = mediaItem.presentation.castShelf
-    let names = policy.usesEveryName
-      ? Array(mediaItem.castMembers.prefix(Self.castQueryLimit))
-      : Array(mediaItem.castMembers.prefix(1))
-    return MediaPerson.group(names: names, role: .actor)
+  /// Who the cast shelf asks for — again one request per name. A film asks about its
+  /// billed lead; a concert or a stand-up set asks about the two people on stage, who
+  /// *are* the title. Empty for animation, where `cast` is the voice actors
+  /// (`MediaPresentationProfile.showsCastShelf`).
+  public var shelfCast: [MediaPerson] {
+    let profile = mediaItem.presentation
+    guard profile.showsCastShelf else { return [] }
+    return MediaPerson.each(of: mediaItem.castMembers,
+                            role: .actor,
+                            limit: profile.castShelf.nameLimit)
   }
 
   /// Role-worded for the stage kinds ("More from These Comedians"), and the actor's own
   /// name everywhere else, which reads better when there is exactly one of them.
   public var castShelfTitle: String {
-    guard let cast = shelfCast else { return "" }
-    if let key = mediaItem.presentation.castShelfTitleKey(count: cast.names.count) {
+    let cast = shelfCast
+    guard let first = cast.first else { return "" }
+    if let key = mediaItem.presentation.castShelfTitleKey(count: cast.count) {
       return key.localized
     }
-    return String(format: "More with %@".localized, cast.name)
+    return String(format: "More with %@".localized, first.name)
   }
 
-  private static let castQueryLimit = 3
+  /// Two names per shelf: each one is its own request.
+  private static let creditQueryLimit = 2
 
   /// Similar + person-credit shelves as one data-driven list — the same `MediaRow`
   /// shape `MediaRowsView` renders on Home, so the detail page's related rows go
@@ -186,17 +194,19 @@ class MediaItemModel: ObservableObject {
     // person's page — the shelves' one route to it besides a cast circle. A shelf
     // standing for several directors has no one page to open, so it gets no header
     // link rather than an arbitrary one.
-    if let authors = shelfAuthors, !moreFromDirector.isEmpty {
-      rows.append(MediaRow(id: "director-\(authors.id)",
+    let authors = shelfAuthors
+    if let first = authors.first, !moreFromDirector.isEmpty {
+      rows.append(MediaRow(id: "director-\(first.id)",
                            title: authorShelfTitle,
                            cards: moreFromDirector.map(MediaCard.init),
-                           destination: authors.isGroup ? nil : linkProvider.person(for: authors)))
+                           destination: authors.count == 1 ? linkProvider.person(for: first) : nil))
     }
-    if let cast = shelfCast, !moreWithActor.isEmpty {
-      rows.append(MediaRow(id: "actor-\(cast.id)",
+    let cast = shelfCast
+    if let first = cast.first, !moreWithActor.isEmpty {
+      rows.append(MediaRow(id: "actor-\(first.id)",
                            title: castShelfTitle,
                            cards: moreWithActor.map(MediaCard.init),
-                           destination: cast.isGroup ? nil : linkProvider.person(for: cast)))
+                           destination: cast.count == 1 ? linkProvider.person(for: first) : nil))
     }
     // Editorial, and the only shelf on the page somebody actually assembled by hand —
     // so it follows the queries rather than opening over them.
@@ -207,7 +217,8 @@ class MediaItemModel: ObservableObject {
                            destination: linkProvider.collection(shelf.collection)))
     }
     if !moreInGenre.isEmpty, let title = moreInGenreTitle {
-      rows.append(MediaRow(id: "genre", title: title, cards: moreInGenre.map(MediaCard.init)))
+      let id = moreInGenreGenreIDs.map(String.init).joined(separator: "-")
+      rows.append(MediaRow(id: "genre-\(id)", title: title, cards: moreInGenre.map(MediaCard.init)))
     }
     return rows
   }
@@ -216,10 +227,10 @@ class MediaItemModel: ObservableObject {
   /// alongside `relatedRows` until their query resolves one way or the other.
   public var pendingRelatedShelfTitles: [String] {
     var titles: [String] = []
-    if shelfAuthors != nil, moreFromDirector.isEmpty, !moreFromDirectorLoaded {
+    if !shelfAuthors.isEmpty, moreFromDirector.isEmpty, !moreFromDirectorLoaded {
       titles.append(authorShelfTitle)
     }
-    if shelfCast != nil, moreWithActor.isEmpty, !moreWithActorLoaded {
+    if !shelfCast.isEmpty, moreWithActor.isEmpty, !moreWithActorLoaded {
       titles.append(castShelfTitle)
     }
     return titles
@@ -282,6 +293,9 @@ class MediaItemModel: ObservableObject {
     collectionShelves = []
     moreInGenre = []
     moreInGenreTitle = nil
+    moreInGenreGenreIDs = []
+    similarLoaded = false
+    collectionsLoaded = false
     // Draw the library controls from what is already on disk, then correct them from
     // the payload below. The old version raced the details call from its own Task and
     // read `mediaItem.bookmarks` before it had arrived.
@@ -311,7 +325,10 @@ class MediaItemModel: ObservableObject {
         // off as soon as we have them, in parallel with TMDB enrichment. The
         // collections only need the id, but they run here too so the genre floor
         // below them sees whether they found anything.
-        Task { await loadCollectionShelves() }
+        Task {
+          await loadCollectionShelves()
+          await ensureSomethingRelated()
+        }
         Task { await loadPeopleShelves() }
         await loadExternalMetadata()
         // The "what's next" data lives on the latest season, not the first one —
@@ -327,12 +344,13 @@ class MediaItemModel: ObservableObject {
         externalMetadataLoaded = true
         moreFromDirectorLoaded = true
         moreWithActorLoaded = true
+        collectionsLoaded = true
       }
     }
     Task {
       await loadSimilar()
-      // A film with no credits worth querying still has to recommend something, and
-      // `loadPeopleShelves` may have finished before this answered.
+      // Whichever query answers last is the one that fires the floor — every one of
+      // them has to have answered before "nothing to recommend" is true.
       await ensureSomethingRelated()
     }
   }
@@ -457,6 +475,7 @@ class MediaItemModel: ObservableObject {
   /// Related items are a tail-end extra, so — like the bookmark state — a failure is
   /// logged and swallowed rather than thrown at the user over the artwork.
   private func loadSimilar() async {
+    defer { similarLoaded = true }
     do {
       similarItems = try await itemsService.fetchSimilar(for: "\(mediaItemId)").items
     } catch {
@@ -476,8 +495,8 @@ class MediaItemModel: ObservableObject {
   /// not by id, so the flat copy of a 3D entry counts as the same title.
   private func loadPeopleShelves() async {
     let policy = mediaItem.presentation.castShelf
-    async let directorItems = fetchPersonShelf(person: shelfAuthors)
-    async let actorItems = fetchPersonShelf(person: shelfCast, onlyType: policy.onlyType)
+    async let directorItems = fetchPeopleShelf(people: shelfAuthors)
+    async let actorItems = fetchPeopleShelf(people: shelfCast, onlyType: policy.onlyType)
     let director = await directorItems
     let actor = await actorItems.preferringTypes(policy.preferredTypes)
     let directorFilms = Set(director.map(\.filmIdentity))
@@ -488,18 +507,35 @@ class MediaItemModel: ObservableObject {
     await ensureSomethingRelated()
   }
 
-  /// One card per film: kino.pub files the 3D encoding as its own entry under the same
-  /// credits, so an unfiltered answer puts the same poster on the shelf twice. Which
-  /// copy survives follows the page — a 3D title keeps 3D company. Collapsing happens
-  /// before the shelf is cut to length, so a duplicate never costs a slot.
-  private func fetchPersonShelf(person: MediaPerson?, onlyType: MediaType? = nil) async -> [MediaItem] {
-    guard let person else { return [] }
+  /// **One request per name, merged.** `/v1/items` matches `cast` / `director` on the
+  /// credits field as written, so `director=A,B` matches nobody — a co-directed film
+  /// has to ask twice. The union is collapsed by film, so the titles both of them
+  /// worked on appear once.
+  ///
+  /// One card per film for the other reason too: kino.pub files the 3D encoding as its
+  /// own entry under the same credits. Which copy survives follows the page — a 3D
+  /// title keeps 3D company — and collapsing happens before the shelf is cut to length,
+  /// so a duplicate never costs a slot.
+  private func fetchPeopleShelf(people: [MediaPerson], onlyType: MediaType? = nil) async -> [MediaItem] {
+    guard !people.isEmpty else { return [] }
+    var merged: [MediaItem] = []
+    for person in people {
+      merged.append(contentsOf: await fetchPersonShelf(person: person, onlyType: onlyType))
+    }
+    let items = merged
+      .collapsingFilmVariants(preferring3D: mediaItem.is3D)
+    return Array(items.prefix(Self.peopleShelfLimit)).sortedNewestFirst()
+  }
+
+  private func fetchPersonShelf(person: MediaPerson, onlyType: MediaType?) async -> [MediaItem] {
     let filter = LibraryFilter(contentType: onlyType, sort: .kinopoiskRating, person: person)
     do {
       let items = try await itemsService.fetchItems(filter: filter, page: nil).items
         .filter { $0.filmIdentity != mediaItem.filmIdentity }
-        .collapsingFilmVariants(preferring3D: mediaItem.is3D)
-      return Array(items.prefix(Self.peopleShelfLimit)).sortedNewestFirst()
+      Logger.app.info(
+        "credit shelf id=\(self.mediaItemId) \(person.role.rawValue)=\(person.name) items=\(items.count)"
+      )
+      return items
     } catch {
       Logger.app.error(
         "Failed to load \(person.role.rawValue) shelf for \(person.name): \(error)"
@@ -518,6 +554,7 @@ class MediaItemModel: ObservableObject {
   /// our own host for the same path; the log line is what will tell us whether it
   /// answers at all. A failure is silence, like every other related shelf.
   private func loadCollectionShelves() async {
+    defer { collectionsLoaded = true }
     do {
       let collections = Array(
         try await collectionsService.fetchCollections(forItem: mediaItemId)
@@ -543,39 +580,77 @@ class MediaItemModel: ObservableObject {
     }
   }
 
-  /// The floor: if nothing above produced a shelf, ask for more of the same type and
-  /// genre. A concert, a TV show or a stand-up set is otherwise a page that recommends
-  /// nothing at all — `/v1/items/similar` has little to say about them.
+  /// The floor, and **the last resort**: only when similar, both credit shelves and the
+  /// collections have all come back with nothing does the page ask for more of the same
+  /// type and genre. That is the normal state of a TV show, a concert or a stand-up set
+  /// and the rare state of a film.
   ///
-  /// One genre, because `/v1/items` takes one: the genre that decided the title's kind
-  /// (stand-up over the Comedy it is also filed under), else the first credited.
+  /// It waits for every other shelf to have *answered* — not merely to be empty — or it
+  /// would fire against `MediaItem.mock()` while the details are still in flight and
+  /// recommend comedies on a page that turns out to be a concert.
+  ///
+  /// Genres: all of them at once for the kinds where one genre says nothing (`genre=`
+  /// takes a comma-separated OR), the signature genre alone for a film — "more comedy"
+  /// under a comedy is a truism. Sorted **newest first**, because the point is what
+  /// there is to watch now, not the all-time top of a genre.
   private func ensureSomethingRelated() async {
+    guard itemLoaded, similarLoaded, collectionsLoaded,
+          moreFromDirectorLoaded, moreWithActorLoaded else { return }
     guard moreInGenre.isEmpty,
           similarItems.isEmpty,
           moreFromDirector.isEmpty,
           moreWithActor.isEmpty,
           collectionShelves.isEmpty else { return }
-    let signature = mediaItem.presentation.signatureGenreIDs
-    guard let genre = mediaItem.genres.first(where: { signature.contains($0.id) })
-            ?? mediaItem.genres.first,
-          let title = genre.title, !title.isEmpty else { return }
+
+    let profile = mediaItem.presentation
+    let named = mediaItem.genres.filter { !($0.title ?? "").isEmpty }
+    guard !named.isEmpty else { return }
+    let signature = named.first { profile.signatureGenreIDs.contains($0.id) }
+    let chosen = profile.genreShelfUsesEveryGenre
+      ? Array(named.prefix(Self.genreQueryLimit))
+      : [signature ?? named[0]]
+
     let filter = LibraryFilter(contentType: mediaItem.contentTypeFilter,
-                               sort: .kinopoiskRating,
-                               genreID: genre.id)
+                               sort: .recentlyAdded,
+                               genreIDs: chosen.map(\.id))
+    let items = await fetchGenreShelf(filter)
+    // Several genres at once is unverified — the API's own docs say nothing about a
+    // comma on `genre`. If it answers nothing, fall back to the one genre that
+    // describes this title best rather than leaving the page with no shelf at all.
+    if items.isEmpty, chosen.count > 1, let single = signature ?? named.first {
+      let retry = LibraryFilter(contentType: mediaItem.contentTypeFilter,
+                                sort: .recentlyAdded,
+                                genreID: single.id)
+      apply(genreShelf: await fetchGenreShelf(retry), genres: [single])
+      return
+    }
+    apply(genreShelf: items, genres: chosen)
+  }
+
+  private func apply(genreShelf items: [MediaItem], genres: [TypeClass]) {
+    guard !items.isEmpty else { return }
+    moreInGenre = items
+    moreInGenreGenreIDs = genres.map(\.id)
+    moreInGenreTitle = String(format: "MediaItem_MoreInGenre".localized,
+                              genres.compactMap(\.title).joined(separator: " · "))
+    Logger.app.info(
+      "genre floor id=\(self.mediaItemId) genres=\(self.moreInGenreGenreIDs.map(String.init).joined(separator: ",")) type=\(self.mediaItem.type) items=\(items.count)"
+    )
+  }
+
+  private func fetchGenreShelf(_ filter: LibraryFilter) async -> [MediaItem] {
     do {
       let items = try await itemsService.fetchItems(filter: filter, page: nil).items
         .filter { $0.filmIdentity != mediaItem.filmIdentity }
         .collapsingFilmVariants(preferring3D: mediaItem.is3D)
-      moreInGenre = Array(items.prefix(Self.peopleShelfLimit))
-      moreInGenreTitle = String(format: "MediaItem_MoreInGenre".localized, title)
-      Logger.app.info(
-        "genre floor id=\(self.mediaItemId) genre=\(genre.id) type=\(self.mediaItem.type) items=\(self.moreInGenre.count)"
-      )
+      return Array(items.prefix(Self.peopleShelfLimit))
     } catch {
       Logger.app.error("Failed to load genre shelf for \(self.mediaItemId): \(error)")
+      return []
     }
   }
 
+  private static let genreQueryLimit = 4
   private static let peopleShelfLimit = 15
   private static let collectionShelfLimit = 3
 

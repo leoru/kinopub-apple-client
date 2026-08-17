@@ -48,29 +48,19 @@ public struct MediaPerson: Hashable, Identifiable {
     self.tmdbPersonId = tmdbPersonId
   }
 
-  /// Several credited names as one query — everything **any** of them worked on.
-  /// `/v1/items` reads a comma on `cast` / `director` as OR (a plus is AND), and a
-  /// credit name can never contain a comma because that is what the credits string is
-  /// split on, so joining is unambiguous.
+  /// 🔴 **One name per request.** `/v1/items` matches `cast` / `director` against the
+  /// credits field as written, so a comma-joined list matches nothing — verified live
+  /// on 2026-08-17: `director=Фил Лорд,Кристофер Миллер` answers an empty list where
+  /// either name alone answers a filmography. A shelf covering two people is two
+  /// requests merged, which is what `MediaPerson.each(of:role:)` is for.
   ///
-  /// The result is a query, not a person: it has no photo, no TMDB id, and nothing may
-  /// open a person page for it — `isGroup` is how a caller tells.
-  public static func group(names: [String], role: Role) -> MediaPerson? {
-    let cleaned = names
+  /// Capped by the caller: two names is a shelf, ten is a crawl of the catalogue.
+  public static func each(of names: [String], role: Role, limit: Int) -> [MediaPerson] {
+    names
       .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
       .filter { !$0.isEmpty }
-    guard !cleaned.isEmpty else { return nil }
-    return MediaPerson(name: cleaned.joined(separator: ","), role: role)
-  }
-
-  /// True when this stands for several credited names rather than one person.
-  public var isGroup: Bool { name.contains(",") }
-
-  /// The names behind it — one for a person, several for a group.
-  public var names: [String] {
-    name.components(separatedBy: ",")
-      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-      .filter { !$0.isEmpty }
+      .prefix(limit)
+      .map { MediaPerson(name: $0, role: role) }
   }
 
   public static func == (lhs: MediaPerson, rhs: MediaPerson) -> Bool {

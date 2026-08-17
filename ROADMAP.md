@@ -254,6 +254,8 @@ Media
       [docs/product/related-sections.md](docs/product/related-sections.md)
 - [ ] Confirm `items/collections/{id}` answers on our host at all — captured from the PWA's
       `api2/v1.1` branch, wired best-effort, never seen answering. The log line is `item collections`
+- [ ] Confirm `genre=5,23,101` really is OR (the vendor docs say nothing about it). The floor falls
+      back to one genre when it answers empty; the log line is `genre floor`
 - [ ] Fold `filter.genres` from `kpapp.link/config.json` into the app so the profile matches genre
       **ids** instead of RU/EN title strings — and so genre pickers stop needing a request
 - [ ] Close the two open questions in that product doc: the poster / horizontal-card treatment per

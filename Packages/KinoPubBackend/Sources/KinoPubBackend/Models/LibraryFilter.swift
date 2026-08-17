@@ -108,6 +108,9 @@ public struct LibraryFilter: Equatable, Hashable {
   public var contentType: MediaType?
   public var sort: MediaSortOrder
   public var genreID: Int?
+  /// Several genres at once — `/v1/items` reads a comma as OR on `genre`. Set instead
+  /// of `genreID` when asking "more like this" of a title filed under six of them.
+  public var genreIDs: [Int] = []
   public var countryID: Int?
   public var years: YearRange?
   /// Set for a person's credits, which are the same listing narrowed to one name.
@@ -132,6 +135,7 @@ public struct LibraryFilter: Equatable, Hashable {
     contentType: MediaType? = nil,
     sort: MediaSortOrder = .recentlyAdded,
     genreID: Int? = nil,
+    genreIDs: [Int] = [],
     countryID: Int? = nil,
     years: YearRange? = nil,
     person: MediaPerson? = nil,
@@ -146,6 +150,7 @@ public struct LibraryFilter: Equatable, Hashable {
     self.contentType = contentType
     self.sort = sort
     self.genreID = genreID
+    self.genreIDs = genreIDs
     self.countryID = countryID
     self.years = years
     self.person = person
@@ -162,6 +167,7 @@ public struct LibraryFilter: Equatable, Hashable {
   public var hasActiveFilters: Bool {
     contentType != nil
       || genreID != nil
+      || !genreIDs.isEmpty
       || countryID != nil
       || years != nil
       || period != nil
