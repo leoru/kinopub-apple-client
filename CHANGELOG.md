@@ -37,10 +37,14 @@ AGENTS.md. What shipped:
   collections → a genre floor that only fires when everything else came back empty, so no type opens
   a page that recommends nothing. `CastShelfPolicy` says who the cast shelf asks for and what floats
   to the front of the answer; `preferringTypes(_:)` is an ordering and never a filter.
-- **`ItemCollectionsRequest`** (`/v1/items/collections/{id}`) is wired best-effort and **has never
-  been seen answering**: it was captured from the PWA on the `api2/v1.1` branch and we ask our own
-  host for the same path. `item collections id=… count=…` in the log is what will settle it.
-  `NavigationLinkProvider.collection(_:)` is new, for those shelf headers.
+- 🔴 **`items/collections/{id}` is not on our host** — `/v1/items/collections/248` answers 404 on
+  `api.service-kp.com` (seen live). It lives on the PWA's branch,
+  `api.ios-kp.store/api2/v1.1/`, so `Endpoint` gained **`baseURLOverride`** and
+  `ItemCollectionsRequest` is the only endpoint that sets it. Everything else stays on the mirror
+  the user signed in to. `NavigationLinkProvider.collection(_:)` is new, for those shelf headers.
+- **The genre floor asks the web client's own genre query** — `type` + `genre=23,26` +
+  `country` + `period=month` + `sort=-updated`, narrowing dropped one step at a time until
+  something answers (`LibraryFilter.genreIDs` is the comma-joined OR).
 - **One card per film** in person shelves and on the person page: `MediaItem.filmIdentity` +
   `collapsingFilmVariants` collapse the 3D and flat entries of one title (they share a Kinopoisk /
   IMDb id). The library grid and search do **not** collapse: a "3D" type filter asks for exactly

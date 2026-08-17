@@ -589,10 +589,15 @@ class MediaItemModel: ObservableObject {
   /// would fire against `MediaItem.mock()` while the details are still in flight and
   /// recommend comedies on a page that turns out to be a concert.
   ///
-  /// Genres: all of them at once for the kinds where one genre says nothing (`genre=`
-  /// takes a comma-separated OR), the signature genre alone for a film — "more comedy"
-  /// under a comedy is a truism. Sorted **newest first**, because the point is what
-  /// there is to watch now, not the all-time top of a genre.
+  /// **The query is the web client's own genre page**: type, several genres
+  /// (`genre=23,26` — mult + short), the country, and a `period` window, ordered by
+  /// what was updated last. The point is what there is to watch *now*, not the all-time
+  /// top of a genre.
+  ///
+  /// It asks up to three times, narrowest first, because a narrow query on a thin genre
+  /// answers nothing and an empty shelf is the thing this whole mechanism exists to
+  /// prevent: country + genres + this month → genres alone → the one genre that
+  /// describes the title best.
   private func ensureSomethingRelated() async {
     guard itemLoaded, similarLoaded, collectionsLoaded,
           moreFromDirectorLoaded, moreWithActorLoaded else { return }
@@ -606,25 +611,45 @@ class MediaItemModel: ObservableObject {
     let named = mediaItem.genres.filter { !($0.title ?? "").isEmpty }
     guard !named.isEmpty else { return }
     let signature = named.first { profile.signatureGenreIDs.contains($0.id) }
-    let chosen = profile.genreShelfUsesEveryGenre
+    // A film asks about one genre — "more comedy" under a comedy is a truism. Anything
+    // else is described by the combination it is filed under, not by the first entry.
+    let wide = profile.genreShelfUsesEveryGenre
       ? Array(named.prefix(Self.genreQueryLimit))
       : [signature ?? named[0]]
+    let narrow = [signature ?? named[0]]
 
-    let filter = LibraryFilter(contentType: mediaItem.contentTypeFilter,
-                               sort: .recentlyAdded,
-                               genreIDs: chosen.map(\.id))
-    let items = await fetchGenreShelf(filter)
-    // Several genres at once is unverified — the API's own docs say nothing about a
-    // comma on `genre`. If it answers nothing, fall back to the one genre that
-    // describes this title best rather than leaving the page with no shelf at all.
-    if items.isEmpty, chosen.count > 1, let single = signature ?? named.first {
-      let retry = LibraryFilter(contentType: mediaItem.contentTypeFilter,
-                                sort: .recentlyAdded,
-                                genreID: single.id)
-      apply(genreShelf: await fetchGenreShelf(retry), genres: [single])
-      return
+    for attempt in genreShelfAttempts(wide: wide, narrow: narrow) {
+      let items = await fetchGenreShelf(attempt.filter)
+      if !items.isEmpty {
+        apply(genreShelf: items, genres: attempt.genres)
+        return
+      }
     }
-    apply(genreShelf: items, genres: chosen)
+  }
+
+  private func genreShelfAttempts(wide: [TypeClass],
+                                  narrow: [TypeClass]) -> [(filter: LibraryFilter, genres: [TypeClass])] {
+    let type = mediaItem.contentTypeFilter
+    let country = mediaItem.countries.first?.id
+    var attempts: [(LibraryFilter, [TypeClass])] = []
+    if let country {
+      attempts.append((LibraryFilter(contentType: type,
+                                     sort: .recentlyUpdated,
+                                     genreIDs: wide.map(\.id),
+                                     countryID: country,
+                                     period: .month), wide))
+    }
+    attempts.append((LibraryFilter(contentType: type,
+                                   sort: .recentlyUpdated,
+                                   genreIDs: wide.map(\.id)), wide))
+    // Several genres at once is unverified — the vendor docs say nothing about a comma
+    // on `genre`. Ending on one genre means an unlucky guess still leaves a shelf.
+    if wide.count > 1 {
+      attempts.append((LibraryFilter(contentType: type,
+                                     sort: .recentlyUpdated,
+                                     genreIDs: narrow.map(\.id)), narrow))
+    }
+    return attempts
   }
 
   private func apply(genreShelf items: [MediaItem], genres: [TypeClass]) {
@@ -633,9 +658,6 @@ class MediaItemModel: ObservableObject {
     moreInGenreGenreIDs = genres.map(\.id)
     moreInGenreTitle = String(format: "MediaItem_MoreInGenre".localized,
                               genres.compactMap(\.title).joined(separator: " · "))
-    Logger.app.info(
-      "genre floor id=\(self.mediaItemId) genres=\(self.moreInGenreGenreIDs.map(String.init).joined(separator: ",")) type=\(self.mediaItem.type) items=\(items.count)"
-    )
   }
 
   private func fetchGenreShelf(_ filter: LibraryFilter) async -> [MediaItem] {
@@ -643,6 +665,9 @@ class MediaItemModel: ObservableObject {
       let items = try await itemsService.fetchItems(filter: filter, page: nil).items
         .filter { $0.filmIdentity != mediaItem.filmIdentity }
         .collapsingFilmVariants(preferring3D: mediaItem.is3D)
+      Logger.app.info(
+        "genre floor id=\(self.mediaItemId) type=\(filter.contentType?.rawValue ?? "any") genres=\(filter.genreIDs.map(String.init).joined(separator: ",")) country=\(filter.countryID.map(String.init) ?? "any") period=\(filter.period?.rawValue ?? "all") items=\(items.count)"
+      )
       return Array(items.prefix(Self.peopleShelfLimit))
     } catch {
       Logger.app.error("Failed to load genre shelf for \(self.mediaItemId): \(error)")

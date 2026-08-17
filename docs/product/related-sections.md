@@ -45,9 +45,11 @@ Preference is an **ordering, never a filter** — nothing is hidden, it only sto
 its header opening the collection's page. Capped at **3**: reading what is in one costs a request of
 its own.
 
-**Not verified.** The endpoint is `items/collections/{id}` — captured from the PWA on its
-`api2/v1.1` branch, and we ask our own host for the same path. Whether it answers there is unknown;
-a failure means no collection shelves and a log line (`item collections id=… count=…`).
+**verified 2026-08-17 — this method is not on our host.** `/v1/items/collections/248` answers **404**
+on `api.service-kp.com`; the PWA reads it from `api.ios-kp.store/api2/v1.1/items/collections/{id}`,
+which is where the request goes now (`Endpoint.baseURLOverride`, the only endpoint using it).
+Whether the branch accepts our token is still unconfirmed — a failure is silence and a log line
+(`item collections id=… count=…`).
 
 ## The genre floor
 
@@ -66,10 +68,15 @@ first. The single-genre pick is the one that **decided the kind** (stand-up over
 also filed under), else the first credited. If the multi-genre request answers nothing, it retries
 with that one genre rather than leaving the page bare.
 
-**prd — sorted by what is new** (`-created`), not by the all-time top of a genre. The point is what
-there is to watch now.
+**prd — it is the web client's own genre page.** Type, genres, country and a `period` window,
+`sort=-updated` — `?genre=23,26&country=1&period=month`. The point is what there is to watch now,
+not the all-time top of a genre (sorting by Kinopoisk rating is how a page about a 2026 anime
+recommended Friends).
 
-**idea — country.** Adding it to the floor's query was suggested; not built.
+**prd — narrowest first, then widen.** A narrow query on a thin genre answers nothing, and an empty
+shelf is what this whole mechanism exists to prevent, so it asks up to three times and stops at the
+first answer: country + genres + this month → genres alone → the one genre that describes the title
+best.
 
 ## Shared rules
 
@@ -85,6 +92,6 @@ Everything else is **prd**: it builds on tvOS and iOS and the rules are unit-tes
 (`RelatedShelfPolicyTests`, `CreditQueryTests`, `ShelfQueryParameterTests`, `PreferredTypesTests`),
 but the shelves themselves have only been looked at in the running app, and:
 
-- the collections endpoint has never answered us once;
+- the collections branch host is new and its answer to our token has not been seen yet;
 - `genre=5,23,101` as OR is **unverified** — the fallback exists because of that. `genre floor
   id=… genres=… items=…` in the log is what will settle it.

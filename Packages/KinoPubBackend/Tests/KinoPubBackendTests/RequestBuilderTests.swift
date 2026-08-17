@@ -94,3 +94,56 @@ class RequestBuilderTests: XCTestCase {
     }
 
 }
+
+/// The one method that does not live on the mirror the user signed in to.
+final class BranchHostEndpointTests: XCTestCase {
+
+  /// `/v1/items/collections/{id}` answers 404 on our own host — seen live on item 248.
+  /// The PWA's branch is the only place it has ever answered, so the endpoint carries
+  /// its own base URL and nothing else changes host.
+  func testItemCollectionsGoesToTheOtherBranch() throws {
+    let builder = RequestBuilder(baseURL: URL(string: "https://api.service-kp.com/")!)
+    let request = try XCTUnwrap(builder.build(with: ItemCollectionsRequest(itemId: 24)))
+    XCTAssertEqual(request.url?.absoluteString,
+                   "https://api.ios-kp.store/api2/v1.1/items/collections/24")
+  }
+
+  /// The override is opt-in: every other endpoint stays on the configured mirror.
+  func testEverythingElseStaysOnTheConfiguredHost() throws {
+    let builder = RequestBuilder(baseURL: URL(string: "https://api.service-kp.com/")!)
+    let request = try XCTUnwrap(builder.build(with: SimilarItemsRequest(id: "100")))
+    XCTAssertEqual(request.url?.host, "api.service-kp.com")
+  }
+}
+
+/// The genre floor's query is the web client's own genre page.
+final class GenreFloorQueryTests: XCTestCase {
+
+  private func params(_ filter: LibraryFilter) -> [String: String] {
+    (ItemsRequest(filter: filter, page: nil).parameters as? [String: String]) ?? [:]
+  }
+
+  /// `?genre=23,26&country=1&period=month&sort=-updated` — mult + short, this month.
+  func testFullQueryCarriesGenresCountryAndPeriod() {
+    let filter = LibraryFilter(contentType: .movie,
+                               sort: .recentlyUpdated,
+                               genreIDs: [23, 26],
+                               countryID: 1,
+                               period: .month)
+    let p = params(filter)
+    XCTAssertEqual(p["type"], "movie")
+    XCTAssertEqual(p["genre"], "23,26")
+    XCTAssertEqual(p["country"], "1")
+    XCTAssertEqual(p["period"], "month")
+    XCTAssertEqual(p["sort"], "-updated")
+  }
+
+  /// Nothing narrowing is sent when it was not asked for — an absent country must not
+  /// arrive as `country=0`.
+  func testUnsetNarrowingIsAbsentNotZero() {
+    let p = params(LibraryFilter(contentType: .concert, sort: .recentlyUpdated, genreIDs: [34]))
+    XCTAssertNil(p["country"])
+    XCTAssertNil(p["period"])
+    XCTAssertEqual(p["genre"], "34")
+  }
+}

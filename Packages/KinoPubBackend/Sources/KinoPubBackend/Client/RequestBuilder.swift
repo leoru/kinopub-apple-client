@@ -15,7 +15,9 @@ internal class RequestBuilder {
   }
 
   func build(with endpoint: Endpoint) -> URLRequest? {
-    guard let url = URL(string: endpoint.path, relativeTo: baseURL) else { return nil }
+    guard let url = URL(string: endpoint.path, relativeTo: endpoint.baseURLOverride ?? baseURL) else {
+      return nil
+    }
 
     var request = URLRequest(url: url)
     request.httpMethod = endpoint.method
