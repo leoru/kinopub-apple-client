@@ -102,8 +102,8 @@ function draftDocument(id, hints) {
         : {}),
     },
     artwork: {
-      poster: [{ source: "kinopub", url: `${KINOPUB_POSTER}/big/${id}.jpg` }],
-      backdrop: [{ source: "kinopub", url: `${KINOPUB_POSTER}/wide/${id}.jpg` }],
+      poster: [{ source: "kinopub", url: `${KINOPUB_POSTER}/big/${id}.jpg`, lang: null }],
+      backdrop: [{ source: "kinopub", url: `${KINOPUB_POSTER}/wide/${id}.jpg`, lang: null }],
     },
     ratings: [], synopsis: [], genres: [], countries: [], credits: [],
     seasons: [], trailers: [], awards: [], badges: [], copies: [],
@@ -189,15 +189,19 @@ function mergeTMDB(base, mediaType, tmdbId, details) {
   };
   document.kind = mediaType === "tv" ? "series" : "movie";
 
+  // One per language, capped to ru / en / textless — see capArtwork. The
+  // kino.pub fallback the draft carried is appended last, so it only survives
+  // the cap if TMDB left a language slot empty.
   const images = details.images || {};
-  const map = (list, kind) => (list || []).filter((a) => a.file_path).map((a) => ({
-    source: "tmdb", url: IMAGE_BASE + a.file_path, lang: a.iso_639_1,
-    width: a.width, height: a.height,
-  }));
+  const toAssets = (list) => (list || [])
+    .filter((a) => a.file_path)
+    .sort((a, b) => (b.width || 0) - (a.width || 0))
+    .map((a) => ({ source: "tmdb", url: IMAGE_BASE + a.file_path, lang: a.iso_639_1 || null,
+                   width: a.width, height: a.height }));
   document.artwork = {
-    poster: [...map(images.posters), ...(document.artwork.poster || [])],
-    backdrop: [...map(images.backdrops), ...(document.artwork.backdrop || [])],
-    logo: map(images.logos),
+    poster: capArtwork([...toAssets(images.posters), ...(document.artwork.poster || [])]),
+    backdrop: capArtwork([...toAssets(images.backdrops), ...(document.artwork.backdrop || [])]),
+    logo: capArtwork(toAssets(images.logos)),
   };
 
   if (details.vote_count) {
@@ -243,6 +247,25 @@ function mergeTMDB(base, mediaType, tmdbId, details) {
     }));
 
   return document;
+}
+
+// ru first (our primary audience), then en, then textless (no title baked
+// into the image — the one you want under your own logo overlay). Any other
+// language is dropped: it does carry text, just not one we asked for, so
+// folding it into "textless" would be a lie.
+const ARTWORK_LANG_ORDER = ["ru", "en", null];
+
+/** One image per (kind, language), at most 3. First match per language wins,
+ * so pass assets already sorted by trust/width for the best pick to survive. */
+function capArtwork(assets) {
+  const picked = new Map();
+  for (const asset of assets) {
+    const lang = asset.lang ?? null;
+    if (!ARTWORK_LANG_ORDER.includes(lang) || picked.has(lang)) continue;
+    picked.set(lang, { ...asset, lang });
+    if (picked.size === ARTWORK_LANG_ORDER.length) break;
+  }
+  return ARTWORK_LANG_ORDER.filter((lang) => picked.has(lang)).map((lang) => picked.get(lang));
 }
 
 /** Best artwork of a kind: our precedence, applied here so the client has none. */

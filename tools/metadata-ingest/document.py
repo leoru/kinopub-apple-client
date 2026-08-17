@@ -37,6 +37,32 @@ def _rows(conn, query, *params):
     return [dict(row) for row in conn.execute(query, params)]
 
 
+# ru first (our primary audience), then en, then textless (lang is NULL — no
+# title baked into the image, the one you want under your own logo overlay).
+# Any other language (fr, ja, …) is dropped rather than folded into "textless",
+# since it does carry text, just not one we asked for.
+ARTWORK_LANG_ORDER = ("ru", "en", None)
+
+
+def cap_artwork(assets: list[dict]) -> list[dict]:
+    """`assets` already sorted by source trust then width — first match per
+    language wins, so this keeps the best available pick, not an arbitrary one."""
+    picked: dict[object, dict] = {}
+    for asset in assets:
+        lang = asset["lang"]
+        if lang not in ARTWORK_LANG_ORDER or lang in picked:
+            continue
+        picked[lang] = {
+            "source": asset["source"], "url": asset["url"], "lang": asset["lang"],
+            "width": asset["width"], "height": asset["height"],
+            "color": [asset["color_top"], asset["color_bot"]]
+            if asset.get("color_top") else None,
+        }
+        if len(picked) == len(ARTWORK_LANG_ORDER):
+            break
+    return [picked[lang] for lang in ARTWORK_LANG_ORDER if lang in picked]
+
+
 def build(conn, title_id: int) -> dict | None:
     title = conn.execute("SELECT * FROM title WHERE id=?", (title_id,)).fetchone()
     if not title:
@@ -50,22 +76,19 @@ def build(conn, title_id: int) -> dict | None:
         ids[row["namespace"]] = {"value": row["value"], "confidence": row["confidence"],
                                  "method": row["method"]}
 
-    # Artwork is grouped by kind and ordered by how much we trust the source for
-    # that kind — the precedence table from the policy, applied here rather than
-    # left to the client.
-    artwork: dict[str, list] = {}
+    # One image per (kind, language), capped to ru / en / textless — never a
+    # gallery. The client draws one poster; a list of 73 candidates is our
+    # indecision, not a feature, and a point request can always ask for more
+    # if a specific replacement is ever wanted.
+    ranked: dict[str, list] = {}
     for row in conn.execute(
         "SELECT kind, source, url, lang, width, height, color_top, color_bot"
         " FROM image WHERE title_id=? ORDER BY kind,"
         " CASE source WHEN 'tvoe' THEN 0 WHEN 'tmdb' THEN 1 WHEN 'kinopoisk' THEN 2"
         "             ELSE 3 END, width DESC", (title_id,),
     ):
-        artwork.setdefault(row["kind"], []).append({
-            "source": row["source"], "url": row["url"], "lang": row["lang"],
-            "width": row["width"], "height": row["height"],
-            "color": [row["color_top"], row["color_bot"]]
-            if row["color_top"] else None,
-        })
+        ranked.setdefault(row["kind"], []).append(dict(row))
+    artwork = {kind: cap_artwork(assets) for kind, assets in ranked.items()}
 
     ratings = [dict(row) for row in conn.execute(
         "SELECT source, value, votes, scale, season, episode, changed_at"

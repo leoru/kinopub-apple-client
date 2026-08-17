@@ -699,5 +699,45 @@ class TestBackupRoundTrip(RecordTestCase):
                          "a local autoincrement in the dump makes it unrestorable")
 
 
+class TestArtworkCap(unittest.TestCase):
+    """At most one poster per language, capped to ru/en/textless."""
+
+    def rows(self, *specs):
+        # (source, lang, width) -> a row shaped like the `image` table.
+        return [{"source": s, "url": f"{s}-{l}-{w}", "lang": l, "width": w, "height": None,
+                 "color_top": None, "color_bot": None} for s, l, w in specs]
+
+    def test_at_most_three_survive(self):
+        import document
+        rows = self.rows(("tmdb", "ru", 500), ("tmdb", "en", 500), ("tmdb", None, 500),
+                         ("tmdb", "fr", 500), ("tmdb", "ja", 500))
+        self.assertEqual(len(document.cap_artwork(rows)), 3)
+
+    def test_other_languages_are_dropped_not_folded_into_textless(self):
+        import document
+        rows = self.rows(("tmdb", "fr", 500))
+        self.assertEqual(document.cap_artwork(rows), [])
+
+    def test_order_is_ru_then_en_then_textless(self):
+        import document
+        rows = self.rows(("tmdb", None, 500), ("tmdb", "en", 500), ("tmdb", "ru", 500))
+        langs = [a["lang"] for a in document.cap_artwork(rows)]
+        self.assertEqual(langs, ["ru", "en", None])
+
+    def test_the_higher_trust_source_wins_a_language_slot(self):
+        import document
+        # tvoe ranks above tmdb in the query ordering the real caller supplies;
+        # cap_artwork must not re-sort, only take the first per language.
+        rows = self.rows(("tvoe", "ru", 300), ("tmdb", "ru", 4000))
+        picked = document.cap_artwork(rows)
+        self.assertEqual(len(picked), 1)
+        self.assertEqual(picked[0]["source"], "tvoe", "caller's ordering decides, not width")
+
+    def test_a_missing_language_leaves_the_slot_empty_not_backfilled(self):
+        import document
+        rows = self.rows(("tmdb", "ru", 500))
+        self.assertEqual([a["lang"] for a in document.cap_artwork(rows)], ["ru"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
