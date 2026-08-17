@@ -35,3 +35,4 @@ at on screen stays **prd** — do not promote it because it compiles.
 ## Files
 
 - [media-presentation.md](media-presentation.md) — what a title's type and genre change on screen
+- [related-sections.md](related-sections.md) — what a detail page recommends, per type

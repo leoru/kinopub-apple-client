@@ -20,8 +20,11 @@ public enum MediaPresentationKind: String, Sendable, CaseIterable {
   /// Real people, as themselves — `documovie` / `docuserial`, or the documentary genre
   /// on any type.
   case documentary
-  /// A stage, not a story: concerts and stand-up (genre 101).
-  case performance
+  /// A stage and a setlist. Its people are asked for their other concerts.
+  case concert
+  /// A stage and a microphone — **genre 101**. Its people are asked for everything
+  /// else they did, where a film or a series is the more interesting answer.
+  case standup
   /// Drawn: anime, cartoons and cartoon series (genre 23). The credited people are not
   /// the faces on screen. Voice actors may earn portraits once we carry them as such;
   /// kino.pub's flat `cast` string is not that.
@@ -82,7 +85,7 @@ public struct MediaPresentationProfile: Equatable, Sendable {
 
   /// "More from …" for the people in the `director` field. A concert's or a stand-up
   /// set's director is a TV credit nobody is following, so those get no such shelf.
-  public var showsAuthorShelf: Bool { kind != .performance }
+  public var showsAuthorShelf: Bool { kind != .concert && kind != .standup }
 
   /// One name or several — the shelf asks for all of them at once, so with more than
   /// one there is no single person to name in the header.
@@ -93,6 +96,69 @@ public struct MediaPresentationProfile: Equatable, Sendable {
     case (.creator, false): return "MediaItem_MoreByCreator"
     case (.creator, true): return "MediaItem_MoreByCreators"
     }
+  }
+
+  // MARK: - Related shelves
+
+  /// Who the cast shelf asks for, and what it accepts back.
+  public var castShelf: CastShelfPolicy {
+    switch kind {
+    // The people on stage *are* the title. Ask all of them, and ask for concerts:
+    // a singer's filmography is not what someone watching a concert wants next.
+    case .concert:
+      return CastShelfPolicy(usesEveryName: true, onlyType: .concert, preferredTypes: [])
+    // A comic's other work is the interesting answer, and it is usually a film or a
+    // series rather than another set — so nothing is filtered out, only ordered.
+    case .standup:
+      return CastShelfPolicy(usesEveryName: true, onlyType: nil,
+                             preferredTypes: [.movie, .serial])
+    // A film's cast list is fifteen names; ORing them asks for half the catalogue.
+    case .fiction, .documentary, .animation, .show:
+      return CastShelfPolicy(usesEveryName: false, onlyType: nil, preferredTypes: [])
+    }
+  }
+
+  /// Header for the cast shelf. Only the stage kinds get a role-worded one; elsewhere
+  /// the shelf names the single actor it asked for, which reads better.
+  public func castShelfTitleKey(count: Int) -> String? {
+    switch (kind, count > 1) {
+    case (.concert, false): return "MediaItem_MoreFromArtist"
+    case (.concert, true): return "MediaItem_MoreFromArtists"
+    case (.standup, false): return "MediaItem_MoreFromComedian"
+    case (.standup, true): return "MediaItem_MoreFromComedians"
+    default: return nil
+    }
+  }
+
+  /// The genre shelf is the floor under the related area: whatever else came back
+  /// empty, "more of this kind of thing" can always be asked for. The type is kept —
+  /// someone on a TV show wants other shows, not a film that shares a genre with it.
+  ///
+  /// Which genre, when a title has six: the one that decided its kind, else the first.
+  /// A stand-up set is filed under Comedy *and* 101, and 101 is the one worth asking.
+  public var signatureGenreIDs: Set<Int> {
+    switch kind {
+    case .standup: return Self.standupGenreIDs
+    case .animation: return Self.animationGenreIDs
+    default: return []
+    }
+  }
+}
+
+/// How a title's cast becomes a shelf query.
+public struct CastShelfPolicy: Equatable, Sendable {
+  /// Every credited name at once (a concert's performers, a set's participants) or the
+  /// first billed one alone.
+  public let usesEveryName: Bool
+  /// Narrow the query to a single type where the type is the point.
+  public let onlyType: MediaType?
+  /// Not a filter — an ordering. These float to the front of whatever comes back.
+  public let preferredTypes: [MediaType]
+
+  public init(usesEveryName: Bool, onlyType: MediaType?, preferredTypes: [MediaType]) {
+    self.usesEveryName = usesEveryName
+    self.onlyType = onlyType
+    self.preferredTypes = preferredTypes
   }
 }
 
@@ -116,19 +182,19 @@ public extension MediaPresentationProfile {
   private static func kind(type: String, genres: [TypeClass]) -> MediaPresentationKind {
     switch type.lowercased() {
     case "documovie", "docuserial": return .documentary
-    case "concert": return .performance
+    case "concert": return .concert
     case "tvshow": return .show
     default: break
     }
 
     let ids = Set(genres.map(\.id))
-    if !ids.isDisjoint(with: standupGenreIDs) { return .performance }
+    if !ids.isDisjoint(with: standupGenreIDs) { return .standup }
     if !ids.isDisjoint(with: animationGenreIDs) { return .animation }
 
     let titles = genres.compactMap(\.title).map(normalized)
     if titles.contains(where: { matches($0, animationGenreWords) }) { return .animation }
     if titles.contains(where: { matches($0, documentaryGenreWords) }) { return .documentary }
-    if titles.contains(where: { matches($0, standupGenreWords) }) { return .performance }
+    if titles.contains(where: { matches($0, standupGenreWords) }) { return .standup }
 
     return .fiction
   }
@@ -158,6 +224,25 @@ public extension MediaPresentationProfile {
   private static let animationGenreWords = ["аниме", "anime", "мультфильм", "мультсериал",
                                             "cartoon", "animation"]
   private static let documentaryGenreWords = ["документальн", "documentar"]
+}
+
+public extension Array where Element == MediaItem {
+  /// Preferred types to the front, everything else after, each keeping its incoming
+  /// order — an ordering, never a filter, so a shelf can favour films without hiding
+  /// the rest. Comparison is on the raw type, lowercased: kino.pub answers `"3d"`
+  /// where `MediaType.threeD` is `"3D"`.
+  func preferringTypes(_ types: [MediaType]) -> [MediaItem] {
+    guard !types.isEmpty else { return self }
+    let preferred = Set(types.map { $0.rawValue.lowercased() })
+    let (front, back) = reduce(into: ([MediaItem](), [MediaItem]())) { acc, item in
+      if preferred.contains(item.type.lowercased()) {
+        acc.0.append(item)
+      } else {
+        acc.1.append(item)
+      }
+    }
+    return front + back
+  }
 }
 
 public extension MediaItem {

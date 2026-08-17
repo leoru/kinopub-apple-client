@@ -16,6 +16,8 @@ protocol NavigationLinkProvider {
   func season(for season: Season) -> any Hashable
   /// Where a name in the credits leads: the catalog narrowed to that person.
   func person(for person: MediaPerson) -> any Hashable
+  /// A collection shelf's header — the collection's own page.
+  func collection(_ collection: Collection) -> any Hashable
 }
 
 /// One provider for every tab stack — destinations are always `Route`.
@@ -26,6 +28,7 @@ struct AppRoutesLinkProvider: NavigationLinkProvider {
   func seasons(for seasons: [Season]) -> any Hashable { Route.seasons(seasons) }
   func season(for season: Season) -> any Hashable { Route.season(season) }
   func person(for person: MediaPerson) -> any Hashable { Route.person(person) }
+  func collection(_ collection: Collection) -> any Hashable { Route.collection(collection) }
 }
 
 typealias MainRoutesLinkProvider = AppRoutesLinkProvider

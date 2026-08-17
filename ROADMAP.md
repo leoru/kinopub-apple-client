@@ -248,6 +248,12 @@ Media
 - [x] **Type/genre presentation is one profile**, `MediaPresentationProfile` — cast rail, hero
       credit lines, Credits card, author shelf. The rules themselves:
       [docs/product/media-presentation.md](docs/product/media-presentation.md)
+- [x] **Every type recommends something**: similar → author → cast → collections → a genre floor
+      that only fires when the rest came back empty. Concert asks its performers for concerts,
+      stand-up asks its participants for anything and floats films/series. Rules:
+      [docs/product/related-sections.md](docs/product/related-sections.md)
+- [ ] Confirm `items/collections/{id}` answers on our host at all — captured from the PWA's
+      `api2/v1.1` branch, wired best-effort, never seen answering. The log line is `item collections`
 - [ ] Fold `filter.genres` from `kpapp.link/config.json` into the app so the profile matches genre
       **ids** instead of RU/EN title strings — and so genre pickers stop needing a request
 - [ ] Close the two open questions in that product doc: the poster / horizontal-card treatment per

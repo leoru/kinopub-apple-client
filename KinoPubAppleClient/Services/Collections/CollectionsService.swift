@@ -9,6 +9,9 @@ import KinoPubBackend
 protocol CollectionsService {
   func fetchCollections(page: Int?, sort: String?) async throws -> CollectionsData
   func fetchCollection(id: Int) async throws -> (Collection, [MediaItem])
+  /// Which collections a title sits in. Best-effort by contract: the endpoint was
+  /// captured from the PWA on its own host branch, so callers treat a throw as "none".
+  func fetchCollections(forItem id: Int) async throws -> [Collection]
 }
 
 protocol CollectionsServiceProvider {
@@ -26,5 +29,9 @@ struct CollectionsServiceMock: CollectionsService {
 
   func fetchCollection(id: Int) async throws -> (Collection, [MediaItem]) {
     (Collection.mock(id: id), [MediaItem.mock(id: 101), MediaItem.mock(id: 102)])
+  }
+
+  func fetchCollections(forItem id: Int) async throws -> [Collection] {
+    [Collection.mock(id: 178, title: "22 фильма о криминальной России")]
   }
 }

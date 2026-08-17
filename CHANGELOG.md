@@ -26,6 +26,14 @@ AGENTS.md. What shipped:
   otherwise, because we hold no genre-id table. The real one is `filter.genres` in
   `kpapp.link/config.json` (see [docs/providers/kinopub/references.md](docs/providers/kinopub/references.md));
   folding it in would retire the string matching.
+- **The related area is a plan, not three hard-wired shelves** — similar → author → cast →
+  collections → a genre floor that only fires when everything else came back empty, so no type opens
+  a page that recommends nothing. `CastShelfPolicy` says who the cast shelf asks for and what floats
+  to the front of the answer; `preferringTypes(_:)` is an ordering and never a filter.
+- **`ItemCollectionsRequest`** (`/v1/items/collections/{id}`) is wired best-effort and **has never
+  been seen answering**: it was captured from the PWA on the `api2/v1.1` branch and we ask our own
+  host for the same path. `item collections id=… count=…` in the log is what will settle it.
+  `NavigationLinkProvider.collection(_:)` is new, for those shelf headers.
 - **One card per film** in person shelves and on the person page: `MediaItem.filmIdentity` +
   `collapsingFilmVariants` collapse the 3D and flat entries of one title (they share a Kinopoisk /
   IMDb id). The library grid and search do **not** collapse: a "3D" type filter asks for exactly

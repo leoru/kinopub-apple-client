@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum MediaType: String, Codable, CaseIterable, Identifiable {
+public enum MediaType: String, Codable, CaseIterable, Identifiable, Sendable {
   case movie
   case serial
   case threeD = "3D"
