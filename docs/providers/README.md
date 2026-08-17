@@ -36,7 +36,7 @@ time, in app code, at runtime.
 | iTunes Search | — | no | Keyless, trivial, good artwork and descriptions; store coverage only |
 | IMDb (public datasets) | — | no | Only free source of **per-episode** IMDb ratings. Batch dump, not an API |
 | TheTVDB | — | no | Episode-level authority where TMDB is thin; Subler has a working client |
-| OMDb | — | no | Cheap aggregate of IMDb/RT/Metacritic in one call |
+| OMDb | **[omdb.md](omdb.md)** | fetcher ready, needs a key | Sheet written from docs only, **nothing probed** — no key yet. One flat record per title; the only thing nothing else gives us is **Rotten Tomatoes + Metacritic**. IMDb id only, so it never resolves identity. **1 000/day**, i.e. 53 days for one pass, so it is lazy by construction and has no sweep mode. Errors arrive as HTTP 200 with `Response:"False"` |
 | Trakt | — | no | Watched state, progress, recommendations. Needs user OAuth |
 | Simkl / MDBList | — | no | List and rating aggregation; both appear in every comparable project |
 | Shikimori / MAL / AniList | — | no | Anime, where the general sources are weakest and id mapping is hardest |
