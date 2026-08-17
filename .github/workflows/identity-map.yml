@@ -1,0 +1,61 @@
+name: Identity map
+
+# Grows `tools/metadata-ingest/backup/identity.jsonl.gz` a few hundred entries a
+# night and commits the result.
+#
+# This is the only part of the record that costs API calls and cannot be
+# re-downloaded from anywhere — IMDb publishes its ratings, TMDB publishes its
+# id exports, but nobody publishes "kino.pub 56 is tmdb movie/278". Losing that
+# mapping is what turned a schema change into a re-crawl once already.
+#
+# It is also the only job that can run on a machine holding nothing but the
+# repository: the committed map is both its input and its output, so none of the
+# gitignored dumps are needed. No secrets either — the TMDB token lives in the
+# Cloudflare worker, and the proxy URL is public.
+
+on:
+  schedule:
+    # 04:20 UTC, off the hour so it does not land in the crowd of :00 crons.
+    - cron: '20 4 * * *'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Titles to resolve this run'
+        default: '500'
+
+concurrency:
+  group: identity-map
+  cancel-in-progress: false   # a half-finished run has still written progress
+
+permissions:
+  contents: write
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve a batch
+        working-directory: tools/metadata-ingest
+        run: python3 resolve_identity.py --limit "${{ inputs.limit || 500 }}"
+
+      - name: Commit if the map moved
+        run: |
+          if git diff --quiet -- tools/metadata-ingest/backup; then
+            echo "no change"
+            exit 0
+          fi
+          resolved=$(python3 - <<'PY'
+          import gzip, json, pathlib
+          path = pathlib.Path("tools/metadata-ingest/backup/identity.jsonl.gz")
+          with gzip.open(path, "rt", encoding="utf-8") as stream:
+              rows = [json.loads(line) for line in stream if line.strip()]
+          print(sum(1 for r in rows if any(e[0] == "tmdb" for e in r["ids"])))
+          PY
+          )
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/metadata-ingest/backup
+          git commit -m "record: identity map at ${resolved} resolved"
+          git push
