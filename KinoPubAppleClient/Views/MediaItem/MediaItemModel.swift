@@ -104,11 +104,29 @@ class MediaItemModel: ObservableObject {
 
   public var isBookmarked: Bool { !folderIDsContainingItem.isEmpty }
 
-  /// First credited director — drives the "More from" shelf title and its person route.
-  public var primaryDirector: MediaPerson? {
-    guard let name = mediaItem.directorNames.first else { return nil }
-    return MediaPerson(name: name, role: .director)
+  /// Everyone in the `director` field, as one query — a film by two directors asks for
+  /// both, so the shelf is what *they* made rather than what the first-listed one did.
+  /// Capped: the names go into the query string, and a title crediting eight people is
+  /// a listing nobody scrolls anyway.
+  ///
+  /// Nil where the shelf has no meaning — a concert's director is a TV credit nobody
+  /// follows (`MediaPresentationProfile.showsAuthorShelf`).
+  public var shelfAuthors: MediaPerson? {
+    guard mediaItem.presentation.showsAuthorShelf else { return nil }
+    return MediaPerson.group(names: Array(mediaItem.directorNames.prefix(Self.authorQueryLimit)),
+                             role: .director)
   }
+
+  /// How the author shelf is labelled: director or creator, one or several. The name
+  /// is not in it — with more than one there is no single name to print, and the page
+  /// already says whose page it is.
+  public var authorShelfTitle: String {
+    let profile = mediaItem.presentation
+    let count = shelfAuthors?.names.count ?? 0
+    return profile.authorShelfTitleKey(count: count).localized
+  }
+
+  private static let authorQueryLimit = 3
 
   /// First billed cast member — drives the "More with" shelf title and its person route.
   public var primaryActor: MediaPerson? {
@@ -129,12 +147,14 @@ class MediaItemModel: ObservableObject {
       rows.append(MediaRow(id: "similar", title: "Similar".localized, cards: similarItems.map(MediaCard.init)))
     }
     // `destination` on the person rows is what makes their header navigate to that
-    // person's page — the shelves' one route to it besides a cast circle.
-    if let director = primaryDirector, !moreFromDirector.isEmpty {
-      rows.append(MediaRow(id: "director-\(director.id)",
-                           title: String(format: "More from %@".localized, director.name),
+    // person's page — the shelves' one route to it besides a cast circle. A shelf
+    // standing for several directors has no one page to open, so it gets no header
+    // link rather than an arbitrary one.
+    if let authors = shelfAuthors, !moreFromDirector.isEmpty {
+      rows.append(MediaRow(id: "director-\(authors.id)",
+                           title: authorShelfTitle,
                            cards: moreFromDirector.map(MediaCard.init),
-                           destination: linkProvider.person(for: director)))
+                           destination: authors.isGroup ? nil : linkProvider.person(for: authors)))
     }
     if let actor = primaryActor, !moreWithActor.isEmpty {
       rows.append(MediaRow(id: "actor-\(actor.id)",
@@ -149,8 +169,8 @@ class MediaItemModel: ObservableObject {
   /// alongside `relatedRows` until their query resolves one way or the other.
   public var pendingRelatedShelfTitles: [String] {
     var titles: [String] = []
-    if let director = primaryDirector, moreFromDirector.isEmpty, !moreFromDirectorLoaded {
-      titles.append(String(format: "More from %@".localized, director.name))
+    if shelfAuthors != nil, moreFromDirector.isEmpty, !moreFromDirectorLoaded {
+      titles.append(authorShelfTitle)
     }
     if let actor = primaryActor, moreWithActor.isEmpty, !moreWithActorLoaded {
       titles.append(String(format: "More with %@".localized, actor.name))
@@ -384,8 +404,10 @@ class MediaItemModel: ObservableObject {
     }
   }
 
-  /// "More from director" / "More with actor" — best-effort, same swallow-on-failure
-  /// rule as `loadSimilar`. First credited name only (community heuristic). Picked by
+  /// The author shelf ("More by This Director" / "…These Creators") and "More with
+  /// actor" — best-effort, same swallow-on-failure rule as `loadSimilar`. The author
+  /// query covers every credited director at once; the actor one is the first billed
+  /// name (community heuristic). Picked by
   /// Kinopoisk rating so the rail is a "best of" strip rather than upload order, then
   /// shown newest first — a filmography reads as a timeline, and "known for" ordering
   /// waits until we have a signal worth ranking on.
@@ -393,7 +415,7 @@ class MediaItemModel: ObservableObject {
   /// director shelf only so the pair doesn't repeat the same poster twice — by film,
   /// not by id, so the flat copy of a 3D entry counts as the same title.
   private func loadPeopleShelves() async {
-    async let directorItems = fetchPersonShelf(person: primaryDirector)
+    async let directorItems = fetchPersonShelf(person: shelfAuthors)
     async let actorItems = fetchPersonShelf(person: primaryActor)
     let director = await directorItems
     let actor = await actorItems

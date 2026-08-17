@@ -9,20 +9,33 @@ import Foundation
 /// question as `MediaType`, which is the API's filing cabinet.
 ///
 /// The axis that matters is **whether faces carry the title**. A film is sold on the
-/// people in it, so their portraits are a section of their own. A concert, a stand-up
-/// set, a documentary or an anime is not: its "cast" is a list of names, and a rail of
-/// monogram circles for people nobody is looking for is a shelf of noise.
+/// actors in it, so their portraits are a section of their own. A concert, a stand-up
+/// set, a documentary, a TV show or anything animated is not: its people are a list of
+/// names, and a rail of monogram circles for faces nobody would recognize is a shelf of
+/// noise.
 public enum MediaPresentationKind: String, Sendable, CaseIterable {
-  /// Characters, played by actors. The default, and the only kind that gets faces.
+  /// Characters, played by actors whose faces are the point. The default, and the only
+  /// kind that gets a rail of portraits.
   case fiction
   /// Real people, as themselves — `documovie` / `docuserial`, or the documentary genre
   /// on any type.
   case documentary
   /// A stage, not a story: concerts and stand-up (genre 101).
   case performance
-  /// The credited people are not the faces on screen. Voice actors may earn portraits
-  /// once we carry them as such; kino.pub's flat `cast` string is not that.
-  case anime
+  /// Drawn: anime, cartoons and cartoon series (genre 23). The credited people are not
+  /// the faces on screen. Voice actors may earn portraits once we carry them as such;
+  /// kino.pub's flat `cast` string is not that.
+  case animation
+  /// `tvshow` — hosts and guests, episodes that are broadcasts.
+  case show
+}
+
+/// What to call whoever is credited as having made this. A film has a director; a
+/// series, a show or a documentary has creators, and kino.pub files them in the same
+/// `director` field.
+public enum MediaAuthorRole: String, Sendable {
+  case director
+  case creator
 }
 
 /// **One profile decides how a title's type and genre change the way it is presented.**
@@ -34,8 +47,8 @@ public enum MediaPresentationKind: String, Sendable, CaseIterable {
 ///
 /// | Surface | Decided |
 /// | --- | --- |
-/// | Detail sections — which appear at all | `showsCastPortraits` (people rail) |
-/// | Labels — what a section or field is called | `creditsTitleKey` |
+/// | Detail sections — which appear at all | `showsCastPortraits`, `showsAuthorShelf` |
+/// | Labels — what a section, a shelf or a field is called | `castSectionTitleKey`, `authorCaptionKey`, `authorShelfTitleKey(count:)` |
 /// | Hero — the written fields under the synopsis | `showsHeroCastLine` |
 /// | Poster (vertical) | nothing yet — add here when it is decided, not in the cell |
 /// | Playable object (horizontal) | nothing yet — same rule |
@@ -45,25 +58,45 @@ public enum MediaPresentationKind: String, Sendable, CaseIterable {
 public struct MediaPresentationProfile: Equatable, Sendable {
 
   public let kind: MediaPresentationKind
+  public let authorRole: MediaAuthorRole
 
-  public init(kind: MediaPresentationKind) {
+  public init(kind: MediaPresentationKind, authorRole: MediaAuthorRole = .director) {
     self.kind = kind
+    self.authorRole = authorRole
   }
 
   /// The people rail — poster-shaped portraits on iOS/macOS, TVUIKit monogram circles
-  /// on tvOS. Fiction only; everywhere else the same names are a row in the
-  /// information table, next to qualities and languages.
+  /// on tvOS. **Actors only, and fiction only.** Directors were on it, and first: a
+  /// name people know and a face they do not, taking the opening slot of the one
+  /// section that is about faces. They read as a line in Credits instead.
   public var showsCastPortraits: Bool { kind == .fiction }
 
-  /// What the people are called where they are listed. "Cast & Crew" over a rail of
-  /// faces; "Credits" over a list of names, because a concert has no cast.
-  public var creditsTitleKey: String {
-    showsCastPortraits ? "Cast & Crew" : "MediaItem_Credits"
-  }
+  /// The rail's header. It holds the cast and nothing else now, so it says so.
+  public var castSectionTitleKey: String { "MediaItem_CastSection" }
 
   /// The hero's "Starring …" line, under the synopsis. Off wherever there is no
   /// starring to speak of — nobody stars in a stand-up set.
   public var showsHeroCastLine: Bool { kind == .fiction }
+
+  /// The Credits row naming whoever made it.
+  public var authorCaptionKey: String {
+    authorRole == .creator ? "MediaItem_Creators" : "Director"
+  }
+
+  /// "More from …" for the people in the `director` field. A concert's or a stand-up
+  /// set's director is a TV credit nobody is following, so those get no such shelf.
+  public var showsAuthorShelf: Bool { kind != .performance }
+
+  /// One name or several — the shelf asks for all of them at once, so with more than
+  /// one there is no single person to name in the header.
+  public func authorShelfTitleKey(count: Int) -> String {
+    switch (authorRole, count > 1) {
+    case (.director, false): return "MediaItem_MoreByDirector"
+    case (.director, true): return "MediaItem_MoreByDirectors"
+    case (.creator, false): return "MediaItem_MoreByCreator"
+    case (.creator, true): return "MediaItem_MoreByCreators"
+    }
+  }
 }
 
 // MARK: - Reading the kind off an item
@@ -71,33 +104,45 @@ public struct MediaPresentationProfile: Equatable, Sendable {
 public extension MediaPresentationProfile {
 
   /// Type first, then genre: a `documovie` is a documentary whatever its genres say,
-  /// while a documentary or a stand-up set filed as a plain `movie` is only knowable
-  /// from the genre list.
+  /// while a documentary, a cartoon or a stand-up set filed as a plain `movie` is only
+  /// knowable from the genre list.
   ///
-  /// Genre 101 is stand-up — the one id kino.pub has confirmed to us. The rest match on
-  /// the genre's own title, in both languages the API answers in, because we hold no id
-  /// table for them (`filter.genres` in `kpapp.link/config.json` is where one would
-  /// come from — see docs/providers/kinopub/references.md).
+  /// Genres 101 (stand-up) and 23 (animation) are the ids kino.pub has confirmed to us.
+  /// The rest match on the genre's own title, in both languages the API answers in,
+  /// because we hold no id table for them (`filter.genres` in `kpapp.link/config.json`
+  /// is where one would come from — see docs/providers/kinopub/references.md).
   init(type: String, genres: [TypeClass]) {
-    self.init(kind: Self.kind(type: type, genres: genres))
+    self.init(kind: Self.kind(type: type, genres: genres),
+              authorRole: Self.authorRole(type: type))
   }
 
   private static func kind(type: String, genres: [TypeClass]) -> MediaPresentationKind {
     switch type.lowercased() {
     case "documovie", "docuserial": return .documentary
     case "concert": return .performance
+    case "tvshow": return .show
     default: break
     }
 
     let ids = Set(genres.map(\.id))
     if !ids.isDisjoint(with: standupGenreIDs) { return .performance }
+    if !ids.isDisjoint(with: animationGenreIDs) { return .animation }
 
     let titles = genres.compactMap(\.title).map(normalized)
-    if titles.contains(where: { matches($0, animeGenreWords) }) { return .anime }
+    if titles.contains(where: { matches($0, animationGenreWords) }) { return .animation }
     if titles.contains(where: { matches($0, documentaryGenreWords) }) { return .documentary }
     if titles.contains(where: { matches($0, standupGenreWords) }) { return .performance }
 
     return .fiction
+  }
+
+  /// Episodic and documentary titles credit creators; a film credits a director.
+  /// `documovie` is not episodic and still counts — its `director` is its author.
+  private static func authorRole(type: String) -> MediaAuthorRole {
+    switch type.lowercased() {
+    case "serial", "docuserial", "tvshow", "documovie": return .creator
+    default: return .director
+    }
   }
 
   private static func normalized(_ title: String) -> String {
@@ -109,10 +154,12 @@ public extension MediaPresentationProfile {
     words.contains { title.contains($0) }
   }
 
-  /// Confirmed by the user against `/v1/items?genre=101`.
+  /// Confirmed by the user against live payloads: 101 stand-up, 23 "Мультфильм".
   private static let standupGenreIDs: Set<Int> = [101]
+  private static let animationGenreIDs: Set<Int> = [23]
   private static let standupGenreWords = ["стендап", "стенд-ап", "stand-up", "standup"]
-  private static let animeGenreWords = ["аниме", "anime"]
+  private static let animationGenreWords = ["аниме", "anime", "мультфильм", "мультсериал",
+                                            "cartoon", "animation"]
   private static let documentaryGenreWords = ["документальн", "documentar"]
 }
 

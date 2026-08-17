@@ -48,6 +48,31 @@ public struct MediaPerson: Hashable, Identifiable {
     self.tmdbPersonId = tmdbPersonId
   }
 
+  /// Several credited names as one query — everything **any** of them worked on.
+  /// `/v1/items` reads a comma on `cast` / `director` as OR (a plus is AND), and a
+  /// credit name can never contain a comma because that is what the credits string is
+  /// split on, so joining is unambiguous.
+  ///
+  /// The result is a query, not a person: it has no photo, no TMDB id, and nothing may
+  /// open a person page for it — `isGroup` is how a caller tells.
+  public static func group(names: [String], role: Role) -> MediaPerson? {
+    let cleaned = names
+      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty }
+    guard !cleaned.isEmpty else { return nil }
+    return MediaPerson(name: cleaned.joined(separator: ","), role: role)
+  }
+
+  /// True when this stands for several credited names rather than one person.
+  public var isGroup: Bool { name.contains(",") }
+
+  /// The names behind it — one for a person, several for a group.
+  public var names: [String] {
+    name.components(separatedBy: ",")
+      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty }
+  }
+
   public static func == (lhs: MediaPerson, rhs: MediaPerson) -> Bool {
     lhs.name == rhs.name && lhs.role == rhs.role
   }

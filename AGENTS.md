@@ -225,10 +225,14 @@ file, and delete the losers with the switch.
 - "Related" renders through the same shelf component Home uses.
 - 🔴 **How a type or genre changes presentation is `MediaPresentationProfile`, never an `if type
   == …` in a view.** A view asks the profile; a rule written into one view is applied on the detail
-  page and forgotten on the poster, the card and the label beside it. Decided so far: only fiction
-  gets a rail of faces and a "Starring" line — a concert, a stand-up set (genre 101), a documentary
-  and an anime list the same people as a **Credits** card in the information table. The per-surface
-  table, and which surfaces are still undecided, live in that type's doc comment.
+  page and forgotten on the poster, the card and the label beside it. Decided so far:
+  **the cast rail is actors, fiction only** — directors are a Credits line, never a portrait
+  (people know the name, not the face, and they were taking its first slot); a concert, a stand-up
+  set (genre 101), a documentary, a `tvshow` and anything animated (genre 23, anime) put their
+  people in the **Credits** card in the information table and drop the hero's "Starring" line.
+  Directors are **creators** for `serial` / `docuserial` / `tvshow` / `documovie`, which is what
+  their Credits row and their "More by…" shelf say. The per-surface table, and which surfaces are
+  still undecided, live in that type's doc comment.
 
 ## Chrome
 

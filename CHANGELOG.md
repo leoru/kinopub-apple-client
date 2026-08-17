@@ -12,18 +12,29 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
   exists to prevent — such a rule lands on one surface and is missed on the poster, the card and the
   label next to it. Four kinds: `fiction`, `documentary`, `performance`, `anime`. Type decides first
   (`documovie` / `docuserial` → documentary, `concert` → performance), genre second.
-- **Faces are for fiction only.** A concert, a stand-up set, a documentary or an anime shows no
-  `MediaItemCastSection` rail and no "Starring" line in the hero; the same names render as a
-  **Credits** card (`MediaItem_Credits` / "Титры", rows Director + Featuring) in the information
-  table, beside qualities and languages. New keys: `MediaItem_Credits`,
-  `MediaItem_CreditsParticipants`.
-- **Genre 101 is stand-up** — the one genre id confirmed to us. Anime / documentary / stand-up are
-  otherwise matched on the genre *title* in RU and EN, because we hold no genre-id table; the real
-  one is `filter.genres` in `kpapp.link/config.json` (see
+- **The cast rail is actors, and fiction only.** Directors led it before — the one section that
+  exists because of faces, opening with people the audience knows by name and not by face. They are
+  a **Credits** row now, always, on every kind. `MediaItemCastSection` is `MediaItem_CastSection`
+  ("В ролях"); `Cast & Crew` is **dead** as a string key.
+- **No faces at all** for a concert, a stand-up set, a documentary, a `tvshow` or anything animated
+  (anime *and* cartoons): no rail, no "Starring" line in the hero, and their cast joins the
+  Credits card (`MediaItem_Credits` / "Титры") in the information table beside qualities and
+  languages.
+- **Genres 101 (stand-up) and 23 (Мультфильм)** are the ids confirmed to us; anime / documentary /
+  stand-up otherwise match on the genre *title* in RU and EN, because we hold no genre-id table.
+  The real one is `filter.genres` in `kpapp.link/config.json` (see
   [docs/providers/kinopub/references.md](docs/providers/kinopub/references.md)) and folding it in
   would retire the string matching.
-- **Undecided, on purpose:** posters, horizontal cards and `tvshow` keep the default treatment.
-  Add the rule to the profile when it is decided — not to the cell.
+- **Director = creator for `serial` / `docuserial` / `tvshow` / `documovie`** (`MediaAuthorRole`),
+  which is what the Credits row and the shelf header say: "More by This Director" / "More from
+  These Directors" / "…This Creator" / "…These Creators". No name in the header — with several
+  credited people there is none to print.
+- **The author shelf asks for every credited director at once** (capped at 3):
+  `MediaPerson.group(names:role:)` joins them with commas, which is `/v1/items`' OR on
+  `director` / `cast`. A grouped shelf gets no header link — there is no one person page to open.
+  Concerts and stand-up get no author shelf at all.
+- **Undecided, on purpose:** posters and horizontal cards keep the default treatment. Add the rule
+  to the profile when it is decided — not to the cell.
 - **One card per film** in person shelves and on the person page: `MediaItem.filmIdentity` +
   `collapsingFilmVariants` collapse the 3D and flat entries of one title (they share a Kinopoisk /
   IMDb id). Shelves are picked by Kinopoisk rating, shown newest first, ties by views — a rating is

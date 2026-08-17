@@ -411,17 +411,10 @@ struct MediaItemCastSection: View {
     member.photo ?? ActorImageProvider.photoURL(for: member.name)
   }
 
+  /// Actors, and only actors. Directors used to lead this rail: a name people know
+  /// over a face they do not, taking the opening slot of the one section that exists
+  /// because of faces. They are a Credits row in the information table now.
   private var people: [(person: MediaPerson, member: CastMember)] {
-    let directors = TitleMetadata.enrich(
-      names: mediaItem.directorNames,
-      roleDepartment: "Directing",
-      from: externalMetadata
-    ).map {
-      (MediaPerson(name: $0.name,
-                   role: .director,
-                   photoURL: photoURL(for: $0),
-                   tmdbPersonId: $0.tmdbPersonId), $0)
-    }
     let actors = TitleMetadata.enrich(
       names: mediaItem.castMembers,
       roleDepartment: "Acting",
@@ -432,16 +425,16 @@ struct MediaItemCastSection: View {
                    photoURL: photoURL(for: $0),
                    tmdbPersonId: $0.tmdbPersonId), $0)
     }
-    return directors + actors
+    return actors
   }
 
-  /// Faces are for fiction. A concert, a stand-up set, a documentary or an anime lists
-  /// the same names as a Credits card in the information table instead — one rule, in
-  /// `MediaPresentationProfile`, not a type check here.
+  /// Faces are for fiction. A concert, a stand-up set, a documentary, a show or
+  /// anything animated lists the same names as a Credits card in the information table
+  /// instead — one rule, in `MediaPresentationProfile`, not a type check here.
   var body: some View {
     if mediaItem.presentation.showsCastPortraits, !people.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
-        MediaItemSectionHeader("Cast & Crew")
+        MediaItemSectionHeader(LocalizedStringKey(mediaItem.presentation.castSectionTitleKey))
 
 #if os(tvOS)
         monogramRail
@@ -1391,26 +1384,29 @@ struct MediaItemInfoColumns: View {
     return sections
   }
 
-  /// The people, for the titles that get no rail of faces — a concert, a stand-up set,
-  /// a documentary, an anime. Names belong here with the qualities and the languages
-  /// rather than as monogram circles nobody is scanning for, and they are called
-  /// Credits because a concert has no cast. `MediaPresentationProfile` decides which
-  /// titles land here; when it says portraits, this card is empty and the section
-  /// above draws the faces instead.
+  /// Who made it, and — where there is no rail of faces — who is in it. Names belong
+  /// here with the qualities and the languages: **whoever directed or created a title
+  /// is always a line of text here, never a portrait**, because people know those names
+  /// and not those faces, and they were taking the first slot of the cast rail.
+  ///
+  /// The cast joins them for a concert, a stand-up set, a documentary, a show or
+  /// anything animated; for fiction the rail above draws the actors instead.
+  /// `MediaPresentationProfile` decides which is which, and what the author row is
+  /// called — a series has creators, a film a director.
   private var creditsCardSections: [InfoSection] {
-    guard !mediaItem.presentation.showsCastPortraits else { return [] }
+    let profile = mediaItem.presentation
     var sections: [InfoSection] = []
 
-    let directors = mediaItem.directorNames
-    if !directors.isEmpty {
-      sections.append(InfoSection(id: "credits-director",
-                                  caption: "Director",
-                                  values: [InfoValue(id: "credits-director",
-                                                     title: directors.joined(separator: ", "))]))
+    let authors = mediaItem.directorNames
+    if !authors.isEmpty {
+      sections.append(InfoSection(id: "credits-author",
+                                  caption: profile.authorCaptionKey,
+                                  values: [InfoValue(id: "credits-author",
+                                                     title: authors.joined(separator: ", "))]))
     }
 
     let people = mediaItem.castMembers
-    if !people.isEmpty {
+    if !profile.showsCastPortraits, !people.isEmpty {
       sections.append(InfoSection(id: "credits-cast",
                                   caption: "MediaItem_CreditsParticipants",
                                   values: [InfoValue(id: "credits-cast",
