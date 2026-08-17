@@ -413,7 +413,7 @@ class HomeCatalog: ObservableObject {
                                                 watchlistIDs: watchlistIDs,
                                                 lastSeen: lastSeen)
 
-    return ordered.map {
+    return ordered.compactMap {
       Self.card(for: $0,
                 history: newestEntry[$0.id],
                 local: localByID[$0.id],
@@ -437,33 +437,39 @@ class HomeCatalog: ObservableObject {
                            history: HistoryEntry?,
                            local: LocalWatchEntry?,
                            isInHistory: Bool,
-                           isInWatchlist: Bool) -> MediaCard {
+                           isInWatchlist: Bool) -> MediaCard? {
     let isSeries = item.type.contains("serial")
     let video: Int?
     let season: Int?
-    if let local, let localSeason = local.season, let localEpisode = local.episode {
-      video = localEpisode
-      season = localSeason
-    } else if let history, history.isEpisode {
-      video = history.media?.number
-      season = history.media?.snumber
-    } else if !isSeries {
+    // True while the viewer is mid-video: only then do a progress bar and a "N left"
+    // label belong on the card. A film is always "resuming" — there is one video.
+    var isResuming = true
+
+    if isSeries {
+      // The newest history row is where the viewer *was*, not what to play next: on a
+      // finished episode this offered it again, with its full runtime under it.
+      let next = ContinueWatchingEpisode.forSeries(
+        local: local.map { ($0.season, $0.episode, $0.watch.isFinished) },
+        history: history.map { ($0.media?.snumber, $0.media?.number, $0.watchProgress?.isFinished ?? false) },
+        watchedCount: item.watched,
+        total: item.total
+      )
+      // Every episode watched and nothing new announced — the row is done with.
+      guard next.hasEpisode || (item.new ?? 0) > 0 else { return nil }
+      video = next.episode
+      season = next.season
+      isResuming = next.isResuming
+    } else {
       video = history?.media?.number ?? local?.episode ?? 1
       season = nil
-    } else if let watched = item.watched {
-      // Watchlist / following with no play head — next episode in series order.
-      video = watched + 1
-      season = history?.media?.snumber ?? local?.season
-    } else {
-      video = history?.media?.number ?? local?.episode
-      season = history?.media?.snumber ?? local?.season
     }
 
     let localFraction = local?.watch.isResumable == true ? local?.watch.fraction : nil
-    // Episode resume only — never serial watched/total (that is not a scrubber).
-    let episodeProgress = localFraction ?? history?.progress
-    let durationSeconds = Self.durationSeconds(history: history, local: local)
-    let overlay = Self.overlayLabel(for: item, history: history, local: local)
+    // Episode resume only — never serial watched/total (that is not a scrubber) — and
+    // never the *previous* episode's progress under a fresh one.
+    let episodeProgress = isResuming ? (localFraction ?? history?.progress) : nil
+    let durationSeconds = isResuming ? Self.durationSeconds(history: history, local: local) : nil
+    let overlay = Self.overlayLabel(isSeries: isSeries, season: season, episode: video)
     let newCount = item.new.flatMap { $0 > 0 ? $0 : nil }
 
     return MediaCard(id: item.id,
@@ -479,7 +485,7 @@ class HomeCatalog: ObservableObject {
                      itemID: item.id,
                      video: video,
                      season: season,
-                     mediaID: history?.media?.id,
+                     mediaID: isResuming ? history?.media?.id : nil,
                      isWatched: false,
                      isSeries: isSeries,
                      isInHistory: isInHistory,
@@ -509,24 +515,12 @@ class HomeCatalog: ObservableObject {
     )
   }
 
-  /// Prefer history/local S/E; for watchlist/following without a play head, next
-  /// episode is `watched + 1` from the watching counters.
-  private static func overlayLabel(for item: WatchingItem,
-                                   history: HistoryEntry?,
-                                   local: LocalWatchEntry?) -> String? {
-    if let history, history.isEpisode,
-       let season = history.media?.snumber, let episode = history.media?.number {
-      return "S\(season), E\(episode)"
-    }
-    if let season = local?.season, let episode = local?.episode {
-      return "S\(season), E\(episode)"
-    }
-    if item.type.contains("serial"), let watched = item.watched {
-      let next = watched + 1
-      if let total = item.total, next > total { return nil }
-      return "E\(next)"
-    }
-    return nil
+  /// Says whichever episode the card is actually offering — it used to derive its own
+  /// S/E from history and could disagree with the one Play would open.
+  private static func overlayLabel(isSeries: Bool, season: Int?, episode: Int?) -> String? {
+    guard isSeries, let episode else { return nil }
+    guard let season, season > 0 else { return "E\(episode)" }
+    return "S\(season), E\(episode)"
   }
 
   // MARK: - Catalog shortcuts

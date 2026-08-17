@@ -7,6 +7,15 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ### Watching reported the wrong id, and reported it too early (2026-08-17)
 
+- 🔴 **Continue Watching offered episodes that were already watched.** The card took its S/E from the
+  newest history row — which is where the viewer *was*, not what to play next — so a series whose
+  last row was "S1, E2, finished" offered E2 again, with E2's full runtime under it as if it had
+  never been played. `ContinueWatchingEpisode.forSeries` picks it now: an episode someone is
+  mid-way through, else the server's watched count + 1, else one past the last thing seen. A card
+  whose series is fully watched (and has no new episodes) is **dropped from the row**. Progress bar,
+  duration and `mediaID` are only attached when the episode is actually being resumed — they belong
+  to the previous episode otherwise, and the overlay label now says whatever Play will open.
+
 - 🔴 **`/v1/watching*` keys on the *item* id, never the episode's.** `Episode.metadata` fell back to
   its own id when the season had not been stamped, so `GET /v1/watching?id=928900&season=1&video=2`
   answered 404 (928900 is episode 2's *media* id; the series is 87940). Setting `Season.mediaId` now

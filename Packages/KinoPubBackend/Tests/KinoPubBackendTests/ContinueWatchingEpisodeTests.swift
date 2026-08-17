@@ -1,0 +1,95 @@
+//
+//  ContinueWatchingEpisodeTests.swift
+//  KinoPubBackendTests
+//
+
+import XCTest
+@testable import KinoPubBackend
+
+/// Daisy Jones & The Six (87940) as the account actually had it: S1E2–E4 watched to the
+/// end (`watched: 1`), E5 not (`watched: -1`), and the newest history row is E2 with
+/// `time == duration`. Continue Watching offered E2.
+final class ContinueWatchingEpisodeTests: XCTestCase {
+
+  func testFinishedHistoryEpisodeIsNotOfferedAgain() {
+    let next = ContinueWatchingEpisode.forSeries(
+      local: nil,
+      history: (season: 1, episode: 2, isFinished: true),
+      watchedCount: 4,
+      total: 10
+    )
+    XCTAssertEqual(next.episode, 5)
+    XCTAssertEqual(next.season, 1)
+    XCTAssertFalse(next.isResuming)
+  }
+
+  /// The one case a resume bar means anything: someone is in the middle of it.
+  func testUnfinishedHistoryEpisodeIsResumed() {
+    let next = ContinueWatchingEpisode.forSeries(
+      local: nil,
+      history: (season: 2, episode: 6, isFinished: false),
+      watchedCount: 12,
+      total: 23
+    )
+    XCTAssertEqual(next.episode, 6)
+    XCTAssertEqual(next.season, 2)
+    XCTAssertTrue(next.isResuming)
+  }
+
+  /// This device's own play head wins — the server has not heard about it yet.
+  func testLocalProgressBeatsTheServerCount() {
+    let next = ContinueWatchingEpisode.forSeries(
+      local: (season: 1, episode: 7, isFinished: false),
+      history: (season: 1, episode: 2, isFinished: true),
+      watchedCount: 4,
+      total: 10
+    )
+    XCTAssertEqual(next.episode, 7)
+    XCTAssertTrue(next.isResuming)
+  }
+
+  /// A count from the server survives episodes watched on another device, so it beats
+  /// "one after the last thing this device saw".
+  func testWatchedCountLeadsWhenEverythingKnownIsFinished() {
+    let next = ContinueWatchingEpisode.forSeries(
+      local: (season: 1, episode: 2, isFinished: true),
+      history: (season: 1, episode: 2, isFinished: true),
+      watchedCount: 8,
+      total: 10
+    )
+    XCTAssertEqual(next.episode, 9)
+    XCTAssertFalse(next.isResuming)
+  }
+
+  func testStepsPastTheLastSeenEpisodeWithoutACount() {
+    let next = ContinueWatchingEpisode.forSeries(
+      local: nil,
+      history: (season: 3, episode: 4, isFinished: true),
+      watchedCount: nil,
+      total: nil
+    )
+    XCTAssertEqual(next.episode, 5)
+    XCTAssertEqual(next.season, 3)
+  }
+
+  /// Every episode watched: there is nothing to continue, and the card says so by
+  /// having no episode at all.
+  func testNothingLeftWhenTheSeriesIsFinished() {
+    let next = ContinueWatchingEpisode.forSeries(
+      local: nil,
+      history: (season: 1, episode: 10, isFinished: true),
+      watchedCount: 10,
+      total: 10
+    )
+    XCTAssertEqual(next, .nothingLeft)
+    XCTAssertFalse(next.hasEpisode)
+  }
+
+  /// A title with nothing watched and nothing in history — following it is all we know.
+  func testNoSignalAtAllOffersNoEpisode() {
+    let next = ContinueWatchingEpisode.forSeries(local: nil, history: nil,
+                                                 watchedCount: nil, total: 10)
+    XCTAssertNil(next.episode)
+    XCTAssertFalse(next.isResuming)
+  }
+}
