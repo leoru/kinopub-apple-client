@@ -5,6 +5,8 @@
  * GET /t/p/... → image.tmdb.org/t/p/...   (no auth; bypasses local image.tmdb.org blocks)
  */
 
+import { handleImage, handleTitle } from "./title.js";
+
 const TMDB_API = "https://api.themoviedb.org";
 const TMDB_IMAGE = "https://image.tmdb.org";
 const TMDB_FILES = "https://files.tmdb.org";
@@ -20,6 +22,16 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // Our own API, keyed by kino.pub id. Everything below it is the raw TMDB
+    // passthrough the app used before this existed.
+    if (url.pathname.startsWith("/v1/title/by/kinopub/")) {
+      return handleTitle(url, env, ctx);
+    }
+
+    if (url.pathname.startsWith("/img/")) {
+      return handleImage(url, env, ctx);
+    }
 
     if (url.pathname.startsWith("/t/p/")) {
       return proxyImage(url, ctx);
@@ -37,7 +49,7 @@ export default {
 
     return json({
       error: "not_found",
-      hint: "use /3/... for API, /t/p/{size}/{path} for images, /p/exports/... for daily id dumps",
+      hint: "/v1/title/by/kinopub/{id} · /img/{kind}/{size}/kinopub/{id} · /3/… · /t/p/… · /p/exports/…",
     }, 404);
   },
 };

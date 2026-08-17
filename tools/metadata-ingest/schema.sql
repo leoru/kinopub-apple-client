@@ -232,6 +232,22 @@ CREATE TABLE IF NOT EXISTS badge (
 CREATE UNIQUE INDEX IF NOT EXISTS uq_badge
   ON badge(title_id, source, type, COALESCE(start_at,''));
 
+-- A season is an entity, not a number on an episode: it has its own poster,
+-- its own synopsis, its own air window, and kino.pub addresses it as
+-- `{kinopub_id}/s01`. Without this row there is nowhere to put any of that.
+CREATE TABLE IF NOT EXISTS season (
+  title_id    INTEGER NOT NULL REFERENCES title(id),
+  number      INTEGER NOT NULL,
+  name        TEXT,
+  synopsis    TEXT,
+  air_date    TEXT,
+  end_date    TEXT,               -- "new season" needs its end as much as its start
+  episode_cnt INTEGER,
+  poster      TEXT,
+  source      TEXT NOT NULL,
+  PRIMARY KEY (title_id, number, source)
+);
+
 CREATE TABLE IF NOT EXISTS episode (
   title_id  INTEGER NOT NULL REFERENCES title(id),
   season    INTEGER,
@@ -240,6 +256,8 @@ CREATE TABLE IF NOT EXISTS episode (
   name_en   TEXT,
   synopsis  TEXT,
   air_date  TEXT,
+  runtime   INTEGER,
+  still     TEXT,
   source    TEXT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_episode

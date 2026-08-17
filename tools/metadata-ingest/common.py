@@ -46,7 +46,7 @@ def match_key(value: str | None) -> str | None:
 # that cost quota to obtain, and nothing that changes the schema may drop them.
 DERIVED_TABLES = (
     "title_credit", "person_external_id", "person", "image", "rating", "trailer",
-    "badge", "episode", "award", "genre", "country", "synopsis",
+    "badge", "season", "episode", "award", "genre", "country", "synopsis",
     "copy_segment", "copy_video", "title_copy", "title_external_id", "title",
 )
 
@@ -54,6 +54,7 @@ DERIVED_TABLES = (
 # (dropping a primary key, say) belongs in `MIGRATIONS` as explicit SQL.
 EXPECTED_COLUMNS = {
     "rating": {"first_seen_at": "TEXT", "changed_at": "TEXT"},
+    "episode": {"runtime": "INTEGER", "still": "TEXT"},
 }
 
 MIGRATIONS: list[tuple[int, str]] = [

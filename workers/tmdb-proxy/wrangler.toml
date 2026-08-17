@@ -8,3 +8,11 @@ workers_dev = true
 
 [vars]
 CACHE_TTL_SECONDS = "21600"
+
+# Documents keyed by kino.pub id. Create once, then paste the id here:
+#   npx wrangler kv namespace create DOCUMENTS
+# Until it is bound the worker still answers — /v1/title returns a hints-only
+# document and /img falls back to kino.pub artwork — it just stores nothing.
+# [[kv_namespaces]]
+# binding = "DOCUMENTS"
+# id = "<paste from the create command>"

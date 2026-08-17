@@ -106,6 +106,10 @@ def dump_git_tier(conn, out_dir: Path) -> list[tuple[str, int, int]]:
         written.append((table, len(rows), path.stat().st_size))
     (out_dir / "MANIFEST.json").write_text(json.dumps({
         "written_at": now(),
+        "schema_version": conn.execute(
+            "SELECT COALESCE(max(version), 0) FROM schema_version").fetchone()[0],
+        "resolved": conn.execute(
+            "SELECT count(*) FROM title_external_id WHERE namespace='tmdb'").fetchone()[0],
         "tables": {table: count for table, count, _ in written},
     }, indent=2) + "\n")
     return written
@@ -136,6 +140,48 @@ def restore_git_tier(conn, out_dir: Path) -> dict[str, int]:
     return restored
 
 
+def worth_it(conn, out_dir: Path, growth_percent: float) -> bool:
+    """A backup is worth taking when something changed that a restore would miss.
+
+    Three triggers, because "every night" is how a 640 KB blob a day accumulates
+    for a map that moves slowly:
+
+      * the schema version moved — the old snapshot may not restore cleanly;
+      * the identity map grew by more than `growth_percent` — real new work;
+      * there is no manifest at all — nothing to compare against.
+    """
+    manifest = out_dir / "MANIFEST.json"
+    if not manifest.exists():
+        return True
+    try:
+        previous = json.loads(manifest.read_text())
+    except Exception:
+        return True
+
+    version = conn.execute(
+        "SELECT COALESCE(max(version), 0) FROM schema_version").fetchone()[0]
+    if version != previous.get("schema_version", 0):
+        print(f"  schema moved: {previous.get('schema_version', 0)} → {version}")
+        return True
+
+    before = previous.get("tables", {}).get("identity (clusters)", 0)
+    resolved_before = previous.get("resolved", 0)
+    now_clusters = conn.execute(
+        "SELECT count(DISTINCT title_id) FROM title_external_id").fetchone()[0]
+    resolved_now = conn.execute(
+        "SELECT count(*) FROM title_external_id WHERE namespace='tmdb'").fetchone()[0]
+
+    for label, old, new in (("clusters", before, now_clusters),
+                            ("resolved", resolved_before, resolved_now)):
+        if old and (new - old) / old * 100 >= growth_percent:
+            print(f"  {label} grew {old:,} → {new:,}")
+            return True
+        if not old and new:
+            print(f"  {label} appeared: {new:,}")
+            return True
+    return False
+
+
 def dump_full(db: Path, out_dir: Path, stamp: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     target = out_dir / f"record-{stamp}.sql.gz"
@@ -151,6 +197,10 @@ def main() -> int:
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     parser.add_argument("--tier", choices=("git", "full", "both"), default="both")
     parser.add_argument("--restore", action="store_true", help="reload the committed tier")
+    parser.add_argument("--if-worth-it", action="store_true",
+                        help="skip unless the schema moved or the record grew materially")
+    parser.add_argument("--growth", type=float, default=2.0,
+                        help="percent growth that counts as material (default 2)")
     args = parser.parse_args()
 
     here = Path(__file__).resolve().parent
@@ -160,6 +210,10 @@ def main() -> int:
     if args.restore:
         for table, count in restore_git_tier(conn, git_dir).items():
             print(f"  restored {table:<20} {count:>8,}")
+        return 0
+
+    if args.if_worth_it and not worth_it(conn, git_dir, args.growth):
+        print("nothing worth backing up: same schema, same counts")
         return 0
 
     if args.tier in ("git", "both"):

@@ -6,15 +6,14 @@
 Reads `backup/identity.jsonl.gz`, finds clusters that have an IMDb id but no
 TMDB one, resolves that many through the worker proxy, and writes the file back.
 
-**Why this exists as its own script.** Everything else in the pipeline needs the
-local dumps, which are gitignored and large — so nothing else can run on a
-machine that only has the repository. This does: the committed identity map is
-both its input and its output. That makes it the one job a scheduled runner can
-do unattended, which matters because resolving identity is the only part of the
-record that costs API calls and cannot be re-downloaded from anywhere.
+**Manual only, on purpose.** This was briefly a nightly job and that was wrong:
+pre-resolving 45 000 titles nobody has opened is the sweep habit again, wearing a
+schedule. Identity is resolved *on demand*, by the API, when a client asks about
+a title — see `/v1/title/by/kinopub/{id}` in the worker, which resolves from the
+hints the client sends and stores the answer.
 
-Losing that map is what turned a schema change into a re-crawl once already. Now
-it grows a few hundred entries a night, in git, where losing it takes effort.
+What is left here is a hand tool: run it against a batch you actually want warm
+(a top list, a collection) rather than against the catalogue.
 """
 
 from __future__ import annotations

@@ -1,5 +1,7 @@
 {
-  "written_at": "2026-08-17T21:50:19+00:00",
+  "written_at": "2026-08-17T22:43:35+00:00",
+  "schema_version": 0,
+  "resolved": 5,
   "tables": {
     "identity (clusters)": 53210,
     "fetch_log": 26,

@@ -10,7 +10,8 @@
 #   make fresh      delete and rebuild; refuses if fetched payloads would be lost
 #   make test       regression suite (no network, no dumps needed)
 #   make imdb       IMDb's official dumps: every rating, one download, no API
-#   make backup     two tiers — small committed set + a full local dump
+#   make docs       build the JSON documents the client will receive
+#   make backup     two tiers, and only when it is worth a commit
 #   make restore    reload the committed set into an empty record
 #
 # Every target is re-runnable. Stopping a fetch halfway and re-running loses
@@ -20,7 +21,7 @@ PY ?= python3
 DB ?= data/record.db
 LIMIT ?=
 
-.PHONY: all import exports imdb tmdb omdb test stats rederive fresh backup restore clean
+.PHONY: all import exports imdb tmdb omdb test stats rederive fresh backup backup-force docs restore clean
 
 all: import exports imdb stats
 
@@ -67,8 +68,15 @@ fresh:
 	$(PY) ingest.py --db $(DB) --fresh
 
 # Two tiers: `backup/` is committed and small, `data/` is not and is large.
+# Decides for itself: skips unless the schema moved or the map grew.
 backup:
+	@$(PY) backup.py --db $(DB) --if-worth-it
+
+backup-force:
 	@$(PY) backup.py --db $(DB)
+
+docs:
+	$(PY) document.py --db $(DB) --export data/documents $(if $(LIMIT),--limit $(LIMIT))
 
 restore:
 	@$(PY) backup.py --db $(DB) --restore

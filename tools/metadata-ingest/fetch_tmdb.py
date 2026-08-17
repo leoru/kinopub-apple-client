@@ -222,6 +222,14 @@ def derive(conn, title_id, tmdb_id, media_type, payload):
         for season in payload.get("seasons") or []:
             if season.get("season_number") is None:
                 continue
+            conn.execute(
+                "INSERT OR REPLACE INTO season(title_id,number,name,synopsis,air_date,"
+                "episode_cnt,poster,source) VALUES (?,?,?,?,?,?,?,'tmdb')",
+                (title_id, season["season_number"], season.get("name"),
+                 season.get("overview") or None, season.get("air_date"),
+                 season.get("episode_count"),
+                 IMAGE_BASE + season["poster_path"] if season.get("poster_path") else None),
+            )
             add_rating(conn, title_id, "tmdb", season.get("vote_average"), None,
                        season=season["season_number"])
         for key in ("last_episode_to_air", "next_episode_to_air"):
