@@ -1,0 +1,9 @@
+{
+  "written_at": "2026-08-17T21:50:19+00:00",
+  "tables": {
+    "identity (clusters)": 53210,
+    "fetch_log": 26,
+    "provider_health": 0,
+    "schema_version": 0
+  }
+}

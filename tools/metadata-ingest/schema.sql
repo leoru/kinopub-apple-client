@@ -34,6 +34,19 @@ CREATE TABLE IF NOT EXISTS fetch_log (
   PRIMARY KEY (source, endpoint, key)
 );
 
+CREATE TABLE IF NOT EXISTS provider_health (
+  provider     TEXT PRIMARY KEY,
+  open_until   TEXT,
+  open_reason  TEXT,
+  consecutive  INTEGER NOT NULL DEFAULT 0,
+  last_error   TEXT,
+  last_ok_at   TEXT,
+  calls_ok     INTEGER NOT NULL DEFAULT 0,
+  calls_failed INTEGER NOT NULL DEFAULT 0,
+  spent_today  INTEGER NOT NULL DEFAULT 0,
+  spent_day    TEXT
+);
+
 CREATE TABLE IF NOT EXISTS ingest_run (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   source      TEXT NOT NULL,

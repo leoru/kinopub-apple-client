@@ -5,9 +5,11 @@ no `pip install`.
 
 ```bash
 cd tools/metadata-ingest
-make            # local dumps + TMDB's free daily id dumps. No API calls.
+make            # local dumps + TMDB id dumps + IMDb's rating dumps. No API calls.
 make stats      # what is in there now
-make test       # 42 regression tests, no network
+make test       # 58 regression tests, no network
+make imdb       # IMDb's official dumps — every rating, one download
+make backup     # two tiers: small committed set, large local dump
 make rederive   # rebuild derived tables after a schema change, keeping fetches
 make tmdb LIMIT=200      # detail fetch, opt-in, most-voted first
 ```
@@ -70,6 +72,7 @@ anything an `ALTER` cannot express goes in `MIGRATIONS` as explicit SQL.
 | Kinopoisk | `kinopoisk-metadata/data/kinopoisk.db` | 2 327 films | Awards, RU+EN name pairs on one row, 40k episode synopses, six rating scales |
 | tvoe | `tvoe_data/catalog_*_detailed.json` | 4 348 | Clean Russian artwork, RU title logos, **intro/outro markers**, audio and subtitle tracks, premiere badges |
 | TMDB | live, via the worker proxy | on demand | Identity spine, every artwork variant, credits, trailers, keywords, watch providers |
+| IMDb datasets | `datasets.imdbws.com`, cached in `data/imdb/` | 8.6 MB + 54 MB | **Every rating IMDb has, per title and per episode** — 44 941 titles and 220 735 episodes across 8 825 series, in 31 seconds and zero API calls. This is what OMDb would have taken 53 days to approximate |
 
 Import order is fixed: kino.pub first so it seeds the spine.
 
@@ -148,3 +151,31 @@ Two environment traps worth keeping:
 
 `data/` is gitignored. `make backup` writes a gzipped SQL dump that is fine to
 commit or push elsewhere.
+
+## Backups
+
+Two tiers, because two kinds of data live here.
+
+| Tier | Where | Size | Why |
+| --- | --- | --- | --- |
+| **Committed** — `backup/` | git | ~640 KB | The identity map, `fetch_log`, provider health. Rebuilding the map cost 22 690 API calls once |
+| **Local** — `data/record-*.sql.gz` | gitignored | ~31 MB | The whole record. Regenerable from dumps in a minute, so it does not belong in history |
+
+The identity map is exported as **id-to-id clusters**, not as table rows.
+`title.id` is a local autoincrement reassigned on every rebuild, so a dump
+containing it would only restore into the database it came from — useless for
+the one case that matters. A cluster (`kinopub 56 ↔ imdb tt0111161 ↔ tmdb
+movie/278`) never mentions our ids and survives any renumbering. `make restore`
+re-links a rebuilt record from it.
+
+Regularly, from cron — the tool is idempotent, so a failed run costs nothing:
+
+```cron
+0 4 * * *  cd /path/to/tools/metadata-ingest && make all backup >> data/cron.log 2>&1
+0 5 * * 0  cd /path/to/repo && git add tools/metadata-ingest/backup && \
+           git commit -m "record: weekly identity snapshot" || true
+```
+
+Daily refresh (dumps are re-read, IMDb re-downloaded, backup rewritten) and a
+weekly commit of the small tier. Committing on every run would add a 640 KB blob
+a day for a map that changes slowly.

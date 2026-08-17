@@ -14,7 +14,9 @@ Every case here is a bug that already happened, not a hypothetical:
 
 from __future__ import annotations
 
+import gzip
 import json
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -401,6 +403,301 @@ class TestMigrations(RecordTestCase):
 
     def test_migrate_is_a_no_op_on_a_current_record(self):
         self.assertEqual(common.migrate(self.conn), [])
+
+
+# ---------------------------------------------------------------- derivers
+#
+# The importers were the biggest untested surface in the pipeline: every test
+# above exercised a helper, none exercised the code that actually reads a dump.
+
+class TestKinopubDeriver(RecordTestCase):
+    def setUp(self):
+        super().setUp()
+        import sources
+        self.sources = sources
+        path = Path(self.tmp.name) / "snapshot.db"
+        source = sqlite3.connect(path)
+        source.executescript("""
+          CREATE TABLE items (id INTEGER PRIMARY KEY, type TEXT, subtype TEXT, title TEXT,
+            title_ru TEXT, title_original TEXT, year INTEGER, countries TEXT, imdb_id INTEGER,
+            imdb_rating REAL, imdb_votes INTEGER, kinopoisk_id INTEGER, kinopoisk_rating REAL,
+            kinopoisk_votes INTEGER, kinopub_rating_votes INTEGER,
+            kinopub_rating_percentage REAL, views INTEGER, poster_thumb TEXT, poster_wide TEXT,
+            finished INTEGER, created_at INTEGER, updated_at INTEGER,
+            first_synced_at TEXT NOT NULL, last_synced_at TEXT NOT NULL);
+        """)
+        source.execute(
+            "INSERT INTO items VALUES (7,'serial',NULL,'Тест','Тест','Test Show',2019,"
+            '\'["США"]\',111161,9.3,2900000,326,8.9,900000,50,88.0,10,NULL,NULL,0,0,0,\'x\',\'x\')')
+        source.commit(); source.close()
+        self._original = sources.KINOPUB_DB
+        sources.KINOPUB_DB = path
+
+    def tearDown(self):
+        self.sources.KINOPUB_DB = self._original
+        super().tearDown()
+
+    def test_it_derives_ids_ratings_artwork_and_a_copy(self):
+        self.sources.ingest_kinopub(self.conn)
+        title = self.conn.execute("SELECT * FROM title").fetchone()
+        self.assertEqual(title["kind"], "series", "serial must map to series")
+        self.assertEqual(title["title_original"], "Test Show")
+
+        ids = dict(self.conn.execute(
+            "SELECT namespace, value FROM title_external_id").fetchall())
+        self.assertEqual(ids["imdb"], "tt0111161", "numeric imdb id must be zero-padded")
+        self.assertEqual(ids["kinopoisk"], "326")
+
+        scales = dict(self.conn.execute("SELECT source, scale FROM rating").fetchall())
+        self.assertEqual(scales["kinopub"], 100.0,
+                         "kino.pub reports a like percentage, not a 10-point score")
+        self.assertEqual(scales["imdb"], 10.0)
+
+        self.assertTrue(self.conn.execute(
+            "SELECT count(*) FROM image WHERE source='kinopub' AND url LIKE '%/big/7.jpg'"
+        ).fetchone()[0], "artwork must be addressable by kino.pub id alone")
+        self.assertEqual(self.conn.execute(
+            "SELECT platform FROM title_copy").fetchone()["platform"], "kinopub")
+
+    def test_a_second_run_changes_nothing(self):
+        self.sources.ingest_kinopub(self.conn)
+        counts = [self.conn.execute(f"SELECT count(*) FROM {t}").fetchone()[0]
+                  for t in ("title", "rating", "image", "title_copy")]
+        self.sources.ingest_kinopub(self.conn)
+        again = [self.conn.execute(f"SELECT count(*) FROM {t}").fetchone()[0]
+                 for t in ("title", "rating", "image", "title_copy")]
+        self.assertEqual(counts, again)
+
+
+class TestTvoeDeriver(RecordTestCase):
+    def setUp(self):
+        super().setUp()
+        import sources
+        self.sources = sources
+        directory = Path(self.tmp.name) / "tvoe"
+        directory.mkdir()
+        item = {
+            "_id": "abc", "name": "Супергёрл", "origName": "Supergirl",
+            "dateReleased": "2026-06-24", "rating": 6.7, "url": "/p/x",
+            "genres": ["Драма"], "countries": ["США"], "description": "полное",
+            "shortDesc": "короткое", "seasonsCount": None,
+            "badge": {"type": "premiere", "startAt": "2026-07-28", "finishAt": None},
+            "persons": [{"name": "Крэйг Гиллеспи", "type": "director"}],
+            "images": {
+                "poster": {"cdnUrl": "https://static.cdn.tvoe.live/images/p.jpg",
+                           "url": "https://tvoe.live/_next/image?url=p.jpg&w=384&q=75"},
+                "cover": {"cdnUrl": "https://static.cdn.tvoe.live/images/c.jpg"},
+                "logo": {"cdnUrl": "https://static.cdn.tvoe.live/images/l.jpg"}},
+            "videos": {
+                "films": [{"_id": "v1", "duration": 6499.4, "creditsStartTime": 6072,
+                           "previewStartTime": 5, "previewEndTime": 25,
+                           "audio": [{"lang": "RU"}], "subtitles": [{"lang": "EN"}],
+                           "qualities": [{"type": "1080p"}]}],
+                "trailers": [{"_id": "t1", "src": "/videos/t1"}],
+                "seasons": []}}
+        (directory / "catalog_films_detailed.json").write_text(json.dumps([item]))
+        (directory / "catalog_serials_detailed.json").write_text("[]")
+        self._original = sources.TVOE_DIR
+        sources.TVOE_DIR = directory
+
+    def tearDown(self):
+        self.sources.TVOE_DIR = self._original
+        super().tearDown()
+
+    def test_streams_and_markers_belong_to_the_copy_not_the_title(self):
+        self.sources.ingest_tvoe(self.conn)
+        copy = self.conn.execute("SELECT * FROM title_copy WHERE platform='tvoe'").fetchone()
+        self.assertIsNotNone(copy)
+        video = self.conn.execute("SELECT * FROM copy_video WHERE copy_id=?",
+                                  (copy["id"],)).fetchone()
+        self.assertIn("RU", video["audio"], "dub tracks describe tvoe's file")
+        segments = dict(self.conn.execute(
+            "SELECT kind, start_s FROM copy_segment WHERE copy_id=?", (copy["id"],)).fetchall())
+        self.assertEqual(segments["credits"], 6072)
+        self.assertEqual(segments["preview"], 5)
+
+    def test_a_trailer_is_a_fact_about_the_work(self):
+        self.sources.ingest_tvoe(self.conn)
+        self.assertEqual(self.conn.execute(
+            "SELECT count(*) FROM trailer WHERE source='tvoe'").fetchone()[0], 1)
+        self.assertEqual(self.conn.execute(
+            "SELECT count(*) FROM copy_video WHERE kind='trailer'").fetchone()[0], 0)
+
+    def test_only_the_durable_image_url_is_stored(self):
+        self.sources.ingest_tvoe(self.conn)
+        urls = [r[0] for r in self.conn.execute("SELECT url FROM image WHERE source='tvoe'")]
+        self.assertTrue(all("static.cdn.tvoe.live" in u for u in urls))
+        self.assertFalse(any("_next/image" in u for u in urls),
+                         "the resizer URL carries w/q params and does not survive a re-crawl")
+
+    def test_a_badge_keeps_its_validity_window(self):
+        self.sources.ingest_tvoe(self.conn)
+        badge = self.conn.execute("SELECT * FROM badge").fetchone()
+        self.assertEqual(badge["type"], "premiere")
+        self.assertEqual(badge["start_at"], "2026-07-28")
+
+    def test_year_comes_from_the_release_date(self):
+        self.sources.ingest_tvoe(self.conn)
+        self.assertEqual(self.conn.execute("SELECT year FROM title").fetchone()[0], 2026)
+
+
+class TestTMDBDerive(RecordTestCase):
+    def payload(self, cast=60, crew=None):
+        return {
+            "vote_average": 8.1, "vote_count": 900, "overview": "текст",
+            "poster_path": "/p.jpg", "genres": [{"id": 18, "name": "Drama"}],
+            "external_ids": {"imdb_id": "tt1", "wikidata_id": "Q42", "tvdb_id": 77},
+            "images": {"posters": [{"file_path": "/a.jpg", "width": 500, "height": 750,
+                                    "iso_639_1": "ru"}], "backdrops": [], "logos": []},
+            "keywords": {"keywords": [{"id": 9, "name": "heist"}]},
+            "credits": {
+                "cast": [{"id": i, "name": f"Actor {i}", "order": i,
+                          "character": "X", "profile_path": "/x.jpg"}
+                         for i in range(cast)],
+                "crew": crew if crew is not None else [
+                    {"id": 900, "name": "The Director", "job": "Director"},
+                    {"id": 901, "name": "A Gaffer", "job": "Gaffer"}]},
+            "videos": {"results": [{"key": "abc", "site": "YouTube", "type": "Trailer",
+                                    "name": "T"}]},
+            "watch/providers": {"results": {"RU": {"flatrate": [{"provider_name": "Okko"}]}}},
+        }
+
+    def test_cast_is_capped_at_thirty_by_billing_order(self):
+        import fetch_tmdb
+        title = self.make_title()
+        fetch_tmdb.derive(self.conn, title, 1, "movie", self.payload(cast=60))
+        rows = self.conn.execute(
+            "SELECT ord FROM title_credit WHERE department='actor' ORDER BY ord").fetchall()
+        self.assertEqual(len(rows), 30)
+        self.assertEqual(rows[0]["ord"], 0, "the cap must keep the top billing, not an arbitrary 30")
+
+    def test_crew_is_filtered_by_role_not_by_count(self):
+        import fetch_tmdb
+        title = self.make_title()
+        fetch_tmdb.derive(self.conn, title, 1, "movie", self.payload())
+        jobs = {r[0] for r in self.conn.execute(
+            "SELECT department FROM title_credit WHERE department<>'actor'")}
+        self.assertIn("director", jobs)
+        self.assertNotIn("gaffer", jobs)
+
+    def test_bridge_ids_are_captured(self):
+        import fetch_tmdb
+        title = self.make_title()
+        fetch_tmdb.derive(self.conn, title, 1, "movie", self.payload())
+        ids = dict(self.conn.execute(
+            "SELECT namespace, value FROM title_external_id").fetchall())
+        self.assertEqual(ids["wikidata"], "Q42")
+        self.assertEqual(ids["tvdb"], "77")
+        self.assertEqual(ids["tmdb"], "movie/1")
+
+    def test_image_dimensions_survive_so_a_choice_can_be_argued(self):
+        import fetch_tmdb
+        title = self.make_title()
+        fetch_tmdb.derive(self.conn, title, 1, "movie", self.payload())
+        row = self.conn.execute(
+            "SELECT width, height, lang FROM image WHERE source='tmdb' AND width IS NOT NULL"
+        ).fetchone()
+        self.assertEqual((row["width"], row["height"], row["lang"]), (500, 750, "ru"))
+
+    def test_keyword_ids_are_kept_because_similarity_needs_them(self):
+        import fetch_tmdb
+        title = self.make_title()
+        fetch_tmdb.derive(self.conn, title, 1, "movie", self.payload())
+        row = self.conn.execute(
+            "SELECT name FROM genre WHERE source='tmdb:keyword'").fetchone()
+        self.assertTrue(row["name"].startswith("9:"), "a bare name cannot be joined on")
+
+
+class TestIMDbDatasets(unittest.TestCase):
+    """TSV with literal \\N for null, and an episode file that only makes sense
+    joined against the ratings file."""
+
+    def _write(self, directory, name, header, rows):
+        path = Path(directory) / name
+        with gzip.open(path, "wt", encoding="utf-8") as stream:
+            stream.write("\t".join(header) + "\n")
+            for row in rows:
+                stream.write("\t".join(row) + "\n")
+        return path
+
+    def test_backslash_n_becomes_none(self):
+        import import_imdb_datasets as imdb
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._write(tmp, "e.tsv.gz",
+                               ["tconst", "parentTconst", "seasonNumber", "episodeNumber"],
+                               [["tt2", "tt1", "\\N", "\\N"]])
+            row = next(imdb.rows(path))
+            self.assertIsNone(row["seasonNumber"])
+            self.assertEqual(row["parentTconst"], "tt1")
+
+    def test_only_episodes_of_series_we_hold_are_imported(self):
+        import import_imdb_datasets as imdb
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = connect(Path(tmp) / "t.db")
+            title_id, _ = resolve_title(conn, ids={}, title_original="Show", year=2000)
+            common.link_external(conn, title_id, "imdb", "tt1", "dump")
+            episodes = self._write(tmp, "e.tsv.gz",
+                                   ["tconst", "parentTconst", "seasonNumber", "episodeNumber"],
+                                   [["tt2", "tt1", "1", "1"],
+                                    ["tt9", "tt_unknown", "1", "1"]])
+            ratings = self._write(tmp, "r.tsv.gz",
+                                  ["tconst", "averageRating", "numVotes"],
+                                  [["tt2", "9.5", "1000"], ["tt9", "1.0", "5"]])
+            imdb.import_episode_ratings(conn, episodes, ratings,
+                                        imdb.known_imdb_ids(conn))
+            rows = conn.execute(
+                "SELECT season, episode, value FROM rating WHERE season IS NOT NULL").fetchall()
+            self.assertEqual(len(rows), 1, "an episode of an unknown series must be skipped")
+            self.assertEqual((rows[0]["season"], rows[0]["episode"], rows[0]["value"]),
+                             (1, 1, 9.5))
+            conn.close()
+
+
+class TestBackupRoundTrip(RecordTestCase):
+    """The committed tier has to restore into a *rebuilt* record, not only into
+    the one it came from — which is the whole scenario it exists for."""
+
+    def test_identity_survives_renumbering(self):
+        import backup
+        first = self.make_title(title_original="Shawshank", year=1994)
+        for namespace, value in (("kinopub", "56"), ("imdb", "tt0111161"),
+                                 ("tmdb", "movie/278")):
+            common.link_external(self.conn, first, namespace, value, "dump")
+
+        out = Path(self.tmp.name) / "backup"
+        out.mkdir()
+        self.assertEqual(backup.dump_identity_clusters(self.conn, out / "identity.jsonl.gz"), 1)
+
+        rebuilt = connect(Path(self.tmp.name) / "rebuilt.db")
+        # Deliberately burn some ids so the new local id cannot coincide.
+        for _ in range(5):
+            resolve_title(rebuilt, ids={}, title_original="filler", year=1)
+        spine, _ = resolve_title(rebuilt, ids={}, title_original="Shawshank", year=1994)
+        common.link_external(rebuilt, spine, "imdb", "tt0111161", "dump")
+        self.assertNotEqual(spine, first, "the test needs a different local id to be meaningful")
+
+        total, added, unmatched = backup.restore_identity_clusters(
+            rebuilt, out / "identity.jsonl.gz")
+        self.assertEqual((total, unmatched), (1, 0))
+        self.assertEqual(added, 2, "kinopub and tmdb should be re-linked")
+        ids = dict(rebuilt.execute(
+            "SELECT namespace, value FROM title_external_id WHERE title_id=?",
+            (spine,)).fetchall())
+        self.assertEqual(ids["tmdb"], "movie/278")
+        rebuilt.close()
+
+    def test_a_cluster_never_contains_a_local_id(self):
+        import backup
+        title = self.make_title()
+        common.link_external(self.conn, title, "imdb", "tt1", "dump")
+        out = Path(self.tmp.name) / "b"
+        out.mkdir()
+        backup.dump_identity_clusters(self.conn, out / "identity.jsonl.gz")
+        with gzip.open(out / "identity.jsonl.gz", "rt") as stream:
+            payload = json.loads(stream.readline())
+        self.assertEqual(set(payload), {"ids"},
+                         "a local autoincrement in the dump makes it unrestorable")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

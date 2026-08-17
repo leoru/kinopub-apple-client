@@ -9,7 +9,9 @@
 #   make rederive   rebuild derived tables from raw — no network, no quota
 #   make fresh      delete and rebuild; refuses if fetched payloads would be lost
 #   make test       regression suite (no network, no dumps needed)
-#   make backup     SQL dump, for git
+#   make imdb       IMDb's official dumps: every rating, one download, no API
+#   make backup     two tiers — small committed set + a full local dump
+#   make restore    reload the committed set into an empty record
 #
 # Every target is re-runnable. Stopping a fetch halfway and re-running loses
 # nothing: `fetch_log` remembers which questions already have answers.
@@ -18,9 +20,9 @@ PY ?= python3
 DB ?= data/record.db
 LIMIT ?=
 
-.PHONY: all import exports tmdb omdb test stats rederive fresh backup clean
+.PHONY: all import exports imdb tmdb omdb test stats rederive fresh backup restore clean
 
-all: import exports stats
+all: import exports imdb stats
 
 import:
 	$(PY) ingest.py --db $(DB) $(if $(LIMIT),--limit $(LIMIT))
@@ -64,11 +66,15 @@ rederive:
 fresh:
 	$(PY) ingest.py --db $(DB) --fresh
 
-# Text, so git can diff and compress it. The record itself stays untracked.
+# Two tiers: `backup/` is committed and small, `data/` is not and is large.
 backup:
-	@mkdir -p data
-	sqlite3 $(DB) .dump | gzip -9 > data/record-$$(date -u +%Y%m%d).sql.gz
-	@ls -lh data/record-*.sql.gz | tail -1
+	@$(PY) backup.py --db $(DB)
+
+restore:
+	@$(PY) backup.py --db $(DB) --restore
+
+imdb:
+	$(PY) import_imdb_datasets.py --db $(DB)
 
 clean:
 	rm -f $(DB) $(DB)-wal $(DB)-shm

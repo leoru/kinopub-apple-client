@@ -191,14 +191,17 @@ def derive(conn, title_id, tmdb_id, media_type, payload):
             (title_id, person_id, (job or "crew").lower()),
         )
 
+    # A trailer is a fact about the work, not about any platform's copy of it —
+    # the same YouTube key plays identically wherever it is referenced from.
     for video in (payload.get("videos") or {}).get("results") or []:
         if not video.get("key"):
             continue
         conn.execute(
-            "INSERT OR IGNORE INTO video(title_id,source,source_key,kind,name,url,qualities,"
-            "audio,subtitles) VALUES (?,'tmdb',?,?,?,?,'[]','[]','[]')",
+            "INSERT OR IGNORE INTO trailer(title_id,source,source_key,kind,name,lang,official,url)"
+            " VALUES (?,'tmdb',?,?,?,?,?,?)",
             (title_id, video["key"], (video.get("type") or "trailer").lower(),
-             video.get("name"),
+             video.get("name"), video.get("iso_639_1"),
+             1 if video.get("official") else 0,
              f"https://www.youtube.com/watch?v={video['key']}"
              if video.get("site") == "YouTube" else None),
         )
@@ -357,7 +360,7 @@ def main() -> int:
         ("tmdb credits", "SELECT count(*) FROM title_credit WHERE source='tmdb'"),
         ("people with a tmdb id",
          "SELECT count(*) FROM person_external_id WHERE namespace='tmdb'"),
-        ("trailers", "SELECT count(*) FROM video WHERE source='tmdb'"),
+        ("trailers", "SELECT count(*) FROM trailer WHERE source='tmdb'"),
         ("watch-provider rows", "SELECT count(*) FROM badge WHERE source LIKE 'tmdb:watch%'"),
     ):
         print(f"  {label:<24} {conn.execute(query).fetchone()[0]:>9,}")
