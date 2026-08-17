@@ -7,6 +7,8 @@ no `pip install`.
 cd tools/metadata-ingest
 make            # local dumps + TMDB's free daily id dumps. No API calls.
 make stats      # what is in there now
+make test       # 42 regression tests, no network
+make rederive   # rebuild derived tables after a schema change, keeping fetches
 make tmdb LIMIT=200      # detail fetch, opt-in, most-voted first
 ```
 
@@ -48,6 +50,17 @@ as a *platform* its streams and tracks are facts about its copy.
 Sources do not share a format and are not made to. They land raw and are
 unified at derive time, so a schema change costs a re-derive, never a re-crawl.
 `via` on every raw row records how it arrived — `dump`, `fetch`, or `donation`.
+
+**`make rederive` is the one to reach for after a schema change.** It clears the
+derived tables and rebuilds them — replaying local dumps *and* replaying stored
+`raw_payload` rows for everything that was fetched. No network, no quota.
+
+`--fresh` deletes the database. It **refuses** when the record holds fetched
+payloads, because those cost somebody's quota and the dumps do not; discarding
+them needs `--fresh --drop-raw` and it prints what it is throwing away.
+
+Additive schema changes apply themselves in place on connect (`common.migrate`);
+anything an `ALTER` cannot express goes in `MIGRATIONS` as explicit SQL.
 
 ## Sources
 
@@ -128,6 +141,9 @@ Two environment traps worth keeping:
 | `ingest.py` | CLI and orchestration |
 | `fetch_tmdb.py` | Depth: one detail request per title, opt-in |
 | `fetch_tmdb_exports.py` | Breadth: TMDB's free daily id dumps |
+| `fetch_omdb.py` | RT + Metacritic, movies only, 1 000/day |
+| `registry.py` | Provider descriptors, token-bucket pacing, per-provider circuit breaker |
+| `tests.py` | Every case is a bug that already happened |
 | `Makefile` | The workflow |
 
 `data/` is gitignored. `make backup` writes a gzipped SQL dump that is fine to

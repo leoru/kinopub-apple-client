@@ -10,8 +10,9 @@ import json
 import sqlite3
 from pathlib import Path
 
-from common import (Run, add_image, add_rating, add_rows, enrich_title, link_external,
-                    now, resolve_person, resolve_title, store_raw, upsert_copy)
+from common import (Run, add_image, add_rating, add_rows, enrich_title, find_by_external,
+                    link_external, now, resolve_person, resolve_title, store_raw,
+                    upsert_copy)
 
 TOOLS = Path(__file__).resolve().parent.parent
 
@@ -363,5 +364,49 @@ def ingest_kinopoisk(conn):
     add_rows(conn, "image", ("title_id", "kind", "source", "url", "stable", "lang"), images)
 
     source_db.close()
+    run.finish()
+    return run
+
+
+# ------------------------------------------------------- replay from raw
+
+def replay_tmdb(conn):
+    """Re-derive TMDB from stored payloads. No network, no quota.
+
+    This is the path whose absence made `--fresh` destructive: the payloads were
+    already on disk, and nothing could read them back.
+    """
+    import fetch_tmdb
+
+    run = Run(conn, "tmdb:replay")
+    for row in conn.execute(
+        "SELECT kind, source_key, body FROM raw_payload WHERE source='tmdb'"
+    ).fetchall():
+        payload = json.loads(row["body"])
+        imdb = (payload.get("external_ids") or {}).get("imdb_id") or payload.get("imdb_id")
+        title_id = find_by_external(conn, "imdb", imdb) if imdb else None
+        if not title_id:
+            continue
+        fetch_tmdb.derive(conn, title_id, int(row["source_key"]), row["kind"], payload)
+        run.raw += 1
+        run.seen += 1
+    run.finish()
+    return run
+
+
+def replay_omdb(conn):
+    """Same, for OMDb. Its raw is keyed by the IMDb id we asked with."""
+    import fetch_omdb
+
+    run = Run(conn, "omdb:replay")
+    for row in conn.execute(
+        "SELECT source_key, body FROM raw_payload WHERE source='omdb'"
+    ).fetchall():
+        title_id = find_by_external(conn, "imdb", row["source_key"])
+        if not title_id:
+            continue
+        fetch_omdb.derive(conn, title_id, json.loads(row["body"]))
+        run.raw += 1
+        run.seen += 1
     run.finish()
     return run

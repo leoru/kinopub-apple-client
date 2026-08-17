@@ -347,5 +347,60 @@ class TestPlatformCopySeparation(RecordTestCase):
                          "a segment reachable by title_id would imply it applies to every copy")
 
 
+
+
+class TestRawSurvivesSchemaChanges(RecordTestCase):
+    """The question this suite exists to answer: can we change the schema
+    without re-spending quota? Until `--rederive` existed, the answer was no,
+    and the README claimed otherwise."""
+
+    def _paid_row(self, imdb="tt0111161"):
+        title = self.make_title(ids={}, title_original="Shawshank", year=1994)
+        common.link_external(self.conn, title, "imdb", imdb, "dump")
+        common.store_raw(self.conn, "omdb", "title", imdb,
+                         {"Response": "True", "Type": "movie", "imdbID": imdb,
+                          "Ratings": [{"Source": "Rotten Tomatoes", "Value": "91%"}]},
+                         via="fetch")
+        return title
+
+    def test_wipe_derived_keeps_the_layer_that_cost_quota(self):
+        self._paid_row()
+        common.wipe_derived(self.conn)
+        self.assertEqual(common.fetched_raw_count(self.conn), 1,
+                         "a schema change must never discard fetched payloads")
+        self.assertEqual(
+            self.conn.execute("SELECT count(*) FROM title").fetchone()[0], 0,
+            "derived tables should have been cleared")
+
+    def test_a_fetched_payload_can_be_replayed_without_network(self):
+        import sources
+        self._paid_row()
+        common.wipe_derived(self.conn)
+        # The spine has to exist again before a replay can attach to it.
+        title = self.make_title(ids={}, title_original="Shawshank", year=1994)
+        common.link_external(self.conn, title, "imdb", "tt0111161", "dump")
+        sources.replay_omdb(self.conn)
+        row = self.conn.execute(
+            "SELECT value, scale FROM rating WHERE source='rotten_tomatoes'").fetchone()
+        self.assertEqual((row["value"], row["scale"]), (91.0, 100.0))
+
+    def test_fetched_and_dumped_rows_are_distinguishable(self):
+        self._paid_row()
+        common.store_raw(self.conn, "kinopub", "item", 1, {"id": 1}, via="dump")
+        self.assertEqual(common.fetched_raw_count(self.conn), 1,
+                         "only `via='fetch'` rows cost anything to replace")
+
+
+class TestMigrations(RecordTestCase):
+    def test_a_missing_column_is_added_in_place(self):
+        self.conn.execute("ALTER TABLE rating DROP COLUMN changed_at")
+        applied = common.migrate(self.conn)
+        self.assertIn("rating.changed_at", applied)
+        columns = {row[1] for row in self.conn.execute("PRAGMA table_info(rating)")}
+        self.assertIn("changed_at", columns)
+
+    def test_migrate_is_a_no_op_on_a_current_record(self):
+        self.assertEqual(common.migrate(self.conn), [])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

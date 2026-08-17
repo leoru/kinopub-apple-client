@@ -41,12 +41,81 @@ def match_key(value: str | None) -> str | None:
     return text or None
 
 
+# Tables rebuilt from `raw_payload` by a re-derive. `raw_payload`, `fetch_log`,
+# `provider_health` and `ingest_run` are deliberately absent: they are the layer
+# that cost quota to obtain, and nothing that changes the schema may drop them.
+DERIVED_TABLES = (
+    "title_credit", "person_external_id", "person", "image", "rating", "trailer",
+    "badge", "episode", "award", "genre", "country", "synopsis",
+    "copy_segment", "copy_video", "title_copy", "title_external_id", "title",
+)
+
+# Additive column changes, applied in place. Anything that cannot be an ALTER
+# (dropping a primary key, say) belongs in `MIGRATIONS` as explicit SQL.
+EXPECTED_COLUMNS = {
+    "rating": {"first_seen_at": "TEXT", "changed_at": "TEXT"},
+}
+
+MIGRATIONS: list[tuple[int, str]] = [
+    # (version, sql). Append only; never edit a shipped step.
+]
+
+
+def migrate(conn) -> list[str]:
+    """Bring an existing record up to the current schema without dropping it.
+
+    Returns what it did, so a caller can say so rather than silently mutating a
+    database the user has spent quota filling.
+    """
+    applied: list[str] = []
+    conn.execute("CREATE TABLE IF NOT EXISTS schema_version("
+                 "version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)")
+    current = conn.execute("SELECT COALESCE(max(version), 0) FROM schema_version").fetchone()[0]
+
+    for table, columns in EXPECTED_COLUMNS.items():
+        existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if not existing:
+            continue
+        for column, declaration in columns.items():
+            if column not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {declaration}")
+                applied.append(f"{table}.{column}")
+
+    for version, sql in MIGRATIONS:
+        if version > current:
+            conn.executescript(sql)
+            conn.execute("INSERT INTO schema_version(version, applied_at) VALUES (?,?)",
+                         (version, now()))
+            applied.append(f"migration {version}")
+
+    conn.commit()
+    return applied
+
+
 def connect(db_path: Path) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.executescript((ROOT / "schema.sql").read_text())
+    migrate(conn)
     return conn
+
+
+def wipe_derived(conn) -> None:
+    """Drop only what can be rebuilt. Raw payloads and fetch_log survive."""
+    conn.execute("PRAGMA foreign_keys = OFF")
+    for table in DERIVED_TABLES:
+        conn.execute(f"DELETE FROM {table}")
+    for table in ("title", "person", "title_copy"):
+        conn.execute("DELETE FROM sqlite_sequence WHERE name=?", (table,))
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.commit()
+
+
+def fetched_raw_count(conn) -> int:
+    """How many rows in the record were paid for with somebody's quota."""
+    return conn.execute(
+        "SELECT count(*) FROM raw_payload WHERE via='fetch'").fetchone()[0]
 
 
 def store_raw(conn, source, kind, source_key, body, via="dump") -> None:

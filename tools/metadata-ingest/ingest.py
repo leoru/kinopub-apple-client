@@ -19,8 +19,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from common import DEFAULT_DB, connect  # noqa: E402
-from sources import ingest_kinopoisk, ingest_kinopub, ingest_tvoe  # noqa: E402
+from common import DEFAULT_DB, connect, fetched_raw_count, wipe_derived  # noqa: E402
+from sources import (ingest_kinopoisk, ingest_kinopub, ingest_tvoe,  # noqa: E402
+                     replay_omdb, replay_tmdb)
 
 SOURCES = {
     "kinopub": ingest_kinopub,     # first: seeds the spine
@@ -84,16 +85,47 @@ def main() -> int:
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     parser.add_argument("--only", choices=sorted(SOURCES), action="append")
     parser.add_argument("--limit", type=int, help="cap kino.pub rows, for a quick smoke run")
-    parser.add_argument("--fresh", action="store_true", help="delete the record and rebuild")
+    parser.add_argument("--rederive", action="store_true",
+                        help="rebuild derived tables from raw. No network, no quota.")
+    parser.add_argument("--fresh", action="store_true",
+                        help="delete the record and rebuild from the dumps")
+    parser.add_argument("--drop-raw", action="store_true",
+                        help="with --fresh: also discard fetched payloads. Says what it costs.")
     parser.add_argument("--stats", action="store_true", help="report only, import nothing")
     args = parser.parse_args()
 
     if args.fresh and args.db.exists():
+        # The dumps re-derive for free; fetched payloads do not. Deleting them
+        # is a decision about somebody's quota, so it has to be said out loud.
+        probe = connect(args.db)
+        paid = fetched_raw_count(probe)
+        probe.close()
+        if paid and not args.drop_raw:
+            print(f"refusing: {paid:,} fetched payloads in this record cost quota to obtain.\n"
+                  f"  --rederive   rebuild derived tables and keep them\n"
+                  f"  --fresh --drop-raw   discard them anyway")
+            return 1
         for suffix in ("", "-wal", "-shm"):
             Path(str(args.db) + suffix).unlink(missing_ok=True)
-        print(f"removed {args.db}")
+        print(f"removed {args.db}" + (f" (discarded {paid:,} fetched payloads)" if paid else ""))
 
     conn = connect(args.db)
+
+    if args.rederive:
+        paid = fetched_raw_count(conn)
+        print(f"re-deriving; {paid:,} fetched payloads replayed from raw, nothing refetched")
+        wipe_derived(conn)
+        for name in SOURCES:
+            print(f"→ {name}")
+            run = SOURCES[name](conn)
+            conn.commit()
+            print(f"  raw={run.raw:,}  new titles={run.new:,}  matched={run.seen:,}")
+        for name, replay in (("tmdb", replay_tmdb), ("omdb", replay_omdb)):
+            run = replay(conn)
+            conn.commit()
+            print(f"→ {name}:replay  replayed={run.raw:,}")
+        report(conn)
+        return 0
 
     if args.stats:
         report(conn)
