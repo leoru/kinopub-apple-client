@@ -4,6 +4,11 @@
 area worth the name; a concert, a TV show or a stand-up set opened a page that ended after the
 synopsis. Whatever the type, the page must offer somewhere to go next.
 
+**prd — the block sits directly under Awards**, i.e. after everything about *this* title (ratings,
+vote, cast, awards) and **above** the tail: photos, facts, reviews, then Information. Where to go
+next comes before the reading matter — stills, trivia and other people's opinions are for whoever is
+still on the page.
+
 Order, top to bottom — each shelf absent when its query came back empty:
 
 | # | Shelf | Query |

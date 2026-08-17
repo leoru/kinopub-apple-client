@@ -432,6 +432,17 @@ struct MediaItemView: View {
       MediaItemAwardsSection(awards: itemModel.externalMetadata.awards,
                              onSectionFocused: leaveHero)
         .detailFocusSection("awards")
+      // Where to go next comes before the reading matter: the shelves are the page's
+      // recommendations, and stills, trivia and other people's opinions are the tail
+      // you reach only if you are still here. Everything about *this* title (ratings,
+      // vote, cast, awards) stays above them.
+      MediaItemRelatedRowsSection(rows: itemModel.relatedRows,
+                                  relatedItem: { itemModel.relatedItem(forCardID: $0) },
+                                  linkProvider: itemModel.linkProvider,
+                                  cardMenu: relatedRowsMenu,
+                                  pendingShelves: itemModel.pendingRelatedShelfTitles,
+                                  onSectionFocused: leaveHero)
+        .detailFocusSection("related")
       MediaItemPhotosSection(stills: itemModel.externalMetadata.stills,
                              onSectionFocused: leaveHero)
         .detailFocusSection("photos")
@@ -441,13 +452,6 @@ struct MediaItemView: View {
       MediaItemReviewsSection(reviews: itemModel.externalMetadata.reviews,
                               onSectionFocused: leaveHero)
 #endif
-      MediaItemRelatedRowsSection(rows: itemModel.relatedRows,
-                                  relatedItem: { itemModel.relatedItem(forCardID: $0) },
-                                  linkProvider: itemModel.linkProvider,
-                                  cardMenu: relatedRowsMenu,
-                                  pendingShelves: itemModel.pendingRelatedShelfTitles,
-                                  onSectionFocused: leaveHero)
-        .detailFocusSection("related")
       MediaItemInfoColumns(mediaItem: itemModel.mediaItem,
                            externalMetadata: itemModel.externalMetadata,
                            onSectionFocused: leaveHero)
