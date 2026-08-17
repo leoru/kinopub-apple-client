@@ -435,8 +435,11 @@ struct MediaItemCastSection: View {
     return directors + actors
   }
 
+  /// Faces are for fiction. A concert, a stand-up set, a documentary or an anime lists
+  /// the same names as a Credits card in the information table instead — one rule, in
+  /// `MediaPresentationProfile`, not a type check here.
   var body: some View {
-    if !people.isEmpty {
+    if mediaItem.presentation.showsCastPortraits, !people.isEmpty {
       VStack(alignment: .leading, spacing: 12) {
         MediaItemSectionHeader("Cast & Crew")
 
@@ -1334,6 +1337,9 @@ struct MediaItemInfoColumns: View {
     if !detailsCardSections.isEmpty {
       cards.append(InfoCard(id: "details", title: "Information", sections: detailsCardSections))
     }
+    if !creditsCardSections.isEmpty {
+      cards.append(InfoCard(id: "credits", title: "MediaItem_Credits", sections: creditsCardSections))
+    }
     if !technicalSections.isEmpty {
       cards.append(InfoCard(id: "technical", title: "MediaItem_Technical", sections: technicalSections))
     }
@@ -1380,6 +1386,35 @@ struct MediaItemInfoColumns: View {
     if let statusKey = seriesStatusKey {
       sections.append(InfoSection(id: "status", caption: "MediaItem_Status",
                                   values: [InfoValue(id: "status", title: statusKey.localized)]))
+    }
+
+    return sections
+  }
+
+  /// The people, for the titles that get no rail of faces — a concert, a stand-up set,
+  /// a documentary, an anime. Names belong here with the qualities and the languages
+  /// rather than as monogram circles nobody is scanning for, and they are called
+  /// Credits because a concert has no cast. `MediaPresentationProfile` decides which
+  /// titles land here; when it says portraits, this card is empty and the section
+  /// above draws the faces instead.
+  private var creditsCardSections: [InfoSection] {
+    guard !mediaItem.presentation.showsCastPortraits else { return [] }
+    var sections: [InfoSection] = []
+
+    let directors = mediaItem.directorNames
+    if !directors.isEmpty {
+      sections.append(InfoSection(id: "credits-director",
+                                  caption: "Director",
+                                  values: [InfoValue(id: "credits-director",
+                                                     title: directors.joined(separator: ", "))]))
+    }
+
+    let people = mediaItem.castMembers
+    if !people.isEmpty {
+      sections.append(InfoSection(id: "credits-cast",
+                                  caption: "MediaItem_CreditsParticipants",
+                                  values: [InfoValue(id: "credits-cast",
+                                                     title: people.joined(separator: ", "))]))
     }
 
     return sections

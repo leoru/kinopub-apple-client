@@ -935,9 +935,15 @@ struct MediaItemHeroView: View {
   /// A handful of leads and whoever directed it — the whole cast is what the section
   /// further down the page is for. A series has no one director to name, so it gets
   /// the cast alone.
+  ///
+  /// Nobody stars in a stand-up set, a concert or a documentary, so those name no
+  /// leads here at all — their people are a Credits card in the information table.
+  /// `MediaPresentationProfile` owns which is which.
   private var creditLines: [(role: String, names: String)] {
     var lines: [(String, String)] = []
-    let cast = mediaItem.castMembers.prefix(Self.creditNameLimit)
+    let cast: [String] = mediaItem.presentation.showsHeroCastLine
+      ? Array(mediaItem.castMembers.prefix(Self.creditNameLimit))
+      : []
     if !cast.isEmpty {
       lines.append(("Starring", cast.joined(separator: ", ")))
     }

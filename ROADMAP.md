@@ -245,6 +245,13 @@ Media
       film. A score is only as good as the crowd behind it and we cannot count on a vote count
       being there — 5 Kinopoisk votes must not outrank a million on IMDb — while "how many people
       here opened it" is never missing and is already the "known for" signal
+- [x] **Type/genre presentation is one profile**, `MediaPresentationProfile` — fiction gets the rail
+      of faces and the hero's "Starring" line; documentary / concert / stand-up (genre 101) / anime
+      get a **Credits** card in the information table instead. Views ask the profile, never `type`
+- [ ] Fold `filter.genres` from `kpapp.link/config.json` into the app so the profile matches genre
+      **ids** instead of RU/EN title strings — and so genre pickers stop needing a request
+- [ ] Decide the remaining presentation surfaces per kind: poster (vertical), playable object
+      (horizontal card), and what `tvshow` should be. Until then they take the fiction default
 - [ ] "Known for" ordering proper for person shelves — lead with the films the person is known for
       instead of the chronological fallback. Note the shelf is still *selected* server-side by
       `sort=-kinopoisk_rating`, so a title kino.pub has no Kinopoisk id for can be missing from

@@ -5,6 +5,31 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### One profile decides what a type or genre changes on screen (2026-08-17)
+
+- **`MediaPresentationProfile` (KinoPubBackend) is where type/genre presentation rules live.** Views
+  ask `mediaItem.presentation`; a view that tests `type == "concert"` itself is the defect the type
+  exists to prevent — such a rule lands on one surface and is missed on the poster, the card and the
+  label next to it. Four kinds: `fiction`, `documentary`, `performance`, `anime`. Type decides first
+  (`documovie` / `docuserial` → documentary, `concert` → performance), genre second.
+- **Faces are for fiction only.** A concert, a stand-up set, a documentary or an anime shows no
+  `MediaItemCastSection` rail and no "Starring" line in the hero; the same names render as a
+  **Credits** card (`MediaItem_Credits` / "Титры", rows Director + Featuring) in the information
+  table, beside qualities and languages. New keys: `MediaItem_Credits`,
+  `MediaItem_CreditsParticipants`.
+- **Genre 101 is stand-up** — the one genre id confirmed to us. Anime / documentary / stand-up are
+  otherwise matched on the genre *title* in RU and EN, because we hold no genre-id table; the real
+  one is `filter.genres` in `kpapp.link/config.json` (see
+  [docs/providers/kinopub/references.md](docs/providers/kinopub/references.md)) and folding it in
+  would retire the string matching.
+- **Undecided, on purpose:** posters, horizontal cards and `tvshow` keep the default treatment.
+  Add the rule to the profile when it is decided — not to the cell.
+- **One card per film** in person shelves and on the person page: `MediaItem.filmIdentity` +
+  `collapsingFilmVariants` collapse the 3D and flat entries of one title (they share a Kinopoisk /
+  IMDb id). Shelves are picked by Kinopoisk rating, shown newest first, ties by views — a rating is
+  only as good as the crowd behind it and kino.pub does not guarantee a vote count. The library
+  grid and search do **not** collapse: a "3D" type filter asks for exactly those entries.
+
 ### Device identity actually reaches kino.pub (2026-08-16)
 
 - **Every JSON body POST was a silent no-op.** `RequestBuilder` wrote a JSON body and set no

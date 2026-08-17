@@ -223,6 +223,12 @@ file, and delete the losers with the switch.
 - **No compact title, no floating header logo** unless navigation chrome requires one.
 - Sections are data (kind + payload), empty ones simply absent, order defined in one place.
 - "Related" renders through the same shelf component Home uses.
+- 🔴 **How a type or genre changes presentation is `MediaPresentationProfile`, never an `if type
+  == …` in a view.** A view asks the profile; a rule written into one view is applied on the detail
+  page and forgotten on the poster, the card and the label beside it. Decided so far: only fiction
+  gets a rail of faces and a "Starring" line — a concert, a stand-up set (genre 101), a documentary
+  and an anime list the same people as a **Credits** card in the information table. The per-surface
+  table, and which surfaces are still undecided, live in that type's doc comment.
 
 ## Chrome
 
