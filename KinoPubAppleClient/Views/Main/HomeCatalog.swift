@@ -414,13 +414,55 @@ class HomeCatalog: ObservableObject {
                                                 watchlistIDs: watchlistIDs,
                                                 lastSeen: lastSeen)
 
+    let details = await seriesDetails(for: ordered)
+
     return ordered.compactMap {
       Self.card(for: $0,
+                detail: details[$0.id],
                 history: newestEntry[$0.id],
                 finishedEpisodes: finishedEpisodes[$0.id] ?? [:],
                 local: localByID[$0.id],
                 isInHistory: historyIDs.contains($0.id) || localByID[$0.id] != nil,
                 isInWatchlist: watchlistIDs.contains($0.id))
+    }
+  }
+
+  /// How many series the row will fetch payloads for. Continue Watching is short by
+  /// design, and this is the ceiling on what one refresh of it costs.
+  private static let seriesDetailLimit = 12
+
+  /// The series behind the cards, because **only the title itself knows where its
+  /// seasons end and which episodes the server counts as watched.** Without it the row
+  /// offered "S1, E9" on an eight-episode season (nothing to play at all) and re-offered
+  /// an episode whose last five minutes were credits.
+  ///
+  /// One request per series, `nolinks` where the flag allows, and only when the row
+  /// actually refreshes — the whole row sits behind `ContentStore`'s TTL. Films need
+  /// none of this: they have one video.
+  private func seriesDetails(for items: [WatchingItem]) async -> [Int: MediaItem] {
+    let ids = items.filter { $0.type.contains("serial") }
+      .prefix(Self.seriesDetailLimit)
+      .map(\.id)
+    guard !ids.isEmpty else { return [:] }
+
+    return await withTaskGroup(of: (Int, MediaItem?).self) { group in
+      for id in ids {
+        group.addTask { [itemsService] in
+          let item = try? await itemsService.fetchDetails(
+            for: "\(id)",
+            excludeLinks: FeatureFlags.seriesDetailsWithoutLinks
+          ).item
+          // Every `/v1/watching*` call keys on the item id, and an episode only carries
+          // it once its season has been stamped — see `Episode.metadata`.
+          item?.seasons?.forEach { $0.mediaId = item?.id }
+          return (id, item)
+        }
+      }
+      var byID: [Int: MediaItem] = [:]
+      for await (id, item) in group {
+        if let item { byID[id] = item }
+      }
+      return byID
     }
   }
 
@@ -448,6 +490,7 @@ class HomeCatalog: ObservableObject {
   /// anonymous to recognise a title from across the room. History still supplies the
   /// S/E label and resume bar; local progress fills gaps before the server catches up.
   private static func card(for item: WatchingItem,
+                           detail: MediaItem?,
                            history: HistoryEntry?,
                            finishedEpisodes: [Int: Set<Int>],
                            local: LocalWatchEntry?,
@@ -463,32 +506,53 @@ class HomeCatalog: ObservableObject {
     if isSeries {
       // The newest history row is where the viewer *was*, not what to play next: on a
       // finished episode this offered it again, with its full runtime under it.
-      // Which season the viewer is in, and everything history says they finished in it.
-      // History is ordered by when a row was played, so the newest row is not the
-      // furthest episode: E1–E4 watched, E2 replayed last, and "last + 1" said E3.
-      let currentSeason = history?.media?.snumber ?? local?.season
-      let next = ContinueWatchingEpisode.forSeries(
-        local: local.map { ($0.season, $0.episode, $0.watch.isFinished) },
-        history: history.map { ($0.media?.snumber, $0.media?.number, $0.watchProgress?.isFinished ?? false) },
-        finishedInSeason: currentSeason.flatMap { finishedEpisodes[$0] } ?? [],
-        watchedCount: item.watched,
-        total: item.total
-      )
-      // Every episode watched and nothing new announced — the row is done with.
-      guard next.hasEpisode || (item.new ?? 0) > 0 else { return nil }
-      video = next.episode
-      season = next.season
-      isResuming = next.isResuming
+      if let detail, detail.isSeries {
+        // The title's own answer, and the same one the detail page's Play button gives —
+        // first episode the server does not count as watched, across season boundaries.
+        // `playAgain` means there is no such episode: every one of them is watched, and
+        // a finished series has no business in Continue Watching.
+        guard detail.playbackAction != .playAgain,
+              let (nextSeason, episode) = detail.primaryEpisode else { return nil }
+        video = episode.number
+        season = nextSeason.number
+        isResuming = episode.watchProgress.isResumable
+      } else {
+        // No payload for this one (request failed, or past the fetch cap): fall back to
+        // what history and the counters can say. Which season the viewer is in, and
+        // everything history says they finished in it — history is ordered by when a
+        // row was played, so the newest row is not the furthest episode.
+        let currentSeason = history?.media?.snumber ?? local?.season
+        let next = ContinueWatchingEpisode.forSeries(
+          local: local.map { ($0.season, $0.episode, $0.watch.isFinished) },
+          history: history.map { ($0.media?.snumber, $0.media?.number, $0.watchProgress?.isFinished ?? false) },
+          finishedInSeason: currentSeason.flatMap { finishedEpisodes[$0] } ?? [],
+          watchedCount: item.watched,
+          total: item.total
+        )
+        // Every episode watched and nothing new announced — the row is done with.
+        guard next.hasEpisode || (item.new ?? 0) > 0 else { return nil }
+        video = next.episode
+        season = next.season
+        isResuming = next.isResuming
+      }
     } else {
       video = history?.media?.number ?? local?.episode ?? 1
       season = nil
     }
 
+    // The episode the card actually offers, when the payload gave us one — its own
+    // progress and runtime, not the previous episode's.
+    let offered = detail?.seasons?
+      .first { $0.number == season }?.episodes
+      .first { $0.number == video }
     let localFraction = local?.watch.isResumable == true ? local?.watch.fraction : nil
     // Episode resume only — never serial watched/total (that is not a scrubber) — and
     // never the *previous* episode's progress under a fresh one.
-    let episodeProgress = isResuming ? (localFraction ?? history?.progress) : nil
-    let durationSeconds = isResuming ? Self.durationSeconds(history: history, local: local) : nil
+    let episodeProgress = isResuming
+      ? (offered?.watchProgress.fraction ?? localFraction ?? history?.progress)
+      : nil
+    let durationSeconds = offered.map(\.duration)
+      ?? (isResuming ? Self.durationSeconds(history: history, local: local) : nil)
     let overlay = Self.overlayLabel(isSeries: isSeries, season: season, episode: video)
     let newCount = item.new.flatMap { $0 > 0 ? $0 : nil }
 

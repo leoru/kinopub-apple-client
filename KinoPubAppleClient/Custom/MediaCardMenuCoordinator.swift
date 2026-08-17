@@ -118,6 +118,9 @@ final class MediaCardMenuCoordinator: ObservableObject {
     Task {
       do {
         let item = try await contentService.fetchDetails(for: "\(card.itemID)").item
+        // Stamp the seasons before an episode leaves this scope: `/v1/watching*` keys
+        // on the item id and an episode carries it only from here.
+        item.seasons?.forEach { $0.mediaId = item.id }
         membership.seed(from: item)
         push(.player(playable(from: item, preferring: card)))
       } catch {

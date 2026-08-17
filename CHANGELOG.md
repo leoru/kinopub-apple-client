@@ -7,6 +7,17 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ### Watching reported the wrong id, and reported it too early (2026-08-17)
 
+- 🔴 **Continue Watching asks the series itself which episode is next.** Nothing else can answer it:
+  history and the watching counters do not know where a season ends, so an eight-episode S1 read as
+  "S1, E9" — an episode with no file to play — and an episode whose last five minutes are credits
+  came back as "resume" while the server already counted it watched. `HomeCatalog` now fetches the
+  payload for each series in the row (max 12, `nolinks`, only when the row's TTL expires) and takes
+  `primaryEpisode` — the same property the detail page's Play button uses, so the two can no longer
+  disagree. A series whose `playbackAction` is `playAgain` leaves the row. The history/counter
+  heuristic below stays as the fallback when a payload does not arrive.
+- **Anything that fetches details and hands an episode onward stamps its seasons first**
+  (`MediaCardMenuCoordinator.play`) — otherwise the episode reaches the player with no item id and,
+  since the fix below, reports nothing at all.
 - 🔴 **Continue Watching offered episodes that were already watched.** The card took its S/E from the
   newest history row — which is where the viewer *was*, not what to play next — so a series whose
   last row was "S1, E2, finished" offered E2 again, with E2's full runtime under it as if it had
