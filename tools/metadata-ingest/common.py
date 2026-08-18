@@ -6,6 +6,7 @@ exactly one place and records how it matched.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sqlite3
@@ -22,6 +23,24 @@ _SPACE = re.compile(r"\s+", re.UNICODE)
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def pushbr_url(name: str | None) -> str | None:
+    """kino.pub-adjacent actor portrait, keyed by MD5 of the (Russian) name —
+    the scheme kpapp.link itself uses: m.pushbr.com/actors/<md5(name)>.jpg.
+
+    Free: no fetch, no quota, no matching problem — the URL is a pure function
+    of a name we already hold. A miss (no such photo) is a 403 at *display*
+    time, same as any other candidate in an ordered fallback list. This mirrors
+    KinoPubAppleClient/Services/ActorImages/ActorImageProvider.swift; the server
+    computing it too is what lets the API's own document carry it, instead of
+    every client re-deriving the same hash.
+    """
+    trimmed = (name or "").strip()
+    if not trimmed:
+        return None
+    digest = hashlib.md5(trimmed.encode("utf-8")).hexdigest()
+    return f"https://m.pushbr.com/actors/{digest}.jpg"
 
 
 def match_key(value: str | None) -> str | None:
@@ -47,6 +66,7 @@ def match_key(value: str | None) -> str | None:
 DERIVED_TABLES = (
     "title_credit", "person_external_id", "person", "image", "rating", "trailer",
     "badge", "season", "episode", "award", "genre", "country", "synopsis",
+    "fact", "review",
     "copy_segment", "copy_video", "title_copy", "title_external_id", "title",
 )
 
@@ -55,6 +75,10 @@ DERIVED_TABLES = (
 EXPECTED_COLUMNS = {
     "rating": {"first_seen_at": "TEXT", "changed_at": "TEXT"},
     "episode": {"runtime": "INTEGER", "still": "TEXT"},
+    # Provenance for the one stored photo, so the document builder can decide
+    # per title whether to trust it ahead of the free pushbr candidate — a
+    # bare URL with no source is a precedence decision already made and lost.
+    "person": {"photo_source": "TEXT"},
 }
 
 MIGRATIONS: list[tuple[int, str]] = [

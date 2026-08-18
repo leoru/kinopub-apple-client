@@ -118,6 +118,21 @@ document records where each field came from.
 | Dubs / voice tracks, stream quality | kino.pub — nobody else has this at all |
 | Ratings | **All of them, side by side, never silently averaged** |
 | Availability, deeplinks | Per-service, each with its own `checked_at` |
+| **Cast/crew photo** | **See below — the one field where precedence flips per title, not a fixed order** |
+
+**Cast photo is decided per title, not by a fixed source order.** `pushbr` (kino.pub's own CDN,
+keyed by `md5(name)` — no fetch, no quota, a pure function of a name we already hold) is the default,
+because most of the catalogue is CIS-facing and Kinopoisk's own cast data is reliably correct there.
+TMDB's photo leads instead exactly when Kinopoisk's cast data for *this title* is probably thin:
+
+- Kinopoisk's own vote count is under ~10% of the stronger of IMDb/TMDB's, or
+- the title has no CIS/Russian country tag **and** is not a large enough global hit (~100k+ IMDb
+  votes) that Kinopoisk covers it fully regardless of origin.
+
+Both stored candidates travel in the document as an ordered `photos: []` list — the client tries each
+in turn, same as `ActorImageProvider.swift` already does for a pushbr 403, except the server decides
+the order instead of every client guessing it the same way. See `document.photo_candidates` /
+`kinopoisk_coverage_is_thin`, mirrored in the worker's `capArtwork`-adjacent `pushbrUrl` path.
 
 ### 7. Trust is a function of the title, not the provider
 
@@ -186,6 +201,31 @@ quota, and are inspectable by that user.
 - **Providers cannot block each other** — one queue, one rate limiter, one backoff, one health
   record per provider. A dead provider degrades its own fields and nothing else.
 - **Nothing is deleted.** Deriving is re-runnable.
+
+### 10a. Kinopoisk: three tiers, each with a different reason to exist
+
+Decided explicitly, overriding an earlier draft of this doc that kept a personal Kinopoisk key
+client-side only — the user's call, recorded here so it is not re-litigated by accident:
+
+1. **Keyless proxy (`kpapp.link/kpapi`)** — facts, reviews, full crew-with-characters, stills. No
+   auth, no documented quota, someone else's best-effort server. This is the *default* tier: cheap
+   enough to refresh often, safe to call on every cold resolve, live in both the offline pipeline
+   (`fetch_kinopoisk_proxy.py`) and the worker (`kinopoiskProxyFacts`). Sheet:
+   [providers/kinopoisk-proxy.md](../../docs/providers/kinopoisk-proxy.md).
+2. **System key (ours) — the backbone.** A personal/paid Kinopoisk Unofficial key populates the base
+   layer (ratings, awards, full details) for *most* titles, server-side, **lazily** — per-title, in
+   vote order, the same pattern as `fetch_tmdb.py`/`fetch_omdb.py`, never a full-catalogue sweep.
+   One key serving every user through the shared record is exactly the "provider #7 is a data
+   change" economy this whole design exists for; a sweep is not required, because the keyless tier
+   plus donation already cover most of what a page needs day to day.
+3. **User key (optional override)** — a user's own Kinopoisk key, client-side, refreshes *their*
+   session live and outranks the shared record for their own view when present. Not required today;
+   can be switched off without losing anything, since tiers 1–2 are the floor everyone gets anyway.
+
+**Do not run a full bulk backfill** (`tools/kinopoisk-metadata/bulk_films.py` against the whole
+catalogue) — it burns a personal key's daily quota on titles nobody has opened, the exact sweep habit
+rejected everywhere else in this doc. Fine to run **lazily**, `--limit`-bounded, same as any other
+lazy fetcher, when the backbone tier is worth advancing for a specific batch.
 
 ### 11a. One ingest path: raw first, derive second
 

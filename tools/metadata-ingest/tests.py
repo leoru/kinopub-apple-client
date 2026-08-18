@@ -739,5 +739,185 @@ class TestArtworkCap(unittest.TestCase):
         self.assertEqual([a["lang"] for a in document.cap_artwork(rows)], ["ru"])
 
 
+class TestPushbrURL(unittest.TestCase):
+    def test_matches_the_known_scheme(self):
+        # md5("Тим Роббинс") — cross-checked against ActorImageProvider.swift's
+        # own scheme (m.pushbr.com/actors/<md5(name)>.jpg) by hand.
+        import hashlib
+        name = "Тим Роббинс"
+        expected = hashlib.md5(name.encode("utf-8")).hexdigest()
+        self.assertEqual(common.pushbr_url(name), f"https://m.pushbr.com/actors/{expected}.jpg")
+
+    def test_empty_name_has_no_url(self):
+        self.assertIsNone(common.pushbr_url(""))
+        self.assertIsNone(common.pushbr_url(None))
+        self.assertIsNone(common.pushbr_url("   "))
+
+
+class TestKinopoiskThinCoverage(RecordTestCase):
+    """Whether the document trusts Kinopoisk-sourced cast identity for a title,
+    or leads with TMDB instead. Two independent tells, either is enough."""
+
+    def test_a_big_global_premiere_is_trusted_regardless_of_origin(self):
+        import document
+        title = self.make_title(title_original="A Foreign Blockbuster", year=2020)
+        common.add_rating(self.conn, title, "imdb", 8.0, 500_000)
+        common.add_rating(self.conn, title, "kinopoisk", 8.0, 400_000)
+        self.conn.execute("INSERT INTO country(title_id,source,name) VALUES (?,'tmdb','Japan')",
+                          (title,))
+        self.assertFalse(document.kinopoisk_coverage_is_thin(self.conn, title))
+
+    def test_a_small_foreign_title_with_no_ru_cis_link_is_thin(self):
+        import document
+        title = self.make_title(title_original="Obscure German Drama", year=2015)
+        common.add_rating(self.conn, title, "imdb", 6.0, 300)
+        self.conn.execute("INSERT INTO country(title_id,source,name) VALUES (?,'tmdb','Germany')",
+                          (title,))
+        self.assertTrue(document.kinopoisk_coverage_is_thin(self.conn, title))
+
+    def test_ru_cis_origin_is_trusted_even_with_few_votes(self):
+        import document
+        title = self.make_title(title_original="Local Show", year=2015)
+        common.add_rating(self.conn, title, "imdb", 6.0, 300)
+        common.add_rating(self.conn, title, "kinopoisk", 6.0, 250)
+        self.conn.execute("INSERT INTO country(title_id,source,name) VALUES (?,'tmdb','Россия')",
+                          (title,))
+        self.assertFalse(document.kinopoisk_coverage_is_thin(self.conn, title))
+
+    def test_thin_when_kinopoisk_barely_rated_it_despite_ru_origin(self):
+        import document
+        title = self.make_title(title_original="Neglected Kinopoisk Entry", year=2015)
+        common.add_rating(self.conn, title, "imdb", 7.0, 100_000)
+        common.add_rating(self.conn, title, "kinopoisk", 7.0, 500)  # 0.5% of imdb
+        self.conn.execute("INSERT INTO country(title_id,source,name) VALUES (?,'tmdb','Russia')",
+                          (title,))
+        self.assertTrue(document.kinopoisk_coverage_is_thin(self.conn, title))
+
+    def test_no_evidence_at_all_defaults_to_thin(self):
+        """No ratings, no country: nothing says this is RU/CIS or a hit, so the
+        safer default is TMDB-first, not an assumed trust in Kinopoisk."""
+        import document
+        title = self.make_title()
+        self.assertTrue(document.kinopoisk_coverage_is_thin(self.conn, title))
+
+
+class TestPhotoCandidates(unittest.TestCase):
+    def test_kinopoisk_family_leads_when_not_thin(self):
+        import document
+        photos = document.photo_candidates("Тим Роббинс", "https://st.kp.yandex.net/x.jpg",
+                                           "kinopoisk_proxy", prefer_tmdb=False)
+        self.assertTrue(photos[0].startswith("https://st.kp.yandex.net/"))
+        self.assertTrue(photos[1].startswith("https://m.pushbr.com/"))
+
+    def test_tmdb_leads_when_thin(self):
+        import document
+        photos = document.photo_candidates("Тим Роббинс", "https://image.tmdb.org/x.jpg",
+                                           "tmdb", prefer_tmdb=True)
+        self.assertTrue(photos[0].startswith("https://image.tmdb.org/"))
+        self.assertTrue(photos[-1].startswith("https://m.pushbr.com/"))
+
+    def test_no_name_no_stored_photo_is_an_empty_list_not_a_crash(self):
+        import document
+        self.assertEqual(document.photo_candidates(None, None, None, prefer_tmdb=False), [])
+
+    def test_never_duplicates_a_url_across_candidates(self):
+        import document
+        photos = document.photo_candidates("X", "https://image.tmdb.org/x.jpg", "tmdb",
+                                           prefer_tmdb=True)
+        self.assertEqual(len(photos), len(set(photos)))
+
+
+class TestCreditMerge(RecordTestCase):
+    """One row per person in the document, whatever sources contributed."""
+
+    def test_two_sources_for_one_person_merge_into_one_credit(self):
+        import document
+        title = self.make_title()
+        person = resolve_person(self.conn, name_ru="Тим Роббинс", name_en="Tim Robbins")
+        self.conn.execute(
+            "INSERT INTO title_credit(title_id,person_id,department,character,ord,"
+            "episode_count,source) VALUES (?,?,'actor','Andy Dufresne',0,NULL,'tmdb')",
+            (title, person))
+        self.conn.execute(
+            "INSERT INTO title_credit(title_id,person_id,department,character,ord,"
+            "episode_count,source) VALUES (?,?,'actor',NULL,5,NULL,'kinopoisk_proxy')",
+            (title, person))
+        credits = document.build_credits(self.conn, title)
+        self.assertEqual(len(credits), 1)
+        self.assertEqual(credits[0]["character"], "Andy Dufresne")
+        self.assertEqual(credits[0]["ord"], 0, "TMDB's true billing order must win over a stand-in")
+        self.assertEqual(set(credits[0]["sources"]), {"tmdb", "kinopoisk_proxy"})
+
+    def test_multiple_departments_on_one_person_are_all_kept(self):
+        import document
+        title = self.make_title()
+        person = resolve_person(self.conn, name_ru="Фрэнк Дарабонт")
+        for department in ("director", "screenwriter"):
+            self.conn.execute(
+                "INSERT INTO title_credit(title_id,person_id,department,character,ord,"
+                "episode_count,source) VALUES (?,?,?,NULL,NULL,NULL,'kinopoisk_proxy')",
+                (title, person, department))
+        credits = document.build_credits(self.conn, title)
+        self.assertEqual(set(credits[0]["departments"]), {"director", "screenwriter"})
+
+    def test_kinopoisk_character_text_is_preferred_when_both_exist(self):
+        import document
+        title = self.make_title()
+        person = resolve_person(self.conn, name_ru="Актёр")
+        self.conn.execute(
+            "INSERT INTO title_credit(title_id,person_id,department,character,ord,"
+            "episode_count,source) VALUES (?,?,'actor','English Name',0,NULL,'tmdb')",
+            (title, person))
+        self.conn.execute(
+            "INSERT INTO title_credit(title_id,person_id,department,character,ord,"
+            "episode_count,source) VALUES (?,?,'actor','Русское имя',1,NULL,'kinopoisk_proxy')",
+            (title, person))
+        credits = document.build_credits(self.conn, title)
+        self.assertEqual(credits[0]["character"], "Русское имя")
+
+
+class TestTMDBCreditLanguageLabeling(unittest.TestCase):
+    """The bug: a ru-RU-localized TMDB name was stored as `name_en`, so it
+    could never join against Kinopoisk's identical Russian spelling — same
+    person, same script, split into two rows by a mislabeled column."""
+
+    def test_a_ru_fetch_labels_the_localized_name_as_russian(self):
+        import fetch_tmdb
+        person = {"name": "Тим Роббинс", "original_name": "Tim Robbins"}
+        name_ru, name_en = fetch_tmdb._credit_names(person, "ru-RU")
+        self.assertEqual(name_ru, "Тим Роббинс")
+        self.assertEqual(name_en, "Tim Robbins")
+
+    def test_an_en_fetch_labels_it_english_instead(self):
+        import fetch_tmdb
+        person = {"name": "Tim Robbins", "original_name": "Tim Robbins"}
+        name_ru, name_en = fetch_tmdb._credit_names(person, "en-US")
+        self.assertIsNone(name_ru)
+        self.assertEqual(name_en, "Tim Robbins")
+
+    def test_identical_localized_and_original_names_do_not_duplicate(self):
+        import fetch_tmdb
+        # Foreign-original credits where TMDB has no Russian translation yet —
+        # `name` and `original_name` are the same string.
+        person = {"name": "Rémi Bezançon", "original_name": "Rémi Bezançon"}
+        name_ru, name_en = fetch_tmdb._credit_names(person, "ru-RU")
+        self.assertEqual(name_ru, "Rémi Bezançon")
+        self.assertIsNone(name_en, "must not duplicate the same string into both columns")
+
+    def test_the_join_actually_works_end_to_end(self):
+        """The point of the whole fix: TMDB's ru-RU name must resolve to the
+        SAME person row Kinopoisk already created under name_ru."""
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = connect(Path(tmp) / "t.db")
+            kinopoisk_person = resolve_person(conn, name_ru="Тим Роббинс",
+                                              name_en="Tim Robbins")
+            name_ru, name_en = __import__("fetch_tmdb")._credit_names(
+                {"name": "Тим Роббинс", "original_name": "Tim Robbins"}, "ru-RU")
+            tmdb_person = resolve_person(conn, name_ru=name_ru, name_en=name_en,
+                                         ids={"tmdb": 12345})
+            self.assertEqual(kinopoisk_person, tmdb_person,
+                            "same person, same script — must be one row, not two")
+            conn.close()
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

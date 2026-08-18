@@ -28,13 +28,76 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from common import DEFAULT_DB, connect, now  # noqa: E402
+from common import DEFAULT_DB, connect, now, pushbr_url  # noqa: E402
 
 VERSION = 1
 
 
 def _rows(conn, query, *params):
     return [dict(row) for row in conn.execute(query, params)]
+
+
+# Casefold substring markers, matched against whatever a source called the
+# country (Kinopoisk and tvoe write Russian names, TMDB writes English —
+# checking both alphabets in one pass is cheaper than normalizing a country
+# list). CIS proper, not the Baltics: they left the CIS founding treaty.
+_RU_CIS_MARKERS = ("росс", "ссср", "soviet", "russia", "украин", "ukrain", "беларус", "belarus",
+                  "казах", "kazakh", "армен", "armenia", "азербайдж", "azerbaijan", "груз",
+                  "georgia", "киргиз", "kyrgyz", "молдов", "moldova", "таджик", "tajik",
+                  "туркмен", "turkmen", "узбек", "uzbek")
+
+# A title with this many IMDb votes is globally known enough that Kinopoisk's
+# own cast list is trusted regardless of origin country — big titles get
+# properly staffed there no matter where they were made.
+_BIG_PREMIERE_IMDB_VOTES = 100_000
+# Kinopoisk's own vote count below this fraction of the stronger of IMDb/TMDB
+# signals a title it barely covers — cast data there is as thin as the rating.
+_THIN_VOTE_RATIO = 0.1
+
+
+def is_ru_or_cis(conn, title_id) -> bool:
+    for row in conn.execute("SELECT name FROM country WHERE title_id=?", (title_id,)):
+        low = (row["name"] or "").lower()
+        if any(marker in low for marker in _RU_CIS_MARKERS):
+            return True
+    return False
+
+
+def kinopoisk_coverage_is_thin(conn, title_id) -> bool:
+    """Whether to distrust Kinopoisk-sourced cast identity for this title and
+    lead with TMDB instead. Two independent tells, either one is enough:
+    Kinopoisk barely rated it, or it's neither CIS-made nor a global hit —
+    Kinopoisk's foreign-catalogue crew lists thin out fast past the top titles.
+    """
+    votes = {row["source"]: row["votes"] for row in conn.execute(
+        "SELECT source, votes FROM rating WHERE title_id=? AND season IS NULL", (title_id,))}
+    kinopoisk_votes = votes.get("kinopoisk") or 0
+    other_max = max(votes.get("imdb") or 0, votes.get("tmdb") or 0)
+    thin_by_votes = other_max > 0 and kinopoisk_votes < _THIN_VOTE_RATIO * other_max
+
+    big_premiere = (votes.get("imdb") or 0) >= _BIG_PREMIERE_IMDB_VOTES
+    thin_by_geography = not big_premiere and not is_ru_or_cis(conn, title_id)
+
+    return thin_by_votes or thin_by_geography
+
+
+def photo_candidates(name_ru, photo, photo_source, *, prefer_tmdb) -> list[str]:
+    """Ordered, deduped fallback list — the client tries each until one loads,
+    same as the app's existing TMDB-then-pushbr behavior, except the server
+    decides the order instead of every client guessing it the same way.
+    """
+    kinopoisk_photo = photo if photo_source == "kinopoisk_proxy" else None
+    tmdb_photo = photo if photo_source == "tmdb" else None
+    pushbr = pushbr_url(name_ru)
+
+    order = ([tmdb_photo, kinopoisk_photo, pushbr] if prefer_tmdb
+            else [kinopoisk_photo, pushbr, tmdb_photo])
+    seen, candidates = set(), []
+    for url in order:
+        if url and url not in seen:
+            seen.add(url)
+            candidates.append(url)
+    return candidates
 
 
 # ru first (our primary audience), then en, then textless (lang is NULL — no
@@ -61,6 +124,59 @@ def cap_artwork(assets: list[dict]) -> list[dict]:
         if len(picked) == len(ARTWORK_LANG_ORDER):
             break
     return [picked[lang] for lang in ARTWORK_LANG_ORDER if lang in picked]
+
+
+def build_credits(conn, title_id) -> list[dict]:
+    """One row per person, not per contributing source.
+
+    kino.pub, TMDB and the Kinopoisk proxy each write their own `title_credit`
+    row for the same actor — that is right for provenance (each source's claim
+    is a fact worth keeping) and wrong for display, so this is where they merge
+    back into the one row per person a cast rail actually wants.
+    """
+    prefer_tmdb = kinopoisk_coverage_is_thin(conn, title_id)
+    rows = _rows(conn, "SELECT c.person_id, c.department, c.character, c.ord,"
+                       " c.episode_count, c.source, p.name_ru, p.name_en, p.photo,"
+                       " p.photo_source FROM title_credit c JOIN person p ON p.id=c.person_id"
+                       " WHERE c.title_id=?", title_id)
+
+    # NOTE: this merges rows by `person_id`, not by identity. A director billed
+    # by TMDB under their English name and by the Kinopoisk proxy under their
+    # Russian one can still land as two different `person` rows and show up as
+    # two credit entries here — the exact cross-alphabet gap the policy already
+    # names as defect #2. Fixing it needs the two-language TMDB id-join
+    # documented in providers/tmdb.md, not implemented yet; this function only
+    # dedupes what already shares one `person_id`.
+    merged: dict[int, dict] = {}
+    for row in rows:
+        pid = row["person_id"]
+        entry = merged.get(pid)
+        if entry is None:
+            entry = merged[pid] = {
+                "name_ru": row["name_ru"], "name_en": row["name_en"],
+                "departments": [], "character": None, "ord": None,
+                "episode_count": None, "sources": [],
+                "photos": photo_candidates(row["name_ru"], row["photo"], row["photo_source"],
+                                           prefer_tmdb=prefer_tmdb),
+            }
+        if row["source"] not in entry["sources"]:
+            entry["sources"].append(row["source"])
+        if row["department"] and row["department"] not in entry["departments"]:
+            entry["departments"].append(row["department"])
+        # Kinopoisk's character text is Russian; TMDB's stays English (its blind
+        # spot — see providers/tmdb.md) — prefer Kinopoisk's when both exist.
+        if row["character"] and (entry["character"] is None or row["source"] == "kinopoisk_proxy"):
+            entry["character"] = row["character"]
+        # TMDB's `order` is true billing order; the proxy's is list position —
+        # prefer TMDB's when both exist.
+        if row["ord"] is not None and (entry["ord"] is None or row["source"] == "tmdb"):
+            entry["ord"] = row["ord"]
+        if row["episode_count"] is not None:
+            entry["episode_count"] = row["episode_count"]
+
+    credits = list(merged.values())
+    credits.sort(key=lambda c: (c["ord"] is None, c["ord"] or 0))
+    return credits
 
 
 def build(conn, title_id: int) -> dict | None:
@@ -145,10 +261,11 @@ def build(conn, title_id: int) -> dict | None:
                                 " WHERE title_id=?", title_id),
         "genres": _rows(conn, "SELECT source, name FROM genre WHERE title_id=?", title_id),
         "countries": _rows(conn, "SELECT source, name FROM country WHERE title_id=?", title_id),
-        "credits": _rows(conn, "SELECT c.department, c.character, c.ord, c.episode_count,"
-                               " c.source, p.name_ru, p.name_en, p.photo"
-                               " FROM title_credit c JOIN person p ON p.id=c.person_id"
-                               " WHERE c.title_id=? ORDER BY c.ord IS NULL, c.ord", title_id),
+        "credits": build_credits(conn, title_id),
+        "facts": _rows(conn, "SELECT source, text, spoiler FROM fact WHERE title_id=?",
+                      title_id),
+        "reviews": _rows(conn, "SELECT source, kind, author, headline, body, date"
+                               " FROM review WHERE title_id=?", title_id),
         "seasons": seasons,
         "trailers": _rows(conn, "SELECT source, source_key, kind, name, lang, official, url"
                                 " FROM trailer WHERE title_id=?", title_id),

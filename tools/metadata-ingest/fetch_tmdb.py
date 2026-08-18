@@ -95,8 +95,27 @@ def get(path, params, throttle, *, timeout=20):
 
 # ------------------------------------------------------------------ derive
 
+def _credit_names(person, lang):
+    """(name_ru, name_en) from one TMDB credit row.
+
+    `name` is localized by the request's `language`; `original_name` is
+    whatever the credit's native spelling is — for most of our catalogue that
+    is English, and always a better `name_en` than a second request would be.
+    Getting this pairing wrong is not cosmetic: `resolve_person` joins on
+    `norm_ru`/`norm_en`, so a Russian name written into `name_en` never
+    collides with the identical Russian name Kinopoisk wrote into `name_ru` —
+    same person, same script, split into two rows because of the wrong column.
+    """
+    localized = person.get("name")
+    original = person.get("original_name")
+    if (lang or "").lower().startswith("ru"):
+        return localized, (original if original != localized else None)
+    return (original if original != localized else None), localized
+
+
 def derive(conn, title_id, tmdb_id, media_type, payload):
     is_tv = media_type == "tv"
+    lang = payload.get("_lang") or "en"
     link_external(conn, title_id, "tmdb", f"{media_type}/{tmdb_id}", "find:imdb")
 
     external = payload.get("external_ids") or {}
@@ -159,14 +178,17 @@ def derive(conn, title_id, tmdb_id, media_type, payload):
         character = roles[0].get("character") if roles else person.get("character")
         episodes = person.get("total_episode_count") or (
             roles[0].get("episode_count") if roles else None)
-        person_id = resolve_person(conn, name_en=person["name"], ids={"tmdb": person.get("id")})
+        name_ru, name_en = _credit_names(person, lang)
+        person_id = resolve_person(conn, name_ru=name_ru, name_en=name_en,
+                                   ids={"tmdb": person.get("id")})
         conn.execute(
             "INSERT OR IGNORE INTO person_external_id(person_id,namespace,value)"
             " VALUES (?,'tmdb',?)", (person_id, str(person.get("id"))),
         )
         if person.get("profile_path"):
-            conn.execute("UPDATE person SET photo=COALESCE(photo,?) WHERE id=?",
-                         (IMAGE_BASE + person["profile_path"], person_id))
+            conn.execute("UPDATE person SET photo=?, photo_source='tmdb'"
+                        " WHERE id=? AND photo IS NULL",
+                        (IMAGE_BASE + person["profile_path"], person_id))
         conn.execute(
             "INSERT OR IGNORE INTO title_credit"
             "(title_id,person_id,department,character,ord,episode_count,source)"
@@ -183,7 +205,9 @@ def derive(conn, title_id, tmdb_id, media_type, payload):
         job = (jobs[0].get("job") if jobs else person.get("job")) or person.get("department")
         if (job or "").lower() not in KEPT_CREW:
             continue
-        person_id = resolve_person(conn, name_en=person["name"], ids={"tmdb": person.get("id")})
+        name_ru, name_en = _credit_names(person, lang)
+        person_id = resolve_person(conn, name_ru=name_ru, name_en=name_en,
+                                   ids={"tmdb": person.get("id")})
         conn.execute(
             "INSERT OR IGNORE INTO title_credit"
             "(title_id,person_id,department,character,ord,episode_count,source)"

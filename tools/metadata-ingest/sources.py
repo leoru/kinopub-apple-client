@@ -410,3 +410,22 @@ def replay_omdb(conn):
         run.seen += 1
     run.finish()
     return run
+
+
+def replay_kinopoisk_proxy(conn):
+    """Same, for the keyless proxy. Its raw is keyed by the Kinopoisk id we
+    asked with, one row per resource (facts/reviews/staff/images)."""
+    import fetch_kinopoisk_proxy
+
+    run = Run(conn, "kinopoisk_proxy:replay")
+    for row in conn.execute(
+        "SELECT kind, source_key, body FROM raw_payload WHERE source='kinopoisk_proxy'"
+    ).fetchall():
+        title_id = find_by_external(conn, "kinopoisk", row["source_key"])
+        if not title_id:
+            continue
+        fetch_kinopoisk_proxy.derive(conn, title_id, row["kind"], json.loads(row["body"]))
+        run.raw += 1
+        run.seen += 1
+    run.finish()
+    return run

@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from common import DEFAULT_DB, connect, fetched_raw_count, wipe_derived  # noqa: E402
 from sources import (ingest_kinopoisk, ingest_kinopub, ingest_tvoe,  # noqa: E402
-                     replay_omdb, replay_tmdb)
+                     replay_kinopoisk_proxy, replay_omdb, replay_tmdb)
 
 SOURCES = {
     "kinopub": ingest_kinopub,     # first: seeds the spine
@@ -120,7 +120,8 @@ def main() -> int:
             run = SOURCES[name](conn)
             conn.commit()
             print(f"  raw={run.raw:,}  new titles={run.new:,}  matched={run.seen:,}")
-        for name, replay in (("tmdb", replay_tmdb), ("omdb", replay_omdb)):
+        for name, replay in (("tmdb", replay_tmdb), ("omdb", replay_omdb),
+                     ("kinopoisk_proxy", replay_kinopoisk_proxy)):
             run = replay(conn)
             conn.commit()
             print(f"→ {name}:replay  replayed={run.raw:,}")

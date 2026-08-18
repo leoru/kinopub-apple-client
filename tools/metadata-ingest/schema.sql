@@ -304,3 +304,19 @@ CREATE TABLE IF NOT EXISTS fact (
   spoiler  INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (title_id, source, text)
 );
+
+-- Page 1 only — the proxy is not asked for further pages (policy note in
+-- providers/kinopoisk-proxy.md). `total` on the title tracks what exists
+-- beyond what we hold, so the client can say "12 of 40" honestly.
+CREATE TABLE IF NOT EXISTS review (
+  title_id   INTEGER NOT NULL REFERENCES title(id),
+  source     TEXT NOT NULL,
+  source_key TEXT NOT NULL,
+  kind       TEXT,               -- POSITIVE | NEGATIVE | NEUTRAL
+  author     TEXT,
+  headline   TEXT,
+  body       TEXT,
+  date       TEXT,
+  PRIMARY KEY (source, source_key)
+);
+CREATE INDEX IF NOT EXISTS idx_review_title ON review(title_id);
