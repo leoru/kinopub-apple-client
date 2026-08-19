@@ -23,19 +23,22 @@ public struct LandscapeTimeBadge: View {
     self.kind = kind
   }
 
-  /// Builds a badge from total runtime + optional 0…1 progress.
+  /// Builds a badge from a card that already classified through `WatchProgress`.
+  ///
+  /// `progress` is `resumeFraction` (nil unless in-progress). Do not pass a raw
+  /// `time / duration` and expect this init to recover the credits window — 0.95
+  /// of a two-hour title is six minutes left; `WatchProgress` finishes at three.
   public init?(durationSeconds: Int?, progress: Double?, isWatched: Bool) {
     guard let durationSeconds, durationSeconds >= 60,
           let total = Self.compactLabel(seconds: durationSeconds) else {
       return nil
     }
-    let clamped = progress.map { min(max($0, 0), 1) }
-    if isWatched || (clamped ?? 0) >= 0.95 {
+    if isWatched {
       self.kind = .watched(total: total)
       return
     }
-    if let clamped, clamped > 0.02 {
-      let remaining = Int(Double(durationSeconds) * (1 - clamped))
+    if let fraction = progress {
+      let remaining = Int(Double(durationSeconds) * (1 - min(max(fraction, 0), 1)))
       if let label = Self.compactLabel(seconds: max(remaining, 60)) {
         self.kind = .inProgress(remaining: label)
         return

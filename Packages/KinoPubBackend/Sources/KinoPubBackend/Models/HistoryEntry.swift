@@ -87,7 +87,7 @@ public extension HistoryEntry {
   var progress: Double? {
     guard let time, let duration = media?.duration else { return nil }
     let watch = WatchProgress(position: time, duration: Double(duration))
-    return watch.isResumable ? watch.fraction : nil
+    return watch.resumeFraction
   }
 
   /// Shared classifier for this history row (live / trailer / unfinished / finished).

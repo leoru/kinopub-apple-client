@@ -22,10 +22,7 @@ public extension MediaCard {
     let isWatched = variant.isWatched
     // Resume bar only while unfinished — a watched version says so with the time chip,
     // the same rule the episode card follows.
-    let progress: Double? = {
-      guard !isWatched, variant.duration > 0, variant.video.watching.time > 0 else { return nil }
-      return min(Double(variant.video.watching.time) / Double(variant.duration), 1)
-    }()
+    let progress = isWatched ? nil : variant.watchProgress.resumeFraction
 
     self.init(id: variant.id,
               posterURL: still,

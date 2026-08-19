@@ -57,6 +57,6 @@ public extension MediaItem {
   private static func progress(watched: Int, time: Int, duration: Int) -> Double? {
     guard watched == 0 else { return nil }
     let watch = WatchProgress(position: Double(time), duration: Double(duration))
-    return watch.isResumable ? watch.fraction : nil
+    return watch.resumeFraction
   }
 }

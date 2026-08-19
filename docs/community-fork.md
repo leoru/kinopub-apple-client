@@ -43,7 +43,8 @@ target — we never push our UI there. Use it to read, cherry-pick isolated back
 - Their SwiftUI chrome, skeletons, filter sheets, Sport tab, Devices settings screens
 - Their “related” shelf — we use `GET /v1/items/similar`
 - Their removal of TMDB — we keep the worker
-- Their `MediaLibraryStore` as a `ContentStore` replacement
+- Their `MediaLibraryStore` as a **`ContentStore` replacement** (rows stay ours). The
+  per-item optimistic half — watchlist / watched / votes / download façade — **is** taken
 - Wiring `/v1/watching/togglewatchlist` to a checkmark control — **our** checkmark means Mark as Watched
 
 ### How metadata works without keys
@@ -103,6 +104,79 @@ List/remove are on `DeviceService` — Profile chrome is `// DESIGN:` stub only.
 - [x] `clear-for-season` history API
 - [x] `NetworkMonitor` (`KinoPubKit`) + app `environmentObject` (banner = DESIGN)
 - [x] Raise marktimes — local resume ~10s, server `marktime` ~30s (was gated at >60s)
+- [x] `MediaLibraryStore` — per-item optimistic library (watchlist / watched / votes /
+      download façade). Does **not** replace `ContentStore` or the bookmark stores.
+
+## Comparison snapshot (2026-08-18)
+
+A literal `git merge community/main` is still a bad idea: ~73 files changed in both,
+almost all Views / pbxproj / UI packages, plus Sport/EPG/AltStore we do not want.
+This branch ports the architecture that was actually missing, not their renderer.
+
+| Slice | Community | Ours after this branch |
+| --- | --- | --- |
+| Home/Library row cache | none (refetch on appear) | **`ContentStore` + disk snapshots** — keep |
+| Per-item optimistic library | `MediaLibraryStore` | **ported** as façade; bookmarks stay on our two stores |
+| Continue Watching | hide finished + `WatchProgress` | **already ahead** (`ContinueWatchingEpisode` / order / local merge) |
+| Lazy lists | `LazyHStack`/`LazyVStack` in SwiftUI shelves | **already** in `MediaPosterShelf` / `MediaRowsView` / grids; tvOS is UIKit collections |
+| Glass | iOS 26 `glassEffect` experiments | **ours** via `kinoGlass` — do not take theirs |
+| Genres/countries | disk cache | year TTL, **not** cleared on logout |
+| API / metadata | kpapp.link only, no TMDB | **ours is ahead** (`KinoPubMetadata`, identity map, workers) |
+| Sport / EPG / Comments / `FilterDataService` | present | **leave** (`FilterDataService` is just genres/countries — already on `VideoContentService` + year TTL) |
+
+## Continue Watching — why ours is ahead, and what would actually make it better
+
+Community Home builds the row from **`/v1/history` only** (first 10 unique titles), then **N detail fetches**, drops `WatchProgress.isFinished`, merges local progress, sorts by recency. That is the 2026-06 "hide finished + WatchProgress" commit.
+
+Ours already does that, then extra:
+
+| Rule | Where |
+| --- | --- |
+| Four sources, independently degrading | `/v1/watching/movies` + `/serials` + `?subscribed=1` + `/history` — all-fail keeps the cached row |
+| Watchlist with `new` badges is in the pool | `ContinueWatchingOrder.mergePool` |
+| Buckets, not a flat recency list | recently started (7d) → new episodes on watchlist → rest of watchlist → unfinished |
+| Last history row is **not** the next episode | `ContinueWatchingEpisode` + `MediaItem.primaryEpisode` (the same answer the Play button uses) |
+| Finished series dropped | `playbackAction == .playAgain` → no card |
+| Progress bar only while mid-episode | a fresh next episode must not inherit the previous runtime |
+
+What would still make **our** row better (none of this is in their services):
+
+1. **~~Invalidate `.watch` when playback ends~~** — rejected: that would refetch every Home
+   watch row. Local resume overlays the Continue Watching *section* at paint time
+   (`ContinueWatchingLocalOverlay`); the player writes a finished tombstone instead of
+   clearing. Home TTL stays the server snapshot.
+2. **Episode rail leading card = resume / next-unwatched** — already the Home/Play answer; the seasons rail still leads chronological. ROADMAP §1.
+3. **~~Remember series details with the row~~** — done: a card that already carries S/E is
+   trusted on refresh; details are fetched only for *new* series ids (still capped at 12).
+4. **Raise or drop `seriesDetailLimit` (12)** — past that cap, titles with no cached S/E still fall back to history counters and can still offer the wrong episode.
+
+Do not port their `WatchingSerial` — it is the same JSON as our `WatchingItem`. Do not port `PlayerContinueWatchingView` (their SwiftUI chrome).
+
+## Service-by-service leftover (2026-08-18, method level)
+
+Their `Services/` folder looks bigger. Most of it is already here under another name. What is actually left:
+
+| Their type | Verdict | Why |
+| --- | --- | --- |
+| `FilterDataService` | **don't port** | Two methods: genres + countries. We have them on `VideoContentService` with disk TTL. |
+| `EPGService` / `EPGProgram` | **leave** | Sport UI. |
+| `SectionVisibilityStore` | **already ours** | Settings › Sections. |
+| `WatchingSerial` | **don't port** | Duplicate of `WatchingItem`. |
+| `GetItemFoldersRequest` / `foldersContaining` | **don't port** | Detail must not fetch this; membership is on the item + `BookmarkMembershipStore`. |
+| `CommentsRequest` | **leave** | Comments UI. |
+| `filter(MediaItemsFilter)` / `FilterItemsRequest` extra keys | **maybe later** | Age / language / translation / quality / conditions are **ignored by `/v1/items`** (their own comment). Client-side facets we already have on `LibraryFilter`. `cast`/`director`/`period`/`genre` we already send via `ItemsRequest`. |
+| `search(..., field:)` | **don't port** | They themselves say `?cast=`/`director=` on `/v1/items` is the reliable path — that's `LibraryFilter.person`. |
+| `fetch(..., forceRefresh:)` + first-page **memory TTL 120s** on catalog | **real leftover** | They cache Home/catalog page 1 in `ResponseCache`. We cache **rows** in `ContentStore` instead. ROADMAP already wants paginated Movies/Series/Search **into `ContentStore`**, not a second HTTP cache on `ItemsRequest`. |
+| `itemsByPerson` | **already ours** | `fetchItems(filter: LibraryFilter(person:))`. |
+| `fetchComments` | **leave** | |
+| `toggleBookmark` on `UserActionsService` | **already ours** | On `VideoContentService`. |
+| `GetWatchingDataRequest` | **already ours** | `fetchWatchMark`. |
+| Device `registerDeviceName` + `syncCapabilities` | **already ours** | Combined as `syncDeviceProfile(activated:)`. |
+| Collections | **already ours** | Plus `fetchCollections(forItem:)` which they don't have. |
+| `MediaLinksResolver` / `nolinks` | **ours only** | They always fetch details with links. |
+
+**Nothing in their service layer is a hidden fifth cache we missed**, besides the catalog page-1 HTTP TTL — and our `ContentStore` is the place that job belongs.
+
 
 ## System still to port (no UI inventing)
 
@@ -117,7 +191,10 @@ Prefer these next. Land Backend/`*Service` + `// DESIGN:` comments where chrome 
 | MEDIUM | Raise marktimes interval | **done** | Local `LocalWatchProgressStore` every ~10s; server every ~30s; end-of-play still final mark. |
 | LOW | Device settings UI | service ready | Settings list/remove = DESIGN. |
 | LOW | Collections Home rows | service ready | Row chrome = DESIGN. |
-| SKIP | EPG / Sport UI, Comments, `FilterDataService`, `SectionVisibilityStore`, `WidthThresholdReader`, `WatchingSerial`, wholesale `MediaLibraryStore` | — | Leave alone. |
+| LOW | Card download status from `MediaLibraryStore` | façade ready | Badge overlay = DESIGN; do not invent a second card. |
+| OURS | Local CW overlay, no Home TTL reset | **done** | Paint-time overlay from `LocalWatchProgressStore`; `markFinished` keeps a tombstone. Cached S/E skips the 12-details refresh. Not a community port. |
+| SKIP | EPG / Sport UI, Comments, `FilterDataService`, `WatchingSerial`, `MediaLibraryStore` as a ContentStore replacement, `GetItemFolders` | — | Duplicate or product-rejected. |
+| SKIP | EPG / Sport UI, Comments, `FilterDataService`, `SectionVisibilityStore`, `WidthThresholdReader`, `WatchingSerial`, `MediaLibraryStore` as a ContentStore replacement | — | Leave alone. |
 
 ## DESIGN stubs (do not ship chrome from community)
 
@@ -132,5 +209,6 @@ Agents: add a `// DESIGN:` comment at the call site; **do not** invent buttons.
 - [ ] Sport / channels + optional XMLTV EPG
 - [ ] Downloads list polish (HLS interrupted rows, storage footer)
 - [ ] Offline / reachability banner (`NetworkMonitor` wired; chrome TBD)
+- [ ] Card / detail download status from `MediaLibraryStore.downloadStatus` (façade ready)
 
 Detail vote / reviews / actor CDN fallback already landed earlier — leave until a design pass says otherwise; no further UI invention from the community fork.

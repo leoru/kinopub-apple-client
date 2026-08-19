@@ -9,6 +9,13 @@
 import Foundation
 import KinoPubBackend
 
+extension Notification.Name {
+  /// Posted after a local resume point is written or cleared. Home paints from this
+  /// without invalidating `ContentStore` — the row's TTL is the server snapshot, not
+  /// the playhead.
+  static let localWatchProgressDidChange = Notification.Name("KinoPub.localWatchProgressDidChange")
+}
+
 /// A locally persisted resume point for a media item (or a specific episode of a series).
 public struct LocalWatchEntry: Codable, Identifiable {
   public let item: MediaItem
@@ -22,7 +29,7 @@ public struct LocalWatchEntry: Codable, Identifiable {
 
   /// Watch classification for this resume point — the single source of truth (fraction / finished).
   public var watch: WatchProgress { WatchProgress(position: position, duration: duration) }
-  public var progress: Double? { watch.fraction }
+  public var progress: Double? { watch.resumeFraction }
   public var finished: Bool { watch.isFinished }
 }
 
@@ -58,17 +65,44 @@ final class LocalWatchProgressStore {
 
   /// Record a resume point. No-op for live/trailers (non-finite duration) or before the
   /// minimum threshold, or when we have no snapshot to render a card with.
+  ///
+  /// `position < duration` keeps the exact end-of-file tick for `recordFinished`.
+  /// A position already inside the credits window is still written;
+  /// `WatchProgress` classifies it as finished on read, so Continue Watching
+  /// does not grow a resume bar from it.
   func recordProgress(mediaId: Int, position: Double, duration: Double, season: Int?, episode: Int?) {
-    guard position >= Self.minimumSeconds, duration.isFinite, duration > 0, position < duration else { return }
-    lock.lock(); defer { lock.unlock() }
-    guard let snapshot = snapshots[mediaId] ?? entries[mediaId]?.item else { return }
-    entries[mediaId] = LocalWatchEntry(item: snapshot,
-                                       position: position,
-                                       duration: duration,
-                                       season: season,
-                                       episode: episode,
-                                       updatedAt: Date().timeIntervalSince1970)
-    persist()
+    guard duration.isFinite, duration > 0, position < duration else { return }
+    let watch = WatchProgress(position: position, duration: duration)
+    guard watch.hasStarted else { return }
+    let changed = mutate { snapshots, entries in
+      guard let snapshot = snapshots[mediaId] ?? entries[mediaId]?.item else { return false }
+      entries[mediaId] = LocalWatchEntry(item: snapshot,
+                                         position: position,
+                                         duration: duration,
+                                         season: season,
+                                         episode: episode,
+                                         updatedAt: Date().timeIntervalSince1970)
+      return true
+    }
+    if changed { notify() }
+  }
+
+  /// End of playback: keep a finished tombstone so Continue Watching can hide a film
+  /// or step a series to the next episode without waiting out Home's TTL, and without
+  /// `ContentStore.invalidate(.watch)`.
+  func recordFinished(mediaId: Int, duration: Double, season: Int?, episode: Int?) {
+    guard duration.isFinite, duration > 0 else { return }
+    let changed = mutate { snapshots, entries in
+      guard let snapshot = snapshots[mediaId] ?? entries[mediaId]?.item else { return false }
+      entries[mediaId] = LocalWatchEntry(item: snapshot,
+                                         position: duration,
+                                         duration: duration,
+                                         season: season,
+                                         episode: episode,
+                                         updatedAt: Date().timeIntervalSince1970)
+      return true
+    }
+    if changed { notify() }
   }
 
   /// The resume entry for an item, if any (and past the minimum threshold).
@@ -77,25 +111,29 @@ final class LocalWatchProgressStore {
   /// A series episode requires an exact `(season, episode)` match.
   func entry(forId id: Int, season: Int?, episode: Int?) -> LocalWatchEntry? {
     lock.lock(); defer { lock.unlock() }
-    guard let entry = entries[id], entry.position >= Self.minimumSeconds else { return nil }
+    guard let entry = entries[id], entry.watch.isResumable else { return nil }
     if season == nil {
       return entry.season == nil ? entry : nil
     }
     return (entry.season == season && entry.episode == episode) ? entry : nil
   }
 
-  /// Most-recently-watched first.
+  /// Most-recently-watched first. Includes finished tombstones — Home's overlay needs
+  /// them to hide a film / advance a series before the server row refreshes.
   func allEntries() -> [LocalWatchEntry] {
     lock.lock(); defer { lock.unlock() }
     return entries.values
-      .filter { $0.position >= Self.minimumSeconds }
+      .filter { $0.watch.state != .unwatched }
       .sorted { $0.updatedAt > $1.updatedAt }
   }
 
   func clear(id: Int) {
-    lock.lock(); defer { lock.unlock() }
-    entries[id] = nil
-    persist()
+    let changed = mutate { _, entries in
+      guard entries[id] != nil else { return false }
+      entries[id] = nil
+      return true
+    }
+    if changed { notify() }
   }
 
   // MARK: - Persistence
@@ -106,9 +144,22 @@ final class LocalWatchProgressStore {
     entries = Dictionary(decoded.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
   }
 
+  /// Runs `body` with the lock held. `body` returns whether the file should be rewritten.
+  private func mutate(_ body: (inout [Int: MediaItem], inout [Int: LocalWatchEntry]) -> Bool) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    let changed = body(&snapshots, &entries)
+    if changed { persist() }
+    return changed
+  }
+
   /// Must be called with `lock` held.
   private func persist() {
     guard let data = try? JSONEncoder().encode(Array(entries.values)) else { return }
     try? data.write(to: fileURL, options: .atomic)
+  }
+
+  private func notify() {
+    NotificationCenter.default.post(name: .localWatchProgressDidChange, object: nil)
   }
 }

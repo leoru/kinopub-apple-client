@@ -122,6 +122,7 @@ final class MediaCardMenuCoordinator: ObservableObject {
         // on the item id and an episode carries it only from here.
         item.seasons?.forEach { $0.mediaId = item.id }
         membership.seed(from: item)
+        AppContext.shared.localProgressStore.cacheItem(item)
         push(.player(playable(from: item, preferring: card)))
       } catch {
         errorHandler?.setError(error)

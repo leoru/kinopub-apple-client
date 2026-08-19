@@ -528,13 +528,19 @@ class PlayerManager: ObservableObject {
   }
 
   /// Reaching the end marks the title watched. kino.pub derives watched status from the position
-  /// reported via `marktime`, so we send one final marktime at the full duration and clear the
-  /// local resume point so Continue Watching drops it immediately.
+  /// reported via `marktime`, so we send one final marktime at the full duration. Locally we
+  /// keep a finished tombstone (not a clear) so Home can hide a film / step a series without
+  /// invalidating the rest of the Home cache.
   private func markFinished() {
     guard watchMode == .media, canReportWatching else { return }
     let duration = player.currentItem?.duration.seconds ?? 0
     guard duration.isFinite, duration > 0 else { return }
-    AppContext.shared.localProgressStore.clear(id: playItem.metadata.id)
+    AppContext.shared.localProgressStore.recordFinished(
+      mediaId: playItem.metadata.id,
+      duration: duration,
+      season: playItem.metadata.season,
+      episode: playItem.metadata.video
+    )
     Task.detached(priority: .utility) { [weak self] in
       guard let self else { return }
       do {

@@ -138,6 +138,15 @@ final class WatchProgressTests: XCTestCase {
     XCTAssertFalse(WatchProgress(position: 3599, duration: 3600).isResumable)     // finished
     XCTAssertFalse(WatchProgress(position: 100, duration: 0).isResumable)         // live
   }
+
+  func testResumeFractionIsNilOutsideInProgress() {
+    XCTAssertNil(WatchProgress(position: 5, duration: 3600).resumeFraction)
+    XCTAssertEqual(WatchProgress(position: 1800, duration: 3600).resumeFraction, 0.5)
+    XCTAssertNil(WatchProgress(position: 3599, duration: 3600).resumeFraction)
+    // 10s into an hour is started, but far below a 0.02 UI fudge — the bar still paints.
+    let justStarted = WatchProgress(position: WatchProgress.startedSeconds, duration: 3600)
+    XCTAssertEqual(justStarted.resumeFraction ?? -1, 10.0 / 3600.0, accuracy: 1e-9)
+  }
 }
 
 /// The id every `/v1/watching*` call must carry is the **item's**, never the episode's.

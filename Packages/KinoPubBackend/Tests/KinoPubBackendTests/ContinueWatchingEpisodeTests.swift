@@ -126,4 +126,10 @@ final class ContinueWatchingEpisodeTests: XCTestCase {
     XCTAssertNil(next.episode)
     XCTAssertFalse(next.isResuming)
   }
+
+  func testOverlayLabelFormatsSeasonAndEpisode() {
+    XCTAssertEqual(ContinueWatchingEpisode.overlayLabel(season: 2, episode: 5), "S2, E5")
+    XCTAssertEqual(ContinueWatchingEpisode.overlayLabel(season: nil, episode: 3), "E3")
+    XCTAssertNil(ContinueWatchingEpisode.overlayLabel(season: 1, episode: nil))
+  }
 }

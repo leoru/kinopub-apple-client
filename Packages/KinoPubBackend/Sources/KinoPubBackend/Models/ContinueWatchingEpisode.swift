@@ -33,6 +33,14 @@ public struct ContinueWatchingEpisode: Equatable, Sendable {
 
   public var hasEpisode: Bool { episode != nil }
 
+  /// Overlay on a landscape Continue Watching card — the episode the card offers,
+  /// not whichever history row happened to be newest.
+  public static func overlayLabel(season: Int?, episode: Int?) -> String? {
+    guard let episode else { return nil }
+    guard let season, season > 0 else { return "E\(episode)" }
+    return "S\(season), E\(episode)"
+  }
+
   /// - Parameters:
   ///   - local: the play head this device remembers, and whether it ran to the credits.
   ///   - history: the newest `/v1/history` row for this title, same question.

@@ -47,6 +47,9 @@ final class PlaybackSession: ObservableObject {
     }
 
     manager?.tearDownForReplacement()
+    if let media = item as? MediaItem {
+      AppContext.shared.localProgressStore.cacheItem(media)
+    }
     let created = PlayerManager(
       playItem: item,
       watchMode: mode,

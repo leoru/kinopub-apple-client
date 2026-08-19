@@ -5,6 +5,30 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Community architecture, without their UI (2026-08-18)
+
+- **`MediaLibraryStore`** — the per-item optimistic library from
+  dungeon-master-xx (watchlist, watched overrides, votes, download façade,
+  local-progress query). Wired through `AppContext` and the detail page.
+  Does **not** replace `ContentStore` (Home/Library rows) or the bookmark
+  stores. Votes migrate out of the old `UserDefaults` key once.
+- **`WatchProgress.resumeFraction` is what a card paints.** The landscape time
+  chip, TVUIKit rail status, poster progress bar, episode/variant mapping, and
+  history/Play progress all stopped re-thresholding `time / duration` at 0.95 /
+  0.02. Those fudges were a second credits window (six minutes left on a
+  two-hour title vs the classifier's three). Outro markers will feed
+  `WatchProgress`, not the views.
+- **Continue Watching trusts local progress.** The player still does not
+  invalidate Home TTL (a full `.watch` refetch was the wrong lever). Instead
+  `assembleRows` overlays `LocalWatchProgressStore` onto the cached row: the
+  bar moves on the next tick, a finished film disappears, a finished episode
+  steps to the next S/E. Offered S/E stays on the card so a TTL refresh does
+  not refetch up to 12 series details. `rows-v2.json` is not rewritten from
+  the playhead.
+- A literal merge of `community/main` is still rejected: ~73 overlapping
+  files, almost all Views. Continue Watching, lazy SwiftUI stacks, and
+  `WatchProgress` were already on our side; glass stays `kinoGlass`.
+
 ### Flags, a Video rename, full quality list, CC moved to Languages (2026-08-17)
 
 - **`FlagGlyph`** (`KinoPubUI`): a round flag keyed by ISO 639-1 language code or

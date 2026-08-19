@@ -176,7 +176,9 @@ public extension TVUIKitMediaItem {
   static func status(for card: MediaCard) -> TVUIKitMediaItemStatus {
     if card.isWatched { return .watched }
     guard card.video != nil || !card.isSeries else { return .ready }
-    if let progress = card.progress, progress > 0.02, progress < 0.95 {
+    // `card.progress` is already `WatchProgress.resumeFraction`. Re-thresholding
+    // 0.02 / 0.95 here invented a second credits window.
+    if let progress = card.progress {
       return .inProgress(progress)
     }
     return .ready

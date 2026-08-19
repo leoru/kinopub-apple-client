@@ -42,6 +42,7 @@ typealias AppContextProtocol = AuthorizationServiceProvider
 & CollectionsServiceProvider
 & DeviceServiceProvider
 & LocalWatchProgressProvider
+& MediaLibraryProvider
 
 protocol MetadataServiceProvider {
   var metadataService: MetadataService { get }
@@ -79,6 +80,7 @@ struct AppContext: AppContextProtocol {
   var collectionsService: CollectionsService
   var deviceService: DeviceService
   var localProgressStore: LocalWatchProgressStore
+  var libraryState: MediaLibraryStore
 
   static let shared: AppContext = {
     let configuration = BundleConfiguration()
@@ -149,6 +151,13 @@ struct AppContext: AppContextProtocol {
 
     let contentStore = MainActor.assumeIsolated { ContentStore() }
     let localProgressStore = LocalWatchProgressStore()
+    let libraryState = MediaLibraryStore(
+      downloadManager: downloadManager,
+      hlsDownloadManager: hlsDownloadManager,
+      hlsStore: hlsDownloadsStore,
+      downloadedFilesDatabase: downloadedFilesDatabase,
+      progressStore: localProgressStore
+    )
 
     return AppContext(
       configuration: configuration,
@@ -170,7 +179,8 @@ struct AppContext: AppContextProtocol {
       contentStore: contentStore,
       collectionsService: CollectionsServiceImpl(apiClient: apiClient),
       deviceService: DeviceServiceImpl(apiClient: apiClient),
-      localProgressStore: localProgressStore
+      localProgressStore: localProgressStore,
+      libraryState: libraryState
     )
   }()
 

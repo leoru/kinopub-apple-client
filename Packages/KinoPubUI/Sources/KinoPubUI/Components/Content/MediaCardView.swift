@@ -47,7 +47,8 @@ public struct MediaCard: Identifiable, Hashable, Codable {
 
   /// The combined score shown on the poster, or nil when neither source rated it.
   public var rating: Rating? { scores.aggregate }
-  /// 0…1 for partially watched serials, nil when there is nothing to show.
+  /// `WatchProgress.resumeFraction` — 0…1 while this video is in progress, nil
+  /// when unwatched or already finished. Do not re-threshold it in the view.
   public let progress: Double?
   public let badge: String?
 
@@ -217,6 +218,50 @@ public struct MediaCard: Identifiable, Hashable, Codable {
     self.primaryAction = primaryAction
     self.opensCollection = opensCollection
     self.captionStats = captionStats
+  }
+
+  /// Continue Watching paint-time overlay: progress / offered S/E change without
+  /// rebuilding the rest of the card (artwork, badges, identity).
+  public func withContinueWatching(progress: Double?,
+                                   season: Int?,
+                                   video: Int?,
+                                   overlayLabel: String?,
+                                   durationSeconds: Int? = nil) -> MediaCard {
+    MediaCard(id: id,
+              posterURL: posterURL,
+              title: title,
+              subtitle: subtitle,
+              watchedAt: watchedAt,
+              scores: scores,
+              progress: progress,
+              badge: badge,
+              backdropURL: backdropURL,
+              metaLine: overlayLabel ?? metaLine,
+              overview: overview,
+              landscapeImageURL: landscapeImageURL,
+              overlayLabel: overlayLabel,
+              itemID: itemID,
+              video: video,
+              season: season,
+              mediaID: mediaID,
+              isWatched: isWatched,
+              isSeries: isSeries,
+              isInHistory: isInHistory,
+              isInWatchlist: isInWatchlist,
+              is4K: is4K,
+              isHDR: isHDR,
+              isHD: isHD,
+              is3D: is3D,
+              hasClosedCaptions: hasClosedCaptions,
+              year: year,
+              durationSeconds: durationSeconds ?? self.durationSeconds,
+              genreLine: genreLine,
+              countryLine: countryLine,
+              isBookmarked: isBookmarked,
+              bookmarkFolderIDs: bookmarkFolderIDs,
+              primaryAction: primaryAction,
+              opensCollection: opensCollection,
+              captionStats: captionStats)
   }
 
   public init(from decoder: Decoder) throws {

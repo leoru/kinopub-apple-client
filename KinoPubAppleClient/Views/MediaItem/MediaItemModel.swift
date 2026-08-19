@@ -21,32 +21,6 @@ enum MediaItemUserVote: Equatable {
   case down
 }
 
-/// Remembers a cast vote across launches so the thumbs stay highlighted on revisit.
-private enum UserVoteMemory {
-  private static let key = "mediaItemUserVotes"
-
-  static func vote(for id: Int) -> MediaItemUserVote {
-    guard let raw = UserDefaults.standard.dictionary(forKey: key)?["\(id)"] as? String else {
-      return .none
-    }
-    switch raw {
-    case "up": return .up
-    case "down": return .down
-    default: return .none
-    }
-  }
-
-  static func set(id: Int, vote: MediaItemUserVote) {
-    var map = UserDefaults.standard.dictionary(forKey: key) ?? [:]
-    switch vote {
-    case .none: map.removeValue(forKey: "\(id)")
-    case .up: map["\(id)"] = "up"
-    case .down: map["\(id)"] = "down"
-    }
-    UserDefaults.standard.set(map, forKey: key)
-  }
-}
-
 @MainActor
 class MediaItemModel: ObservableObject {
 
@@ -128,6 +102,7 @@ class MediaItemModel: ObservableObject {
   private var actionsService: UserActionsService
   private var contentStore: ContentStore
   private var collectionsService: CollectionsService
+  private var libraryState: MediaLibraryStore
   private var identity: MediaIdentity?
 
   public var isBookmarked: Bool { !folderIDsContainingItem.isEmpty }
@@ -258,7 +233,8 @@ class MediaItemModel: ObservableObject {
        actionsService: UserActionsService = AppContext.shared.actionsService,
        metadataService: MetadataService = AppContext.shared.metadataService,
        contentStore: ContentStore = AppContext.shared.contentStore,
-       collectionsService: CollectionsService = AppContext.shared.collectionsService) {
+       collectionsService: CollectionsService = AppContext.shared.collectionsService,
+       libraryState: MediaLibraryStore = AppContext.shared.libraryState) {
     self.itemsService = itemsService
     self.mediaItemId = mediaItemId
     self.linkProvider = linkProvider
@@ -268,13 +244,26 @@ class MediaItemModel: ObservableObject {
     self.metadataService = metadataService
     self.contentStore = contentStore
     self.collectionsService = collectionsService
+    self.libraryState = libraryState
     // Only the card can tell us this is episodic before the details call answers, and
     // only for episodic items is `nolinks=1` worth it (a film's link block is small, and
     // its `Video` is a struct we would have to write back through the item).
     self.excludeLinksOnFetch = FeatureFlags.seriesDetailsWithoutLinks && (knownItem?.isEpisodicType ?? false)
+    switch libraryState.userVote(itemId: mediaItemId) {
+    case true: myVote = .up
+    case false: myVote = .down
+    case nil: break
+    }
     if let knownItem {
       self.mediaItem = knownItem
       AppContext.shared.localProgressStore.cacheItem(knownItem)
+      let serverWatchlist = knownItem.inWatchlist ?? knownItem.subscribed ?? false
+      libraryState.seedWatchlistIfAbsent(itemId: knownItem.id, value: serverWatchlist)
+      isInWatchlist = libraryState.inWatchlist(itemId: knownItem.id) ?? serverWatchlist
+      isWatched = libraryState.movieWatched(
+        itemId: knownItem.id,
+        serverWatched: knownItem.playbackAction == .playAgain
+      )
     }
   }
 
@@ -308,12 +297,25 @@ class MediaItemModel: ObservableObject {
         let mediaId = mediaItem.id
         mediaItem.seasons = mediaItem.seasons?.map({ $0.mediaId = mediaId; return $0 })
         AppContext.shared.localProgressStore.cacheItem(mediaItem)
-        isWatched = mediaItem.playbackAction == .playAgain
+        isWatched = libraryState.movieWatched(
+          itemId: mediaItem.id,
+          serverWatched: mediaItem.playbackAction == .playAgain
+        )
         applyBookmarkState()
         // Without this the hero's follow control opened as "not following" on every
         // visit, whatever the account actually had, and the first tap unfollowed.
-        isInWatchlist = mediaItem.inWatchlist ?? mediaItem.subscribed ?? false
+        let serverWatchlist = mediaItem.inWatchlist ?? mediaItem.subscribed ?? false
+        libraryState.seedWatchlistIfAbsent(itemId: mediaItem.id, value: serverWatchlist)
+        isInWatchlist = libraryState.inWatchlist(itemId: mediaItem.id) ?? serverWatchlist
         seedVoteCounts()
+        let episodeFlags = (mediaItem.seasons ?? []).flatMap(\.episodes).map {
+          (id: $0.id, watched: $0.watched > 0)
+        }
+        libraryState.reconcileWatched(
+          movieItemId: mediaItem.id,
+          serverMovieWatched: mediaItem.playbackAction == .playAgain,
+          episodes: episodeFlags
+        )
         // What the payload actually carried, so a "nothing plays" report can be told
         // apart from a link-resolution one without guessing.
         Logger.app.info(
@@ -690,6 +692,7 @@ class MediaItemModel: ObservableObject {
     }
     let previous = isWatched
     isWatched.toggle()
+    libraryState.setMovieWatched(itemId: mediaItemId, value: isWatched)
     presentWatchedHud(nowWatched: isWatched)
     Task {
       do {
@@ -697,6 +700,7 @@ class MediaItemModel: ObservableObject {
         contentStore.invalidate(family: .watch)
       } catch {
         isWatched = previous
+        libraryState.setMovieWatched(itemId: mediaItemId, value: previous)
         errorHandler.setError(error)
       }
     }
@@ -709,6 +713,7 @@ class MediaItemModel: ObservableObject {
     // Force the published item to refresh so the rail redraws checkmarks/progress.
     mediaItem = mediaItem
     isWatched = mediaItem.playbackAction == .playAgain
+    libraryState.setEpisodeWatched(episodeId: episode.id, value: episode.watched > 0)
     presentWatchedHud(nowWatched: episode.watched > 0)
     Task {
       do {
@@ -719,12 +724,14 @@ class MediaItemModel: ObservableObject {
           episode.watched = watched
           mediaItem = mediaItem
           isWatched = mediaItem.playbackAction == .playAgain
+          libraryState.setEpisodeWatched(episodeId: episode.id, value: watched > 0)
         }
         contentStore.invalidate(family: .watch)
       } catch {
         episode.watched = previous
         mediaItem = mediaItem
         isWatched = mediaItem.playbackAction == .playAgain
+        libraryState.setEpisodeWatched(episodeId: episode.id, value: previous > 0)
         errorHandler.setError(error)
       }
     }
@@ -824,6 +831,7 @@ class MediaItemModel: ObservableObject {
   func toggleWatchlist() {
     let previous = isInWatchlist
     isInWatchlist.toggle()
+    libraryState.setWatchlist(itemId: mediaItemId, value: isInWatchlist)
     if isInWatchlist {
       presentHud(systemImage: "plus", title: "Added to Watchlist")
     } else {
@@ -835,6 +843,7 @@ class MediaItemModel: ObservableObject {
         contentStore.invalidate(family: .watch)
       } catch {
         isInWatchlist = previous
+        libraryState.setWatchlist(itemId: mediaItemId, value: previous)
         errorHandler.setError(error)
       }
     }
@@ -876,7 +885,11 @@ class MediaItemModel: ObservableObject {
   /// kino.pub exposes aggregate as `rating` + `rating_votes` (+ percentage); derive like/dislike
   /// for the initial display. A real vote refreshes them from `VoteData`.
   private func seedVoteCounts() {
-    myVote = UserVoteMemory.vote(for: mediaItemId)
+    switch libraryState.userVote(itemId: mediaItemId) {
+    case true: myVote = .up
+    case false: myVote = .down
+    case nil: myVote = .none
+    }
     if let votes = mediaItem.communityVotes {
       likeCount = votes.likes
       dislikeCount = votes.dislikes
@@ -893,7 +906,7 @@ class MediaItemModel: ObservableObject {
     if myVote != .none { return }
 
     myVote = target
-    UserVoteMemory.set(id: mediaItemId, vote: target)
+    libraryState.setUserVote(itemId: mediaItemId, up: up)
     if up { likeCount += 1 } else { dislikeCount += 1 }
     Task {
       do {
@@ -907,7 +920,7 @@ class MediaItemModel: ObservableObject {
         }
       } catch {
         myVote = .none
-        UserVoteMemory.set(id: mediaItemId, vote: .none)
+        libraryState.clearUserVote(itemId: mediaItemId)
         if up { likeCount = max(0, likeCount - 1) } else { dislikeCount = max(0, dislikeCount - 1) }
         errorHandler.setError(error)
       }

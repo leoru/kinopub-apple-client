@@ -48,6 +48,9 @@ struct MainView: View {
           cardMenu.bind(errorHandler: errorHandler)
           await catalog.fetch()
         }
+        .onAppear {
+          catalog.repaintFromLocalProgress()
+        }
         .task {
           await cardMenu.refreshFolders()
         }

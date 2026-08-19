@@ -84,4 +84,17 @@ public struct WatchProgress: Equatable, Hashable {
     if case .inProgress = state { return true }
     return false
   }
+
+  /// Fraction to paint on a resume bar. Nil when there is nothing to resume —
+  /// unwatched, live, or already in the credits window.
+  ///
+  /// Cards store this, not a raw `time / duration`. Re-thresholding a stored
+  /// fraction (0.95, 0.02) cannot recover `endTolerance` and will disagree with
+  /// Continue Watching the moment skip/outro markers feed this type.
+  public var resumeFraction: Double? {
+    switch state {
+    case .inProgress(let fraction): return fraction
+    case .unwatched, .finished: return nil
+    }
+  }
 }

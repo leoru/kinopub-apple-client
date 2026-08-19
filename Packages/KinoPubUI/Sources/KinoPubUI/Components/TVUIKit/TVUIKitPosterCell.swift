@@ -150,7 +150,7 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
   }
 
   private func configureProgress(_ card: MediaCard) {
-    guard let progress = card.progress, progress > 0, progress < 1 else {
+    guard let progress = card.progress else {
       progressTrack.isHidden = true
       bottomInfoBlur?.isHidden = true
       return
@@ -166,8 +166,7 @@ public final class TVUIKitPosterCell: UICollectionViewCell {
   }
 
   private func configureWatched(_ card: MediaCard) {
-    let inProgress = (card.progress ?? 0) > 0 && (card.progress ?? 0) < 1
-    watchedGlyph.isHidden = !(card.isWatched && !inProgress)
+    watchedGlyph.isHidden = !(card.isWatched && card.progress == nil)
   }
 
   private func ensureBottomInfoBlur() -> TVUIKitBottomInfoBlurView {

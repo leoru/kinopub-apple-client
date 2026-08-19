@@ -93,6 +93,7 @@ class HomeCatalog: ObservableObject {
   private var actionsService: UserActionsService
   private var collectionsService: CollectionsService
   private var store: ContentStore
+  private var localProgressStore: LocalWatchProgressStore
   private var bag = Set<AnyCancellable>()
 
   init(itemsService: VideoContentService,
@@ -100,13 +101,21 @@ class HomeCatalog: ObservableObject {
        errorHandler: ErrorHandler,
        actionsService: UserActionsService = AppContext.shared.actionsService,
        collectionsService: CollectionsService = AppContext.shared.collectionsService,
-       store: ContentStore = AppContext.shared.contentStore) {
+       store: ContentStore = AppContext.shared.contentStore,
+       localProgressStore: LocalWatchProgressStore = AppContext.shared.localProgressStore) {
     self.itemsService = itemsService
     self.authState = authState
     self.errorHandler = errorHandler
     self.actionsService = actionsService
     self.collectionsService = collectionsService
     self.store = store
+    self.localProgressStore = localProgressStore
+    NotificationCenter.default.publisher(for: .localWatchProgressDidChange)
+      .receive(on: RunLoop.main)
+      .sink { [weak self] _ in
+        self?.assembleRows()
+      }
+      .store(in: &bag)
   }
 
   /// Paints whatever's cached immediately (instant on a warm cache, still empty on a
@@ -242,9 +251,16 @@ class HomeCatalog: ObservableObject {
     await fetch()
   }
 
+  /// Re-apply local resume onto the cached Continue Watching row. Cheap: no
+  /// network. Home's `.task` does not re-run when returning from the player
+  /// (`NavigationStack` root stays mounted), so this is also the appear path.
+  func repaintFromLocalProgress() {
+    assembleRows()
+  }
+
   private func assembleRows() {
     var assembled: [MediaRow] = []
-    let continueWatchingCards = store.cards(.continueWatching)
+    let continueWatchingCards = paintedContinueWatchingCards()
     if !continueWatchingCards.isEmpty {
       assembled.append(MediaRow(id: Self.continueWatchingRowID,
                                 title: "Continue Watching".localized,
@@ -273,6 +289,59 @@ class HomeCatalog: ObservableObject {
     }
     rows = assembled
     refreshBannerCards(from: assembled)
+  }
+
+  /// Read-time overlay: `ContentStore` still holds the last server snapshot (and its
+  /// TTL). Local progress paints the bar, hides a just-finished film, and steps a
+  /// series to the next episode without rewriting `rows-v2.json` on every player tick.
+  private func paintedContinueWatchingCards() -> [MediaCard] {
+    let stored = store.cards(.continueWatching)
+    let entries = localProgressStore.allEntries()
+    let locals = entries.map { entry in
+      ContinueWatchingLocalOverlay.Local(
+        itemID: entry.id,
+        isSeries: entry.item.isEpisodicType || entry.season != nil,
+        season: entry.season,
+        episode: entry.episode,
+        isFinished: entry.watch.isFinished,
+        isResumable: entry.watch.isResumable,
+        progress: entry.watch.resumeFraction,
+        updatedAt: entry.updatedAt,
+        canInsert: true
+      )
+    }
+    let plan = ContinueWatchingLocalOverlay.plan(
+      cards: stored.map {
+        ContinueWatchingLocalOverlay.Card(itemID: $0.itemID,
+                                          isSeries: $0.isSeries,
+                                          season: $0.season,
+                                          video: $0.video)
+      },
+      locals: locals
+    )
+    let storedByID = Dictionary(stored.map { ($0.itemID, $0) }, uniquingKeysWith: { _, last in last })
+    let entryByID = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
+    return plan.order.compactMap { id -> MediaCard? in
+      let base: MediaCard?
+      if plan.insertIDs.contains(id), let entry = entryByID[id] {
+        base = Self.card(for: WatchingItem(mediaItem: entry.item),
+                         detail: nil,
+                         history: nil,
+                         finishedEpisodes: [:],
+                         local: entry,
+                         isInHistory: true,
+                         isInWatchlist: false,
+                         cached: nil)
+      } else {
+        base = storedByID[id]
+      }
+      guard let base else { return nil }
+      guard let mutation = plan.mutations[id] else { return base }
+      return base.withContinueWatching(progress: mutation.progress,
+                                       season: mutation.season,
+                                       video: mutation.video,
+                                       overlayLabel: mutation.overlayLabel)
+    }
   }
 
   /// v1 hack: up to six unique titles drawn at random from the catalog shelves
@@ -320,7 +389,7 @@ class HomeCatalog: ObservableObject {
   /// bookkeeping is needed here anymore.
   func hide(_ card: MediaCard) {
     store.removeCard(id: card.id, from: .continueWatching)
-    AppContext.shared.localProgressStore.clear(id: card.itemID)
+    localProgressStore.clear(id: card.itemID)
     assembleRows()
     Task {
       do {
@@ -338,7 +407,7 @@ class HomeCatalog: ObservableObject {
   func toggleWatched(_ card: MediaCard) {
     guard let video = card.video else { return }
     store.removeCard(id: card.id, from: .continueWatching)
-    AppContext.shared.localProgressStore.clear(id: card.itemID)
+    localProgressStore.clear(id: card.itemID)
     assembleRows()
     Task {
       do {
@@ -382,8 +451,10 @@ class HomeCatalog: ObservableObject {
     let newestEntry = Self.newestEntryByItemID(history)
     let finishedEpisodes = Self.finishedEpisodesByItemID(history)
     let historyIDs = Set(history.map(\.item.id))
-    let localEntries = AppContext.shared.localProgressStore.allEntries()
+    let localEntries = localProgressStore.allEntries()
     let localByID = Dictionary(uniqueKeysWithValues: localEntries.map { ($0.id, $0) })
+    let cached = store.cards(.continueWatching)
+    let cachedByID = Dictionary(cached.map { ($0.itemID, $0) }, uniquingKeysWith: { _, last in last })
 
     var pool = ContinueWatchingOrder.mergePool(movies: movies, serials: serials, watchlist: watchlist)
 
@@ -400,21 +471,33 @@ class HomeCatalog: ObservableObject {
     }
 
     // Locally-started titles (> 10s) the backend doesn't list yet.
-    for entry in localEntries where !entry.watch.isFinished {
+    // Finished films stay out. Finished series stay only if a server source still
+    // lists them — re-inserting would invent E+1 after the title left watching.
+    for entry in localEntries {
+      if entry.watch.isFinished {
+        if entry.item.isEpisodicType || entry.season != nil {
+          lastSeen[entry.id] = Date(timeIntervalSince1970: entry.updatedAt)
+        }
+        continue
+      }
       lastSeen[entry.id] = Date(timeIntervalSince1970: entry.updatedAt)
       if !pool.contains(where: { $0.id == entry.id }) {
         pool.append(WatchingItem(mediaItem: entry.item))
       }
     }
 
-    // Drop server-listed titles that local progress already considers finished.
-    pool.removeAll { localByID[$0.id]?.watch.isFinished == true }
+    // Drop server-listed films that local progress already considers finished.
+    // Series stay: finishing an episode is not finishing the title.
+    pool.removeAll { item in
+      guard let local = localByID[item.id], local.watch.isFinished else { return false }
+      return !item.type.contains("serial")
+    }
 
     let ordered = ContinueWatchingOrder.ordered(items: pool,
                                                 watchlistIDs: watchlistIDs,
                                                 lastSeen: lastSeen)
 
-    let details = await seriesDetails(for: ordered)
+    let details = await seriesDetails(for: ordered, cached: cached)
 
     return ordered.compactMap {
       Self.card(for: $0,
@@ -423,7 +506,8 @@ class HomeCatalog: ObservableObject {
                 finishedEpisodes: finishedEpisodes[$0.id] ?? [:],
                 local: localByID[$0.id],
                 isInHistory: historyIDs.contains($0.id) || localByID[$0.id] != nil,
-                isInWatchlist: watchlistIDs.contains($0.id))
+                isInWatchlist: watchlistIDs.contains($0.id),
+                cached: cachedByID[$0.id])
     }
   }
 
@@ -436,13 +520,21 @@ class HomeCatalog: ObservableObject {
   /// offered "S1, E9" on an eight-episode season (nothing to play at all) and re-offered
   /// an episode whose last five minutes were credits.
   ///
-  /// One request per series, `nolinks` where the flag allows, and only when the row
-  /// actually refreshes — the whole row sits behind `ContentStore`'s TTL. Films need
-  /// none of this: they have one video.
-  private func seriesDetails(for items: [WatchingItem]) async -> [Int: MediaItem] {
-    let ids = items.filter { $0.type.contains("serial") }
-      .prefix(Self.seriesDetailLimit)
-      .map(\.id)
+  /// One request per **new** series. A card that already carries the offered S/E from
+  /// the last snapshot is trusted — that is why the row caches those fields — so a
+  /// TTL refresh does not refetch up to `seriesDetailLimit` details. Films need
+  /// none of this: they have one video. Past the cap, titles with no cached S/E still
+  /// fall back to history counters.
+  private func seriesDetails(for items: [WatchingItem], cached: [MediaCard]) async -> [Int: MediaItem] {
+    let cachedByID = Dictionary(cached.map { ($0.itemID, $0) }, uniquingKeysWith: { _, last in last })
+    var ids: [Int] = []
+    for item in items where item.type.contains("serial") {
+      if let card = cachedByID[item.id], card.season != nil, card.video != nil {
+        continue
+      }
+      ids.append(item.id)
+      if ids.count >= Self.seriesDetailLimit { break }
+    }
     guard !ids.isEmpty else { return [:] }
 
     return await withTaskGroup(of: (Int, MediaItem?).self) { group in
@@ -495,7 +587,8 @@ class HomeCatalog: ObservableObject {
                            finishedEpisodes: [Int: Set<Int>],
                            local: LocalWatchEntry?,
                            isInHistory: Bool,
-                           isInWatchlist: Bool) -> MediaCard? {
+                           isInWatchlist: Bool,
+                           cached: MediaCard?) -> MediaCard? {
     let isSeries = item.type.contains("serial")
     let video: Int?
     let season: Int?
@@ -516,6 +609,31 @@ class HomeCatalog: ObservableObject {
         video = episode.number
         season = nextSeason.number
         isResuming = episode.watchProgress.isResumable
+      } else if let cached, cached.season != nil, cached.video != nil {
+        // Trusted offered S/E from the last snapshot — do not re-guess from counters
+        // just because this refresh skipped the details call.
+        if let local, let episode = local.episode, !local.watch.isFinished {
+          video = episode
+          season = local.season
+          isResuming = true
+        } else if let local, local.watch.isFinished {
+          let currentSeason = history?.media?.snumber ?? local.season ?? cached.season
+          let next = ContinueWatchingEpisode.forSeries(
+            local: (local.season, local.episode, true),
+            history: history.map { ($0.media?.snumber, $0.media?.number, $0.watchProgress?.isFinished ?? false) },
+            finishedInSeason: currentSeason.flatMap { finishedEpisodes[$0] } ?? [],
+            watchedCount: item.watched,
+            total: item.total
+          )
+          guard next.hasEpisode || (item.new ?? 0) > 0 else { return nil }
+          video = next.episode
+          season = next.season
+          isResuming = next.isResuming
+        } else {
+          video = cached.video
+          season = cached.season
+          isResuming = cached.progress != nil
+        }
       } else {
         // No payload for this one (request failed, or past the fetch cap): fall back to
         // what history and the counters can say. Which season the viewer is in, and
@@ -545,14 +663,16 @@ class HomeCatalog: ObservableObject {
     let offered = detail?.seasons?
       .first { $0.number == season }?.episodes
       .first { $0.number == video }
-    let localFraction = local?.watch.isResumable == true ? local?.watch.fraction : nil
+    let localFraction = local?.watch.resumeFraction
     // Episode resume only — never serial watched/total (that is not a scrubber) — and
     // never the *previous* episode's progress under a fresh one.
     let episodeProgress = isResuming
       ? (offered?.watchProgress.fraction ?? localFraction ?? history?.progress)
       : nil
     let durationSeconds = offered.map(\.duration)
-      ?? (isResuming ? Self.durationSeconds(history: history, local: local) : nil)
+      ?? (isResuming
+          ? (cached?.durationSeconds ?? Self.durationSeconds(history: history, local: local))
+          : nil)
     let overlay = Self.overlayLabel(isSeries: isSeries, season: season, episode: video)
     let newCount = item.new.flatMap { $0 > 0 ? $0 : nil }
 
@@ -602,9 +722,8 @@ class HomeCatalog: ObservableObject {
   /// Says whichever episode the card is actually offering — it used to derive its own
   /// S/E from history and could disagree with the one Play would open.
   private static func overlayLabel(isSeries: Bool, season: Int?, episode: Int?) -> String? {
-    guard isSeries, let episode else { return nil }
-    guard let season, season > 0 else { return "E\(episode)" }
-    return "S\(season), E\(episode)"
+    guard isSeries else { return nil }
+    return ContinueWatchingEpisode.overlayLabel(season: season, episode: episode)
   }
 
   // MARK: - Catalog shortcuts
