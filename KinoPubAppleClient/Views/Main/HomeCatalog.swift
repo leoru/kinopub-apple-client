@@ -307,7 +307,9 @@ class HomeCatalog: ObservableObject {
         isResumable: entry.watch.isResumable,
         progress: entry.watch.resumeFraction,
         updatedAt: entry.updatedAt,
-        canInsert: true
+        // The read-time half of the same rule the fetch applies: a title the server has
+        // not listed may draw its own card only once it is past the entry floor.
+        canInsert: entry.watch.earnsContinueWatchingCard
       )
     }
     let plan = ContinueWatchingLocalOverlay.plan(
@@ -470,7 +472,11 @@ class HomeCatalog: ObservableObject {
       pool.append(item)
     }
 
-    // Locally-started titles (> 10s) the backend doesn't list yet.
+    // Locally-started titles the backend doesn't list yet, and only past
+    // `enterContinueWatchingSeconds` — a trailer sampled for a minute is not something
+    // to carry on with, and a local-only card has nothing to take it back out again.
+    // Recency still counts for titles the server *does* list: touching one is touching
+    // it, however briefly.
     // Finished films stay out. Finished series stay only if a server source still
     // lists them — re-inserting would invent E+1 after the title left watching.
     for entry in localEntries {
@@ -481,7 +487,8 @@ class HomeCatalog: ObservableObject {
         continue
       }
       lastSeen[entry.id] = Date(timeIntervalSince1970: entry.updatedAt)
-      if !pool.contains(where: { $0.id == entry.id }) {
+      if !pool.contains(where: { $0.id == entry.id }),
+         entry.watch.earnsContinueWatchingCard {
         pool.append(WatchingItem(mediaItem: entry.item))
       }
     }
@@ -493,9 +500,10 @@ class HomeCatalog: ObservableObject {
       return !item.type.contains("serial")
     }
 
-    let ordered = ContinueWatchingOrder.ordered(items: pool,
-                                                watchlistIDs: watchlistIDs,
-                                                lastSeen: lastSeen)
+    let ordered = Array(ContinueWatchingOrder.ordered(items: pool,
+                                                     watchlistIDs: watchlistIDs,
+                                                     lastSeen: lastSeen)
+                          .prefix(ContinueWatchingOrder.maxItems))
 
     let details = await seriesDetails(for: ordered, cached: cached)
 

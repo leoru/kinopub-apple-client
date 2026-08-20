@@ -191,4 +191,26 @@ final class WatchingMetadataIdentityTests: XCTestCase {
     XCTAssertNotEqual(episode.metadata.id, episode.id)
     XCTAssertFalse(episode.metadata.isResolved)
   }
+  // MARK: - Earning a Continue Watching card
+
+  /// The floor for "has begun" is 10s and stays there — it paints a bar. Earning a card
+  /// the server never listed is a separate, higher bar, because nothing takes that card
+  /// back out again.
+  func testAMinuteOfATrailerDoesNotEarnACard() {
+    let watch = WatchProgress(position: 55, duration: 3600)
+    XCTAssertTrue(watch.isResumable, "55s is past the started floor")
+    XCTAssertFalse(watch.earnsContinueWatchingCard)
+  }
+
+  func testPastTheEntryFloorEarnsACard() {
+    let watch = WatchProgress(position: 95, duration: 3600)
+    XCTAssertTrue(watch.earnsContinueWatchingCard)
+  }
+
+  func testAFinishedTitleNeverEarnsACard() {
+    let watch = WatchProgress(position: 3595, duration: 3600)
+    XCTAssertTrue(watch.isFinished)
+    XCTAssertFalse(watch.earnsContinueWatchingCard)
+  }
+
 }

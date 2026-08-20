@@ -13,7 +13,7 @@ final class ContinueWatchingLocalOverlayTests: XCTestCase {
       ContinueWatchingLocalOverlay.Card(itemID: 2, isSeries: false, season: nil, video: 1)
     ]
     let locals = [
-      local(id: 2, progress: 0.4, updatedAt: 20, isSeries: false)
+      local(id: 2, progress: 0.4, isSeries: false, updatedAt: 20)
     ]
     let plan = ContinueWatchingLocalOverlay.plan(cards: cards, locals: locals)
 
@@ -59,7 +59,7 @@ final class ContinueWatchingLocalOverlayTests: XCTestCase {
       ContinueWatchingLocalOverlay.Card(itemID: 1, isSeries: false, season: nil, video: 1)
     ]
     let locals = [
-      local(id: 99, progress: 0.2, updatedAt: 50, isSeries: false, canInsert: true)
+      local(id: 99, progress: 0.2, isSeries: false, updatedAt: 50, canInsert: true)
     ]
     let plan = ContinueWatchingLocalOverlay.plan(cards: cards, locals: locals)
 

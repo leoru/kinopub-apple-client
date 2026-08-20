@@ -5,6 +5,25 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Continue Watching stops offering junk in an arbitrary order (2026-08-20)
+
+- **The row is capped** (`ContinueWatchingOrder.maxItems`). `/v1/watching/serials`
+  returns every unfinished serial on the account, so the shelf scrolled sideways
+  through hundreds of titles nobody remembers starting.
+- **Undated titles sort by backlog.** Neither watching endpoint carries a timestamp —
+  the only dates in this row come from the one page of `/v1/history` we fetch — so most
+  of the row tied on bucket *and* date and fell through to the server's list order. It
+  now falls through to `new` ascending: one or two unwatched episodes is a title being
+  followed, a hundred and seventy is one abandoned. Films count as zero.
+- **`WatchProgress.enterContinueWatchingSeconds` (90 s)** gates a card the server never
+  listed. `startedSeconds` stays 10 s and keeps meaning "has begun" — it paints a bar on
+  a card already in the row. A local-only card has nothing to take it back out, which is
+  how a minute of a trailer became something to "continue".
+- The rules are in [docs/product/continue-watching.md](docs/product/continue-watching.md).
+- Unrelated, found on the way: `ContinueWatchingLocalOverlayTests` had two calls with
+  arguments in the wrong order, which stopped the whole `KinoPubBackend` test target
+  from compiling. Fixed; 305 tests pass.
+
 ### Card geometry, shelf rhythm, and chrome that stays put (2026-08-20)
 
 - **A poster's height follows its column again.** `MediaCardView` measured the

@@ -30,6 +30,16 @@ public struct WatchProgress: Equatable, Hashable {
   /// out of Continue Watching.
   public static let startedSeconds: Double = 10
 
+  /// What a title has to clear before it earns a Continue Watching card **the server
+  /// never asked for**.
+  ///
+  /// `startedSeconds` answers "has this begun" — enough to paint a bar on a card that
+  /// is already in the row. Putting a brand-new card there is a larger claim, and a
+  /// local-only one has nothing to take it back out: the server does not list the
+  /// title, so no refresh will drop it. A minute of a trailer or a sampled clip was
+  /// the row's most common piece of junk, and 10s is exactly the bar it cleared.
+  public static let enterContinueWatchingSeconds: Double = 90
+
   /// How close to the end counts as "watched the credits" — a fraction of the runtime, floored and
   /// capped so it's never absurdly short or long, and never more than half the runtime (so short
   /// clips aren't marked finished from the first seconds). Mirrors kino.pub's server-side rule.
@@ -83,6 +93,12 @@ public struct WatchProgress: Equatable, Hashable {
   public var isResumable: Bool {
     if case .inProgress = state { return true }
     return false
+  }
+
+  /// Resumable *and* watched long enough to deserve a card of its own — the test for a
+  /// title only local progress knows about. See `enterContinueWatchingSeconds`.
+  public var earnsContinueWatchingCard: Bool {
+    isResumable && position >= Self.enterContinueWatchingSeconds
   }
 
   /// Fraction to paint on a resume bar. Nil when there is nothing to resume —

@@ -150,4 +150,54 @@ final class ContinueWatchingOrderTests: XCTestCase {
 
     XCTAssertTrue(ContinueWatchingOrder.lastSeenByItemID(history).isEmpty)
   }
+
+  // MARK: - Backlog tiebreak
+
+  /// The watching endpoints carry no timestamps, so two subscribed shows with new
+  /// episodes and nothing in the fetched history page tie on bucket *and* date. The
+  /// tie used to go to the server's list order, which put a cartoon abandoned years ago
+  /// above a show with one episode waiting.
+  func testUndatedTitlesInOneBucketSortByFewestUnwatchedEpisodes() {
+    let abandoned = WatchingItem.mock(id: 1, title: "Abandoned", new: 171)
+    let followed = WatchingItem.mock(id: 2, title: "Followed", new: 1)
+
+    let ordered = ContinueWatchingOrder.ordered(items: [abandoned, followed],
+                                                watchlistIDs: [1, 2],
+                                                lastSeen: [:])
+
+    XCTAssertEqual(ordered.map(\.id), [2, 1])
+  }
+
+  /// A real play still wins: the backlog only decides ties.
+  func testADateStillBeatsASmallerBacklog() {
+    let now = Date()
+    let abandoned = WatchingItem.mock(id: 1, title: "Abandoned", new: 171)
+    let followed = WatchingItem.mock(id: 2, title: "Followed", new: 1)
+
+    let ordered = ContinueWatchingOrder.ordered(items: [followed, abandoned],
+                                                watchlistIDs: [1, 2],
+                                                lastSeen: [1: now.addingTimeInterval(-60)],
+                                                now: now)
+
+    XCTAssertEqual(ordered.map(\.id), [1, 2], "played an hour ago outranks a short backlog")
+  }
+
+  /// Films have no counters. Zero is the right reading — one press from finished.
+  func testAFilmOutranksASerialWithEpisodesToGo() {
+    let film = WatchingItem(id: 1,
+                            type: "movie",
+                            subtype: "",
+                            title: "Film",
+                            posters: Posters(small: "", medium: "", big: "", wide: nil),
+                            total: nil,
+                            watched: nil,
+                            new: nil)
+    let serial = WatchingItem.mock(id: 2, title: "Serial", new: 8)
+
+    let ordered = ContinueWatchingOrder.ordered(items: [serial, film],
+                                                watchlistIDs: [],
+                                                lastSeen: [:])
+
+    XCTAssertEqual(ordered.map(\.id), [1, 2])
+  }
 }
