@@ -1004,7 +1004,9 @@ struct MediaItemHeroView: View {
   private var bookmarkButton: some View {
     folderMenuLabel {
       Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
+            .font(MediaActionMetrics.labelFont)
+
+//        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
     }
     .mediaActionCircleStyle()
     .focused($focus, equals: .bookmark)
@@ -1029,7 +1031,9 @@ struct MediaItemHeroView: View {
       onToggleWatchlist?()
     } label: {
       Image(systemName: isInWatchlist ? "minus" : "plus")
-        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
+            .font(MediaActionMetrics.labelFont)
+
+//        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
     }
     .mediaActionCircleStyle()
     .focused($focus, equals: .watchlist)
@@ -1063,7 +1067,7 @@ struct MediaItemHeroView: View {
       Button(action: onWatchedToggle) {
         watchedGlyph
       }
-      .mediaActionCircleStyle()
+      .mediaActionPillStyle()
       .focused($focus, equals: .watched)
       .accessibilityLabel("Mark as Watched")
     }
@@ -1071,7 +1075,8 @@ struct MediaItemHeroView: View {
 
   private var watchedGlyph: some View {
     Image(systemName: "checkmark")
-      .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
+          .font(MediaActionMetrics.labelFont)
+//      .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .semibold))
   }
 
   /// The trailer says what it is. It sits directly under Play, first in the row, as a
@@ -1103,9 +1108,11 @@ struct MediaItemHeroView: View {
                             onBrowseWatchlist: onBrowseWatchlist)
     } label: {
       Image(systemName: "ellipsis")
-        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .bold))
+            .font(MediaActionMetrics.labelFont)
+
+//        .font(.system(size: MediaActionMetrics.circleIconPointSize, weight: .bold))
     }
-    .mediaActionCircleStyle()
+    .mediaActionPillStyle()
     .focused($focus, equals: .more)
     .accessibilityLabel("More")
   }
@@ -1176,7 +1183,8 @@ struct MediaItemHeroView: View {
   private func primaryActionLabel(for content: PlaybackButtonContent) -> some View {
     HStack(spacing: MediaActionMetrics.contentSpacing) {
       Image(systemName: "play.fill")
-        .font(.system(size: MediaActionMetrics.iconPointSize, weight: .semibold))
+            .font(MediaActionMetrics.labelFont)
+//        .font(.system(size: MediaActionMetrics.iconPointSize, weight: .semibold))
 
       switch content {
       case .resume(let progress, let episodeLabel, let durationSeconds):

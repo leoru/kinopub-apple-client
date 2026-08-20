@@ -96,6 +96,17 @@ struct SearchView: View {
       .navigationTitle("Search")
 #else
       .searchable(text: $searchFieldText, placement: .automatic)
+      .searchSuggestions {
+        // Only while the field is empty: once there is a query, the results below are
+        // the better answer and a menu over them is in the way.
+        if searchFieldText.isEmpty {
+          Section("Try Searching") {
+            ForEach(SearchStarters.queries, id: \.self) { starter in
+              Text(starter).searchCompletion(starter)
+            }
+          }
+        }
+      }
       .platformNavigationTitle(navigationTitleText)
 #endif
       .toolbar {
@@ -212,6 +223,23 @@ struct SearchView: View {
   private var showsEmptyMessage: Bool {
     catalog.items.isEmpty && catalog.isSearching && !catalog.isLoading
   }
+}
+
+/// What an empty search field offers before anything has been typed.
+///
+/// Recents can only answer once there *are* recents, so a first-run field had nothing
+/// to say until the user guessed a query and pressed Return. These are examples, not
+/// analytics: `/v1/items/search` matches `title`, `director` and `cast`, so a name is
+/// as good a starting point as a title, and each one lands on a real, populated page.
+enum SearchStarters {
+  static let queries: [String] = [
+    "Нолан",
+    "Тарантино",
+    "Вильнёв",
+    "Киану Ривз",
+    "Дюна",
+    "Во все тяжкие"
+  ]
 }
 
 struct SearchView_Previews: PreviewProvider {

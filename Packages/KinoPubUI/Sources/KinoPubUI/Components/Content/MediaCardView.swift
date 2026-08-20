@@ -588,7 +588,7 @@ public struct MediaCardView: View {
   }
 
   private var dimsWatchedArtwork: Bool {
-    !card.isLandscape && card.isWatched && watchedStyle.dimsArtwork
+    card.isWatched && watchedStyle.dimsArtwork
   }
 
   private var isPointerActive: Bool {
@@ -602,7 +602,7 @@ public struct MediaCardView: View {
   }
 
   private var showsProgressBarNow: Bool {
-    guard card.progress != nil else { return false }
+      guard card.progress != nil ||  ((Int((card.progress ?? 0 * 100).rounded())) != 1) else { return false }
     switch progressVisibility {
     case .always: return true
     case .onFocusHover: return isPointerActive
@@ -645,7 +645,7 @@ public struct MediaCardView: View {
   }
 
   public var body: some View {
-    VStack(alignment: .leading, spacing: Metrics.cardCaptionSpacing) {
+      VStack(alignment: .center, spacing: Metrics.cardCaptionSpacing) {
       artwork
 
       if caption != .none {
@@ -676,7 +676,7 @@ public struct MediaCardView: View {
       parts.append("Rating \(rating.formatted)")
     }
     if let progress = card.progress {
-      parts.append("\(Int((progress * 100).rounded())) percent watched")
+      parts.append("\(Int((progress * 1).rounded())) percent watched")
     }
     for stat in card.captionStats {
       parts.append(stat.value)
@@ -689,15 +689,43 @@ public struct MediaCardView: View {
 
   // MARK: - Artwork
 
+  /// The cell's own width, measured where nothing can clamp it.
+  ///
+  /// A zero-height `Color.clear` under `maxWidth: .infinity` takes the full width it is
+  /// offered whatever the height proposal is, which is the whole point: measuring the
+  /// artwork itself made the height it derived feed back into the width it was measured
+  /// from, and `aspectRatio(_:contentMode: .fit)` treats *every* width ≤ the offered one
+  /// as a valid answer to that. So the card kept whatever width it happened to land on
+  /// first — a window resize widened the column and the poster stayed put while the
+  /// caption under it grew to the new column, which is the gap that opened between rows.
+  private var widthProbe: some View {
+    Color.clear
+      .frame(maxWidth: .infinity)
+      .frame(height: 0)
+      .onGeometryChange(for: CGFloat.self) { proxy in
+        proxy.size.width
+      } action: { width in
+        if width > 0 { artworkWidth = width }
+      }
+  }
+
   @ViewBuilder
   private var artwork: some View {
+    VStack(spacing: 0) {
+      widthProbe
+      artworkBox
+    }
+  }
+
+  @ViewBuilder
+  private var artworkBox: some View {
     ZStack {
       stillImage
 
       if card.isLandscape {
         landscapeOverlays
           .frame(maxWidth: .infinity, maxHeight: .infinity)
-      } else if showsProgressBarNow, let progress = card.progress {
+      } else if showsProgressBarNow && card.isLandscape && !card.isWatched && ((Int((card.progress ?? 0 * 1).rounded())) != 1), let progress = card.progress {
         progressBar(progress)
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
       }
@@ -713,7 +741,7 @@ public struct MediaCardView: View {
 
 #if os(macOS)
       // Cheap pointer affordance — dim the still, keep the glass rim on top.
-      Color.black.opacity(isHovered ? 0.22 : 0)
+        Color.black.opacity((isHovered && !card.isWatched && dimsWatchedArtwork) ? 0.34 : (isHovered && !dimsWatchedArtwork) ? 0.34 : 0)
         .allowsHitTesting(false)
 #endif
 
@@ -740,17 +768,17 @@ public struct MediaCardView: View {
     // box immediately; the measured frame below then holds it against a caption that
     // would otherwise squeeze it.
     .aspectRatio(aspect.ratio, contentMode: .fit)
-    .onGeometryChange(for: CGFloat.self) { proxy in
-      proxy.size.width
-    } action: { width in
-      if width > 0 { artworkWidth = width }
-    }
-    .frame(height: artworkWidth.map { $0 / aspect.ratio })
+    // Pinned in both directions once the probe has reported: `fit` inside exactly
+    // `w × w/ratio` is exactly `w × w/ratio`, so the artwork fills its column instead
+    // of settling for any narrower box that also satisfies the ratio.
+    .frame(width: artworkWidth, height: artworkWidth.map { $0 / aspect.ratio })
     // Never animated: this is a layout fact arriving, not a state change worth showing.
     // `ArtworkImage` sets an animation on its whole subtree for the image fade, and
     // this frame was being carried along by it.
     .animation(nil, value: artworkWidth)
-    .opacity(dimsWatchedArtwork ? 0.72 : 1)
+    .opacity(
+        (dimsWatchedArtwork && isHovered) ? 1 : dimsWatchedArtwork ? 0.5 : 1
+    )
     .animation(.easeOut(duration: 0.2), value: showsPlayChrome)
 #if os(tvOS)
     // One composited lockup so `.borderless` lift/specular stays a single unit —
@@ -840,9 +868,9 @@ public struct MediaCardView: View {
       .padding(.vertical, 3)
       .background(Color.KinoPub.accent, in: Capsule())
       .foregroundStyle(.black)
-#if !os(tvOS)
-      .shadow(radius: 4)
-#endif
+//#if !os(tvOS)
+//      .shadow(radius: 4)
+//#endif
   }
 
   private var stillImage: some View {
@@ -864,7 +892,7 @@ public struct MediaCardView: View {
   @ViewBuilder
   private var landscapeOverlays: some View {
     ZStack(alignment: .bottomLeading) {
-      if showsProgressBarNow, let progress = card.progress {
+      if showsProgressBarNow && card.isLandscape && !card.isWatched && ((Int((card.progress ?? 0 * 1).rounded())) != 1), let progress = card.progress {
         progressBar(progress)
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
       }
@@ -873,7 +901,7 @@ public struct MediaCardView: View {
     .overlay(alignment: .bottomLeading) {
       if let landscapeTimeBadge {
         landscapeTimeBadge
-          .padding(8)
+          .padding(6)
       }
     }
   }
@@ -881,13 +909,14 @@ public struct MediaCardView: View {
   private func progressBar(_ progress: Double) -> some View {
     GeometryReader { geometry in
       ZStack(alignment: .leading) {
-        Capsule().fill(Color.black.opacity(0.45))
+          Capsule().fill(Color.gray.opacity(0.5))
         Capsule()
-          .fill(Color.white.opacity(0.95))
+              .fill(Color.KinoPub.subtitle)
           .frame(width: geometry.size.width * min(max(progress, 0), 1))
+          .frame(height: 3)
       }
     }
-    .frame(height: 4)
+    .frame(height: 3)
     .padding(.horizontal, 1)
   }
 
@@ -1173,7 +1202,7 @@ private struct LandscapePlayChromeBackground: ViewModifier {
     card: MediaCard(
       id: 2,
       posterURL: "https://m.staticpop.net/poster/item/big/581.jpg",
-      title: "Просмотрено",
+      title: "Стражи Галактики",
       imdbRating: 7.2,
       kinopoiskRating: 7.0,
       isWatched: true,
@@ -1222,7 +1251,7 @@ private struct LandscapePlayChromeBackground: ViewModifier {
         primaryAction: .play
       ),
       caption: .always,
-      forcePlayChrome: true
+      forcePlayChrome: false
     )
     .frame(width: 220)
     MediaCardView(
@@ -1237,7 +1266,7 @@ private struct LandscapePlayChromeBackground: ViewModifier {
         primaryAction: .play
       ),
       caption: .always,
-      forcePlayChrome: true
+      forcePlayChrome: false
     )
     .frame(width: 220)
     MediaCardView(

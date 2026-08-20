@@ -81,7 +81,7 @@ struct MainView: View {
   @ViewBuilder
   private var rows: some View {
     MediaRowsView(
-      rows: catalog.rows,
+      rows: homeRows,
       // Gated by `FeatureFlags.homeBannerEnabled`. When off, HomeCatalog also
       // skips sampling so wide-poster artwork is never requested.
       bannerCards: FeatureFlags.homeBannerEnabled ? catalog.bannerCards : [],
@@ -111,6 +111,18 @@ struct MainView: View {
         return menuEntries(for: card, surface: surface, isContinueWatching: card.isLandscape)
       }
     )
+  }
+
+  /// Continue Watching's "see all" is the Library tab, not a push: what the row shows
+  /// is the head of three lists that live there — series being watched, films being
+  /// watched, and history. Every other row's chevron still pushes its own grid, so the
+  /// destination stays on the row and only this one is attached here, where navigation
+  /// belongs. `HomeCatalog` keeps knowing nothing about tabs.
+  private var homeRows: [MediaRow] {
+    catalog.rows.map { row in
+      guard row.id == HomeCatalog.continueWatchingRowID else { return row }
+      return row.opening { navigationState.selectedTab = .library }
+    }
   }
 
   private func menuEntries(for card: MediaCard,

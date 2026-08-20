@@ -12,6 +12,40 @@ import OSLog
 
 /// The Search tab's listing: a search when there is a query, the filtered catalog
 /// otherwise. Both feed the same paginated grid.
+///
+/// # How a query actually reaches the server
+///
+/// Read this before touching anything in the search path — the pieces live in four
+/// files and the order they wake up in is load-bearing.
+///
+/// **Two endpoints, one grid.** `isSearching` (a non-blank `query`) picks
+/// `/v1/items/search?q=`; otherwise it is `/v1/items` with `filter`. There is no third
+/// mode. If results look like an arbitrary catalogue rather than the query, the query
+/// never arrived and this fell through to the filtered branch — that is the failure to
+/// look for first, not a ranking problem on the server. The genre / country requests
+/// you see beside it are `loadPickerData()`, which runs for the filter pickers on the
+/// first page and is unrelated to searching.
+///
+/// **Where the text comes from is not the same on every platform.**
+/// - iOS / iPadOS / tvOS: `.searchable` is inside `SearchView`, bound to its own
+///   `@State`. The view exists before the field does, so nothing can race.
+/// - macOS: the field is in the *window toolbar* (`macToolbarSearch`), bound to
+///   `NavigationState.macSearchFieldText`, and it exists on every tab — including tabs
+///   where `SearchView` is not mounted at all. Typing there is what mounts it.
+///
+/// **The macOS trap, and why this init takes a query.** `SearchView` reads the field
+/// through `onChange`, which by definition only fires for changes made *after* the view
+/// is on screen. The user's text is already in the toolbar field before the search
+/// surface mounts, so on the first frame `query` was empty, `.task` called `load()`,
+/// and the grid filled with the unfiltered catalogue — for every entry, Return
+/// included. Only the *next* keystroke reached it. Hence `query:` here: the catalog is
+/// born already searching, before `subscribe()` can see the value, so no duplicate
+/// refresh is queued behind the first load either.
+///
+/// **The debounce is not the entry point.** `subscribe()` gives `$query` 0.5 s and then
+/// refreshes, which handles typing into an already-mounted view. It cannot start a
+/// search on a view that does not exist. Mounting is
+/// `NavigationState.beginToolbarSearchIfNeeded()`, on the first non-blank character.
 @MainActor
 class LibraryCatalog: ObservableObject {
 
@@ -52,14 +86,20 @@ class LibraryCatalog: ObservableObject {
 
   var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
+  /// `query` is for the surface that already holds the user's text when this is built
+  /// — the macOS toolbar field. Assigned before `subscribe()` on purpose: `$query`
+  /// emits its current value to a new subscriber, and `dropFirst()` there swallows
+  /// exactly that, so seeding costs no extra refresh. See the type's doc comment.
   init(itemsService: VideoContentService,
        authState: AuthState,
        errorHandler: ErrorHandler,
-       filter: LibraryFilter = LibraryFilter()) {
+       filter: LibraryFilter = LibraryFilter(),
+       query: String = "") {
     self.itemsService = itemsService
     self.authState = authState
     self.errorHandler = errorHandler
     self.filter = filter
+    self.query = query
     subscribe()
   }
 

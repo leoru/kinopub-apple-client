@@ -333,12 +333,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Registering device"
+            "value" : "Registering Device"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Регистрируем устройство"
           }
         }
@@ -1739,18 +1739,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Documental"
+            "value" : "Documentaries"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Dokumentiniai filmai"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Документальные фильмы"
           }
         }
@@ -1762,18 +1762,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Documental Series"
+            "value" : "Documentary Series"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Dokumentiniai serialai"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Документальные сериалы"
           }
         }
@@ -1785,18 +1785,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Documentary"
+            "value" : "Documentaries"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Dokumentiniai"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Документальные"
           }
         }
@@ -2282,12 +2282,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group By"
+            "value" : "Group by"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Группировка"
           }
         }
@@ -2299,12 +2299,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Group By Date"
+            "value" : "Group by Date"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Группировать по дате"
           }
         }
@@ -4556,18 +4556,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "since %@"
+            "value" : "Since %@"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "nuo %@"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "с %@"
           }
         }
@@ -6645,18 +6645,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recently Watched"
+            "value" : "History"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Neseniai žiūrėta"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Недавно смотрели"
           }
         }
@@ -6674,18 +6674,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Registration Date"
+            "value" : "Joining Date"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Registracijos data"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Дата регистрации"
           }
         }
@@ -6725,12 +6725,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remove from Recently Watched"
+            "value" : "Remove from History"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Удалить из недавно просмотренных"
           }
         }
@@ -7384,7 +7384,15 @@
     },
     "Similar titles" : {
       "comment" : "A label for the section of a show's details that displays similar shows.",
-      "isCommentAutoGenerated" : true
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More Like This"
+          }
+        }
+      }
     },
     "Sort" : {
       "comment" : "A button that displays a sheet for sorting the catalog.",
@@ -7396,18 +7404,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "IMDb rating"
+            "value" : "IMDb Rating"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "IMDb įvertinimas"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "По рейтингу IMDb"
           }
         }
@@ -7419,18 +7427,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kinopoisk rating"
+            "value" : "KinoPoisk Rating"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Kinopoisk įvertinimas"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "По рейтингу Кинопоиска"
           }
         }
@@ -7442,18 +7450,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recently added"
+            "value" : "Date Added"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Naujausi"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Последние добавленные"
           }
         }
@@ -7465,18 +7473,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recently updated"
+            "value" : "Date Updated"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Neseniai atnaujinti"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Последние обновлённые"
           }
         }
@@ -7488,18 +7496,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Title"
+            "value" : "Name"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Pavadinimas"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "По названию"
           }
         }
@@ -7511,18 +7519,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Most watched"
+            "value" : "Views"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Populiariausi"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "По количеству просмотров"
           }
         }
@@ -7534,18 +7542,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Year"
+            "value" : "Release Year"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Metai"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "По году"
           }
         }
@@ -7785,18 +7793,18 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Total duration"
+            "value" : "Total Duration"
           }
         },
         "lt" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Bendra trukmė"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Общая длительность"
           }
         }
@@ -7875,6 +7883,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Повторить"
+          }
+        }
+      }
+    },
+    "Try Searching" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Searching"
+          }
+        },
+        "lt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pabandykite ieškoti"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Попробуйте найти"
           }
         }
       }

@@ -134,6 +134,24 @@ struct TabsNavigationView: View {
 
   @ViewBuilder
   private func content(for tab: NavigationTabs) -> some View {
+#if os(macOS)
+    // Search is not a tab here (see `macShell`) — it takes over the content of the tab
+    // it was entered from, so the bar above it keeps standing. Exactly that one tab:
+    // every tab root stays mounted on this shell, and answering "search" for all four
+    // would stand up four `SearchView`s, each with its own catalog and its own fetch.
+    if navigationState.selectedTab == .search, tab == (navigationState.searchReturnTab ?? .home) {
+      searchContent
+        .background(Color.KinoPub.background)
+    } else {
+      browseContent(for: tab)
+    }
+#else
+    browseContent(for: tab)
+#endif
+  }
+
+  @ViewBuilder
+  private func browseContent(for tab: NavigationTabs) -> some View {
     switch tab {
     case .home: homeContent
     case .movies: moviesContent
@@ -171,22 +189,19 @@ struct TabsNavigationView: View {
   /// Browse tabs; trailing toolbar search lives on each tab's stack via
   /// `macToolbarSearch()` — never on `TabView` (that yields the giant under-tab field).
   /// Return in the field opens the Search results surface.
+  /// Search fills the **content** of the tab it was entered from, rather than covering
+  /// the shell. Laying it over the `TabView` also covered the tab bar, so typing in the
+  /// toolbar field made Home / Movies / Shows / Library disappear — the one piece of
+  /// chrome that says where you are, gone exactly when a result is about to take you
+  /// somewhere else. The tabs stay drawn, the tab you came from stays selected, and
+  /// `searchReturnTab` still owns the way back.
   private var macShell: some View {
-    ZStack {
-      TabView(selection: tabSelection) {
-        ForEach(Self.browseTabs) { spec in
-          browseTab(spec)
-        }
-      }
-      .tabViewStyle(.tabBarOnly)
-      .opacity(navigationState.selectedTab == .search ? 0 : 1)
-      .allowsHitTesting(navigationState.selectedTab != .search)
-
-      if navigationState.selectedTab == .search {
-        searchContent
-          .background(Color.KinoPub.background)
+    TabView(selection: tabSelection) {
+      ForEach(Self.browseTabs) { spec in
+        browseTab(spec)
       }
     }
+    .tabViewStyle(.tabBarOnly)
     .onAppear {
       if navigationState.selectedTab == .settings {
         navigationState.selectedTab = .home
@@ -313,7 +328,20 @@ struct TabsNavigationView: View {
   private var searchContent: some View {
     SearchView(catalog: LibraryCatalog(itemsService: appContext.contentService,
                                        authState: authState,
-                                       errorHandler: errorHandler))
+                                       errorHandler: errorHandler,
+                                       query: initialSearchQuery))
+  }
+
+  /// What the user has already typed by the time the search surface is built. Only
+  /// macOS has anywhere to type before it exists — the field is in the window toolbar,
+  /// on every tab. Without this the first load runs query-less and answers with the
+  /// unfiltered catalogue; `LibraryCatalog`'s doc comment has the whole sequence.
+  private var initialSearchQuery: String {
+#if os(macOS)
+    navigationState.macSearchFieldText
+#else
+    ""
+#endif
   }
 
   private var homeContent: some View {

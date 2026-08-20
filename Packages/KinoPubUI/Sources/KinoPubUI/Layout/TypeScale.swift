@@ -11,8 +11,8 @@ public enum TypeScale {
   public static let cardSubtitle: Font = .subheadline
   public static let cardMeta: Font = .subheadline.weight(.regular)
     public static let rowHeader: Font = .title2.weight(.semibold)
-  public static let rowCount: Font = .title3
-  public static let rowChevron: Font = .headline.weight(.semibold)
+    public static let rowCount: Font = .title3.weight(.medium)
+  public static let rowChevron: Font = .headline.weight(.bold)
 
   public static let heroTitle: Font = {
 #if os(tvOS)
@@ -53,7 +53,7 @@ public enum TypeScale {
 #endif
     }()
   public static let filterControl: Font = .subheadline.weight(.semibold)
-  public static let actionLabel: Font = .headline.weight(.semibold)
+  public static let actionLabel: Font = .title3.weight(.semibold)
   public static let detailSection: Font = .title3.weight(.semibold)
   public static let settingsTitle: Font = .largeTitle.bold()
   public static let settingsTip: Font = .title3

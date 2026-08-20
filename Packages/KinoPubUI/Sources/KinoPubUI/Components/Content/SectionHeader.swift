@@ -41,7 +41,7 @@ public struct SectionHeader: View {
   }
 
   public var body: some View {
-    HStack(alignment: .firstTextBaseline, spacing: 8) {
+      HStack(alignment: .center, spacing: 8) {
       // `.secondary` the *hierarchical shape style*, not `Color.secondary`. They
       // resolve to the same colour over an opaque background, but only the shape
       // style gets the system's vibrancy treatment when the header sits over a
@@ -68,7 +68,11 @@ public struct SectionHeader: View {
           .opacity(chevronOpacity)
       }
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
+    // Hugs its own words. This used to be `maxWidth: .infinity` with the tap shape
+    // over all of it, so the "see all" link — and anything hovering it — covered the
+    // full width of the grid: a click level with the title but four columns to the
+    // right navigated. The leading inset stays *outside* the shape for the same
+    // reason. Callers that want the header to fill a row say so themselves.
     .contentShape(Rectangle())
     .padding(.leading, leadingInset ?? 0)
   }

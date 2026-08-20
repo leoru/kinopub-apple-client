@@ -65,13 +65,21 @@ public struct ShelfMetrics: Equatable, Sendable {
     let base = tvPosters(width: width, safeArea: safeArea)
 #else
     let base: Self = switch width {
-    case ..<420:  .init(inset: 20, gutter: 20, columns: 3)
-    case ..<700:  .init(inset: 40, gutter: 20, columns: 4)
-    case ..<1000: .init(inset: 40, gutter: 28, columns: 5)
-    case ..<1200: .init(inset: 40, gutter: 28, columns: 6)
-    case ..<1400: .init(inset: 40, gutter: 32, columns: 7)
-    case ..<1600: .init(inset: 40, gutter: 32, columns: 8)
-    default:      .init(inset: 40, gutter: 20, columns: 6)
+    // Every phone in portrait, up to the 440pt Pro Max, stays on this step. The
+    // break used to sit at 420, which put the largest phones one step up: four
+    // columns behind a 40pt margin came to a 72pt poster, half the size the same
+    // phone showed 40pt earlier.
+    case ..<520:  page(inset: 20, columns: 3)
+    case ..<700:  page(inset: 40, columns: 4)
+    case ..<1000: page(inset: 40, columns: 5)
+    case ..<1200: page(inset: 40, columns: 6)
+    case ..<1400: page(inset: 40, columns: 7)
+    case ..<1600: page(inset: 40, columns: 8)
+    // The ladder does not stop at the last named step — it keeps adding a column every
+    // `columnStep`, which is what holds a poster near 170pt on a wide display. Falling
+    // back to a *smaller* count here is what made the cards inflate the moment a Mac
+    // window passed 1600pt: eight columns at 1599pt, six much larger ones at 1601pt.
+    default:      page(inset: 40, columns: 8 + Int((width - 1600) / columnStep))
     }
 #endif
     guard typeSize.isAccessibilitySize else { return base }
@@ -126,6 +134,22 @@ public struct ShelfMetrics: Equatable, Sendable {
   }
 #endif
 
+  /// How much width buys one more column past the last named breakpoint. The named
+  /// steps sit ~200pt apart for the same reason: that is one poster plus its gutter.
+  private static let columnStep: CGFloat = 200
+
+  /// One page of a grid or shelf, from the single number that decides its rhythm.
+  ///
+  /// The gutter is half the inset, always. The inset is the margin the view deliberately
+  /// holds at its left and right edges; the gap between two cards reads as half of that
+  /// because neighbours share it, so a card sits the same visual distance from its
+  /// neighbour as the row does from the edge of the screen. Hand-picked gutters are what
+  /// made the gap between two posters on a phone as wide as the page margin itself, and
+  /// then a different width again on every breakpoint.
+  private static func page(inset: CGFloat, columns: Int) -> Self {
+    .init(inset: inset, gutter: inset / 2, columns: columns)
+  }
+
   /// Landscape shelves (Continue Watching, episode rail): one fewer column so
   /// the wider card still fits the same inset/gutter grid.
   public static func landscape(width: CGFloat,
@@ -160,7 +184,10 @@ public struct ShelfMetrics: Equatable, Sendable {
   public static func banner(width: CGFloat, typeSize: DynamicTypeSize) -> Self {
     let p = posters(width: width, typeSize: typeSize)
     let columns: Int = width < 900 ? 1 : 2
-    return .init(inset: p.inset, gutter: max(p.gutter, 24), columns: columns)
+    // Same gutter as the rails underneath it. A banner-only number (this was
+    // `max(p.gutter, 24)`) put a different gap on the top of Home than on every row
+    // below it, on the one screen where both are in view at once.
+    return .init(inset: p.inset, gutter: p.gutter, columns: columns)
   }
 
   /// Leading/trailing margin for a **grid**: the page inset plus half of whatever a

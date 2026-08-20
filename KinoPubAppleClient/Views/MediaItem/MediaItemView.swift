@@ -672,13 +672,14 @@ private struct MediaItemTitleLogoHeader: View {
   private var scrim: some View {
     LinearGradient(stops: [
       .init(color: .black.opacity(1), location: 0),
-      .init(color: .black.opacity(0.5), location: 0.7),
+      .init(color: .black.opacity(0.9), location: 0.8),
+      .init(color: .black.opacity(0.5), location: 0.5),
       .init(color: .clear, location: 1)
     ], startPoint: .top, endPoint: .bottom)
   }
 
   private static let topPadding: CGFloat = 48
-  private static let bandHeight: CGFloat = 160
+    private static let bandHeight: CGFloat = .infinity
   private static let logoMaxWidth: CGFloat = 320
   private static let logoMaxHeight: CGFloat = 100
 }

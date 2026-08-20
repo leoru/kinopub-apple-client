@@ -168,7 +168,9 @@ private struct PhonePlayPill: View {
     Button {} label: {
       HStack(spacing: MediaActionMetrics.contentSpacing) {
         Image(systemName: "play.fill")
-          .mediaActionIconFont(size: MediaActionMetrics.iconPointSize, weight: .semibold)
+              .font(MediaActionMetrics.labelFont)
+
+//          .mediaActionIconFont(size: MediaActionMetrics.iconPointSize, weight: .semibold)
         if showProgress {
           MediaActionProgressTrack(progress: 0.35)
         }
@@ -178,7 +180,7 @@ private struct PhonePlayPill: View {
       }
       .foregroundStyle(.black)
       .frame(maxWidth: .infinity)
-      .frame(height: MediaActionMetrics.buttonHeight)
+//      .frame(height: MediaActionMetrics.buttonHeight)
       .background(Capsule(style: .continuous).fill(.white))
     }
     .buttonStyle(.plain)
@@ -198,9 +200,11 @@ private struct PhoneCircleRow: View {
   private func circle(_ systemName: String) -> some View {
     Button {} label: {
       Image(systemName: systemName)
-        .mediaActionIconFont(size: MediaActionMetrics.circleIconPointSize, weight: .semibold)
+            .font(MediaActionMetrics.labelFont)
+
+//        .mediaActionIconFont(size: MediaActionMetrics.circleIconPointSize, weight: .semibold)
     }
-    .mediaActionCircleStyle()
+    .mediaActionPillStyle()
   }
 }
 

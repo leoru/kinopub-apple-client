@@ -17,6 +17,10 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
   private let count: String?
   private let cards: [MediaCard]
   private let destination: (any Hashable)?
+  /// The header leads somewhere a `NavigationLink` cannot reach — another tab, most of
+  /// all. Same chevron, same hover treatment; a `Button` instead of a link. Ignored
+  /// when `destination` is set, so a row never claims two ways out.
+  private let onOpen: (() -> Void)?
   private let navigationLinkProvider: (MediaCard) -> any Hashable
   private let onPlay: ((MediaCard) -> Void)?
   private let contextMenuProvider: ((MediaCard) -> [MediaCardContextEntry])?
@@ -46,6 +50,7 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     count: String? = nil,
     cards: [MediaCard],
     destination: (any Hashable)? = nil,
+    onOpen: (() -> Void)? = nil,
     navigationLinkProvider: @escaping (MediaCard) -> any Hashable,
     onPlay: ((MediaCard) -> Void)? = nil,
     contextMenuProvider: ((MediaCard) -> [MediaCardContextEntry])? = nil,
@@ -61,6 +66,7 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     self.count = count
     self.cards = cards
     self.destination = destination
+    self.onOpen = onOpen
     self.navigationLinkProvider = navigationLinkProvider
     self.onPlay = onPlay
     self.contextMenuProvider = contextMenuProvider
@@ -107,8 +113,15 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     isLandscape ? Metrics.landscapeFocusPadding : Metrics.focusPadding
   }
 
+  /// Header → the first card, as a *visible* distance. The rail pads itself vertically
+  /// for focus lift, so that padding comes back out here — otherwise a landscape rail
+  /// and a poster rail sit different distances under identical headers.
+  private var headerSpacing: CGFloat {
+    max(0, Metrics.sectionHeaderSpacing - railFocusPadding)
+  }
+
   public var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: headerSpacing) {
       header
         .padding(.horizontal, metrics.inset)
 
@@ -143,11 +156,19 @@ public struct MediaPosterShelf<FocusKey: Hashable>: View {
     // title. See `docs/archive/plans/detail-page-choreography.md` phase 6.
     HStack(spacing: 10) {
       SectionHeader(title: title, count: count, showsChevron: false)
+      // The badge stayed pinned to the trailing edge when the header itself filled the
+      // row. It no longer does (it hugs its words now), so the spacer keeps it there.
+      Spacer(minLength: 10)
       PaginationHeaderBadge(state: pagination)
     }
 #else
     if let destination {
       NavigationLink(value: destination) {
+        SectionHeader(title: title, count: count, showsChevron: true)
+      }
+      .buttonStyle(RowHeaderButtonStyle())
+    } else if let onOpen {
+      Button(action: onOpen) {
         SectionHeader(title: title, count: count, showsChevron: true)
       }
       .buttonStyle(RowHeaderButtonStyle())
@@ -288,6 +309,7 @@ public extension MediaPosterShelf where FocusKey == Int {
     count: String? = nil,
     cards: [MediaCard],
     destination: (any Hashable)? = nil,
+    onOpen: (() -> Void)? = nil,
     navigationLinkProvider: @escaping (MediaCard) -> any Hashable,
     onPlay: ((MediaCard) -> Void)? = nil,
     contextMenuProvider: ((MediaCard) -> [MediaCardContextEntry])? = nil,
@@ -299,6 +321,7 @@ public extension MediaPosterShelf where FocusKey == Int {
       count: count,
       cards: cards,
       destination: destination,
+      onOpen: onOpen,
       navigationLinkProvider: navigationLinkProvider,
       onPlay: onPlay,
       contextMenuProvider: contextMenuProvider,

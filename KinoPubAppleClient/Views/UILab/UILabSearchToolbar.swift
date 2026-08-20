@@ -336,7 +336,9 @@ struct UILabFloatingFilterBar: View {
           } label: {
             Label("Clear", systemImage: "xmark")
           }
-          .buttonStyle(.accessoryBarAction)
+          .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: true))
+
+//          .buttonStyle(.accessoryBarAction)
         }
       }
       .padding(.horizontal, 12)
@@ -398,6 +400,8 @@ struct UILabToolbarFilterMenus: ToolbarContent {
           
         ForEach(UILabContentType.allCases) { type in
           Button(type.title) { filters.contentType = type }
+                .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: true))
+
         }
       }
 
@@ -410,6 +414,8 @@ struct UILabToolbarFilterMenus: ToolbarContent {
         Divider()
         ForEach(UILabSearchFilters.mockGenres, id: \.self) { genre in
           Button(genre) { filters.genre = genre }
+                .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: true))
+
         }
       }
 
@@ -422,6 +428,8 @@ struct UILabToolbarFilterMenus: ToolbarContent {
         Divider()
         ForEach(UILabSearchFilters.mockCountries, id: \.self) { country in
           Button(country) { filters.country = country }
+                .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: true))
+
         }
       }
 
@@ -434,6 +442,8 @@ struct UILabToolbarFilterMenus: ToolbarContent {
         Divider()
         ForEach(UILabSearchFilters.mockYears, id: \.self) { year in
           Button(year) { filters.year = year }
+                .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: true))
+
         }
       }
 
@@ -444,6 +454,8 @@ struct UILabToolbarFilterMenus: ToolbarContent {
       ) {
         ForEach(UILabSortOrder.allCases) { order in
           Button(order.title) { filters.sort = order }
+                .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: false))
+
         }
       }
 
@@ -456,7 +468,12 @@ struct UILabToolbarFilterMenus: ToolbarContent {
         } label: {
           Label("Clear", systemImage: "xmark")
         }
+//        .buttonStyle(.glass)
+//        .buttonBorderShape(.capsule)
+//        .controlSize(.regular)
         .help("Clear secondary filters")
+        .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: true))
+
       }
     }
   }
@@ -482,9 +499,8 @@ struct UILabToolbarFilterMenus: ToolbarContent {
           .foregroundStyle(.secondary)
       }
     }
-    .buttonStyle(.glass)
-    .buttonBorderShape(.capsule)
-    .controlSize(.regular)
+    .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: false))
+
   }
 
   @ViewBuilder
@@ -507,7 +523,7 @@ struct UILabToolbarFilterMenus: ToolbarContent {
 // MARK: - Shared glass chip styling
 
 #if os(macOS)
-private struct UILabGlassChipStyle: ViewModifier {
+struct UILabGlassChipStyle: ViewModifier {
   var isProminent: Bool
   var iconOnly: Bool = false
 
@@ -515,15 +531,15 @@ private struct UILabGlassChipStyle: ViewModifier {
     Group {
       if isProminent {
         content
-          .buttonStyle(.glass)
-          .tint(Color.KinoPub.accent)
+              .buttonStyle(.glassProminent)
+//          .tint(Color.KinoPub.accentPri)
       } else {
         content
           .buttonStyle(.glass)
       }
     }
     .buttonBorderShape(.capsule)
-    .controlSize(iconOnly ? .small : .regular)
+    .controlSize(.regular)
   }
 }
 #endif

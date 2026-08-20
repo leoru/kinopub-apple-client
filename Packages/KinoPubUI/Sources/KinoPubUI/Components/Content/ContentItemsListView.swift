@@ -107,6 +107,10 @@ public struct ContentItemsListView<Header: View>: View {
 
       if items.isEmpty, placeholderCount == 0, let emptyMessage {
         UnavailableView(title: emptyMessage, systemImage: "magnifyingglass")
+          // Centred across the page. In a `.leading` stack it hugged its own words
+          // and sat against the left edge with the rest of the window beside it,
+          // which is not what an empty state looks like anywhere in the system.
+          .frame(maxWidth: .infinity)
           .padding(.top, 40)
       } else if items.isEmpty, placeholderCount > 0 {
         LazyVGrid(columns: gridColumns, spacing: metrics.gutter) {
@@ -162,6 +166,10 @@ public struct ContentItemsListView<Header: View>: View {
 
         if items.isEmpty, placeholderCount == 0, let emptyMessage {
           UnavailableView(title: emptyMessage, systemImage: "magnifyingglass")
+            // Centred across the page. In a `.leading` stack it hugged its own words
+            // and sat against the left edge with the rest of the window beside it,
+            // which is not what an empty state looks like anywhere in the system.
+            .frame(maxWidth: .infinity)
             .padding(.top, 40)
         } else {
           LazyVGrid(columns: gridColumns, spacing: metrics.gutter) {
@@ -214,7 +222,7 @@ public struct ContentItemsListView<Header: View>: View {
     // `ScrollView` doesn't inherit the edge treatment `List` gets automatically, so it
     // needs asking for explicitly. tvOS has no floating bar over this screen to slide
     // under — see `.claude/skills/apple-chrome/SKILL.md`.
-    .scrollEdgeEffectStyle(.automatic, for: .top)
+    .scrollEdgeEffectStyle(.soft, for: .top)
 #endif
   }
 

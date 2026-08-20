@@ -81,7 +81,20 @@ class NavigationState: ObservableObject {
   }
 
 #if os(macOS)
-  /// Finder/Photos pattern: typing stays on the current tab; Return opens Search results.
+  /// The first character opens the results surface. `LibraryCatalog` already debounces
+  /// `$query` by 0.5 s and refreshes, so results follow the typing — but only once
+  /// `SearchView` is *mounted*, and nothing mounted it until Return. That is why the
+  /// field looked dead while you typed: the catalog it feeds did not exist yet.
+  ///
+  /// Deliberately not the Finder/Photos "typing stays on the tab" model. kino.pub's
+  /// own site answers from the first letters, and matching Finder here meant every
+  /// query cost a Return before it showed anything.
+  func beginToolbarSearchIfNeeded() {
+    guard !macSearchFieldText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+    enterSearch()
+  }
+
+  /// Return still commits the query to Recents — the surface is usually already open.
   func submitToolbarSearch() {
     let query = macSearchFieldText.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !query.isEmpty else { return }
@@ -251,6 +264,17 @@ private struct MacToolbarSearchModifier: ViewModifier {
         placement: .toolbar,
         prompt: "Search"
       ) {
+        // A field that has just been focused has something to offer even on a first
+        // run — recents cannot answer until there are recents. Examples only while the
+        // field is empty; once there is a query the results are the better answer.
+        if navigationState.macSearchFieldText.isEmpty {
+          Section("Try Searching") {
+            ForEach(SearchStarters.queries, id: \.self) { starter in
+              Text(starter).searchCompletion(starter)
+            }
+          }
+        }
+
         if !navigationState.macSearchRecents.isEmpty {
           Section("Recents") {
             ForEach(navigationState.macSearchRecents, id: \.self) { recent in
@@ -261,6 +285,9 @@ private struct MacToolbarSearchModifier: ViewModifier {
             }
           }
         }
+      }
+      .onChange(of: navigationState.macSearchFieldText) { _, _ in
+        navigationState.beginToolbarSearchIfNeeded()
       }
       .onSubmit(of: .search) {
         navigationState.submitToolbarSearch()

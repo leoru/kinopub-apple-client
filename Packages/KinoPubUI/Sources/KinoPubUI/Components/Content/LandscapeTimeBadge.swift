@@ -48,18 +48,18 @@ public struct LandscapeTimeBadge: View {
   }
 
   public var body: some View {
-    HStack(spacing: 4) {
+    HStack(spacing: 2) {
       if let iconName {
         Image(systemName: iconName)
-          .font(.system(size: 9, weight: .bold))
+              .font(.system(.caption2, weight: .bold))
       }
       Text(label)
-        .font(.caption2.weight(.semibold))
-        .monospacedDigit()
+        .font(.caption2.weight(.medium))
+//        .monospacedDigit()
     }
-    .foregroundStyle(isWatchedStyle ? Color.black.opacity(0.85) : Color.white)
-    .padding(.horizontal, 7)
-    .padding(.vertical, 4)
+    .foregroundStyle(isWatchedStyle ? Color.black : Color.white)
+    .padding(.horizontal, 4)
+    .padding(.vertical, 3)
     .background(pillFill, in: Capsule(style: .continuous))
     .accessibilityLabel(Text(accessibilityLabel))
   }
@@ -107,7 +107,7 @@ public struct LandscapeTimeBadge: View {
 
   private var pillFill: Color {
     isWatchedStyle
-      ? Color.white.opacity(0.92)
+      ? Color.KinoPub.subtitle.opacity(0.8)
       : Color.black.opacity(0.55)
   }
 

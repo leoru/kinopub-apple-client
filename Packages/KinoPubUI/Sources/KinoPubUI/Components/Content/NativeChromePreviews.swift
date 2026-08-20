@@ -135,7 +135,7 @@ enum PreviewSample {
     SectionHeader("Continue Watching", count: "12", showsChevron: true)
       .environment(\.cardFocused, true)
     SectionHeader("Hot Films", count: "48", showsChevron: false)
-    SectionHeader("Cast and crew", leadingInset: 24)
+    SectionHeader("Cast & Crew", leadingInset: 24)
   }
   .padding(32)
   .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -260,9 +260,12 @@ enum PreviewSample {
 
     Button {} label: {
       Image(systemName: "checkmark")
-        .mediaActionIconFont(size: MediaActionMetrics.circleIconPointSize, weight: .semibold)
+            .font(MediaActionMetrics.labelFont)
+//        .mediaActionIconFont(size: MediaActionMetrics.circleIconPointSize, weight: .semibold)
     }
-    .mediaActionCircleStyle()
+    .mediaActionPlayPillStyle()
+
+//    .mediaActionCircleStyle()
   }
   .padding(32)
   .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

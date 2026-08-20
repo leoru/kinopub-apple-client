@@ -29,23 +29,23 @@ public enum MediaActionMetrics {
   /// labelled Trailer button. Applied to the *label*: the button itself is system-drawn
   /// and hugs whatever it is given.
   public static let playPillMinWidth: CGFloat = 200
-  public static let buttonHeight: CGFloat = 66
-  public static let iconPointSize: CGFloat = 26
-  public static let circleIconPointSize: CGFloat = 24
+//  public static let buttonHeight: CGFloat = 66
+//  public static let iconPointSize: CGFloat = 26
+//  public static let circleIconPointSize: CGFloat = 24
   public static let labelFont = TypeScale.actionLabel
   public static let progressWidth: CGFloat = 60
   public static let progressHeight: CGFloat = 5
   public static let contentSpacing: CGFloat = 12
   public static let rowSpacing: CGFloat = 16
 #else
-  public static let playPillMinWidth: CGFloat = 168
-  public static let buttonHeight: CGFloat = 44
-  public static let iconPointSize: CGFloat = 15
-  public static let circleIconPointSize: CGFloat = 16
+  public static let playPillMinWidth: CGFloat = 60
+//  public static let buttonHeight: CGFloat = 44
+//  public static let iconPointSize: CGFloat = 15
+//  public static let circleIconPointSize: CGFloat = 16
   public static let labelFont = TypeScale.actionLabel
   public static let progressWidth: CGFloat = 40
   public static let progressHeight: CGFloat = 3
-  public static let contentSpacing: CGFloat = 8
+  public static let contentSpacing: CGFloat = 6
   public static let rowSpacing: CGFloat = 12
 #endif
 }
@@ -82,7 +82,9 @@ public extension View {
 public extension View {
   /// Play / Resume — the primary call to action.
   func mediaActionPlayPillStyle() -> some View {
-    buttonStyle(.borderedProminent)
+      buttonStyle(.glassProminent)
+          .tint(Color.KinoPub.accent)
+          .kinoGlass(in: .buttonBorder, interactive: true)
       .buttonBorderShape(.capsule)
 #if !os(tvOS)
       .controlSize(.large)
@@ -91,7 +93,8 @@ public extension View {
 
   /// A labelled secondary control (Trailer, Watchlist) — same capsule, quieter weight.
   func mediaActionPillStyle() -> some View {
-    buttonStyle(.bordered)
+      
+    buttonStyle(.glass)
       .buttonBorderShape(.capsule)
 #if !os(tvOS)
       .controlSize(.large)
@@ -101,8 +104,8 @@ public extension View {
   /// An icon-only secondary control. `.circle` is a real `ButtonBorderShape`, so the
   /// plate, its focus treatment and its press feedback are all the system's.
   func mediaActionCircleStyle() -> some View {
-    buttonStyle(.bordered)
-      .buttonBorderShape(.circle)
+    buttonStyle(.glass)
+          .buttonBorderShape(.capsule)
 #if !os(tvOS)
       .controlSize(.large)
 #endif
@@ -145,7 +148,7 @@ public struct MediaActionProgressTrack: View {
     Button {} label: {
       HStack(spacing: MediaActionMetrics.contentSpacing) {
         Image(systemName: "play.fill")
-          .mediaActionIconFont(size: MediaActionMetrics.iconPointSize, weight: .semibold)
+//          .font(MediaActionMetrics.labelFont)
         Text("Play")
           .font(MediaActionMetrics.labelFont)
       }
@@ -157,13 +160,21 @@ public struct MediaActionProgressTrack: View {
       Label("Trailer", systemImage: "film")
         .font(MediaActionMetrics.labelFont)
     }
+//    .buttonStyle(.glass)
     .mediaActionPillStyle()
 
     Button {} label: {
-      Image(systemName: "bookmark.fill")
-        .mediaActionIconFont(size: MediaActionMetrics.circleIconPointSize, weight: .semibold)
+//      Image(systemName: "bookmark")
+        
+//            .font(MediaActionMetrics.labelFont)
+        Label("Add to Bookmarks", systemImage: "bookmark")
+            .font(MediaActionMetrics.labelFont)
+
+//        .mediaActionIconFont(size: MediaActionMetrics.circleIconPointSize, weight: .semibold)
     }
-    .mediaActionCircleStyle()
+//    .buttonStyle(.glass)
+    .mediaActionPillStyle()
+//    .mediaActionCircleStyle()
   }
   .padding(32)
   .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

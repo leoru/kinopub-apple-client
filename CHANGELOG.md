@@ -5,6 +5,51 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Card geometry, shelf rhythm, and chrome that stays put (2026-08-20)
+
+- **A poster's height follows its column again.** `MediaCardView` measured the
+  artwork's own width and fed the height back into it; `aspectRatio(_:contentMode:
+  .fit)` accepts *every* width no wider than the one offered, so `w × w/ratio` was a
+  stable answer for any `w` — the card kept whatever width it first landed on. A
+  window resize then grew the column and the caption while the artwork stood still
+  (measured: 3 columns, 500pt → 1100pt, grid height 194 → 98 before, 193 → 425 after).
+  The width now comes from a zero-height `maxWidth: .infinity` probe above the
+  artwork, which nothing can clamp, and the box is pinned in both directions.
+- **`ShelfMetrics`: the ladder no longer falls back at the top, and the gutter is
+  derived.** Past the last named breakpoint it adds a column every 200pt instead of
+  dropping from 8 columns to 6 (which inflated every card the moment a Mac window
+  passed 1600pt). Gutter is always `inset / 2` — hand-picked per-step gutters (20 /
+  28 / 32 / 24 for banners) made the gap between two posters as wide as the page
+  margin on a phone, and a different width at every breakpoint. The phone step now
+  runs to 520pt, so a 440pt Pro Max keeps 3 columns instead of four 72pt ones.
+- **`Metrics.sectionHeaderSpacing`** joins `rowSpacing` as the two numbers that own a
+  page of sections; `landscapeFocusPadding` equals `focusPadding` off tvOS (it is
+  focus-lift room, and there is no focus engine there), so Continue Watching sits the
+  same distance under its header, and above the next section, as every poster rail.
+- **`SectionHeader` hugs its own words.** It was `maxWidth: .infinity` with the tap
+  shape over all of it, so the "see all" link — and any hover on it — covered the full
+  width of the grid; a click level with the title but four columns to the right
+  navigated. The leading inset is outside the shape now too, and the tvOS pagination
+  badge keeps its trailing position via a spacer instead of the header's old fill.
+  An HDR-boosted hover tried here the same day was **reverted**: over a grey page with
+  white labels the boost is invisible, and highlighting a full-width region with a
+  dead gap under it is not a thing anyone does. `Color.KinoPub.hdrHighlight` is gone
+  with it — do not re-add either without being asked.
+- **macOS search now reaches `/v1/items/search` at all**, and runs while you type.
+  `LibraryCatalog.init` takes a seed query, `TabsNavigationView` fills it from the
+  toolbar field, and the first non-blank character opens the surface. **The how and
+  why live on `LibraryCatalog` itself** — deliberately not repeated here.
+- **`MediaRow.onOpen`** — a "see all" that is not a push. Continue Watching's chevron
+  selects the Library tab, where the same titles live split into series, films and
+  history. `HomeCatalog` still knows nothing about tabs: `MainView` attaches it.
+- **The macOS tab bar stays drawn while searching.** Search used to be laid over the
+  whole `TabView`, which took the tabs with it; it now fills the content of the tab it
+  was entered from (that one tab only — every root stays mounted, so answering
+  "search" for all four would stand up four `SearchView`s and four fetches).
+- **An empty search field offers starters**, not just recents — recents cannot answer
+  on a first run. `/v1/items/search` matches `title` / `director` / `cast`, so the
+  examples are names as well as titles.
+
 ### Community architecture, without their UI (2026-08-18)
 
 - **`MediaLibraryStore`** — the per-item optimistic library from

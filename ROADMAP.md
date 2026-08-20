@@ -46,6 +46,29 @@ grid so the remote has a focus landing zone); contained Home banner shelf; unifi
       (`ArtworkPipeline.swift`), one decoded cache keyed by target size on all four platforms.
       **Palette is not part of it** and is still open
 - [ ] Card → detail always seeds the hero from known artwork
+- [ ] Search chrome is not on the pages that need it. Movies / Shows carry the toolbar field but
+      no filters bar, and their "sort" is a sheet-based shortcut picker rather than the
+      `LibrarySortMenu` + `LibraryFiltersBar` accessory strip Search and Person already use. One
+      chrome for every grid, or the field stops meaning the same thing from page to page
+- [ ] Search, beyond "it runs now": instant recents and popular queries in the empty field
+      (`SearchStarters` is a hardcoded stub standing in for this), typo/transliteration correction
+      while typing, an in-field dropdown of matching titles (kino.pub's own site does this — see
+      the "дикаприо" capture), and filters offered before the query rather than after. Their site
+      also splits results into Все / Названия / Актёры / Режиссёры — `/v1/items/search` takes
+      `field=title|cast|director`, so the counts are one request each
+- [ ] macOS toolbar height is not stable, so the tab bar jumps on launch and on entering Search.
+      The search field and the filters accessory attach a frame or two after the shell, and only
+      Search has an accessory at all. `macStableToolbarChrome(reserveAccessorySlot:)` was written
+      for exactly this and **is never called** — turning it on costs a permanent ~36pt empty strip
+      under the tabs on every browse tab, which is why it is a decision and not a patch
+- [ ] macOS player window: no title bar, no toolbar background — traffic lights over the video in
+      the corner, the way the system players do it
+- [ ] Hover-overlay paging arrows on a rail (the leading/trailing chevron buttons Apple TV and the
+      TV app's web player use). Pointer-only affordance; the rail already scrolls
+- [ ] Two-line toolbar title with an item counter (the system "Days / 1,586 items" shape) for the
+      screens a tab name does not label: search, filter results, a collection, a person, "similar
+      to". Once the page's own header scrolls away those screens say nothing about what is in them.
+      Home does not need it — the tab is the label
 - [ ] Launch: paint tabs and cached rails first; never block the shell on the whole session
       (a launch trace showed `history?perpage=20` alone at 96 KB, re-fetched every cold start)
 
@@ -78,6 +101,11 @@ grid so the remote has a focus landing zone); contained Home banner shelf; unifi
 
 - [x] One artwork atom instead of ~15 `AsyncImage` call sites — `CachedRemoteImage` (configured) over
       `ArtworkImage` (the primitive). `AsyncImage` no longer appears in the repo
+- [ ] Artwork visibly re-lays out inside a card when the real image replaces the placeholder on
+      scroll-in. **Pre-existing, not from the 2026-08-19 card-width fix.** Suspect (unverified):
+      `CachedRemoteImage`'s `contentMode: .fill` resizing under `ArtworkImage`'s subtree-wide fade
+      animation, so the swap is animated as a size change. Watch the transition before fixing —
+      the card's own box is pinned to its width now, so the jump is inside the image, not the cell
 - [ ] De-duplicate the two initials-avatar implementations
 - [ ] Collapse the 16 custom `ButtonStyle` types (separate pass)
 - [ ] `MediaItemInfoColumns` → `Grid` / `GridRow`

@@ -59,7 +59,7 @@ struct LibraryFiltersBar: View {
         } label: {
           Label("Clear", systemImage: "xmark")
         }
-        .modifier(LibraryFilterGlassStyle(isProminent: false, useSolid: solidChrome))
+//        .modifier(LibraryFilterGlassStyle(isProminent: false, useSolid: solidChrome))
       }
     }
 #if os(macOS)
@@ -190,7 +190,7 @@ struct LibraryFiltersBar: View {
         .labelStyle(.titleAndIcon)
         .lineLimit(1)
     }
-    .modifier(LibraryFilterGlassStyle(isProminent: isActive, useSolid: solidChrome))
+    .modifier(LibraryFilterGlassStyle(isProminent: isActive, useSolid: false))
   }
 
   /// Shared Menu chrome for person credits / call sites that still use the static API.
@@ -212,7 +212,7 @@ struct LibraryFiltersBar: View {
     }
     .modifier(LibraryFilterGlassStyle(
       isProminent: isActive,
-      useSolid: reduceTransparency || highContrast
+      useSolid: false
     ))
   }
 
@@ -261,27 +261,32 @@ struct LibraryFilterGlassStyle: ViewModifier {
       if useSolid {
         if isProminent {
           content
-            .buttonStyle(.borderedProminent)
-            .tint(Color.KinoPub.accent)
+                .buttonStyle(.glassProminent)
+//            .tint(Color.KinoPub.accent)
         } else {
           content
+//              /* */ .buttonStyle(.glass)
             .buttonStyle(.bordered)
         }
       } else if isProminent {
         content
           .buttonStyle(.glassProminent)
           .tint(Color.KinoPub.accent)
+//          .kinoGlass(in: .capsule, tint: Color.KinoPub.accent, interactive: true)
       } else {
         content
           // System glass — required for accessory-bar filter chips (UI Lab path).
+//              .kinoGlass(in: .capsule, interactive: true)
           .buttonStyle(.glass)
       }
     }
     .buttonBorderShape(.capsule)
     .controlSize(controlSize)
 #if os(macOS)
+    .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: true))
+
     // Accessory bar can flatten Menu chrome; keep glass interactive.
-    .tint(isProminent ? Color.KinoPub.accent : nil)
+//    .tint(isProminent ? Color.KinoPub.accent : nil)
 #endif
   }
 }
@@ -308,7 +313,8 @@ struct LibrarySortMenu: View {
         } label: {
           LibraryFiltersBar.checkmarkLabel(LocalizedStringKey(order.titleKey),
                                            selected: catalog.filter.sort == order)
-        }
+        }    .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: true))
+
       }
     }
   }

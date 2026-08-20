@@ -157,7 +157,7 @@ public struct MediaCardsListView: View {
     // inherit the edge treatment `List` gets automatically, so it needs asking for
     // explicitly. tvOS has no floating bar over this screen to slide under — see
     // `.claude/skills/apple-chrome/SKILL.md`.
-    .scrollEdgeEffectStyle(.automatic, for: .top)
+    .scrollEdgeEffectStyle(.soft, for: .top)
 #endif
   }
 

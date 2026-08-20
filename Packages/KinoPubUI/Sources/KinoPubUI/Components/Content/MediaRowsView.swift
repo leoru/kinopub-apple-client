@@ -16,17 +16,30 @@ public struct MediaRow: Identifiable {
   /// Where the title leads: the same content as a full screen. Nil leaves the title
   /// as plain text, for rows that have no page of their own.
   public let destination: (any Hashable)?
+  /// For a row whose "see all" is not a push at all — Continue Watching sends the user
+  /// to the Library tab, where the same titles live split into series, movies and
+  /// history. Set this *or* `destination`, never both.
+  public let onOpen: (() -> Void)?
 
   public init(id: String,
               title: String,
               count: String? = nil,
               cards: [MediaCard],
-              destination: (any Hashable)? = nil) {
+              destination: (any Hashable)? = nil,
+              onOpen: (() -> Void)? = nil) {
     self.id = id
     self.title = title
     self.count = count
     self.cards = cards
     self.destination = destination
+    self.onOpen = onOpen
+  }
+
+  /// The same row with a "see all" that runs `action`. Lets a view attach navigation to
+  /// a row a store built — the store has no business knowing about tabs.
+  public func opening(_ action: @escaping () -> Void) -> MediaRow {
+    MediaRow(id: id, title: title, count: count, cards: cards,
+             destination: destination, onOpen: action)
   }
 }
 
@@ -116,6 +129,10 @@ public struct MediaRowsView: View {
       LazyVStack(alignment: .leading, spacing: Self.rowSpacing) {
         scrollContent
       }
+      // The first section is a header with no navigation title above it, so without
+      // this it starts hard against the bar. The scroll-edge effect needs something to
+      // fade, too — content that begins level with the bar has nothing to pass under.
+      .padding(.top, Self.rowSpacing)
       .padding(.bottom, Self.rowSpacing)
     }
 #if os(tvOS)
@@ -125,7 +142,7 @@ public struct MediaRowsView: View {
     // doesn't inherit the edge treatment `List` gets automatically, so it needs asking
     // for explicitly. tvOS has no floating bar over this screen to slide under — see
     // `.claude/skills/apple-chrome/SKILL.md`.
-    .scrollEdgeEffectStyle(.automatic, for: .top)
+    .scrollEdgeEffectStyle(.soft, for: .top)
 #endif
   }
 
@@ -197,6 +214,7 @@ public struct MediaRowsView: View {
       count: row.count,
       cards: row.cards,
       destination: row.destination,
+      onOpen: row.onOpen,
       navigationLinkProvider: navigationLinkProvider,
       onPlay: onPlay,
       contextMenuProvider: { card in
