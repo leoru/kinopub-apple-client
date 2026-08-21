@@ -108,7 +108,7 @@ struct TabsNavigationView: View {
         if newValue == navigationState.selectedTab {
           navigationState.popToRoot(for: newValue)
         } else {
-          navigationState.selectedTab = newValue
+          navigationState.selectedTab = newValue // Publishing changes from within view updates is not allowed, this will cause undefined behavior.
         }
       }
     )

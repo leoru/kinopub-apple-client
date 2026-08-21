@@ -7,8 +7,8 @@
 
 import Foundation
 import KinoPubBackend
-
-extension APIClientError: CustomStringConvertible {
+ 
+extension APIClientError: CustomStringConvertible { // Extension declares a conformance of imported type 'APIClientError' to imported protocol 'CustomStringConvertible'; this will not behave correctly if the owners of 'KinoPubBackend' introduce this conformance in the future
   public var description: String {
     switch self {
     case .urlError:

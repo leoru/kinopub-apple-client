@@ -58,20 +58,20 @@ class PersonalLibraryCatalog: ObservableObject {
 
     await withTaskGroup(of: Void.self) { group in
       group.addTask { [store] in
-        await store.refreshIfStale(.watchlist) { [weak self] in
+        await store.refreshIfStale(.watchlist) { [weak self] in //'weak' ownership of capture 'self' differs from implicitly-captured strong reference in outer scope
           guard let self else { throw CancellationError() }
           return try await self.fetchWatchlistCards()
         }
       }
       group.addTask { [store] in
-        await store.refreshIfStale(.history) { [weak self] in
+        await store.refreshIfStale(.history) { [weak self] in // 'weak' ownership of capture 'self' differs from implicitly-captured strong reference in outer scope
           guard let self else { throw CancellationError() }
           return try await self.fetchHistoryCards()
         }
       }
       for folder in folders {
         group.addTask { [store] in
-          await store.refreshIfStale(.folder(folder.id)) { [weak self] in
+          await store.refreshIfStale(.folder(folder.id)) { [weak self] in // 'weak' ownership of capture 'self' differs from implicitly-captured strong reference in outer scope
             guard let self else { throw CancellationError() }
             return try await self.fetchFolderCards(folder)
           }

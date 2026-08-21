@@ -122,7 +122,7 @@ final class LibraryModel: ObservableObject {
   }
 
   func select(_ section: LibrarySection) {
-    selection = section
+    selection = section //Publishing changes from within view updates is not allowed, this will cause undefined behavior.
     defaults.set(section.persistenceID, forKey: Self.selectionKey)
   }
 

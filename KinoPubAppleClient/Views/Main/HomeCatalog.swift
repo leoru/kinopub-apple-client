@@ -135,7 +135,7 @@ class HomeCatalog: ObservableObject {
 
     await withTaskGroup(of: Void.self) { group in
       group.addTask { [store] in
-        await store.refreshIfStale(.continueWatching) { [weak self] in
+        await store.refreshIfStale(.continueWatching) { [weak self] in // 'weak' ownership of capture 'self' differs from implicitly-captured strong reference in outer scope
           guard let self else { throw CancellationError() }
           return try await self.fetchContinueWatchingCards()
         }
@@ -144,12 +144,12 @@ class HomeCatalog: ObservableObject {
         // Stale snapshots predate `opensCollection` — force a refresh so Select
         // opens the collection rather than a colliding media id.
         if collectionsNeedMigration {
-          await store.refresh(.collections) { [weak self] in
+          await store.refresh(.collections) { [weak self] in // 'weak' ownership of capture 'self' differs from implicitly-captured strong reference in outer scope
             guard let self else { throw CancellationError() }
             return try await self.fetchCollectionsPreviewCards()
           }
         } else {
-          await store.refreshIfStale(.collections) { [weak self] in
+          await store.refreshIfStale(.collections) { [weak self] in // 'weak' ownership of capture 'self' differs from implicitly-captured strong reference in outer scope
             guard let self else { throw CancellationError() }
             return try await self.fetchCollectionsPreviewCards()
           }
@@ -157,7 +157,7 @@ class HomeCatalog: ObservableObject {
       }
       for shortcut in Self.shortcuts {
         group.addTask { [store] in
-          await store.refreshIfStale(.shortcut(shortcut.shortcut, shortcut.contentType)) { [weak self] in
+          await store.refreshIfStale(.shortcut(shortcut.shortcut, shortcut.contentType)) { [weak self] in // 'weak' ownership of capture 'self' differs from implicitly-captured strong reference in outer scope
             guard let self else { throw CancellationError() }
             return try await self.fetchShortcutCards(shortcut)
           }

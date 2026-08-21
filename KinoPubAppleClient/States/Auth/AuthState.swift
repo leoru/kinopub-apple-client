@@ -73,7 +73,7 @@ final class AuthState: ObservableObject {
     NotificationCenter.default.addObserver(
       forName: .kinopubUnauthorizedResponse, object: nil, queue: .main
     ) { [weak self] _ in
-      self?.handleUnauthorizedResponse()
+      self?.handleUnauthorizedResponse() // Call to main actor-isolated instance method 'handleUnauthorizedResponse()' in a synchronous nonisolated context
     }
   }
 
