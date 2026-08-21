@@ -69,11 +69,15 @@ def require_env!(name)
 end
 
 def connect_api_key
-  @connect_api_key ||= app_store_connect_api_key(
+  return @connect_api_key if @connect_api_key
+
+  raw = require_env!("APP_STORE_CONNECT_API_KEY_CONTENT")
+  pem = raw.include?("BEGIN PRIVATE KEY")
+  @connect_api_key = app_store_connect_api_key(
     key_id: require_env!("APP_STORE_CONNECT_API_KEY_ID"),
     issuer_id: require_env!("APP_STORE_CONNECT_ISSUER_ID"),
-    key_content: require_env!("APP_STORE_CONNECT_API_KEY_CONTENT"),
-    is_key_content_base64: true,
+    key_content: pem ? raw : raw.gsub(/\s+/, ""),
+    is_key_content_base64: !pem,
     duration: 1200,
     in_house: false
   )
@@ -197,14 +201,14 @@ def install_signing!(macos:)
 end
 
 def fetch_profile!(sigh_platform:)
-  ext = sigh_platform == "macos" ? "provisionprofile" : "mobileprovision"
+  # sigh's filename option only accepts .mobileprovision, including macOS.
   get_provisioning_profile(
     app_identifier: BUNDLE_ID,
     api_key: connect_api_key,
     adhoc: false,
     force: ENV["CI"].to_s == "true",
     provisioning_name: "KinoPub #{sigh_platform} AppStore",
-    filename: "KinoPub-#{sigh_platform}.#{ext}",
+    filename: "KinoPub-#{sigh_platform}.mobileprovision",
     output_path: Dir.tmpdir,
     platform: sigh_platform,
     team_id: TEAM_ID
@@ -212,20 +216,33 @@ def fetch_profile!(sigh_platform:)
   lane_context[SharedValues::SIGH_NAME]
 end
 
-def archive_xcargs(build_number, profile_name)
-  tokens = [
-    "CURRENT_PROJECT_VERSION=#{build_number}",
-    "CODE_SIGN_STYLE=Manual",
-    "CODE_SIGN_IDENTITY=Apple Distribution",
-    "CODE_SIGN_IDENTITY[sdk=macosx*]=Apple Distribution",
-    "DEVELOPMENT_TEAM=#{TEAM_ID}",
-    "PROVISIONING_PROFILE_SPECIFIER=#{profile_name}"
-  ]
-  quoted = tokens.map(&:dump).join(" ")
-  "#{quoted} -allowProvisioningUpdates -skipMacroValidation"
+# Sign the app target only. xcargs CODE_SIGN_IDENTITY / PROVISIONING_PROFILE_SPECIFIER
+# apply to every target in the graph — SPM packages then fail with "does not support
+# provisioning profiles", and `CODE_SIGN_IDENTITY[sdk=macosx*]` was parsed as the
+# identity `macosx*]=Apple Distribution`.
+def apply_app_signing!(profile_name:)
+  require "xcodeproj"
+  project = Xcodeproj::Project.open(PROJECT)
+  target = project.targets.find { |item| item.name == "KinoPubAppleClient" }
+  UI.user_error!("Missing target KinoPubAppleClient") if target.nil?
+
+  target.build_configurations.each do |config|
+    config.build_settings["CODE_SIGN_STYLE"] = "Manual"
+    config.build_settings["CODE_SIGN_IDENTITY"] = "Apple Distribution"
+    config.build_settings["CODE_SIGN_IDENTITY[sdk=macosx*]"] = "Apple Distribution"
+    config.build_settings["DEVELOPMENT_TEAM"] = TEAM_ID
+    config.build_settings["PROVISIONING_PROFILE_SPECIFIER"] = profile_name
+  end
+  project.save
+end
+
+def archive_xcargs(build_number)
+  "CURRENT_PROJECT_VERSION=#{build_number} DEVELOPMENT_TEAM=#{TEAM_ID} -allowProvisioningUpdates -skipMacroValidation"
 end
 
 def build_platform!(spec:, build_number:, profile_name:)
+  apply_app_signing!(profile_name: profile_name)
+
   common = {
     project: PROJECT,
     scheme: SCHEME,
@@ -235,7 +252,7 @@ def build_platform!(spec:, build_number:, profile_name:)
     output_directory: "build",
     output_name: spec[:output],
     skip_profile_detection: true,
-    xcargs: archive_xcargs(build_number, profile_name),
+    xcargs: archive_xcargs(build_number),
     export_options: {
       method: "app-store",
       signingStyle: "manual",

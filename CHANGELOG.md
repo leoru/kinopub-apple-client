@@ -5,6 +5,17 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### TestFlight archive signing (2026-08-21)
+
+- First CI run authenticated and minted App Store profiles for `com.soda.kinopub`.
+  The archive then failed for two Fastfile bugs, not a missing bundle-id secret:
+  global `xcargs` applied `PROVISIONING_PROFILE_SPECIFIER` to SPM packages
+  ("does not support provisioning profiles"), and
+  `CODE_SIGN_IDENTITY[sdk=macosx*]` was parsed as the identity
+  `macosx*]=Apple Distribution`. Signing now writes onto the app target only.
+  macOS sigh filenames are `.mobileprovision` (Fastlane rejects `.provisionprofile`).
+- `APP_STORE_CONNECT_API_KEY_CONTENT` accepts base64 of the `.p8` **or** the PEM.
+
 ### Internal TestFlight from GitHub Actions (2026-08-21)
 
 - **Actions → TestFlight** archives Release of the one multiplatform target for

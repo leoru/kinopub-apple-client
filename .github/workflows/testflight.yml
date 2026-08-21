@@ -27,7 +27,7 @@
 # ── GitHub secrets (Settings → Secrets and variables → Actions) ─────────────
 #   APP_STORE_CONNECT_API_KEY_ID            key id, e.g. ABCD123456
 #   APP_STORE_CONNECT_ISSUER_ID             issuer UUID from the API keys page
-#   APP_STORE_CONNECT_API_KEY_CONTENT       base64 of the .p8
+#   APP_STORE_CONNECT_API_KEY_CONTENT       base64 of the .p8, or the PEM itself
 #   BUILD_CERTIFICATE_BASE64                base64 of the Apple Distribution .p12
 #   P12_PASSWORD                            password of that .p12
 #   MAC_INSTALLER_CERTIFICATE_BASE64        base64 of the Mac Installer .p12
