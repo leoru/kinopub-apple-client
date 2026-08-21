@@ -266,7 +266,11 @@ def build_platform!(spec:, build_number:, profile_name:)
   }
 
   if spec[:mac]
-    build_mac_app(common)
+    # gym 2.238 decides IPA vs PKG via `sdk == "macosx"` on a multiplatform
+    # target. Destination `generic/platform=macOS` is not enough — without
+    # the sdk it packages as IPA, then `handle_empty_ipa` raises "IPA invalid"
+    # after a successful exportArchive of the .pkg.
+    build_mac_app(common.merge(sdk: "macosx"))
   else
     build_app(common)
   end
@@ -297,7 +301,28 @@ def upload_platform!(spec:, artifact:)
     args[:groups] = groups
   end
 
-  upload_to_testflight(args)
+  upload_with_retry!(args)
+end
+
+def upload_with_retry!(args)
+  tries = 0
+  begin
+    upload_to_testflight(args)
+  rescue StandardError => e
+    message = "#{e.class}: #{e.message}"
+    if message.match?(/already been uploaded|Redundant Binary|duplicate binary/i)
+      UI.success("App Store Connect already has this binary; continuing")
+      return
+    end
+
+    tries += 1
+    if tries < 3 && message.match?(/status code 500|internal server error/i)
+      UI.important("App Store Connect 500 on upload (#{tries}/3). Waiting 30s.")
+      sleep 30
+      retry
+    end
+    raise
+  end
 end
 
 before_all do

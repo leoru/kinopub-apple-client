@@ -41,6 +41,12 @@ App Store Connect then rejected iOS/tvOS, and macOS Release did not compile:
   only in the DEBUG UI Lab. `LibraryFilterGlassStyle` already owns the glass;
   the extra modifier is gone.
 
+iOS then uploaded on [run 32498863231](https://github.com/HipsterCat/kinopub-apple-client/actions/runs/32498863231).
+tvOS archived and altool said `UPLOAD SUCCEEDED`, then Fastlane failed on a
+checksum 500. macOS archived, then gym raised `IPA invalid` because a
+multiplatform target needs `sdk: "macosx"` for gym to expect a `.pkg`.
+Upload now retries Apple 500s; a redundant-binary reply is success.
+
 ### Internal TestFlight from GitHub Actions (2026-08-21)
 
 - **Actions → TestFlight** archives Release of the one multiplatform target for
