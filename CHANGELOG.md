@@ -7,8 +7,10 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ### CI skips macos-26 jobs when the diff cannot compile (2026-08-21)
 
-- Fastlane, the TestFlight workflow, markdown, `workers/`, `tools/` no longer
-  wake the tvOS/iOS/macOS build and UI-test matrix. A mixed PR still runs.
+- Fastlane, TestFlight yaml, markdown, `workers/`, `tools/` wake nothing.
+  `xcassets` / `Localizable.xcstrings` still compile (a broken catalog must
+  fail xcodebuild) but skip the simulator UI-test jobs. Swift / pbxproj still
+  run the full matrix.
 
 ### TestFlight archive signing (2026-08-21)
 
