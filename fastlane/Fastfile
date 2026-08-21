@@ -29,7 +29,9 @@ opt_out_usage
 
 default_platform(:ios)
 
-PROJECT = "KinoPubAppleClient.xcodeproj"
+# gym and xcodeproj disagree about cwd: Fastlane actions are repo-root, but
+# `Xcodeproj::Project.open` follows the process cwd (`fastlane/`). Absolute.
+PROJECT = File.expand_path("../KinoPubAppleClient.xcodeproj", __dir__)
 SCHEME = "KinoPubAppleClient"
 BUNDLE_ID = "com.soda.kinopub"
 TEAM_ID = "Z2PQ733PSP"
