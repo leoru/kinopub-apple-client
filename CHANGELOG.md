@@ -5,6 +5,11 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### CI skips macos-26 jobs when the diff cannot compile (2026-08-21)
+
+- Fastlane, the TestFlight workflow, markdown, `workers/`, `tools/` no longer
+  wake the tvOS/iOS/macOS build and UI-test matrix. A mixed PR still runs.
+
 ### TestFlight archive signing (2026-08-21)
 
 - First CI run authenticated and minted App Store profiles for `com.soda.kinopub`.

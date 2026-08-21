@@ -1,9 +1,38 @@
 name: CI
 
+# Skip the macos-26 matrix when the diff cannot affect a compile or a test:
+# Fastlane, TestFlight workflow, docs, workers, tools. `workflow_dispatch`
+# still runs everything. A mixed PR (docs + Swift) still runs — GitHub only
+# skips when *every* file matches paths-ignore.
+
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'fastlane/**'
+      - 'Gemfile'
+      - 'Gemfile.lock'
+      - '.github/workflows/testflight.yml'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'workers/**'
+      - 'tools/**'
+      - '.cursor/**'
+      - '.claude/**'
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'fastlane/**'
+      - 'Gemfile'
+      - 'Gemfile.lock'
+      - '.github/workflows/testflight.yml'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'workers/**'
+      - 'tools/**'
+      - '.cursor/**'
+      - '.claude/**'
   workflow_dispatch:
 
 concurrency:
@@ -62,8 +91,8 @@ jobs:
           fi
 
   # Separate from the compile jobs on purpose: this one boots a simulator and installs the
-  # app, so it is minutes rather than seconds. The compile jobs stay on every change —
-  # they are what catches a symbol fenced to one platform and used on another.
+  # app, so it is minutes rather than seconds. Compile stays on every *app* change —
+  # that is what catches a symbol fenced to one platform and used on another.
   test-app:
     name: Test app (${{ matrix.platform }})
     runs-on: macos-26
