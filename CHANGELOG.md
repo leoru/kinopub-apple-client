@@ -5,6 +5,13 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### CI skips macos-26 jobs when the diff cannot compile (2026-08-21)
+
+- Fastlane, TestFlight yaml, markdown, `workers/`, `tools/` wake nothing.
+  `xcassets` / `Localizable.xcstrings` still compile (a broken catalog must
+  fail xcodebuild) but skip the simulator UI-test jobs. Swift / pbxproj still
+  run the full matrix.
+
 ### TestFlight archive signing (2026-08-21)
 
 - First CI run authenticated and minted App Store profiles for `com.soda.kinopub`.

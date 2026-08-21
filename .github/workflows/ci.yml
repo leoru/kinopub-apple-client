@@ -1,5 +1,10 @@
 name: CI
 
+# macos-26 jobs are gated by path filters, not a blanket paths-ignore:
+# Fastlane / docs / TestFlight yaml → nothing. xcassets / xcstrings →
+# compile only (a broken catalog still fails xcodebuild). Swift / pbxproj
+# → compile + UI tests. `workflow_dispatch` still runs everything.
+
 on:
   push:
     branches: [main]
@@ -11,8 +16,63 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  filter:
+    name: What changed
+    runs-on: ubuntu-latest
+    outputs:
+      compile: ${{ steps.out.outputs.compile }}
+      test_app: ${{ steps.out.outputs.test_app }}
+      packages: ${{ steps.out.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'push'
+
+      - uses: dorny/paths-filter@v3
+        if: github.event_name != 'workflow_dispatch'
+        id: filter
+        with:
+          filters: |
+            compile:
+              - 'KinoPubAppleClient/**'
+              - 'Packages/**'
+              - 'KinoPubAppleClient.xcodeproj/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
+            test_app:
+              - 'KinoPubAppleClient/**/*.swift'
+              - 'KinoPubAppleClient/**/*.plist'
+              - 'KinoPubAppleClient/**/*.metal'
+              - 'KinoPubAppleClient.xcodeproj/**'
+              - 'Packages/**/*.swift'
+              - 'Packages/**/*.metal'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
+            packages:
+              - 'Packages/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
+
+      - id: out
+        env:
+          EVENT: ${{ github.event_name }}
+          COMPILE: ${{ steps.filter.outputs.compile }}
+          TEST_APP: ${{ steps.filter.outputs.test_app }}
+          PACKAGES: ${{ steps.filter.outputs.packages }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "compile=true" >> "$GITHUB_OUTPUT"
+            echo "test_app=true" >> "$GITHUB_OUTPUT"
+            echo "packages=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "compile=${COMPILE:-false}" >> "$GITHUB_OUTPUT"
+            echo "test_app=${TEST_APP:-false}" >> "$GITHUB_OUTPUT"
+            echo "packages=${PACKAGES:-false}" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     name: Build (${{ matrix.platform }})
+    needs: filter
+    if: needs.filter.outputs.compile == 'true'
     runs-on: macos-26
     strategy:
       fail-fast: false
@@ -62,10 +122,12 @@ jobs:
           fi
 
   # Separate from the compile jobs on purpose: this one boots a simulator and installs the
-  # app, so it is minutes rather than seconds. The compile jobs stay on every change —
-  # they are what catches a symbol fenced to one platform and used on another.
+  # app, so it is minutes rather than seconds. Compile stays on every *app* change —
+  # that is what catches a symbol fenced to one platform and used on another.
   test-app:
     name: Test app (${{ matrix.platform }})
+    needs: filter
+    if: needs.filter.outputs.test_app == 'true'
     runs-on: macos-26
     strategy:
       fail-fast: false
@@ -124,6 +186,8 @@ jobs:
 
   test-packages:
     name: Test ${{ matrix.package }}
+    needs: filter
+    if: needs.filter.outputs.packages == 'true'
     runs-on: macos-26
     strategy:
       fail-fast: false
