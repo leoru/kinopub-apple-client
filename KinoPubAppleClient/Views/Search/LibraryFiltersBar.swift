@@ -313,8 +313,7 @@ struct LibrarySortMenu: View {
         } label: {
           LibraryFiltersBar.checkmarkLabel(LocalizedStringKey(order.titleKey),
                                            selected: catalog.filter.sort == order)
-        }    .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: true))
-
+        }
       }
     }
   }

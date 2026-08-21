@@ -52,6 +52,7 @@ struct TVProfileSettingsView: View {
       accountSection
       languageSection
       playbackSection
+      trackMemorySection
       // DESIGN: Devices section — `DeviceService.listDevices` / `removeDevice` are ready
       // (identity + HEVC/4K/HDR already sync on auth). Focusable Settings list TBD.
       kinopoiskSection
@@ -208,6 +209,15 @@ struct TVProfileSettingsView: View {
       }
       .buttonStyle(SettingsPillButtonStyle())
       .focused($focusedItem, equals: .kinopoisk)
+    }
+  }
+
+  /// Read-only, and on the root page rather than behind a push: it is a short answer to
+  /// "why did it pick that", not a screen anybody navigates to on purpose.
+  private var trackMemorySection: some View {
+    SettingsSection("Remembered tracks") {
+      TVTrackMemoryList()
+        .padding(.horizontal, Metrics.pillHorizontalPadding)
     }
   }
 
@@ -632,6 +642,67 @@ private struct TVKinopoiskKeyView: View {
 }
 
 // MARK: - Metrics
+
+/// The tvOS half of `TrackMemorySections`. Same digest, same order; plain text because
+/// nothing here is actionable, and a focusable row that does nothing is a trap on a remote.
+private struct TVTrackMemoryList: View {
+
+  @State private var sections: [TrackPreferenceDigest.Section] = []
+
+  private static let maxSections = 6
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      if sections.isEmpty {
+        Text("Nothing remembered yet. Pick a dub or a subtitle track in the player and it will show up here.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      } else {
+        ForEach(Array(sections.prefix(Self.maxSections)), id: \.titleID) { section in
+          VStack(alignment: .leading, spacing: 2) {
+            Text(title(for: section))
+              .font(.caption)
+            ForEach(Array(lines(for: section).enumerated()), id: \.offset) { _, line in
+              Text(line)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
+          }
+        }
+      }
+    }
+    .onAppear {
+      sections = TrackPreferenceDigest.sections(from: AppContext.shared.trackPreferences.storedScopes)
+    }
+  }
+
+  /// One line per scope, leader only: on a 10-foot screen the full ladder is noise.
+  private func lines(for section: TrackPreferenceDigest.Section) -> [String] {
+    section.groups.compactMap { group in
+      guard let leader = group.audio.first ?? group.subtitles.first else { return nil }
+      return "\(scopeLabel(for: group.scope)) — \(leader.label) · \(leader.weight)"
+    }
+  }
+
+  private func scopeLabel(for scope: TrackMemoryScope) -> String {
+    switch scope {
+    case .title: return "Whole title".localized
+    case let .season(_, season): return "\("Season".localized) \(season)"
+    case let .episode(_, season, episode):
+      guard let season else { return "\("Episode".localized) \(episode)" }
+      return "S\(season)E\(episode)"
+    case let .contentClass(name): return name.capitalized
+    }
+  }
+
+  private func title(for section: TrackPreferenceDigest.Section) -> String {
+    guard let titleID = section.titleID else { return "Anime".localized }
+    if let snapshot = AppContext.shared.localProgressStore.snapshot(for: titleID) {
+      return snapshot.localizedTitle
+    }
+    return "#\(titleID)"
+  }
+}
 
 private enum Metrics {
   // Title spans the full page (not the list column).

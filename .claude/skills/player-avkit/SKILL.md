@@ -58,6 +58,14 @@ title bar and `MPNowPlayingInfoCenter`, and SwiftUI's `VideoPlayer` exposes none
 - Subtitles: system HLS renditions off tvOS; tvOS may use a sidecar overlay for dual tracks. Hide the
   duplicate system subtitle button only while our menu is a strict superset.
 - Audio: system picker + master `NAME=` relabel via `HLSAudioLabeler`.
+- **Which dub and which subtitles a title opens with is `TrackResolver`, not the player.** One pure
+  function over a menu + what the scopes remember + settings; scopes are season → title → `anime`
+  class → ladder. Do not add a second selection rule beside it, and do not remember a dub by
+  rendition name, index or URL — those differ between two episodes of one season. Rules and reasons:
+  `docs/product/playback-tracks.md`. `TrackPreferenceStore` owns the ledgers and writes to every
+  scope a play teaches; `PlaybackSession` derives `TitleTrackProfile` because genres and countries
+  live on the *item* and an `Episode` is not one. `AudioTrackMemory` / `AudioTrackRanker` are
+  **deleted** — do not reintroduce a second ranking ladder beside the resolver.
 - **Stream survey:** kino.pub deliveries surveyed were AVFoundation-friendly H.264/AAC — **no FFmpeg
   engine** for core playback. That survey does not globally ban capability badges (4K/HDR) when item
   and device flags support them.
@@ -69,6 +77,17 @@ title bar and `MPNowPlayingInfoCenter`, and SwiftUI's `VideoPlayer` exposes none
 
 - **Resume race:** `PlayerView.onAppear` → `fetchWatchMark` → seek. And resume currently reads the
   wrong episode in `PlayerManager`.
+- **The app target's Swift module is `KinoPub`, not `KinoPubAppleClient`.** `PRODUCT_NAME` is
+  KinoPub and nothing overrides `PRODUCT_MODULE_NAME`, so a test bundle writes
+  `@testable import KinoPub`. The target name is not the module name.
+- **A witness to a public protocol from another module must be `public`**, even when the
+  conformance is internal and used in one file — `extension AVMediaSelectionOption:
+  AudioRendition` needs `public var renditionName`. Trimming it to internal fails only on the
+  platforms that compile the conformance.
+- **A package that builds under `swift test` can still break the app.** `swift test` runs the
+  package on **macOS only**, so a symbol fenced `#if os(macOS)` and used unfenced compiles there and
+  fails every simulator build — `MediaCardView`'s `isHovered` did exactly that. The tvOS/iOS
+  `xcodebuild` jobs are the only thing that catches it; read them before believing green tests.
 - **SRT fetch needs encoding detection** — Russian subtitles are routinely windows-1251.
 - **Cue lookup is a linear scan** over ~2000 cues several times a second; it wants a binary search
   plus a cursor.

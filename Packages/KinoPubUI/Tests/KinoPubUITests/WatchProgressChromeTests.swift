@@ -47,6 +47,9 @@ final class LandscapeTimeBadgeTests: XCTestCase {
   }
 }
 
+// `TVUIKitMediaItem` lives behind `#if os(tvOS)`, so these cases cannot compile on the
+// macOS runner `swift test` uses.
+#if os(tvOS)
 final class TVUIKitMediaItemStatusTests: XCTestCase {
 
   func testResumeFractionPaintsInProgressWithoutAPercentFloor() {
@@ -76,3 +79,4 @@ final class TVUIKitMediaItemStatusTests: XCTestCase {
     XCTAssertEqual(TVUIKitMediaItem.status(for: card), .ready)
   }
 }
+#endif

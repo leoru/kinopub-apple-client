@@ -50,15 +50,37 @@ final class PlaybackSession: ObservableObject {
     if let media = item as? MediaItem {
       AppContext.shared.localProgressStore.cacheItem(media)
     }
+    // The plan is made here rather than inside the player so the hand-off is the thing
+    // that travels: whatever a card or a Play button already said about this title is what
+    // the player starts from, and the player refines it once it sees the real renditions.
+    let profile = Self.trackProfile(for: item)
     let created = PlayerManager(
       playItem: item,
       watchMode: mode,
       downloadedFilesDatabase: downloadedFilesDatabase,
-      actionsService: actionsService
+      actionsService: actionsService,
+      trackProfile: profile,
+      plan: PlaybackPreflight.shared.plan(for: item, profile: profile)
     )
     manager = created
     request = next
     return created
+  }
+
+  /// Anime-ness and the original language, for track selection.
+  ///
+  /// Both come off the **item** payload, which an `Episode` is not: it carries no genres
+  /// and no countries. The series snapshot the user browsed to get here does, so that is
+  /// what is read — and when there is none, the resolver simply falls back to the ladder.
+  private static func trackProfile(for item: any PlayableItem) -> TitleTrackProfile {
+    let snapshot = (item as? MediaItem)
+      ?? AppContext.shared.localProgressStore.snapshot(for: item.metadata.id)
+    guard let snapshot else { return TitleTrackProfile() }
+    let languages = item.audioTracks.map(\.lang) + item.subtitles.map(\.lang)
+    let presentation = MediaPresentationProfile(type: snapshot.type, genres: snapshot.genres)
+    return TitleTrackProfile.infer(presentation: presentation,
+                                   countries: snapshot.countries.map(\.title),
+                                   trackLanguages: languages)
   }
 
   func clear() {

@@ -1163,6 +1163,12 @@ struct MediaItemHeroView: View {
     .focused($focus, equals: .play)
     .accessibilityLabel(Text(playAccessibilityLabel(for: content)))
     .accessibilityHint(Text("Starts playback"))
+    // A series episode arrives without its links, and the player fetches them on open —
+    // dead time the viewer spends on a spinner. Fetching while the page is on screen moves
+    // that request out of the tap. Idempotent and deduplicated, so re-running it is free.
+    .task(id: target.id) {
+      await PlaybackPreflight.shared.warm(target)
+    }
   }
 
   private func playAccessibilityLabel(for content: PlaybackButtonContent) -> String {

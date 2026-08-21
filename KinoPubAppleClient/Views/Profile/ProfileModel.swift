@@ -22,7 +22,9 @@ class ProfileModel {
     var selectedLanguage: String
     var shouldShowExitAlert: Bool = false
     
-    let availableLanguages = ["en": "English", "lt": "Lietuvių", "ru": "Русский"]
+    // LT is not shipping yet — no translations exist for it, so offering it here would
+    // just fall back to English everywhere.
+    let availableLanguages = ["en": "English", "ru": "Русский"]
     
     init(userService: UserService,
          errorHandler: ErrorHandler,

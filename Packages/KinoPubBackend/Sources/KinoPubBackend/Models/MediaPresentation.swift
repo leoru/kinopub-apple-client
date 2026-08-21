@@ -59,10 +59,21 @@ public struct MediaPresentationProfile: Equatable, Sendable {
 
   public let kind: MediaPresentationKind
   public let authorRole: MediaAuthorRole
+  /// Anime specifically, not animation in general.
+  ///
+  /// It changes **nothing** about presentation — an anime and a cartoon are drawn the
+  /// same way — so it is not a `kind`. It changes which audio and subtitles a title
+  /// opens with, because anime is the case where watching the original with subtitles is
+  /// a normal preference and a Russian cartoon is not. One flag, here, so no surface has
+  /// to re-derive it from a genre string: `docs/product/playback-tracks.md`.
+  public let isAnime: Bool
 
-  public init(kind: MediaPresentationKind, authorRole: MediaAuthorRole = .director) {
+  public init(kind: MediaPresentationKind,
+              authorRole: MediaAuthorRole = .director,
+              isAnime: Bool = false) {
     self.kind = kind
     self.authorRole = authorRole
+    self.isAnime = isAnime
   }
 
   /// The people rail — poster-shaped portraits on iOS/macOS, TVUIKit monogram circles
@@ -190,7 +201,17 @@ public extension MediaPresentationProfile {
   /// is where one would come from — see docs/providers/kinopub/references.md).
   init(type: String, genres: [TypeClass]) {
     self.init(kind: Self.kind(type: type, genres: genres),
-              authorRole: Self.authorRole(type: type))
+              authorRole: Self.authorRole(type: type),
+              isAnime: Self.isAnime(genres: genres))
+  }
+
+  /// kino.pub files anime as a **genre**, not a type — `MediaType` has no case for it —
+  /// and we hold no confirmed id for it the way we do for 23 (`Мультфильм`) and 101
+  /// (stand-up), so this matches the genre's own title in both languages the API answers
+  /// in. A cartoon is deliberately not anime.
+  private static func isAnime(genres: [TypeClass]) -> Bool {
+    let titles = genres.compactMap(\.title).map(normalized)
+    return titles.contains { matches($0, animeGenreWords) }
   }
 
   private static func kind(type: String, genres: [TypeClass]) -> MediaPresentationKind {
@@ -235,8 +256,9 @@ public extension MediaPresentationProfile {
   private static let standupGenreIDs: Set<Int> = [101]
   private static let animationGenreIDs: Set<Int> = [23]
   private static let standupGenreWords = ["стендап", "стенд-ап", "stand-up", "standup"]
-  private static let animationGenreWords = ["аниме", "anime", "мультфильм", "мультсериал",
-                                            "cartoon", "animation"]
+  private static let animeGenreWords = ["аниме", "anime"]
+  private static let cartoonGenreWords = ["мультфильм", "мультсериал", "cartoon", "animation"]
+  private static let animationGenreWords = animeGenreWords + cartoonGenreWords
   private static let documentaryGenreWords = ["документальн", "documentar"]
 }
 

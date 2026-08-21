@@ -444,6 +444,18 @@ public struct MediaCardView: View {
 #if os(macOS)
   @State private var isHovered = false
 #endif
+
+  /// A watched card's artwork sits dimmed, and on macOS hovering it restores it to full.
+  /// `isHovered` only exists there — there is no pointer on tvOS or iOS — so the dim is
+  /// simply constant off macOS rather than reading a state that does not compile.
+  private var watchedArtworkOpacity: Double {
+    guard dimsWatchedArtwork else { return 1 }
+#if os(macOS)
+    return isHovered ? 1 : 0.5
+#else
+    return 0.5
+#endif
+  }
   /// The artwork's own width, so its height is derived rather than negotiated. Nil for
   /// exactly one layout pass; `frame(height: nil)` leaves the natural size meanwhile.
   @State private var artworkWidth: CGFloat?
@@ -776,9 +788,7 @@ public struct MediaCardView: View {
     // `ArtworkImage` sets an animation on its whole subtree for the image fade, and
     // this frame was being carried along by it.
     .animation(nil, value: artworkWidth)
-    .opacity(
-        (dimsWatchedArtwork && isHovered) ? 1 : dimsWatchedArtwork ? 0.5 : 1
-    )
+    .opacity(watchedArtworkOpacity)
     .animation(.easeOut(duration: 0.2), value: showsPlayChrome)
 #if os(tvOS)
     // One composited lockup so `.borderless` lift/specular stays a single unit —

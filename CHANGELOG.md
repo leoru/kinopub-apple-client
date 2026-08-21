@@ -5,6 +5,130 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Which dub a title opens with is now a decided rule, not player-local guesswork (2026-08-20)
+
+- **`TrackResolver` decides audio and subtitles as one pure function** over a menu, what
+  the scopes remember, the settings and the system languages. No player, no network, no
+  storage — a card can ask it before the player exists, which is what the pre-open resolve
+  needs. Rules and their reasons: [docs/product/playback-tracks.md](docs/product/playback-tracks.md).
+- **Scopes, most specific first: season → title → `anime` class → ladder.** Season, because
+  studios change between seasons. The anime class, because a preference for watching anime
+  in the original belongs to anime, not to one title. Cartoons (genre 23) are not anime.
+- **A dub is remembered as language + kind + studio**, never a rendition name, index or URL
+  — those differ between two episodes of one season. A studio that upgrades its two-voice
+  track to a full dub still matches; "some other Russian track" deliberately does not.
+- **Weight is episodes watched, not picker opens.** Two episodes of a stopgap must not
+  outrank a season of the real preference. Count orders the ladder, recency only breaks ties.
+- **A dub never offered before beats a habit under `confidentWeight` (3).** This is the
+  "watched three episodes before anyone dubbed it properly, came back to five more seasons"
+  case. At or above that weight the habit holds, so a fresh dub cannot displace a studio the
+  viewer chose for a season.
+- **`minimumDubKind` prefers the original with subtitles over a dub below the floor**, and
+  never filters original or unknown-kind tracks — the floor is about dub quality. Ships as
+  `nil` so nothing changes silently.
+- **Subtitles are the same mechanism as audio**, not a lesser one: same scope chain, same
+  ledger, same weights. With no history the app mirrors the system's own captions setting
+  (Accessibility → Subtitles & Captioning, via `MediaAccessibility`), whose caption
+  languages also seed the language order. On top of that they come on whenever the audio
+  that won is in a language the viewer does not read — the anime in Japanese, the film that
+  only ever had an English track. Subtitles in a language the viewer cannot read still beat
+  nothing once subtitles were asked for; "off" is a remembered choice; and an item that
+  offered no track writes nothing at all.
+- **`isAnime` lives on `MediaPresentationProfile`**, which is the one place a rule that
+  depends on type or genre is derived. Separate from `kind`, because an anime and a cartoon
+  are drawn the same way and only one of them is normally watched in the original. kino.pub
+  files anime as a genre — `MediaType` has no case for it.
+- Original language is inferred from the countries on the title against the languages
+  actually on the menu. Nothing is fetched for it and no provider field was added.
+- **The priority chain is `TrackMemoryScope.chain`** — episode → season → title → genre →
+  app settings → system languages, in one place so no caller can assemble it differently.
+  The last two are the ladder, not scopes, and app settings mirror the system list until set.
+- 54 scenario tests in `TrackResolverTests`, green on CI.
+
+### What a title will play is answerable before the player opens (2026-08-20)
+
+- **`PlaybackPreflight`** owns the question. `decision(for:profile:)` answers from what is
+  already loaded — no network — so a card, a Play button or a diagnostics screen can ask
+  while drawing. `PlayerManager` asks through it too and contributes only what it alone can
+  see: the real renditions, for a master the API gave no track metadata for. Two ways of
+  assembling those inputs would have been two answers.
+- **`warm(_:)` moves the media-links request out of the tap.** A series episode arrives
+  without links and the player used to fetch them on open, which is dead time on a spinner.
+  The detail hero warms its play target while the page is on screen. A no-op for anything
+  already playable, and `MediaLinksResolver` runs one request per media id however many
+  callers ask, so re-running it costs nothing. Failure is silent on purpose — the player
+  still resolves for itself and still owns reporting a stream it cannot play.
+- `audioSummary(for:profile:)` names the dub that will play. Nil for a single track.
+
+### App test targets exist, and CI runs them (2026-08-20)
+
+- `KinoPubAppleClientTests` (unit, hosted) and `KinoPubAppleClientUITests` (XCUITest),
+  written into `project.pbxproj` by hand — there is no project generator in this repo.
+  Both are `buildForTesting` only in the scheme, so the compile jobs stay as fast as they
+  were, and a `test-app` job runs them on a tvOS and an iOS simulator.
+- **The simulator is picked by udid, never by name.** Runner images rename and renumber
+  their devices; a hard-coded `Apple TV 4K (3rd generation)` is a job that dies on the next
+  image refresh.
+- **A CI runner has no kino.pub session** — `DevSessionMirror` seeds one only from a
+  developer's own machine — so the UI tests assert what is reachable without auth: the app
+  launches and paints something. Focus is not asserted; it needs content, and a screenshot
+  cannot show whether a landing felt right.
+- **The app target's Swift module is `KinoPub`, not `KinoPubAppleClient`.** `PRODUCT_NAME`
+  is KinoPub and nothing overrides `PRODUCT_MODULE_NAME`.
+- **A witness to a public protocol from another module must be `public`**, whatever the
+  visibility of the conformance — `extension AVMediaSelectionOption: AudioRendition` needs
+  `public var renditionName`.
+
+### CI was red on tvOS and iOS, for three unrelated reasons (2026-08-20)
+
+Found while building the track work, all pre-existing, all now fixed:
+
+- `TVUIKitMediaItemStatusTests` was not fenced, and `TVUIKitMediaItem` is `#if os(tvOS)` —
+  it broke `swift test` for the whole of KinoPubUI.
+- `MediaCardView`'s watched-artwork opacity read `isHovered`, which is declared under
+  `#if os(macOS)`. Both simulator builds failed.
+- A `UILabGlassChipStyle` modifier — macOS- **and** DEBUG-only, from UILab — had been
+  pasted into `LibraryFiltersBar`'s sort menu. Both simulator builds failed.
+
+**Why nobody saw them:** `swift test` runs a package on **macOS only**. A symbol fenced to
+macOS and used unfenced compiles there and fails every simulator build, so green package
+tests prove nothing about tvOS or iOS. The `xcodebuild` jobs are the only guard.
+
+### The player asks the resolver, and the two old track memories are gone (2026-08-20)
+
+- **`AudioTrackMemory` and `AudioTrackRanker` are deleted.** The first keyed a dub by its
+  rendition display name; HLS uniques duplicate `NAME=` with a " ∙ n" suffix and renditions
+  are not ordered the same across episodes, so the handle did not survive the one jump it
+  existed for. The second re-implemented the detail page's ladder and knew nothing about
+  history. `AVMediaSelectionOption.kinopubTrackName` survives, and gains
+  `kinopubLanguageCode`.
+- **`TrackPreferenceStore`** (`Services/Playback/`) owns the ledgers, keyed by
+  `TrackMemoryScope.storageKey`, and writes to every scope a play teaches. It migrates
+  `subtitleTrackChoices` — a `SubtitleTrackReference` carries a real language code — and
+  **drops `audioTrackChoices`**, which stored a display name that cannot be reversed into
+  one. Those pick themselves up again on the next choice.
+- **`PlaybackSession` derives `TitleTrackProfile`** and hands it to the player. Genres and
+  countries are on the *item*, and an `Episode` is not one — the series snapshot in
+  `LocalWatchProgressStore` is where they are read from, so playing straight from Continue
+  Watching still knows an anime is an anime.
+- Audio and subtitles ask **one** decision, so they cannot disagree about what is playing.
+  With no API track metadata the menu is synthesised from the renditions themselves, so an
+  unlabelled master still gets a considered pick rather than AVFoundation's first rendition.
+- A play is recorded once it passes `WatchProgress.enterContinueWatchingSeconds`, not on
+  open: weight is episodes watched, and a title sampled for a minute teaches nothing.
+- The old "Default English subtitles" switch now decides *which* language wins when
+  subtitles appear, not whether they appear — that is the system's answer.
+  `SubtitleSelector` no longer selects; it catalogues.
+- **`AudioRenditions` owns the bridge** between a decided `AudioTrackInfo` and the
+  rendition the player can select, behind an `AudioRendition` protocol that
+  `AVMediaSelectionOption` conforms to. It was in `PlayerManager` behind a type that needs
+  a real asset to construct, so the sharpest rules in the feature — duplicate ` ∙ n`
+  suffixes, one label being a prefix of another, the no-API-metadata path — were untestable.
+- **Verification:** green on CI — tvOS, iOS and macOS builds plus every package suite —
+  with 77 tests over the rules and the bridge. **Nothing here has been watched on a
+  device**; that the right rendition is actually selected in a real player is unconfirmed.
+
+
 ### Continue Watching stops offering junk in an arbitrary order (2026-08-20)
 
 - **The row is capped** (`ContinueWatchingOrder.maxItems`). `/v1/watching/serials`

@@ -63,6 +63,13 @@ final class LocalWatchProgressStore {
     snapshots[item.id] = item
   }
 
+  /// The cached payload for an item, when the user has browsed it this session. An
+  /// `Episode` carries no genres or countries, so track selection reads them from here.
+  func snapshot(for id: Int) -> MediaItem? {
+    lock.lock(); defer { lock.unlock() }
+    return snapshots[id]
+  }
+
   /// Record a resume point. No-op for live/trailers (non-finite duration) or before the
   /// minimum threshold, or when we have no snapshot to render a card with.
   ///

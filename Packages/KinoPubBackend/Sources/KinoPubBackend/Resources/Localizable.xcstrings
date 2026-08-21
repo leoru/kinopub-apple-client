@@ -1,222 +1,186 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "Author's" : {
-      "comment" : "Audio dub kind: author's / AVO.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Author's"
+  "sourceLanguage": "en",
+  "strings": {
+    "Author's": {
+      "comment": "Audio dub kind: author's / AVO.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Author's"
           }
         },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Autoriaus"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Авторский"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Авторский"
           }
         }
       }
     },
-    "CC" : {
-      "comment" : "Closed captions / SDH badge on a subtitle language summary.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CC"
+    "CC": {
+      "comment": "Closed captions / SDH badge on a subtitle language summary.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CC"
           }
         },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CC"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CC"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CC"
           }
         }
       }
     },
-    "Forced" : {
-      "comment" : "Forced subtitle track badge on a language summary.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Forced"
+    "Dubbed": {
+      "comment": "Audio dub kind: full dub (DUB).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dubbed"
           }
         },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Priverstiniai"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Forced"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дубляж"
           }
         }
       }
     },
-    "Unknown" : {
-      "comment" : "Placeholder studio when an audio track has no author.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unknown"
+    "Forced": {
+      "comment": "Forced subtitle track badge on a language summary.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forced"
           }
         },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nežinoma"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "неизвестно"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forced"
           }
         }
       }
     },
-    "Dubbed" : {
-      "comment" : "Audio dub kind: full dub (DUB).",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dubbed"
+    "Multi-voice": {
+      "comment": "Audio dub kind: multi-voice over (MVO).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multi-voice"
           }
         },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dubliažas"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Дубляж"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Многоголосый"
           }
         }
       }
     },
-    "Multi-voice" : {
-      "comment" : "Audio dub kind: multi-voice over (MVO).",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Multi-voice"
+    "Off": {
+      "comment": "A remembered choice to watch this title without subtitles.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtitles off"
           }
         },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Daugiabalsis"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Многоголосый"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Субтитры выключены"
           }
         }
       }
     },
-    "Original" : {
-      "comment" : "Audio dub kind: original language track.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Original"
+    "Original": {
+      "comment": "Audio dub kind: original language track.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original"
           }
         },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Originalas"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Оригинал"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оригинал"
           }
         }
       }
     },
-    "Single-voice" : {
-      "comment" : "Audio dub kind: single-voice over (VO).",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Single-voice"
+    "Single-voice": {
+      "comment": "Audio dub kind: single-voice over (VO).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Single-voice"
           }
         },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vienbalsis"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Одноголосый"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Одноголосый"
           }
         }
       }
     },
-    "Two-voice" : {
-      "comment" : "Audio dub kind: two-voice over (DVO).",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Two-voice"
+    "Two-voice": {
+      "comment": "Audio dub kind: two-voice over (DVO).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Two-voice"
           }
         },
-        "lt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dvibalsis"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Двухголосый"
+          }
+        }
+      }
+    },
+    "Unknown": {
+      "comment": "Placeholder studio when an audio track has no author.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown"
           }
         },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Двухголосый"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "неизвестно"
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

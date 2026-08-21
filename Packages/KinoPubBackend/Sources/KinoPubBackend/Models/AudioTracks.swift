@@ -311,6 +311,13 @@ public enum AudioTracks {
     return nil
   }
 
+  /// The dub kind for a rank, when that is all you have — a remembered signature carries a
+  /// rank, not the API row it came from.
+  public static func localizedKindLabel(rank: Int) -> String? {
+    guard let key = kindLocalizationKey(rank) else { return nil }
+    return String(localized: key, bundle: .module)
+  }
+
   private static func kindLocalizationKey(_ rank: Int) -> String.LocalizationValue? {
     switch rank {
     case 0: return "Dubbed"
