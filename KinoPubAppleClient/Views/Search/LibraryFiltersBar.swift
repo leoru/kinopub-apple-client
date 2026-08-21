@@ -282,12 +282,6 @@ struct LibraryFilterGlassStyle: ViewModifier {
     }
     .buttonBorderShape(.capsule)
     .controlSize(controlSize)
-#if os(macOS)
-    .modifier(UILabGlassChipStyle(isProminent: false, iconOnly: true))
-
-    // Accessory bar can flatten Menu chrome; keep glass interactive.
-//    .tint(isProminent ? Color.KinoPub.accent : nil)
-#endif
   }
 }
 

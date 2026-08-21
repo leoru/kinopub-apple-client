@@ -23,6 +23,24 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
   macOS sigh filenames are `.mobileprovision` (Fastlane rejects `.provisionprofile`).
 - `APP_STORE_CONNECT_API_KEY_CONTENT` accepts base64 of the `.p8` **or** the PEM.
 
+- `Xcodeproj::Project.open` was resolving `KinoPubAppleClient.xcodeproj` under
+  `fastlane/` (Fastlane's cwd). The path is now absolute from the repo root.
+
+### TestFlight upload (2026-08-21)
+
+Signing and archive succeeded on [run 32497341767](https://github.com/HipsterCat/kinopub-apple-client/actions/runs/32497341767).
+App Store Connect then rejected iOS/tvOS, and macOS Release did not compile:
+
+- **iOS 90717:** the 1024 App Store icon had an alpha channel (and was a
+  placeholder, not our mark). The set is now the KinoPub mark, opaque RGB.
+- **tvOS 90513:** no Brand Assets, so `CFBundleIcons.CFBundlePrimaryIcon` and
+  `TVTopShelfImage.TVTopShelfPrimaryImageWide` were missing.
+  `AppIcon.brandassets` sits next to `AppIcon.appiconset` under the same
+  `ASSETCATALOG_COMPILER_APPICON_NAME`.
+- **macOS:** `LibraryFiltersBar` applied `UILabGlassChipStyle`, which exists
+  only in the DEBUG UI Lab. `LibraryFilterGlassStyle` already owns the glass;
+  the extra modifier is gone.
+
 ### Internal TestFlight from GitHub Actions (2026-08-21)
 
 - **Actions → TestFlight** archives Release of the one multiplatform target for
