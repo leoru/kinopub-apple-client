@@ -5,6 +5,27 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Internal TestFlight from GitHub Actions (2026-08-21)
+
+- **Actions → TestFlight** archives Release of the one multiplatform target for
+  iOS, tvOS and macOS and uploads to TestFlight as a technical internal build
+  (`distribute_external: false`). Manual `workflow_dispatch` only — no git tag,
+  no GitHub Release, no App Store submission.
+- **One shared `CURRENT_PROJECT_VERSION`** is reserved first (max of the three
+  platforms' latest TestFlight numbers + 1), then the archives fan out. Marketing
+  version stays whatever is in the project (`1.0` today).
+- Signing is Swiftfin-shaped: App Store Connect API key + a persistent Apple
+  Distribution p12 in GitHub secrets, provisioning profiles minted by sigh so
+  entitlements can change without re-exporting a profile. Not Match (no extra
+  certs repo), not Codemagic (Rivulet's split), not Xcode Cloud (config would
+  live outside the repo).
+- `ITSAppUsesNonExemptEncryption=false` is in `Info.plist` so a build does not
+  sit on "Missing Compliance" until someone clicks the questionnaire — this app
+  only uses HTTPS. Testers still have to be App Store Connect Users (or named
+  in `TESTFLIGHT_INTERNAL_GROUPS`).
+- Secrets are not in the repo; the first upload waits on them. Checklist is the
+  comment at the top of `.github/workflows/testflight.yml`.
+
 ### Which dub a title opens with is now a decided rule, not player-local guesswork (2026-08-20)
 
 - **`TrackResolver` decides audio and subtitles as one pure function** over a menu, what

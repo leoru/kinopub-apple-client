@@ -1,0 +1,314 @@
+# frozen_string_literal: true
+
+require "base64"
+require "tmpdir"
+
+opt_out_usage
+
+# Internal TestFlight for the one multiplatform target.
+#
+# What this is, and is not:
+#   Technical uploads for App Store Connect Users / an optional internal group.
+#   Not a public beta, not App Store review, not a GitHub Release.
+#
+# How the neighbours do this (looked at 2026-08-21):
+#   Swiftfin  — GitHub Actions + Fastlane, p12 + profiles in secrets
+#   strimr    — GitHub Actions + Fastlane Match, iOS + tvOS + macOS
+#   silo      — same family as strimr, reserved build numbers, internal/external switch
+#   Rivulet   — unsigned compile on Actions; archives on Codemagic
+#   Sodalite  — universal TestFlight link, no release CI in the repo
+#
+# We stay on GitHub Actions (already macos-26 for CI, public repo so minutes
+# are free) and skip Match / Codemagic / Xcode Cloud unless someone asks.
+# Signing is a persistent Apple Distribution p12 (Swiftfin) plus sigh
+# profiles created from the App Store Connect API key — entitlements can
+# change without re-exporting a profile secret.
+#
+# Secrets and the one-time App Store Connect app: top of
+# .github/workflows/testflight.yml.
+
+default_platform(:ios)
+
+PROJECT = "KinoPubAppleClient.xcodeproj"
+SCHEME = "KinoPubAppleClient"
+BUNDLE_ID = "com.soda.kinopub"
+TEAM_ID = "Z2PQ733PSP"
+APP_NAME = "Kinopub Soda"
+
+# gym destination / TestFlight platform / sigh platform / artifact name
+PLATFORMS = {
+  "ios" => {
+    destination: "generic/platform=iOS",
+    testflight: "ios",
+    sigh: "ios",
+    output: "KinoPub-iOS",
+    mac: false
+  },
+  "tvos" => {
+    destination: "generic/platform=tvOS",
+    testflight: "appletvos",
+    sigh: "tvos",
+    output: "KinoPub-tvOS",
+    mac: false
+  },
+  "macos" => {
+    destination: "generic/platform=macOS",
+    testflight: "osx",
+    sigh: "macos",
+    output: "KinoPub-macOS",
+    mac: true
+  }
+}.freeze
+
+TESTFLIGHT_QUERY_PLATFORMS = %w[ios appletvos osx].freeze
+
+def require_env!(name)
+  value = ENV[name].to_s.strip
+  UI.user_error!("Missing #{name}. See the comment at the top of .github/workflows/testflight.yml.") if value.empty?
+  value
+end
+
+def connect_api_key
+  @connect_api_key ||= app_store_connect_api_key(
+    key_id: require_env!("APP_STORE_CONNECT_API_KEY_ID"),
+    issuer_id: require_env!("APP_STORE_CONNECT_ISSUER_ID"),
+    key_content: require_env!("APP_STORE_CONNECT_API_KEY_CONTENT"),
+    is_key_content_base64: true,
+    duration: 1200,
+    in_house: false
+  )
+end
+
+def decode_base64_env(name)
+  raw = require_env!(name).gsub(/\s+/, "")
+  decoded = Base64.decode64(raw)
+  UI.user_error!("#{name} did not decode as base64") if decoded.nil? || decoded.empty?
+  decoded
+end
+
+def write_temp_binary(basename, bytes)
+  path = File.join(Dir.tmpdir, basename)
+  File.binwrite(path, bytes)
+  path
+end
+
+def platform_spec
+  name = ENV.fetch("TESTFLIGHT_PLATFORM", "ios").strip.downcase
+  spec = PLATFORMS[name]
+  UI.user_error!("Unknown TESTFLIGHT_PLATFORM #{name.inspect}. Use ios, tvos, or macos.") if spec.nil?
+  spec.merge(name: name)
+end
+
+def resolved_build_number
+  injected = ENV["BUILD_NUMBER"].to_s.strip
+  unless injected.empty?
+    UI.user_error!("BUILD_NUMBER must be a positive integer, got #{injected.inspect}") unless injected.match?(/\A[1-9]\d*\z/)
+    return injected
+  end
+
+  next_build_number(api_key: connect_api_key).to_s
+end
+
+def next_build_number(api_key:)
+  latest_for(api_key: api_key).max + 1
+end
+
+def latest_for(api_key:)
+  TESTFLIGHT_QUERY_PLATFORMS.map do |platform|
+    latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: BUNDLE_ID,
+      platform: platform,
+      initial_build_number: 0
+    )
+  rescue StandardError => e
+    UI.important("No TestFlight builds for #{platform} (#{e.message})")
+    0
+  end
+end
+
+def require_appstore_connect_app!(api_key:)
+  # Authenticate Spaceship through the same key gym/pilot will use.
+  connect_api_key unless api_key.nil?
+  app = Spaceship::ConnectAPI::App.find(BUNDLE_ID)
+  return app unless app.nil?
+
+  UI.user_error!(
+    "No App Store Connect app for #{BUNDLE_ID}. Create it once: " \
+    "App Store Connect → Apps → (+) → iOS, name #{APP_NAME}, then add Apple TV and Mac " \
+    "on the app record so the same bundle id is a universal purchase."
+  )
+end
+
+def changelog_text
+  from_env = ENV["TESTFLIGHT_CHANGELOG"].to_s.strip
+  return from_env unless from_env.empty?
+
+  log = `git log -15 --pretty=format:"- %s"`.strip
+  log.empty? ? "Internal technical build." : log
+end
+
+def internal_groups
+  ENV["TESTFLIGHT_INTERNAL_GROUPS"].to_s.split(",").map(&:strip).reject(&:empty?)
+end
+
+def keychain_name
+  ENV["MATCH_KEYCHAIN_NAME"] || "login.keychain-db"
+end
+
+def keychain_password
+  ENV["MATCH_KEYCHAIN_PASSWORD"].to_s
+end
+
+def import_p12!(env_bytes:, env_password:, filename:)
+  path = write_temp_binary(filename, decode_base64_env(env_bytes))
+  import_certificate(
+    certificate_path: path,
+    certificate_password: require_env!(env_password),
+    keychain_name: keychain_name,
+    keychain_password: keychain_password,
+    log_output: true
+  )
+ensure
+  File.delete(path) if path && File.exist?(path)
+end
+
+def install_signing!(macos:)
+  unless ENV["CI"]
+    UI.message("Local run: using Apple Distribution certificates already in the keychain")
+    return
+  end
+
+  setup_ci
+
+  import_p12!(
+    env_bytes: "BUILD_CERTIFICATE_BASE64",
+    env_password: "P12_PASSWORD",
+    filename: "apple-distribution.p12"
+  )
+
+  return unless macos
+
+  import_p12!(
+    env_bytes: "MAC_INSTALLER_CERTIFICATE_BASE64",
+    env_password: "MAC_INSTALLER_CERTIFICATE_PASSWORD",
+    filename: "mac-installer.p12"
+  )
+end
+
+def fetch_profile!(sigh_platform:)
+  ext = sigh_platform == "macos" ? "provisionprofile" : "mobileprovision"
+  get_provisioning_profile(
+    app_identifier: BUNDLE_ID,
+    api_key: connect_api_key,
+    adhoc: false,
+    force: ENV["CI"].to_s == "true",
+    provisioning_name: "KinoPub #{sigh_platform} AppStore",
+    filename: "KinoPub-#{sigh_platform}.#{ext}",
+    output_path: Dir.tmpdir,
+    platform: sigh_platform,
+    team_id: TEAM_ID
+  )
+  lane_context[SharedValues::SIGH_NAME]
+end
+
+def archive_xcargs(build_number, profile_name)
+  tokens = [
+    "CURRENT_PROJECT_VERSION=#{build_number}",
+    "CODE_SIGN_STYLE=Manual",
+    "CODE_SIGN_IDENTITY=Apple Distribution",
+    "CODE_SIGN_IDENTITY[sdk=macosx*]=Apple Distribution",
+    "DEVELOPMENT_TEAM=#{TEAM_ID}",
+    "PROVISIONING_PROFILE_SPECIFIER=#{profile_name}"
+  ]
+  quoted = tokens.map(&:dump).join(" ")
+  "#{quoted} -allowProvisioningUpdates -skipMacroValidation"
+end
+
+def build_platform!(spec:, build_number:, profile_name:)
+  common = {
+    project: PROJECT,
+    scheme: SCHEME,
+    configuration: "Release",
+    destination: spec[:destination],
+    export_method: "app-store",
+    output_directory: "build",
+    output_name: spec[:output],
+    skip_profile_detection: true,
+    xcargs: archive_xcargs(build_number, profile_name),
+    export_options: {
+      method: "app-store",
+      signingStyle: "manual",
+      teamID: TEAM_ID,
+      provisioningProfiles: {
+        BUNDLE_ID => profile_name
+      }
+    }
+  }
+
+  if spec[:mac]
+    build_mac_app(common)
+  else
+    build_app(common)
+  end
+end
+
+def upload_platform!(spec:, artifact:)
+  groups = internal_groups
+  wait = !groups.empty?
+
+  args = {
+    api_key: connect_api_key,
+    app_identifier: BUNDLE_ID,
+    app_platform: spec[:testflight],
+    changelog: changelog_text,
+    distribute_external: false,
+    notify_external_testers: false,
+    skip_waiting_for_build_processing: !wait,
+    skip_submission: false
+  }
+
+  if spec[:mac]
+    args[:pkg] = artifact
+  else
+    args[:ipa] = artifact
+  end
+
+  if wait
+    args[:groups] = groups
+  end
+
+  upload_to_testflight(args)
+end
+
+before_all do
+  ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] ||= "120"
+  ENV["FASTLANE_XCODEBUILD_SETTINGS_RETRIES"] ||= "3"
+  ENV["FASTLANE_HIDE_CHANGELOG"] = "1"
+end
+
+platform :ios do
+  desc "Write the next shared TestFlight build number to BUILD_NUMBERS_FILE"
+  lane :reserve_build_number do
+    api_key = connect_api_key
+    require_appstore_connect_app!(api_key: api_key)
+    number = next_build_number(api_key: api_key)
+    output = ENV.fetch("BUILD_NUMBERS_FILE", "build_number.env")
+    File.open(output, "a") { |f| f.puts "build_number=#{number}" }
+    UI.success("Reserved CURRENT_PROJECT_VERSION=#{number}")
+  end
+
+  desc "Build and upload one platform (TESTFLIGHT_PLATFORM=ios|tvos|macos) to internal TestFlight"
+  lane :beta do
+    spec = platform_spec
+    api_key = connect_api_key
+    require_appstore_connect_app!(api_key: api_key)
+    build_number = resolved_build_number
+
+    UI.message("TestFlight #{spec[:name]} build #{build_number} (internal)")
+    install_signing!(macos: spec[:mac])
+    profile_name = fetch_profile!(sigh_platform: spec[:sigh])
+    artifact = build_platform!(spec: spec, build_number: build_number, profile_name: profile_name)
+    upload_platform!(spec: spec, artifact: artifact)
+  end
+end

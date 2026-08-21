@@ -1,0 +1,3 @@
+# Already public in KinoPubAppleClient.xcodeproj — not secrets.
+app_identifier("com.soda.kinopub")
+team_id("Z2PQ733PSP")

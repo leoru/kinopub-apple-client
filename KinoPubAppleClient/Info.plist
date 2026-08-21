@@ -10,6 +10,8 @@
 	<string>cgg3gtifu46urtfp2zp1nqtba0k2ezxh</string>
 	<key>TMDBProxyBaseURL</key>
 	<string>https://kinopub-tmdb-proxy.traneblow1nd.workers.dev</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_pulse._tcp</string>

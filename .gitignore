@@ -46,3 +46,17 @@ tools/tvoe_data/images/
 
 ## Original-language research archive (condensed English versions are tracked; these stay local)
 docs/archive/research-2026-07/*.ru.md
+
+## Fastlane / TestFlight artifacts (the Gemfile.lock is tracked)
+.bundle/
+vendor/bundle/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output/
+fastlane/.env
+*.ipa
+*.pkg
+*.dSYM.zip
+*.mobileprovision
+*.provisionprofile
+AuthKey_*.p8

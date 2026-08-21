@@ -61,6 +61,8 @@ Verification gaps and unfinished edges live in [ROADMAP.md](ROADMAP.md) — not 
 - Swift 5 language mode in packages (`swift-tools-version: 6.2`)
 - Single multiplatform target `KinoPubAppleClient` (product name `KinoPub`)
 - **Dark appearance only** until stage 5
+- **Internal TestFlight:** Actions → TestFlight (iOS, tvOS, macOS). Needs the
+  App Store Connect secrets listed at the top of `.github/workflows/testflight.yml`
 
 ```
 open KinoPubAppleClient.xcodeproj

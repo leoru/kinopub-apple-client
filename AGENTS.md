@@ -352,6 +352,13 @@ Known bad, still present, do not polish: `HudToast` (rewrite, don't patch).
 xcodebuild -scheme KinoPubAppleClient -destination 'platform=tvOS Simulator,name=Apple TV' build
 ```
 
+- **Internal TestFlight** is Actions → TestFlight (`testflight.yml`). iOS, tvOS and
+  macOS of the one multiplatform target, signed with an App Store Connect API key
+  plus a persistent Distribution p12. Not a public release. Do not add a second
+  pipeline (Codemagic, Xcode Cloud, Match) unless the user asks — the neighbours
+  split this way for their own reasons, not ours. Secrets and the one-time App
+  Store Connect app are listed at the top of the workflow.
+
 - **There is no Simulator.app on current Xcode.** The simulator window is hosted by **Device Hub**
   (`com.apple.dt.Devices`). Focus its title bar; arrow keys + Return are the D-pad. **Escape is not
   Menu** — use the on-screen remote's `‹` button. `simctl` has no directional-press API.
