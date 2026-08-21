@@ -49,6 +49,20 @@ final class MediaPresentationTests: XCTestCase {
     XCTAssertEqual(profile(type: "movie", genres: [(555, "Stand-Up")]).kind, .standup)
   }
 
+  /// Anime and cartoons are drawn the same way, so they share a `kind` — but only one of
+  /// them is normally watched in the original with subtitles, so `isAnime` is separate.
+  func testAnimeIsTheOnlyAnimationThatIsAnime() {
+    XCTAssertTrue(profile(type: "serial", genres: [(2, "Аниме")]).isAnime)
+    XCTAssertTrue(profile(type: "serial", genres: [(2, "Anime")]).isAnime)
+    XCTAssertFalse(profile(type: "movie", genres: [(23, "Мультфильм")]).isAnime)
+    XCTAssertFalse(profile(type: "serial", genres: [(23, "Мультсериал")]).isAnime)
+    XCTAssertFalse(profile(type: "movie", genres: [(1, "Комедия")]).isAnime)
+  }
+
+  func testAnimeStillPresentsAsAnimation() {
+    XCTAssertEqual(profile(type: "serial", genres: [(2, "Аниме")]).kind, .animation)
+  }
+
   func testAnimeGenre() {
     XCTAssertEqual(profile(type: "serial", genres: [(2, "Аниме")]).kind, .animation)
     XCTAssertEqual(profile(type: "movie", genres: [(2, "Anime")]).kind, .animation)

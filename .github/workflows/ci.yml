@@ -61,6 +61,67 @@ jobs:
             exit 1
           fi
 
+  # Separate from the compile jobs on purpose: this one boots a simulator and installs the
+  # app, so it is minutes rather than seconds. The compile jobs stay on every change —
+  # they are what catches a symbol fenced to one platform and used on another.
+  test-app:
+    name: Test app (${{ matrix.platform }})
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: tvOS
+            runtime: SimRuntime.tvOS
+          - platform: iOS
+            runtime: SimRuntime.iOS
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: .github/scripts/select-xcode-26.sh
+
+      - name: Ensure Metal toolchain
+        run: xcodebuild -downloadComponent MetalToolchain || echo "bundled with this Xcode"
+
+      # By udid, not by name: runner images rename and renumber their devices, and a
+      # hard-coded "Apple TV 4K (3rd generation)" is a job that dies on an image refresh.
+      - name: Pick a simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          devices = json.load(sys.stdin)['devices']
+          for runtime in sorted(devices):
+              if '${{ matrix.runtime }}' in runtime and devices[runtime]:
+                  print(devices[runtime][0]['udid'])
+                  break
+          ")
+          if [ -z "$UDID" ]; then
+            echo "::error::No ${{ matrix.platform }} simulator on this runner image"
+            xcrun simctl list runtimes
+            exit 1
+          fi
+          echo "Using $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: xcodebuild test
+        run: |
+          set -o pipefail
+          if ! xcodebuild \
+            -project KinoPubAppleClient.xcodeproj \
+            -scheme KinoPubAppleClient \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            test 2>&1 | tee /tmp/test-app.log
+          then
+            grep -E "error:|error |failed|XCTAssert" /tmp/test-app.log | sort -u | head -15 | while IFS= read -r line; do
+              echo "::error::${{ matrix.platform }}: ${line}"
+            done
+            exit 1
+          fi
+
   test-packages:
     name: Test ${{ matrix.package }}
     runs-on: macos-26

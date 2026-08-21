@@ -409,8 +409,37 @@ tvOS-only properties.
 - [ ] PiP that survives backgrounding on iOS (needs an `AVAudioSession` `.playback` category and
       `UIBackgroundModes: audio`; `allowsPictureInPicturePlayback` alone stops at backgrounding)
 - [ ] Verify AirPlay / Now Playing / Control Center titles and artwork on every platform
-- [ ] Per-show audio track memory; fix subtitles-follow-episode (`MediaItem.subtitles` reads the
-      first video only)
+- [x] Track preference rules written down and covered by tests — `TrackResolver`,
+      `TrackPreferenceLedger`, [docs/product/playback-tracks.md](docs/product/playback-tracks.md).
+      Pure, no player: scopes (season → title → anime class → ladder), weight by episodes
+      watched, a new dub beating a provisional habit, the dub floor, anime in the original
+- [x] `TrackResolver` wired into `PlayerManager`; `AudioTrackMemory` / `AudioTrackRanker` gone,
+      `TrackPreferenceStore` owns the ledgers, `PlaybackSession` derives `TitleTrackProfile`,
+      `AudioRenditions` owns the bridge to what the player can select.
+      **Green on CI for all three platforms; the selection has not been watched on a device**
+- [x] App test targets — `KinoPubAppleClientTests` (unit, hosted) and
+      `KinoPubAppleClientUITests` (XCUITest), plus a `test-app` CI job that runs both on a
+      tvOS and an iOS simulator. Both bundles are `buildForTesting` only, so the compile
+      jobs stay as fast as they were
+- [ ] Grow the UI tests past launch: a CI runner has no kino.pub session, so anything
+      behind auth needs a seeded fixture or a stubbed service before it can be asserted
+- [ ] The one integration test still missing: build a real `AVPlayerItem` from a local HLS
+      fixture with several audio renditions and assert `currentMediaSelection` matches what
+      `TrackResolver` decided. `AudioRenditions` covers the matching rules; this covers the
+      wiring around them
+- [ ] Split the slow UI jobs by path once they exist. **Not the compile jobs** — building all
+      three platforms on every change is what caught three pre-existing breaks nobody had seen
+- [ ] Settings › Diagnostics: the remembered ledgers, grouped by scope — what will be chosen for
+      this season / series / film and on what principle. Then the same knowledge in labels, so a
+      dub the viewer follows can lead its list ("этот сериал человек смотрит в Сыендуке")
+- [x] `PlaybackPreflight` answers "what will this play" outside the player, and warms an
+      episode's links from the detail hero so that request is out of the tap. The player
+      asks the same way, so a card and the player cannot disagree
+- [ ] Spend the warmed answer on screen: name the dub on the Play button, and a spinner on
+      the tile for the case where the tap still beats the links
+- [ ] Settings for the language ladder: preferred audio languages, the dub floor,
+      `animePrefersOriginalAudio`
+- [ ] Fix subtitles-follow-episode (`MediaItem.subtitles` reads the first video only)
 - [ ] Skip data — subtitle-gap heuristic first, into `contextualActions`; then TheIntroDB (IMDb/TMDB
       keys) cached per episode; AniSkip once a MAL/AniList match exists
 - [ ] End-of-playback behavior + its Settings decision; resume-prompt default documented
