@@ -42,6 +42,10 @@ class PlayerManager: ObservableObject {
   @Published var subtitlesEnabled: Bool = false
   @Published var currentPlaybackTime: TimeInterval = 0
   @Published private(set) var playbackState: PlaybackState = .preparing
+  /// True while the system is showing this stream in Picture in Picture. Leaving the
+  /// player screen ends playback — except this: a PiP window is the viewer deliberately
+  /// keeping the film on screen, and killing it would be the same bug from the other side.
+  @Published private(set) var isPictureInPictureActive = false
 
   /// **What this is going to play**, as the surfaces before the player already described
   /// it. Handed in rather than derived here, then refreshed once the asset publishes its
@@ -194,6 +198,12 @@ class PlayerManager: ObservableObject {
     guard !didPreparePlayback else { return }
     didPreparePlayback = true
 
+#if os(iOS) || os(tvOS)
+    // Before the first frame: without this the iPhone plays a film through the ringer
+    // switch, which means no sound at all and no volume key that can bring it back.
+    PlaybackAudioSession.activate()
+#endif
+
     await resolveStreamLinksIfNeeded()
 
     guard let source = fileURL else {
@@ -214,7 +224,12 @@ class PlayerManager: ObservableObject {
     }
     observePlaybackState(of: item)
     observeEndOfPlayback(of: item)
+    // Set before the item is handed over: automatic criteria are applied as it loads.
+    player.appliesMediaSelectionCriteriaAutomatically = false
     player.replaceCurrentItem(with: item)
+#if !os(tvOS)
+    pinMediaSelection(on: item)
+#endif
 #if os(iOS) || os(tvOS)
     // AVPlayerItem.externalMetadata is absent on macOS (AVPlayerView / the window title
     // bar carry the name there instead) — see the customization-surface table in
@@ -318,10 +333,29 @@ class PlayerManager: ObservableObject {
   }
 
   /// Stops the current stream so a new `PlaybackSession` request can take over the
-  /// single shared player without two AVPlayers competing.
+  /// single shared player without two AVPlayers competing — and so leaving the player
+  /// screen actually ends the film instead of playing it on with nothing to look at.
+  ///
+  /// `replaceCurrentItem(with: nil)` is the part that matters: pausing alone leaves a
+  /// loaded item, a live resource loader and an active audio session behind.
   func tearDownForReplacement() {
+    // The last tick can be ten seconds behind and the server's mark thirty, and this
+    // stream is about to stop existing — so where the viewer actually left off is
+    // written down first. Clearing the cadence is what lets that final mark reach the
+    // server instead of being dropped as "too soon after the last one".
+    let stoppedAt = player.currentTime().seconds
+    if stoppedAt.isFinite, stoppedAt > 0 {
+      lastServerMarkPosition = 0
+      saveWatchMark(time: stoppedAt)
+    }
     player.pause()
     player.replaceCurrentItem(with: nil)
+    isPictureInPictureActive = false
+    statusObservation?.invalidate()
+    statusObservation = nil
+    seekObservation?.invalidate()
+    seekObservation = nil
+    masterLoader = nil
     cueLoadTasks.forEach { $0.cancel() }
     cueLoadTasks = []
     if let cueObserverToken {
@@ -339,6 +373,10 @@ class PlayerManager: ObservableObject {
 #if os(tvOS)
     audioReadyObservation?.invalidate()
     audioReadyObservation = nil
+#endif
+#if os(iOS) || os(tvOS)
+    // Give the session back so whatever was playing before us can resume.
+    PlaybackAudioSession.deactivate()
 #endif
     isPlaying = false
     playbackState = .preparing
@@ -530,6 +568,41 @@ class PlayerManager: ObservableObject {
     }
   }
 
+  /// **Nothing turns captions on but the viewer.**
+  ///
+  /// AVFoundation applies media-selection criteria automatically by default, and off tvOS
+  /// those criteria follow the system's caption settings — including the *Automatic*
+  /// display type, whose entire job is to put captions up when the media is muted. That is
+  /// what appeared over a film on macOS: a caption track nobody asked for, on a stream that
+  /// carries perfectly ordinary subtitle renditions the system menu already lists.
+  ///
+  /// With automatic criteria off, the selection is ours to make, so both halves are made
+  /// here: audio stays on whatever the master marks `DEFAULT` — which is not the CDN's
+  /// guess but our own ranked dub, stamped in by `HLSAudioLabeler` — and the legible group
+  /// starts empty. Picking a subtitle track in the system menu still overrides it; only the
+  /// automatic switch-on is gone.
+  private func pinMediaSelection(on item: AVPlayerItem) {
+    Task { @MainActor in
+      let audible = try? await item.asset.loadMediaSelectionGroup(for: .audible)
+      let legible = try? await item.asset.loadMediaSelectionGroup(for: .legible)
+      // The awaits above outlive a stream that was left in the meantime.
+      guard self.player.currentItem === item else { return }
+      if let audible,
+         item.currentMediaSelection.selectedMediaOption(in: audible) == nil,
+         let dub = audible.defaultOption ?? audible.options.first {
+        item.select(dub, in: audible)
+      }
+      if let legible {
+        item.select(nil, in: legible)
+      }
+    }
+  }
+
+  /// Told by the player screen's delegate, on every platform that has one.
+  func setPictureInPictureActive(_ active: Bool) {
+    isPictureInPictureActive = active
+  }
+
   private func disableSystemLegibleSelection() {
     guard let item = player.currentItem else { return }
     Task { @MainActor in
@@ -591,11 +664,17 @@ class PlayerManager: ObservableObject {
     guard due else { return }
     lastServerMarkPosition = time
 
-    Task.detached(priority: .utility) { [unowned self] in
+    // Everything the request needs is read out here rather than off `self` inside the
+    // task: the last mark of all is sent from `tearDownForReplacement`, moments before
+    // this manager is released, and an `unowned self` reaching into a freed player is a
+    // crash on the way out of a film.
+    let service = actionsService
+    let id = playItem.metadata.id
+    let video = playItem.metadata.video
+    let season = playItem.metadata.season
+    Task.detached(priority: .utility) {
       do {
-        try await self.actionsService.markWatch(id: playItem.metadata.id,
-                                                time: Int(time), video: playItem.metadata.video,
-                                                season: playItem.metadata.season)
+        try await service.markWatch(id: id, time: Int(time), video: video, season: season)
       } catch {
         Logger.app.error("Failed to save watch mark: \(error)")
       }

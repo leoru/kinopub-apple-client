@@ -30,6 +30,7 @@
 		9F6F94A15ADEFE2F79EFD2E3 /* SectionsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CCB33005E595A30B2B59E06 /* SectionsSettingsView.swift */; };
 		A1B2C3D42E5F60718293A002 /* RouteDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293A001 /* RouteDestination.swift */; };
 		A1B2C3D42E5F60718293A004 /* PlaybackSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293A003 /* PlaybackSession.swift */; };
+		A1B2C3D42E5F60718293A101 /* PlaybackAudioSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293A102 /* PlaybackAudioSession.swift */; };
 		A1B2C3D42E5F60718293B002 /* RouteStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293B001 /* RouteStack.swift */; };
 		A1B2C3D42E5F60718293C002 /* NavigationFocusLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293C001 /* NavigationFocusLabView.swift */; };
 		A1B2C3D42E5F60718293C004 /* NavigationFocusLabBridges.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42E5F60718293C003 /* NavigationFocusLabBridges.swift */; };
@@ -224,6 +225,7 @@
 		A10A0594FE3A3EF35AA32EDD /* CollectionDetailModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectionDetailModel.swift; sourceTree = "<group>"; };
 		A1B2C3D42E5F60718293A001 /* RouteDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteDestination.swift; sourceTree = "<group>"; };
 		A1B2C3D42E5F60718293A003 /* PlaybackSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSession.swift; sourceTree = "<group>"; };
+		A1B2C3D42E5F60718293A102 /* PlaybackAudioSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackAudioSession.swift; sourceTree = "<group>"; };
 		A1B2C3D42E5F60718293B001 /* RouteStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteStack.swift; sourceTree = "<group>"; };
 		A1B2C3D42E5F60718293C001 /* NavigationFocusLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationFocusLabView.swift; sourceTree = "<group>"; };
 		A1B2C3D42E5F60718293C003 /* NavigationFocusLabBridges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationFocusLabBridges.swift; sourceTree = "<group>"; };
@@ -889,6 +891,7 @@
 				CC0904802A7C34D200A71F53 /* PlayerView.swift */,
 				CC0904822A7C353200A71F53 /* PlayerManager.swift */,
 				A1B2C3D42E5F60718293A003 /* PlaybackSession.swift */,
+				A1B2C3D42E5F60718293A102 /* PlaybackAudioSession.swift */,
 				CCA100012C6F000100000002 /* SubtitlePreferences.swift */,
 				CCA100012C6F000100000004 /* SubtitleSelector.swift */,
 				CCA100012C6F000100000006 /* SubtitleCueParser.swift */,
@@ -1285,6 +1288,7 @@
 				CC60254D2AFF548B003D8391 /* UserActionsService.swift in Sources */,
 				CC0904832A7C353200A71F53 /* PlayerManager.swift in Sources */,
 				A1B2C3D42E5F60718293A004 /* PlaybackSession.swift in Sources */,
+				A1B2C3D42E5F60718293A101 /* PlaybackAudioSession.swift in Sources */,
 				CCA100012C6F000100000001 /* SubtitlePreferences.swift in Sources */,
 				CCA100012C6F000100000003 /* SubtitleSelector.swift in Sources */,
 				CCA100012C6F000100000101 /* SearchView.swift in Sources */,
@@ -1546,6 +1550,8 @@
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphoneos*]" = audio;
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphonesimulator*]" = audio;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";
@@ -1595,6 +1601,8 @@
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphoneos*]" = audio;
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphonesimulator*]" = audio;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen.storyboard";

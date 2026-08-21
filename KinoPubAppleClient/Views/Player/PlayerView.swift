@@ -80,13 +80,34 @@ struct PlayerView: View {
     // over it. Back/Menu leaves, the same as on the detail page.
     .toolbar(.hidden, for: .tabBar)
 #endif
+#if os(tvOS) || os(macOS)
+    // **Leaving the player ends the film.** Menu on the TV, closing the window on the
+    // Mac: the session outlives this screen by design, so without this the stream ran on
+    // with nothing showing it — audio playing over the browse grid on tvOS, a paused-but
+    // -still-loaded item on macOS.
+    //
+    // Only safe to hang off `onDisappear` on these two: on iOS this view stays mounted
+    // under AVKit's own full-screen presentation and gets `onDisappear` on the way *in*,
+    // so there the exit signal is the player controller's dismissal delegate instead.
+    .onDisappear { endPlayback() }
+#endif
+  }
+
+  /// Ends the session this screen was showing — unless the viewer moved it into Picture
+  /// in Picture, which is them keeping the film, not closing it.
+  private func endPlayback() {
+    guard !playerManager.isPictureInPictureActive else { return }
+    forgetWindowRequest(ifSessionEnded: PlaybackSession.shared.stop(playerManager))
+  }
+
+  /// macOS: with nothing playing, the window must not sit on a request that would start a
+  /// film again. Only when this screen really was the last one, though — swapping films in
+  /// an open window takes the outgoing screen down *after* the incoming film has claimed
+  /// the session, and clearing there would blank the window on the film that just started.
+  private func forgetWindowRequest(ifSessionEnded ended: Bool) {
 #if os(macOS)
-    // Closing the window has to stop the sound with it. Only safe to hang off
-    // `onDisappear` on macOS: on iOS this view stays mounted underneath AVKit's
-    // full-screen presentation, and pausing there would stop playback on the way in.
-    .onDisappear {
-      playerManager.player.pause()
-    }
+    guard ended else { return }
+    PlaybackWindowState.shared.request = nil
 #endif
   }
 
@@ -102,11 +123,12 @@ struct PlayerView: View {
         playerManager.player.play()
       }
 #elseif os(iOS)
-    // `entersFullScreenWhenPlaybackBegins` is what gets us the system Done button: AVKit
-    // lifts the controller into its own full-screen presentation, which is the only place
-    // it draws one. Tapping Done tells us through the delegate, and we leave the route
-    // rather than dropping the user back onto a letterboxed inline player.
-    SystemVideoPlayer(player: playerManager.player, onExitFullScreen: { dismiss() })
+    // The system player, presented rather than embedded — that presentation is where the
+    // close button comes from. Done ends the film and leaves the route with it.
+    SystemVideoPlayer(manager: playerManager, onFinish: {
+      endPlayback()
+      dismiss()
+    })
       .task {
         await playerManager.preparePlayback()
         playerManager.player.play()
@@ -204,19 +226,29 @@ private struct TVVideoPlayer: UIViewControllerRepresentable {
   }
 
   func makeCoordinator() -> Coordinator {
-    Coordinator(onMenuPress: onMenuPress)
+    Coordinator(manager: manager, onMenuPress: onMenuPress)
   }
 
   final class Coordinator: NSObject, AVPlayerViewControllerDelegate {
+    private let manager: PlayerManager
     let onMenuPress: () -> Void
 
-    init(onMenuPress: @escaping () -> Void) {
+    init(manager: PlayerManager, onMenuPress: @escaping () -> Void) {
+      self.manager = manager
       self.onMenuPress = onMenuPress
     }
 
     func playerViewControllerShouldDismiss(_ playerViewController: AVPlayerViewController) -> Bool {
       onMenuPress()
       return false
+    }
+
+    func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
+      manager.setPictureInPictureActive(true)
+    }
+
+    func playerViewControllerDidStopPictureInPicture(_ playerViewController: AVPlayerViewController) {
+      manager.setPictureInPictureActive(false)
     }
   }
 }
@@ -225,54 +257,125 @@ private struct TVVideoPlayer: UIViewControllerRepresentable {
 
 #if os(iOS)
 
-/// The system player, presented the way AVKit wants to be presented.
+/// The system player, presented the way AVKit wants to be presented: modally, full
+/// screen, over everything.
 ///
-/// `entersFullScreenWhenPlaybackBegins` makes the controller lift itself out of this
-/// inline frame into its own full-screen presentation, and that presentation is the only
-/// thing that draws the system Done button — an embedded `AVPlayerViewController`, or the
-/// SwiftUI `VideoPlayer` that used to be here, never shows one. Done ends the
-/// presentation, which we forward so the route leaves too.
+/// **That presentation is the whole reason there is a way out.** An `AVPlayerViewController`
+/// sitting inline in a view hierarchy draws a transport bar and nothing else — no Done, no
+/// close button — and this screen hides the navigation bar and swallows the back swipe, so
+/// the iPhone ended up with a film that could not be left. `entersFullScreenWhenPlaybackBegins`
+/// was supposed to buy the same presentation for free; it did not, so the presentation is
+/// asked for outright instead of hoped for.
+///
+/// The button belongs to AVKit, not to us — the player still draws no chrome of ours.
 private struct SystemVideoPlayer: UIViewControllerRepresentable {
-  let player: AVPlayer
-  let onExitFullScreen: () -> Void
+  let manager: PlayerManager
+  /// Done, or a swipe down, on the presented player.
+  let onFinish: () -> Void
 
-  func makeUIViewController(context: Context) -> AVPlayerViewController {
-    let controller = AVPlayerViewController()
-    controller.player = player
-    controller.delegate = context.coordinator
-    controller.entersFullScreenWhenPlaybackBegins = true
-    controller.exitsFullScreenWhenPlaybackEnds = true
-    controller.allowsPictureInPicturePlayback = true
-    return controller
+  func makeUIViewController(context: Context) -> PlayerPresentationController {
+    let host = PlayerPresentationController()
+    host.playerController.player = manager.player
+    host.playerController.delegate = context.coordinator
+    host.playerController.allowsPictureInPicturePlayback = true
+    host.playerController.speeds = AVPlaybackSpeed.systemDefaultSpeeds
+    // Belt and braces on the delegate: whatever AVKit does or does not tell us, this
+    // stage getting the screen back means the player is gone, and a black rectangle with
+    // no way out is the exact bug being fixed here.
+    host.onPlayerDismissed = { [weak coordinator = context.coordinator] in
+      coordinator?.finish()
+    }
+    return host
   }
 
-  func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
-    if controller.player !== player {
-      controller.player = player
+  func updateUIViewController(_ host: PlayerPresentationController, context: Context) {
+    if host.playerController.player !== manager.player {
+      host.playerController.player = manager.player
     }
+  }
+
+  /// The route can be popped from elsewhere while the player is up; the presentation is
+  /// AVKit's, so it has to be taken down by hand rather than left orphaned over the app.
+  static func dismantleUIViewController(_ host: PlayerPresentationController,
+                                        coordinator: Coordinator) {
+    host.dismissPlayerIfNeeded()
   }
 
   func makeCoordinator() -> Coordinator {
-    Coordinator(onExitFullScreen: onExitFullScreen)
+    Coordinator(manager: manager, onFinish: onFinish)
   }
 
   final class Coordinator: NSObject, AVPlayerViewControllerDelegate {
-    let onExitFullScreen: () -> Void
+    private let manager: PlayerManager
+    private let onFinish: () -> Void
+    private var didFinish = false
 
-    init(onExitFullScreen: @escaping () -> Void) {
-      self.onExitFullScreen = onExitFullScreen
+    init(manager: PlayerManager, onFinish: @escaping () -> Void) {
+      self.manager = manager
+      self.onFinish = onFinish
     }
 
-    func playerViewController(_ playerViewController: AVPlayerViewController,
-                              willEndFullScreenPresentationWithAnimationCoordinator
-                              coordinator: UIViewControllerTransitionCoordinator) {
-      // Leave alongside the presentation rather than after it, so the inline player
-      // never gets a frame on screen on the way out.
-      coordinator.animate(alongsideTransition: nil) { [onExitFullScreen] context in
-        guard !context.isCancelled else { return }
-        onExitFullScreen()
-      }
+    /// Leaving happens once, however many of the two signals below report it.
+    func finish() {
+      guard !didFinish else { return }
+      didFinish = true
+      onFinish()
     }
+
+    func playerViewControllerDidEndDismissalTransition(_ playerViewController: AVPlayerViewController) {
+      finish()
+    }
+
+    func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
+      manager.setPictureInPictureActive(true)
+    }
+
+    func playerViewControllerDidStopPictureInPicture(_ playerViewController: AVPlayerViewController) {
+      manager.setPictureInPictureActive(false)
+    }
+
+    /// Starting PiP is the viewer moving the film, not closing it. Keeping the presented
+    /// player behind the PiP window means stopping PiP lands them straight back in it —
+    /// the alternative is dismissing here and having to rebuild the interface from a
+    /// restore callback, on a route that has already gone.
+    func playerViewControllerShouldAutomaticallyDismissAtPictureInPictureStart(
+      _ playerViewController: AVPlayerViewController
+    ) -> Bool {
+      false
+    }
+  }
+}
+
+/// Nothing but a stage for the presentation above: it holds the player controller and
+/// puts it on screen once it has a window to present from.
+final class PlayerPresentationController: UIViewController {
+
+  let playerController = AVPlayerViewController()
+  /// Called when the player has been dismissed and this stage is on screen again.
+  var onPlayerDismissed: (() -> Void)?
+  private var didPresent = false
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    view.backgroundColor = .black
+    playerController.modalPresentationStyle = .fullScreen
+    playerController.modalPresentationCapturesStatusBarAppearance = true
+  }
+
+  override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    guard presentedViewController == nil else { return }
+    guard !didPresent else {
+      onPlayerDismissed?()
+      return
+    }
+    didPresent = true
+    present(playerController, animated: true)
+  }
+
+  func dismissPlayerIfNeeded() {
+    guard playerController.presentingViewController != nil else { return }
+    playerController.dismiss(animated: false)
   }
 }
 
@@ -336,7 +439,7 @@ struct PlayerLink<Label: View>: View {
   var body: some View {
 #if os(macOS)
     Button {
-      PlaybackWindowState.shared.request = PlaybackWindowState.Request(item: item, mode: mode)
+      PlaybackWindowState.shared.show(item: item, mode: mode)
       openWindow(id: PlaybackWindowState.windowID)
     } label: {
       label
@@ -370,6 +473,15 @@ final class PlaybackWindowState: ObservableObject {
   }
 
   @Published var request: Request?
+
+  /// Put a film in the window. **A play for what is already in there is that window coming
+  /// forward, not a new screen:** the request identifies the player's view (see
+  /// `PlayerWindowContent`), so replacing it would tear the screen down and rebuild it on
+  /// top of a stream that is already running.
+  func show(item: any PlayableItem, mode: WatchMode) {
+    if let request, request.item.id == item.id, request.mode == mode { return }
+    request = Request(item: item, mode: mode)
+  }
 }
 
 /// Contents of the player window. Keyed by request id so opening a different film builds
@@ -387,7 +499,11 @@ struct PlayerWindowContent: View {
         downloadedFilesDatabase: appContext.downloadedFilesDatabase,
         actionsService: appContext.actionsService
       ))
-      .id("\(request.item.id)-\(String(describing: request.mode))")
+      // Keyed by the request, not by what it points at: closing the window ends the
+      // session, so playing the *same* film again has to build a new screen with a new
+      // `task`. An id made of item + mode is unchanged in that case, and SwiftUI would
+      // keep the old screen — a window that never asks anything to play.
+      .id(request.id)
     } else {
       // Reachable by reopening the window from the Window menu after it was closed.
       Text("Nothing is playing")
