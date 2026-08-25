@@ -48,7 +48,8 @@ Two SDK facts the first CI run turned up, both now fenced:
 - `AVAudioSession.RouteSharingPolicy.longFormVideo` is `API_UNAVAILABLE(tvos)` —
   it does not compile there, so it cannot be attempted-and-caught. iOS only.
 
-**Not watched on a device — validation pending.**
+Green on CI for iOS, tvOS and macOS ([run 174](https://github.com/HipsterCat/kinopub-apple-client/actions/runs/32813815523));
+**not watched on a device — validation pending.**
 
 ### CI skips macos-26 jobs when the diff cannot compile (2026-08-21)
 
