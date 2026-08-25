@@ -855,58 +855,51 @@ extension PlayerManager {
 
   func configureExternalMetadata() {
     guard let item = player.currentItem else { return }
-    var metadata: [AVMetadataItem] = []
-    if let title = displayTitle {
-      metadata.append(makeMetadataItem(.commonIdentifierTitle, value: title))
-    }
-    if let subtitle = displaySubtitle {
-      metadata.append(makeMetadataItem(.iTunesMetadataTrackSubTitle, value: subtitle))
-    }
-    if let media = playItem as? MediaItem {
-      if !media.plot.isEmpty {
-        metadata.append(makeMetadataItem(.commonIdentifierDescription, value: media.plot))
-      }
-      let genreNames = media.genres.compactMap(\.title).filter { !$0.isEmpty }
-      if !genreNames.isEmpty {
-        metadata.append(makeMetadataItem(.commonIdentifierType, value: genreNames.joined(separator: ", ")))
-      }
-      // Poster artwork for the Info panel / Control Center / Apple TV home screen.
-      let posterURL = [media.posters.big, media.posters.medium, media.posters.small]
-        .first { !$0.isEmpty }
-        .flatMap(URL.init(string:))
-      if let posterURL {
-        Task { [weak self] in
-          await self?.attachArtwork(from: posterURL, to: item, base: metadata)
-        }
-      }
-    }
+    let context = titleContext
+    let metadata = PlaybackMetadata.items(title: displayTitle,
+                                          subtitle: displaySubtitle,
+                                          context: context)
     item.externalMetadata = metadata
+
+    let artwork = PlaybackMetadata.artworkURL(context: context, fallback: episodeStill)
+    if let artwork {
+      Task { [weak self] in
+        await self?.attachArtwork(from: artwork, to: item, base: metadata)
+      }
+    }
+  }
+
+  /// **The item this playback belongs to** — the film itself, or the series an episode
+  /// came from. An `Episode` carries none of its parent's facts, so reading only
+  /// `playItem as? MediaItem` left every series with a title, a "Season 2, Episode 5" line
+  /// and an otherwise empty panel: no description, no genres, no artwork.
+  ///
+  /// The series is already on hand: the page the viewer came through cached it, which is
+  /// the same snapshot `PlaybackSession` reads to decide which dub to open with.
+  private var titleContext: MediaItem? {
+    (playItem as? MediaItem)
+      ?? AppContext.shared.localProgressStore.snapshot(for: playItem.metadata.id)
+  }
+
+  /// An episode's own still, for the case where the series snapshot is gone — better than
+  /// no artwork at all, and it is the frame the rail was showing a moment ago.
+  private var episodeStill: String? {
+    (playItem as? Episode)?.thumbnail
   }
 
   private func attachArtwork(from url: URL, to item: AVPlayerItem, base: [AVMetadataItem]) async {
     do {
       let (data, _) = try await URLSession.shared.data(from: url)
       guard !data.isEmpty else { return }
-      let artwork = AVMutableMetadataItem()
-      artwork.identifier = .commonIdentifierArtwork
-      artwork.value = data as NSData
-      artwork.dataType = kCMMetadataBaseDataType_JPEG as String
-      artwork.extendedLanguageTag = "und"
-      let next = base + [artwork]
+      let next = base + [PlaybackMetadata.artworkItem(data)]
       await MainActor.run {
+        // The stream may have been left while the poster was being fetched.
+        guard self.player.currentItem === item else { return }
         item.externalMetadata = next
       }
     } catch {
       Logger.app.debug("Player artwork metadata skipped: \(error.localizedDescription)")
     }
-  }
-
-  private func makeMetadataItem(_ identifier: AVMetadataIdentifier, value: String) -> AVMetadataItem {
-    let item = AVMutableMetadataItem()
-    item.identifier = identifier
-    item.value = value as NSString
-    item.extendedLanguageTag = "und"
-    return item
   }
 
 }

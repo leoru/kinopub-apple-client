@@ -80,9 +80,20 @@ title bar and `MPNowPlayingInfoCenter`, and SwiftUI's `VideoPlayer` exposes none
 - **One language table.** `SubtitleTracks.languageKey` resolves through `LanguageNames`; the second
   shorter copy it used to keep is gone, and it is what made `uzb` and `phi` match nothing while the
   name beside them read correctly.
-- `externalMetadata` is built once in `PlayerManager.configureExternalMetadata()` under
-  `#if os(iOS) || os(tvOS)` and called from `preparePlayback()` — plus again from tvOS's
-  `attach(to:)`, for a controller that attaches after the item already exists.
+- **`externalMetadata` is the stock panel, populated — and it is filled from the *title*, not
+  from what is playing.** An `Episode` carries none of its parent's facts (no plot, no genres,
+  no year, no poster), so reading only `playItem as? MediaItem` left every series with two
+  lines and an empty panel. `PlayerManager.titleContext` falls back to the series snapshot
+  `LocalWatchProgressStore` already holds — the same one `PlaybackSession` reads to pick a dub.
+  The mapping itself is `PlaybackMetadata` in `KinoPubBackend`, pure and tested without an
+  asset. Built under `#if os(iOS) || os(tvOS)` and called from `preparePlayback()`, plus again
+  from tvOS's `attach(to:)` for a controller that attaches after the item exists.
+- **There is no metadata identifier for a capability badge.** 4K / HDR / Atmos in the panel are
+  not something `externalMetadata` can carry — the common and iTunes identifier sets are title,
+  subtitle, description, genre, date, artwork and the like. On tvOS the supported way to put
+  our own facts in that panel is `customInfoViewControllers`, a tab of our own (stage 7).
+  Every metadata item is tagged `und`: a real language tag makes AVFoundation filter the item
+  against the viewer's locale, and the panel then shows nothing.
 - **Off tvOS: present the player, do not push it.** macOS uses its own 16:9 window; iOS lets the
   system controller go full screen for Done. **Every play entry point goes through `PlayerLink`** —
   a `NavigationLink` to the player route puts the film in the macOS detail column with the sidebar
