@@ -585,6 +585,7 @@ class PlayerManager: ObservableObject {
     }
   }
 
+#if !os(tvOS)
   /// **One authority decides the tracks, and it is `TrackResolver` — on every platform.**
   ///
   /// AVFoundation applies media-selection criteria automatically by default, which off tvOS
@@ -611,6 +612,7 @@ class PlayerManager: ObservableObject {
       self.applyLegibleGroup(from: item, group: legible)
     }
   }
+#endif
 
   /// Told by the player screen's delegate, on every platform that has one.
   func setPictureInPictureActive(_ active: Bool) {
