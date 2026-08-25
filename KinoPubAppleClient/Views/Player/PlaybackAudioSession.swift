@@ -18,23 +18,33 @@ import OSLog
 /// the category Picture in Picture and background audio are only granted with.
 ///
 /// `.longFormVideo` is the routing policy for a video app (AirPlay 2 video routes rather
-/// than mirroring); it is attempted first and the plain category is the fallback, because a
-/// policy the platform refuses must not cost us the category.
+/// than mirroring). **Apple API limitation:** `AVAudioSession.RouteSharingPolicy.longFormVideo`
+/// is `API_UNAVAILABLE(tvos)` in the tvOS 26 SDK — the constant does not compile there at
+/// all, so the policy is iOS-only rather than merely attempted everywhere. Re-probe on the
+/// next SDK. Where it is available it is still only attempted: a policy the device refuses
+/// must not cost us the category.
 enum PlaybackAudioSession {
 
   static func activate() {
     let session = AVAudioSession.sharedInstance()
     do {
-      do {
-        try session.setCategory(.playback, mode: .moviePlayback, policy: .longFormVideo)
-      } catch {
-        Logger.app.debug("Long-form video policy refused: \(error.localizedDescription)")
-        try session.setCategory(.playback, mode: .moviePlayback)
-      }
+      try setPlaybackCategory(on: session)
       try session.setActive(true)
     } catch {
       Logger.app.error("Audio session activation failed: \(error.localizedDescription)")
     }
+  }
+
+  private static func setPlaybackCategory(on session: AVAudioSession) throws {
+#if os(iOS)
+    do {
+      try session.setCategory(.playback, mode: .moviePlayback, policy: .longFormVideo)
+      return
+    } catch {
+      Logger.app.debug("Long-form video policy refused: \(error.localizedDescription)")
+    }
+#endif
+    try session.setCategory(.playback, mode: .moviePlayback)
   }
 
   /// Handing the session back is what lets whatever was playing before us resume. Called

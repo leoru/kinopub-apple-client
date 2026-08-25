@@ -107,6 +107,14 @@ title bar and `MPNowPlayingInfoCenter`, and SwiftUI's `VideoPlayer` exposes none
   package on **macOS only**, so a symbol fenced `#if os(macOS)` and used unfenced compiles there and
   fails every simulator build — `MediaCardView`'s `isHovered` did exactly that. The tvOS/iOS
   `xcodebuild` jobs are the only thing that catches it; read them before believing green tests.
+- **`playerViewControllerDidEndDismissalTransition` is unavailable in the iOS 26 SDK** —
+  implementing it fails the build with "cannot override … which has been marked unavailable",
+  so AVKit's delegate has nothing to say about Done on a presented player. The exit signal is
+  UIKit's instead: the host controller's `viewDidAppear` after the presentation has gone.
+  Re-probe the delegate on the next SDK. (Verified on CI, Xcode 26, Aug 2026.)
+- **`AVAudioSession.RouteSharingPolicy.longFormVideo` is `API_UNAVAILABLE(tvos)`** — the
+  constant does not compile on tvOS at all, so it cannot merely be attempted and caught. The
+  policy is fenced to iOS; tvOS takes the plain `.playback` / `.moviePlayback` category.
 - **SRT fetch needs encoding detection** — Russian subtitles are routinely windows-1251.
 - **Cue lookup is a linear scan** over ~2000 cues several times a second; it wants a binary search
   plus a cursor.

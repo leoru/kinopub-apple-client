@@ -279,9 +279,12 @@ private struct SystemVideoPlayer: UIViewControllerRepresentable {
     host.playerController.delegate = context.coordinator
     host.playerController.allowsPictureInPicturePlayback = true
     host.playerController.speeds = AVPlaybackSpeed.systemDefaultSpeeds
-    // Belt and braces on the delegate: whatever AVKit does or does not tell us, this
-    // stage getting the screen back means the player is gone, and a black rectangle with
-    // no way out is the exact bug being fixed here.
+    // **This is the exit signal, and it is UIKit's rather than AVKit's.** Apple API
+    // limitation: `playerViewControllerDidEndDismissalTransition` is marked unavailable in
+    // the iOS 26 SDK ("cannot override … which has been marked unavailable"), so the
+    // delegate has nothing to say about Done. This stage getting the screen back means the
+    // player is gone, which is the same fact from a layer that still exists. Re-probe the
+    // delegate on the next SDK.
     host.onPlayerDismissed = { [weak coordinator = context.coordinator] in
       coordinator?.finish()
     }
@@ -315,15 +318,11 @@ private struct SystemVideoPlayer: UIViewControllerRepresentable {
       self.onFinish = onFinish
     }
 
-    /// Leaving happens once, however many of the two signals below report it.
+    /// Leaving happens once, however many times the host reports it.
     func finish() {
       guard !didFinish else { return }
       didFinish = true
       onFinish()
-    }
-
-    func playerViewControllerDidEndDismissalTransition(_ playerViewController: AVPlayerViewController) {
-      finish()
     }
 
     func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {

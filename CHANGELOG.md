@@ -39,7 +39,16 @@ Four reports from one device pass, all in `PlayerView` / `PlayerManager`:
   stamps with our ranked dub), legible starts empty, and the system menu still
   overrides both.
 
-Not watched on a device yet: **validation pending on all four.**
+Two SDK facts the first CI run turned up, both now fenced:
+
+- `playerViewControllerDidEndDismissalTransition` is **unavailable in the iOS 26
+  SDK** ("cannot override … which has been marked unavailable"), so the AVKit
+  delegate cannot report Done. The exit signal is UIKit's: the host controller's
+  `viewDidAppear` once the presentation is gone.
+- `AVAudioSession.RouteSharingPolicy.longFormVideo` is `API_UNAVAILABLE(tvos)` —
+  it does not compile there, so it cannot be attempted-and-caught. iOS only.
+
+**Not watched on a device — validation pending.**
 
 ### CI skips macos-26 jobs when the diff cannot compile (2026-08-21)
 
