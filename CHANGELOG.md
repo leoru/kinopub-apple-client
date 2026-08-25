@@ -5,6 +5,37 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### One track system on every platform (2026-08-25)
+
+The subtitle fix above exposed the shape of the gap; this closes it.
+
+- **Audio too.** `configureDefaultAudioWhenReady` / `applyAudibleGroup` /
+  `persistAudioSelectionIfNeeded` were tvOS-only, so iPhone and Mac played
+  whatever the master marked `DEFAULT` and the per-season dub memory never
+  applied. They are unfenced, and so is `AVMediaSelectionOption: AudioRendition`.
+- **Picks made in the system menu are learned off tvOS.** There is no picker of
+  ours there and AVKit reports nothing, so the watch-mark tick reads
+  `currentMediaSelection` — the trick tvOS already used for audio, now covering
+  subtitles as well, on the same "weight is episodes watched" floor. "Off" is
+  written down; an item that offered no subtitles teaches nothing.
+- **Matching no longer rests on order.** `SubtitleRenditions` pairs within one
+  language *and* one kind (forced / SDH); position separates only tracks that
+  are otherwise identical, and is counted from both lists in the same session,
+  never carried over from an earlier episode. `SubtitleRenditions.track(forRenditionAt:)`
+  reads a pick back by index, because two renditions of one language and kind are
+  equal in everything the protocol can see.
+- **One language table.** `SubtitleTracks.languageKey` now resolves through
+  `LanguageNames` instead of keeping a second, shorter copy — the copy was
+  missing `uzb` and `phi`, both of which kino.pub ships, so those matched nothing
+  while their names rendered correctly. `phi` → `fil` added; **`ai`, their
+  machine-translated Russian, is deliberately not an alias of `ru`** (an item can
+  carry both) and gets a name of its own.
+- **Tests where the breakage was.** `PlayerTrackSelectionTests` runs in the app
+  bundle, so it covers the player wiring **on the iOS and tvOS simulators**, not
+  just macOS `swift test`; `PlayerManager` takes an injectable `PlaybackPreflight`
+  to make that possible. **CI now runs on `claude/**` pushes** — the branch that
+  broke both device platforms compiled nowhere until a PR existed.
+
 ### Subtitles off tvOS follow the resolver, not nothing (2026-08-25)
 
 Turning `appliesMediaSelectionCriteriaAutomatically` off stopped the muted

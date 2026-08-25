@@ -423,11 +423,19 @@ tvOS-only properties.
       renditions through `SubtitleRenditions` (language + position; tests in `KinoPubBackend`).
       The system caption setting is an input to the resolver, not a competing authority.
       **None of these watched on a device yet**
-- [ ] The audio half of the same parity: off tvOS the dub is still the master's `DEFAULT`
-      (`HLSAudioLabeler`'s ranking), not the resolver's scopes and weights. Needs
-      `configureDefaultAudioWhenReady` / `AudioRenditions` unfenced, plus somewhere to remember
-      a pick made in the system menu — the tvOS trick is polling `currentMediaSelection` on the
-      watch-mark tick
+- [x] **The audio half of the same parity** — `configureDefaultAudioWhenReady`,
+      `applyAudibleGroup` and `persistAudioSelectionIfNeeded` unfenced, so the ledger decides
+      the dub on every platform; a pick made in the system menu (audio or subtitles) is noticed
+      on the watch-mark tick, on the same episodes-watched floor
+- [x] Matching hardened: language + kind, position only between otherwise-identical tracks and
+      only within one session — a track added to an item later moves both lists together.
+      One language table (`LanguageNames`), so `uzb` and `phi` stop matching nothing, and `ai`
+      stays its own language
+- [x] Player tests that run on **both** simulators (`KinoPubAppleClientTests`), and CI on
+      `claude/**` pushes — a branch used to compile nowhere until a PR existed
+- [ ] The integration test still missing: a real `AVPlayerItem` from a local HLS fixture, asserting
+      `currentMediaSelection` matches what the resolver decided. Everything above it is covered
+      without an asset; this is the one seam that is not
 - [ ] PiP that survives backgrounding on iOS — the category and background mode it was waiting
       for are in; what is left is watching it work, and deciding what stopping PiP outside the
       route should restore

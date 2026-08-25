@@ -7,7 +7,11 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # Agent branches too, not only main: nothing else compiles them. A player change sat
+    # on `claude/**` and broke iOS *and* tvOS in ways only xcodebuild could see, because a
+    # branch push ran no job at all and no PR was open yet. Ordinary feature branches keep
+    # getting their run from `pull_request`.
+    branches: [main, 'claude/**', 'cursor/**']
   pull_request:
   workflow_dispatch:
 

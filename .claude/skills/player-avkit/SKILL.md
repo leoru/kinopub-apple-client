@@ -61,14 +61,25 @@ title bar and `MPNowPlayingInfoCenter`, and SwiftUI's `VideoPlayer` exposes none
   system caption settings and the *Automatic* display type exists to put captions up when the media
   is **muted** — a transcription nobody asked for — while knowing nothing about the last episode.
   Off tvOS the resolver's answer is carried to the master's own `SUBTITLES` renditions by
-  `SubtitleRenditions` (language + position within that language; no id is shared between the API
-  list and the master). **That is not "off": the resolver reads the system setting itself** —
+  `SubtitleRenditions` (see below — no id is shared between the API list and the master).
+  **That is not "off": the resolver reads the system setting itself** —
   `.alwaysOn` in Settings › Accessibility means on, and the system caption languages seed the
   language order (`SubtitlePreferences.systemWantsCaptions`). Only the muted reflex is gone; a pick
   in the system menu still wins. Rules: `docs/product/playback-tracks.md`.
-- **The audio ledger is still tvOS-only.** Off tvOS the dub is whatever the master marks `DEFAULT`,
-  which is `HLSAudioLabeler`'s ranked pick rather than the CDN's — a simpler rule than the resolver's
-  scopes and weights. Selecting it through `AudioRenditions` off tvOS is the missing half.
+- **The dub is chosen by the resolver on every platform too.** `configureDefaultAudioWhenReady` /
+  `applyAudibleGroup` / `persistAudioSelectionIfNeeded` are no longer tvOS-only, so the season's
+  ledger reaches the iPhone and the Mac instead of leaving them on the master's `DEFAULT`. Off tvOS
+  the system menu is the only picker there is and it reports nothing, so a pick is noticed on the
+  watch-mark tick — audio and subtitles both, on the same "weight is episodes watched" floor.
+- **A subtitle rendition is matched by language and kind, never by a remembered position.**
+  `SubtitleRenditions` pairs the API list with the master's renditions inside one language and one
+  kind (forced / SDH); position only separates two tracks that are otherwise identical, and it is
+  counted from both lists *as they are in this session* — never a number carried over from an
+  earlier episode. `ai` (kino.pub's machine-translated Russian) is its own language and must not
+  collapse into `ru`.
+- **One language table.** `SubtitleTracks.languageKey` resolves through `LanguageNames`; the second
+  shorter copy it used to keep is gone, and it is what made `uzb` and `phi` match nothing while the
+  name beside them read correctly.
 - `externalMetadata` is built once in `PlayerManager.configureExternalMetadata()` under
   `#if os(iOS) || os(tvOS)` and called from `preparePlayback()` — plus again from tvOS's
   `attach(to:)`, for a controller that attaches after the item already exists.
