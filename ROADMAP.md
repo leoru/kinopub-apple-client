@@ -391,7 +391,11 @@ per-platform API matrix is in the `player-avkit` skill — do not plan iOS or ma
 tvOS-only properties.
 
 - [x] Custom centre panel deleted; a failure shows a system alert and we stay in the player
-- [x] `externalMetadata` on iOS as well as tvOS
+- [x] `externalMetadata` on iOS as well as tvOS, filled from the **title** rather than from
+      what is playing: an episode carries its series' description, genres, year and poster
+      into the panel instead of showing two lines and nothing else (`PlaybackMetadata`,
+      tested without an asset). Capability badges are not reachable this way — no identifier
+      carries one; that is what `customInfoViewControllers` below is for
 - [x] Every play entry point goes through `PlayerLink`; `NavigationState.push` redirects player
       routes into the macOS playback window, with a `RouteDestination` guard behind it
 - [x] macOS `AVPlayerView` bridge (speeds, PiP, fullscreen toggle, sharing)

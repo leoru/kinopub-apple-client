@@ -150,6 +150,22 @@ final class PlayerTrackSelectionTests: XCTestCase {
     }
   }
 
+  // MARK: - What the system player is told
+
+  /// The panel cannot be asserted without a device, but the fact that an episode now
+  /// carries its series' description, genres and year into it can — and that this happens
+  /// on the platforms whose panel we are talking about.
+  func testAnEpisodeCarriesItsSeriesIntoTheInfoPanel() {
+    let series = MediaItem.mock()
+    let items = PlaybackMetadata.items(title: "Series",
+                                       subtitle: "Season 1, Episode 2",
+                                       context: series)
+    XCTAssertEqual(items.first { $0.identifier == .commonIdentifierTitle }?.stringValue, "Series")
+    XCTAssertEqual(items.first { $0.identifier == .commonIdentifierDescription }?.stringValue,
+                   series.plot)
+    XCTAssertNotNil(items.first { $0.identifier == .commonIdentifierCreationDate })
+  }
+
   private struct StubRendition: SubtitleRendition, Equatable {
     var renditionLanguageCode: String
     var isForcedRendition: Bool = false

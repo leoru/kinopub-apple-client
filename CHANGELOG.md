@@ -5,6 +5,31 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### The player's info panel is filled from the title, not the episode (2026-08-25)
+
+`externalMetadata` was only ever populated when the thing playing was a
+`MediaItem`. An `Episode` is not one and carries none of its parent's facts, so
+on the surface that uses the panel most — a series on Apple TV — the viewer got
+a title, a "Season 2, Episode 5" line and an otherwise empty panel: no
+description, no genres, no artwork.
+
+- `PlayerManager.titleContext` resolves the item behind the playback: the film
+  itself, or the series snapshot `LocalWatchProgressStore` already holds (the
+  same one `PlaybackSession` reads to pick a dub). Nothing is fetched for it.
+- The mapping moved to `PlaybackMetadata` in `KinoPubBackend` — pure, so what
+  reaches the panel is asserted without an asset or a device. Year is new
+  (`.commonIdentifierCreationDate`); empty values are omitted rather than sent
+  as empty strings, which reserve space in the panel.
+- Artwork: the title's poster, falling back to the episode's own still when the
+  series is not cached. The fetch now checks the item is still current before
+  writing, so a poster arriving after the viewer left cannot repopulate a dead
+  stream.
+- **No identifier carries a capability badge.** 4K / HDR / Atmos are not
+  `externalMetadata`; on tvOS our own facts go in the panel through
+  `customInfoViewControllers`, which is still ahead of us. Everything we do send
+  is tagged `und` — a real language tag makes AVFoundation filter the item
+  against the viewer's locale and the panel shows nothing.
+
 ### One track system on every platform (2026-08-25)
 
 The subtitle fix above exposed the shape of the gap; this closes it.
