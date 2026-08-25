@@ -5,6 +5,52 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### The player now ends when you leave it, and the iPhone has sound (2026-08-21)
+
+Four reports from one device pass, all in `PlayerView` / `PlayerManager`:
+
+- **Leaving the player ends the film.** Nothing tore the session down: Menu on
+  tvOS popped the route and left the `AVPlayer` playing behind the browse grid,
+  and closing the macOS window only called `pause()` on a still-loaded item.
+  `PlaybackSession.stop(_:)` is the one exit — it takes the manager the screen
+  was showing, so a route tearing down *after* the next film claimed the session
+  cannot stop that one. It also writes a final watch mark (the last tick can be
+  10 s old, the last server mark 30 s) before the stream goes.
+- **iOS presents the player instead of embedding it.** An inline
+  `AVPlayerViewController` draws a transport bar and no close button, and this
+  route hides the navigation bar, so the film could not be left at all.
+  `entersFullScreenWhenPlaybackBegins` was supposed to buy that presentation and
+  did not; it is now a real modal `.fullScreen` presentation from a host
+  controller, which is where AVKit's own Done button comes from. Exit is the
+  dismissal delegate — **on iOS `onDisappear` fires when the player presents**,
+  so it can never be the signal there.
+- **The iPhone was silent because the app never configured an audio session.**
+  With no category you get `.soloAmbient`, which the Ring/Silent switch mutes by
+  definition, and the volume keys are moving the ringer, so there is no way to
+  turn any sound on. `PlaybackAudioSession` sets `.playback` / `.moviePlayback`
+  (long-form-video policy where accepted) around every stream, and iOS gets
+  `UIBackgroundModes: audio` — per-SDK in the pbxproj, so tvOS and macOS are
+  untouched. That is also the prerequisite PiP was always missing.
+- **Nothing turns captions on but the viewer.** `appliesMediaSelectionCriteriaAutomatically`
+  is off, so the system's caption settings — including the *Automatic* display
+  type, whose job is to show captions when the media is muted — stop selecting a
+  legible track behind our back on macOS. Off tvOS the selection is then made
+  explicitly: audio keeps the master's `DEFAULT` (which `HLSAudioLabeler` already
+  stamps with our ranked dub), legible starts empty, and the system menu still
+  overrides both.
+
+Two SDK facts the first CI run turned up, both now fenced:
+
+- `playerViewControllerDidEndDismissalTransition` is **unavailable in the iOS 26
+  SDK** ("cannot override … which has been marked unavailable"), so the AVKit
+  delegate cannot report Done. The exit signal is UIKit's: the host controller's
+  `viewDidAppear` once the presentation is gone.
+- `AVAudioSession.RouteSharingPolicy.longFormVideo` is `API_UNAVAILABLE(tvos)` —
+  it does not compile there, so it cannot be attempted-and-caught. iOS only.
+
+Green on CI for iOS, tvOS and macOS ([run 174](https://github.com/HipsterCat/kinopub-apple-client/actions/runs/32813815523));
+**not watched on a device — validation pending.**
+
 ### CI skips macos-26 jobs when the diff cannot compile (2026-08-21)
 
 - Fastlane, TestFlight yaml, markdown, `workers/`, `tools/` wake nothing.

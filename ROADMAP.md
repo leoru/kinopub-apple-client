@@ -406,8 +406,22 @@ tvOS-only properties.
 - [ ] Re-check `allowedSubtitleOptionLanguages = []` — hiding the system picker is only justified
       while our menu is a strict superset. `AVCustomMediaSelectionScheme` (26+) may let sidecar SRT
       live in the system menu instead
-- [ ] PiP that survives backgrounding on iOS (needs an `AVAudioSession` `.playback` category and
-      `UIBackgroundModes: audio`; `allowsPictureInPicturePlayback` alone stops at backgrounding)
+- [x] **Leaving the player ends the film**, on every platform — `PlaybackSession.stop(_:)` from
+      Menu (tvOS), Done (iOS) and closing the window (macOS), plus a final watch mark. The
+      session outliving the screen is what left a stream playing behind the browse grid
+- [x] **iOS presents the system player** modally full screen instead of embedding it — that
+      presentation is where AVKit's close button comes from, and an embedded controller has
+      none. `onDisappear` fires when it presents, so the exit signal there is the dismissal
+      delegate, never the view's lifecycle
+- [x] `AVAudioSession` `.playback` / `.moviePlayback` around every stream (`PlaybackAudioSession`)
+      and `UIBackgroundModes: audio` on the iOS SDK only. Without a category an iPhone plays
+      through the Ring/Silent switch — no sound, and no volume key that can bring it back
+- [x] Automatic media selection off, so the system's caption settings stop turning subtitles on
+      by themselves; off tvOS audio pins to the master's `DEFAULT` and legible starts empty.
+      **None of these four watched on a device yet**
+- [ ] PiP that survives backgrounding on iOS — the category and background mode it was waiting
+      for are in; what is left is watching it work, and deciding what stopping PiP outside the
+      route should restore
 - [ ] Verify AirPlay / Now Playing / Control Center titles and artwork on every platform
 - [x] Track preference rules written down and covered by tests — `TrackResolver`,
       `TrackPreferenceLedger`, [docs/product/playback-tracks.md](docs/product/playback-tracks.md).

@@ -41,6 +41,25 @@ title bar and `MPNowPlayingInfoCenter`, and SwiftUI's `VideoPlayer` exposes none
 ## Ours
 
 - **One app-scoped `PlaybackSession` / `PlayerManager`.** Do not allocate a manager per route.
+- **Leaving the player ends the film.** The session outlives the screen on purpose, so nothing
+  stops the stream unless the exit path says so: `PlaybackSession.stop(_:)` takes the manager the
+  screen was showing (a route can tear down after the next film already claimed the session) and
+  `tearDownForReplacement` does the real work — `replaceCurrentItem(with: nil)`, not `pause()`,
+  which leaves a loaded item and a live resource loader behind. The one exception is an active
+  PiP window: that is the viewer keeping the film, not closing it.
+- **The exit signal is not the same on every platform.** tvOS and macOS use `onDisappear`
+  (Menu → `playerViewControllerShouldDismiss`; closing the window). **iOS must not** — the view
+  gets `onDisappear` when AVKit presents the player, i.e. on the way *in* — so there it is the
+  dismissal delegate.
+- **iOS presents the player, and that is where the close button comes from.** An embedded
+  `AVPlayerViewController` draws a transport bar and nothing else; with the navigation bar hidden
+  that is a film you cannot leave. `entersFullScreenWhenPlaybackBegins` was supposed to buy the
+  presentation and did not, so `PlayerPresentationController` presents it `.fullScreen` outright.
+- **Nothing turns captions on but the viewer.** `player.appliesMediaSelectionCriteriaAutomatically`
+  is off: automatic criteria follow the system caption settings, and the *Automatic* display type
+  exists to put captions up when the media is muted. Off tvOS the selection is then made by us —
+  audio pins to the master's `DEFAULT` (`HLSAudioLabeler`'s ranked dub), legible starts empty, the
+  system menu still overrides both.
 - `externalMetadata` is built once in `PlayerManager.configureExternalMetadata()` under
   `#if os(iOS) || os(tvOS)` and called from `preparePlayback()` — plus again from tvOS's
   `attach(to:)`, for a controller that attaches after the item already exists.
@@ -88,14 +107,26 @@ title bar and `MPNowPlayingInfoCenter`, and SwiftUI's `VideoPlayer` exposes none
   package on **macOS only**, so a symbol fenced `#if os(macOS)` and used unfenced compiles there and
   fails every simulator build — `MediaCardView`'s `isHovered` did exactly that. The tvOS/iOS
   `xcodebuild` jobs are the only thing that catches it; read them before believing green tests.
+- **`playerViewControllerDidEndDismissalTransition` is unavailable in the iOS 26 SDK** —
+  implementing it fails the build with "cannot override … which has been marked unavailable",
+  so AVKit's delegate has nothing to say about Done on a presented player. The exit signal is
+  UIKit's instead: the host controller's `viewDidAppear` after the presentation has gone.
+  Re-probe the delegate on the next SDK. (Verified on CI, Xcode 26, Aug 2026.)
+- **`AVAudioSession.RouteSharingPolicy.longFormVideo` is `API_UNAVAILABLE(tvos)`** — the
+  constant does not compile on tvOS at all, so it cannot merely be attempted and caught. The
+  policy is fenced to iOS; tvOS takes the plain `.playback` / `.moviePlayback` category.
 - **SRT fetch needs encoding detection** — Russian subtitles are routinely windows-1251.
 - **Cue lookup is a linear scan** over ~2000 cues several times a second; it wants a binary search
   plus a cursor.
 - `HLSAudioLabeler` writes a temp `.m3u8` per launch into `tmp/kinopub-hls` and never cleans up.
 - Two periodic observers, and `currentPlaybackTime` republished four times a second.
-- **iOS PiP and background audio need an `AVAudioSession` `.playback` category plus
-  `UIBackgroundModes: audio`.** `allowsPictureInPicturePlayback` alone stops at backgrounding, and
-  the ringer switch can kill sound.
+- **An iOS app that sets no audio session category gets `.soloAmbient`, which the Ring/Silent
+  switch mutes by definition** — and the volume keys then move the ringer, so there is no sound
+  and nothing that turns any on. That was the silent iPhone player, not the stream.
+  `PlaybackAudioSession` sets `.playback` / `.moviePlayback` around every stream, and
+  `UIBackgroundModes: audio` is declared per-SDK in the pbxproj
+  (`INFOPLIST_KEY_UIBackgroundModes[sdk=iphone*]`, so tvOS and macOS keep their own behavior) —
+  which is also the prerequisite `allowsPictureInPicturePlayback` was always missing.
 - `AVAssetDownloadURLSession` does not give tvOS the iOS downloads UX — **Downloads stay non-TV**.
 
 ## Open questions — do not answer them from memory

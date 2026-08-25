@@ -195,11 +195,11 @@ class NavigationState: ObservableObject {
 #if os(macOS)
     switch route {
     case .player(let item):
-      PlaybackWindowState.shared.request = PlaybackWindowState.Request(item: item, mode: .media)
+      PlaybackWindowState.shared.show(item: item, mode: .media)
       playerWindowRequestID = UUID()
       return
     case .trailerPlayer(let item):
-      PlaybackWindowState.shared.request = PlaybackWindowState.Request(item: item, mode: .trailer)
+      PlaybackWindowState.shared.show(item: item, mode: .trailer)
       playerWindowRequestID = UUID()
       return
     default:

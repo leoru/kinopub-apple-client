@@ -138,7 +138,7 @@ private struct MacPlayerRouteGuard: View {
     Color.clear
       .onAppear {
         assertionFailure("'.player'/'.trailerPlayer' reached the main stack on macOS — route through PlayerLink instead")
-        PlaybackWindowState.shared.request = PlaybackWindowState.Request(item: item, mode: mode)
+        PlaybackWindowState.shared.show(item: item, mode: mode)
         openWindow(id: PlaybackWindowState.windowID)
         dismiss()
       }

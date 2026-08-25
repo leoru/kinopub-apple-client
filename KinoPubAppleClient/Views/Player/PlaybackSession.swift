@@ -88,4 +88,22 @@ final class PlaybackSession: ObservableObject {
     manager = nil
     request = nil
   }
+
+  /// **Leaving the player ends the stream.** Called when the player surface goes away —
+  /// Menu on tvOS, Done on iOS, closing the window on macOS — because nothing else does
+  /// it: the session outlives the screen by design, so without this the `AVPlayer` kept
+  /// running with no picture and the film played on in the background.
+  ///
+  /// Takes the manager the screen was showing rather than clearing blindly: a route can
+  /// tear down after the next film has already claimed the session — swapping films in the
+  /// open macOS window does exactly that — and that one must keep playing. `false` says so:
+  /// this screen's stream is over, but the session belongs to something else now.
+  @discardableResult
+  func stop(_ manager: PlayerManager) -> Bool {
+    manager.tearDownForReplacement()
+    guard self.manager === manager else { return false }
+    self.manager = nil
+    request = nil
+    return true
+  }
 }
