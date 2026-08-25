@@ -416,9 +416,18 @@ tvOS-only properties.
 - [x] `AVAudioSession` `.playback` / `.moviePlayback` around every stream (`PlaybackAudioSession`)
       and `UIBackgroundModes: audio` on the iOS SDK only. Without a category an iPhone plays
       through the Ring/Silent switch — no sound, and no volume key that can bring it back
-- [x] Automatic media selection off, so the system's caption settings stop turning subtitles on
-      by themselves; off tvOS audio pins to the master's `DEFAULT` and legible starts empty.
-      **None of these four watched on a device yet**
+- [x] Automatic media selection off, so nothing but the resolver picks a track: the *Automatic*
+      caption display type turns captions on when media is **muted**, which is the transcription
+      that appeared over a film on macOS
+- [x] **`TrackResolver` applies off tvOS too** — its subtitle answer reaches the master's own
+      renditions through `SubtitleRenditions` (language + position; tests in `KinoPubBackend`).
+      The system caption setting is an input to the resolver, not a competing authority.
+      **None of these watched on a device yet**
+- [ ] The audio half of the same parity: off tvOS the dub is still the master's `DEFAULT`
+      (`HLSAudioLabeler`'s ranking), not the resolver's scopes and weights. Needs
+      `configureDefaultAudioWhenReady` / `AudioRenditions` unfenced, plus somewhere to remember
+      a pick made in the system menu — the tvOS trick is polling `currentMediaSelection` on the
+      watch-mark tick
 - [ ] PiP that survives backgrounding on iOS — the category and background mode it was waiting
       for are in; what is left is watching it work, and deciding what stopping PiP outside the
       route should restore

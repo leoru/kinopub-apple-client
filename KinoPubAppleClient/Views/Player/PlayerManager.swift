@@ -438,13 +438,20 @@ class PlayerManager: ObservableObject {
 
   /// The tracks to open with.
   ///
-  /// tvOS only. Everywhere else the system player lists the HLS subtitle renditions from
-  /// the master itself and renders them, so downloading sidecar SRT there would fetch
-  /// files nothing draws.
+  /// **The decision is asked for on every platform; only the rendering differs.** tvOS
+  /// draws sidecar SRT itself (see `apply`), and everywhere else the system player lists
+  /// the master's own WebVTT copies of those same files and renders the one we select —
+  /// so off tvOS the answer is carried to the legible group by `pinMediaSelection` and no
+  /// sidecar is fetched.
   private func configureSubtitles() {
-#if os(tvOS)
     guard watchMode == .media else { return }
     subtitleTracks = SubtitleSelector.tracks(in: playItem.subtitles)
+#if !os(tvOS)
+    // Off tvOS `apply` is not the path — it loads sidecar cues nothing would draw and
+    // rebuilds a transport-bar menu that does not exist. The decision is all we keep.
+    primaryTrack = refreshPlan().decision.subtitle
+#endif
+#if os(tvOS)
     let primary = refreshPlan().decision.subtitle
     // Dual subtitles stay a Settings choice rather than something the resolver decides:
     // a second line is a deliberate extra, not part of what a title opens with.
@@ -568,19 +575,24 @@ class PlayerManager: ObservableObject {
     }
   }
 
-  /// **Nothing turns captions on but the viewer.**
+  /// **One authority decides the tracks, and it is `TrackResolver` — on every platform.**
   ///
-  /// AVFoundation applies media-selection criteria automatically by default, and off tvOS
-  /// those criteria follow the system's caption settings — including the *Automatic*
-  /// display type, whose entire job is to put captions up when the media is muted. That is
-  /// what appeared over a film on macOS: a caption track nobody asked for, on a stream that
-  /// carries perfectly ordinary subtitle renditions the system menu already lists.
+  /// AVFoundation applies media-selection criteria automatically by default, which off tvOS
+  /// means the system's caption settings pick the legible track. Two of those settings
+  /// disagree with us: *Automatic*, the stock value, exists to put captions up when the
+  /// media is **muted** — that is the transcription that appeared over a film on macOS —
+  /// and neither value knows anything about what this viewer chose on the last episode.
   ///
-  /// With automatic criteria off, the selection is ours to make, so both halves are made
-  /// here: audio stays on whatever the master marks `DEFAULT` — which is not the CDN's
-  /// guess but our own ranked dub, stamped in by `HLSAudioLabeler` — and the legible group
-  /// starts empty. Picking a subtitle track in the system menu still overrides it; only the
-  /// automatic switch-on is gone.
+  /// So automatic criteria are off and the answer comes from the resolver instead. That is
+  /// not the same as "off": the resolver **reads the system setting** — `.alwaysOn` in
+  /// Settings › Accessibility › Subtitles & Captioning means on, and the system caption
+  /// languages seed the language order — on top of the remembered per-season choice and the
+  /// "audio in a language the viewer does not read" rule. Rules and reasons:
+  /// docs/product/playback-tracks.md. Picking something else in the system menu still wins;
+  /// only the muted-transcription reflex is gone.
+  ///
+  /// Audio stays on whatever the master marks `DEFAULT` — not the CDN's guess but our own
+  /// ranked dub, stamped in by `HLSAudioLabeler`. The full audio ledger is still tvOS-only.
   private func pinMediaSelection(on item: AVPlayerItem) {
     Task { @MainActor in
       let audible = try? await item.asset.loadMediaSelectionGroup(for: .audible)
@@ -592,10 +604,22 @@ class PlayerManager: ObservableObject {
          let dub = audible.defaultOption ?? audible.options.first {
         item.select(dub, in: audible)
       }
-      if let legible {
-        item.select(nil, in: legible)
-      }
+      guard let legible else { return }
+      item.select(self.legibleOption(for: self.primaryTrack, in: legible), in: legible)
     }
+  }
+
+  /// The master's rendition of the subtitle track the resolver decided on, or `nil` for
+  /// "no subtitles" — which is both what a remembered "off" means and the honest answer
+  /// when this master carries nothing in that language.
+  private func legibleOption(for track: SubtitleTrack?,
+                             in group: AVMediaSelectionGroup) -> AVMediaSelectionOption? {
+    guard let track else { return nil }
+    let option = SubtitleRenditions.rendition(for: track, in: group.options)
+    if option == nil {
+      Logger.app.debug("No \(track.lang) subtitle rendition in this master; opening without")
+    }
+    return option
   }
 
   /// Told by the player screen's delegate, on every platform that has one.
@@ -1085,14 +1109,26 @@ extension AVMediaSelectionOption: AudioRendition {
     return displayName
   }
 
+}
+
+#endif
+
+/// The subtitle half of the same bridge, on every platform — off tvOS this is what the
+/// system player is told to render, and on tvOS it is the language witness `AudioRendition`
+/// needs. Rules and their tests: `SubtitleRenditions` in `KinoPubBackend`.
+extension AVMediaSelectionOption: SubtitleRendition {
+
   /// The rendition's language, from the option's locale, then its `LANGUAGE=` tag. Falls
-  /// back to the name so a match by language at least has something to compare.
+  /// back to the display name so a match by language at least has something to compare.
   public var renditionLanguageCode: String {
     if let code = locale?.language.languageCode?.identifier, !code.isEmpty { return code }
     let tag = extendedLanguageTag ?? ""
     if !tag.isEmpty { return tag }
-    return kinopubTrackName
+    return displayName
+  }
+
+  /// Signage and alien dialogue only — never what "Russian subtitles" means.
+  public var isForcedRendition: Bool {
+    hasMediaCharacteristic(.containsOnlyForcedSubtitles)
   }
 }
-
-#endif

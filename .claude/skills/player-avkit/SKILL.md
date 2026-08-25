@@ -49,17 +49,26 @@ title bar and `MPNowPlayingInfoCenter`, and SwiftUI's `VideoPlayer` exposes none
   PiP window: that is the viewer keeping the film, not closing it.
 - **The exit signal is not the same on every platform.** tvOS and macOS use `onDisappear`
   (Menu → `playerViewControllerShouldDismiss`; closing the window). **iOS must not** — the view
-  gets `onDisappear` when AVKit presents the player, i.e. on the way *in* — so there it is the
-  dismissal delegate.
+  gets `onDisappear` when AVKit presents the player, i.e. on the way *in* — so there the signal is
+  the host controller's `viewDidAppear` once the presentation is gone (AVKit's dismissal delegate is
+  unavailable in the SDK; see the traps below).
 - **iOS presents the player, and that is where the close button comes from.** An embedded
   `AVPlayerViewController` draws a transport bar and nothing else; with the navigation bar hidden
   that is a film you cannot leave. `entersFullScreenWhenPlaybackBegins` was supposed to buy the
   presentation and did not, so `PlayerPresentationController` presents it `.fullScreen` outright.
-- **Nothing turns captions on but the viewer.** `player.appliesMediaSelectionCriteriaAutomatically`
-  is off: automatic criteria follow the system caption settings, and the *Automatic* display type
-  exists to put captions up when the media is muted. Off tvOS the selection is then made by us —
-  audio pins to the master's `DEFAULT` (`HLSAudioLabeler`'s ranked dub), legible starts empty, the
-  system menu still overrides both.
+- **`TrackResolver` decides the subtitles on every platform, not only tvOS.**
+  `player.appliesMediaSelectionCriteriaAutomatically` is off, because automatic criteria follow the
+  system caption settings and the *Automatic* display type exists to put captions up when the media
+  is **muted** — a transcription nobody asked for — while knowing nothing about the last episode.
+  Off tvOS the resolver's answer is carried to the master's own `SUBTITLES` renditions by
+  `SubtitleRenditions` (language + position within that language; no id is shared between the API
+  list and the master). **That is not "off": the resolver reads the system setting itself** —
+  `.alwaysOn` in Settings › Accessibility means on, and the system caption languages seed the
+  language order (`SubtitlePreferences.systemWantsCaptions`). Only the muted reflex is gone; a pick
+  in the system menu still wins. Rules: `docs/product/playback-tracks.md`.
+- **The audio ledger is still tvOS-only.** Off tvOS the dub is whatever the master marks `DEFAULT`,
+  which is `HLSAudioLabeler`'s ranked pick rather than the CDN's — a simpler rule than the resolver's
+  scopes and weights. Selecting it through `AudioRenditions` off tvOS is the missing half.
 - `externalMetadata` is built once in `PlayerManager.configureExternalMetadata()` under
   `#if os(iOS) || os(tvOS)` and called from `preparePlayback()` — plus again from tvOS's
   `attach(to:)`, for a controller that attaches after the item already exists.
