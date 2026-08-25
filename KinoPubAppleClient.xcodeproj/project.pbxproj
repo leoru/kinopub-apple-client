@@ -179,6 +179,7 @@
 		SETF4AE203F2CEF5453BD14B /* PlaceholderSettingsPanes.swift in Sources */ = {isa = PBXBuildFile; fileRef = SETB0F1DB506A5D5988BCA04 /* PlaceholderSettingsPanes.swift */; };
 		A1B2C3D422B5A0E00000000D /* TrackPreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D422B5A0E00000000C /* TrackPreferenceStoreTests.swift */; };
 		A1B2C3D433B5A0E000000012 /* PlaybackPreflightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D433B5A0E000000011 /* PlaybackPreflightTests.swift */; };
+		A1B2C3D433B5A0E000000022 /* PlayerTrackSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D433B5A0E000000021 /* PlayerTrackSelectionTests.swift */; };
 		A1B2C3D422B5A0E00000001D /* LaunchUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D422B5A0E00000001C /* LaunchUITests.swift */; };
 /* End PBXBuildFile section */
 
@@ -373,6 +374,7 @@
 		A1B2C3D422B5A0E000000002 /* KinoPubAppleClientTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KinoPubAppleClientTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1B2C3D422B5A0E00000000C /* TrackPreferenceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackPreferenceStoreTests.swift; sourceTree = "<group>"; };
 		A1B2C3D433B5A0E000000011 /* PlaybackPreflightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackPreflightTests.swift; sourceTree = "<group>"; };
+		A1B2C3D433B5A0E000000021 /* PlayerTrackSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerTrackSelectionTests.swift; sourceTree = "<group>"; };
 		A1B2C3D422B5A0E000000012 /* KinoPubAppleClientUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KinoPubAppleClientUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1B2C3D422B5A0E00000001C /* LaunchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -1051,6 +1053,7 @@
 			children = (
 				A1B2C3D422B5A0E00000000C /* TrackPreferenceStoreTests.swift */,
 				A1B2C3D433B5A0E000000011 /* PlaybackPreflightTests.swift */,
+				A1B2C3D433B5A0E000000021 /* PlayerTrackSelectionTests.swift */,
 			);
 			path = KinoPubAppleClientTests;
 			sourceTree = "<group>";
@@ -1375,6 +1378,7 @@
 			files = (
 				A1B2C3D422B5A0E00000000D /* TrackPreferenceStoreTests.swift in Sources */,
 				A1B2C3D433B5A0E000000012 /* PlaybackPreflightTests.swift in Sources */,
+				A1B2C3D433B5A0E000000022 /* PlayerTrackSelectionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

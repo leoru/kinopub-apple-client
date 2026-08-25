@@ -62,18 +62,6 @@ public enum SubtitleTracks {
   private static let ccMarkers: Set<String> = ["cc", "sdh", "hi", "caption", "captions"]
   private static let forcedMarkers: Set<String> = ["forced", "force"]
 
-  /// ISO 639-2 → 639-1 for the codes the API actually sends; Foundation covers the
-  /// rest, and an unknown code is left alone so it can still match itself.
-  private static let twoLetterCodes: [String: String] = [
-    "eng": "en", "rus": "ru", "ukr": "uk", "ger": "de", "deu": "de", "fre": "fr",
-    "fra": "fr", "spa": "es", "ita": "it", "jpn": "ja", "kor": "ko", "chi": "zh",
-    "zho": "zh", "pol": "pl", "tur": "tr", "ara": "ar", "por": "pt", "cze": "cs",
-    "ces": "cs", "swe": "sv", "nor": "no", "fin": "fi", "dan": "da", "dut": "nl",
-    "nld": "nl", "heb": "he", "hin": "hi", "gre": "el", "ell": "el", "bul": "bg",
-    "ron": "ro", "rum": "ro", "hun": "hu", "srp": "sr", "hrv": "hr", "slo": "sk",
-    "slk": "sk", "lit": "lt", "lav": "lv", "est": "et", "kaz": "kk", "bel": "be"
-  ]
-
   // MARK: - Building
 
   public static func catalog(_ subtitles: [Subtitle]) -> [SubtitleTrack] {
@@ -220,11 +208,12 @@ public enum SubtitleTracks {
   }
 
   /// Canonical form of a language code: `eng`, `en-US` and `EN` all land on `en`.
+  ///
+  /// One table for the whole app, in `LanguageNames` — this used to keep a second, shorter
+  /// copy of it, which is how `uzb` and `phi` ended up matching nothing while the display
+  /// name beside them was perfectly correct.
   public static func languageKey(_ code: String) -> String {
-    let trimmed = code.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-    let base = trimmed.split(separator: "-").first.map(String.init) ?? trimmed
-    if let mapped = twoLetterCodes[base] { return mapped }
-    return base
+    LanguageNames.canonicalCode(code)
   }
 
   public static func looksLikeCC(_ subtitle: Subtitle) -> Bool {

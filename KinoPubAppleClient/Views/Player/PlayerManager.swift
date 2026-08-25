@@ -92,6 +92,10 @@ class PlayerManager: ObservableObject {
   /// What every scope has learned about dubs and subtitles. Read on open, written on a
   /// pick and once a play counts.
   private let trackPreferences: TrackPreferenceStore
+  /// Who answers "what will this play" — the same object a card or a Play button asks, so
+  /// the two cannot disagree. Injectable so the wiring can be tested without the app's
+  /// shared context behind it.
+  private let preflight: PlaybackPreflight
   /// One play is worth one unit of weight, so a session records at most one audio
   /// signature: the explicit pick if there is one, otherwise what it opened with, once
   /// the episode has been watched far enough to count.
@@ -100,10 +104,6 @@ class PlayerManager: ObservableObject {
   private var recordedSubtitleSignature: SubtitleChoiceSignature?
   private static let loaderQueue = DispatchQueue(label: "com.soda.kinopub.hls-master-loader")
 
-#if os(tvOS)
-  /// The system player screen we drive on tvOS. Held weakly: AVKit owns it, we only
-  /// reach in to hang metadata and the transport-bar menus off it.
-  private weak var playerViewController: AVPlayerViewController?
   /// Fires once the asset has published its audio renditions, which is when a sensible
   /// default track can be chosen.
   private var audioReadyObservation: NSKeyValueObservation?
@@ -113,6 +113,16 @@ class PlayerManager: ObservableObject {
   /// Set once we've auto-picked a default, so a later readiness callback can't stomp a
   /// manual choice the user made in the meantime.
   private var didChooseDefaultAudio = false
+#if !os(tvOS)
+  /// The `.legible` group, kept for the same reason as the audible one: it is where the
+  /// resolver's subtitle decision is applied, and where a pick made in the system player's
+  /// own menu is read back from.
+  private var legibleGroup: AVMediaSelectionGroup?
+#endif
+#if os(tvOS)
+  /// The system player screen we drive on tvOS. Held weakly: AVKit owns it, we only
+  /// reach in to hang metadata and the transport-bar menus off it.
+  private weak var playerViewController: AVPlayerViewController?
 #endif
 
   /// Optional on purpose: both of these used to force-unwrap, and `URL(string: "")`
@@ -153,7 +163,7 @@ class PlayerManager: ObservableObject {
   /// `PlaybackPreflight`'s to decide, so a card and the player read the same history.
   private var trackScopes: [TrackMemoryScope] {
     guard watchMode == .media else { return [] }
-    return PlaybackPreflight.shared.scopes(for: playItem, profile: trackProfile)
+    return preflight.scopes(for: playItem, profile: trackProfile)
   }
 
   init(playItem: any PlayableItem,
@@ -163,6 +173,7 @@ class PlayerManager: ObservableObject {
        contentService: VideoContentService = AppContext.shared.contentService,
        trackProfile: TitleTrackProfile = TitleTrackProfile(),
        trackPreferences: TrackPreferenceStore = AppContext.shared.trackPreferences,
+       preflight: PlaybackPreflight = .shared,
        plan: PlaybackPlan? = nil) {
     self.plan = plan ?? .unknown(itemID: playItem.id)
     self.playItem = playItem
@@ -172,6 +183,7 @@ class PlayerManager: ObservableObject {
     self.contentService = contentService
     self.trackProfile = trackProfile
     self.trackPreferences = trackPreferences
+    self.preflight = preflight
     rateObservation = player.observe(\.rate, options: [.new]) { [weak self] player, _ in
       DispatchQueue.main.async {
         self?.isPlaying = player.rate > 0
@@ -181,8 +193,11 @@ class PlayerManager: ObservableObject {
     // Local resume every ~10s; server marktime every ~30s (see `saveWatchMark`).
     playerTimeObserver = PlayerTimeObserver(player: player, period: 10.0, timeUpdateHandler: { [weak self] time in
       self?.saveWatchMark(time: time)
-#if os(tvOS)
       self?.persistAudioSelectionIfNeeded(at: time)
+#if !os(tvOS)
+      // On tvOS the picker records a pick as it is made; off it the system menu is the
+      // only picker there is, so the tick is where a change gets noticed.
+      self?.persistSubtitleSelectionIfNeeded(at: time)
 #endif
     })
 
@@ -236,10 +251,10 @@ class PlayerManager: ObservableObject {
     // player-and-media.md.
     configureExternalMetadata()
 #endif
-#if os(tvOS)
     audibleGroup = nil
     didChooseDefaultAudio = false
     configureDefaultAudioWhenReady()
+#if os(tvOS)
     rebuildTransportBarMenus()
 #endif
   }
@@ -327,9 +342,7 @@ class PlayerManager: ObservableObject {
     if let endOfPlaybackObserver {
       NotificationCenter.default.removeObserver(endOfPlaybackObserver)
     }
-#if os(tvOS)
     audioReadyObservation?.invalidate()
-#endif
   }
 
   /// Stops the current stream so a new `PlaybackSession` request can take over the
@@ -370,9 +383,10 @@ class PlayerManager: ObservableObject {
       NotificationCenter.default.removeObserver(endOfPlaybackObserver)
       self.endOfPlaybackObserver = nil
     }
-#if os(tvOS)
     audioReadyObservation?.invalidate()
     audioReadyObservation = nil
+#if !os(tvOS)
+    legibleGroup = nil
 #endif
 #if os(iOS) || os(tvOS)
     // Give the session back so whatever was playing before us can resume.
@@ -414,10 +428,10 @@ class PlayerManager: ObservableObject {
   /// Rules: docs/product/playback-tracks.md
   @discardableResult
   private func refreshPlan(audioMenu: [AudioTrackInfo]? = nil) -> PlaybackPlan {
-    let refreshed = PlaybackPreflight.shared.plan(for: playItem,
-                                                  profile: trackProfile,
-                                                  audioMenu: audioMenu,
-                                                  subtitles: subtitleTracks)
+    let refreshed = preflight.plan(for: playItem,
+                                   profile: trackProfile,
+                                   audioMenu: audioMenu,
+                                   subtitles: subtitleTracks)
     plan = refreshed
     return refreshed
   }
@@ -428,23 +442,26 @@ class PlayerManager: ObservableObject {
   /// AVFoundation's "first rendition in the system language".
   private func audioMenu(from group: AVMediaSelectionGroup?) -> [AudioTrackInfo] {
     if !playItem.audioTracks.isEmpty { return playItem.audioTracks }
-#if os(tvOS)
     guard let group else { return [] }
     return AudioRenditions.menu(from: group.options)
-#else
-    return []
-#endif
   }
 
   /// The tracks to open with.
   ///
-  /// tvOS only. Everywhere else the system player lists the HLS subtitle renditions from
-  /// the master itself and renders them, so downloading sidecar SRT there would fetch
-  /// files nothing draws.
+  /// **The decision is asked for on every platform; only the rendering differs.** tvOS
+  /// draws sidecar SRT itself (see `apply`), and everywhere else the system player lists
+  /// the master's own WebVTT copies of those same files and renders the one we select —
+  /// so off tvOS the answer is carried to the legible group by `pinMediaSelection` and no
+  /// sidecar is fetched.
   private func configureSubtitles() {
-#if os(tvOS)
     guard watchMode == .media else { return }
     subtitleTracks = SubtitleSelector.tracks(in: playItem.subtitles)
+#if !os(tvOS)
+    // Off tvOS `apply` is not the path — it loads sidecar cues nothing would draw and
+    // rebuilds a transport-bar menu that does not exist. The decision is all we keep.
+    primaryTrack = refreshPlan().decision.subtitle
+#endif
+#if os(tvOS)
     let primary = refreshPlan().decision.subtitle
     // Dual subtitles stay a Settings choice rather than something the resolver decides:
     // a second line is a deliberate extra, not part of what a title opens with.
@@ -568,35 +585,34 @@ class PlayerManager: ObservableObject {
     }
   }
 
-  /// **Nothing turns captions on but the viewer.**
+#if !os(tvOS)
+  /// **One authority decides the tracks, and it is `TrackResolver` — on every platform.**
   ///
-  /// AVFoundation applies media-selection criteria automatically by default, and off tvOS
-  /// those criteria follow the system's caption settings — including the *Automatic*
-  /// display type, whose entire job is to put captions up when the media is muted. That is
-  /// what appeared over a film on macOS: a caption track nobody asked for, on a stream that
-  /// carries perfectly ordinary subtitle renditions the system menu already lists.
+  /// AVFoundation applies media-selection criteria automatically by default, which off tvOS
+  /// means the system's caption settings pick the legible track. Two of those settings
+  /// disagree with us: *Automatic*, the stock value, exists to put captions up when the
+  /// media is **muted** — that is the transcription that appeared over a film on macOS —
+  /// and neither value knows anything about what this viewer chose on the last episode.
   ///
-  /// With automatic criteria off, the selection is ours to make, so both halves are made
-  /// here: audio stays on whatever the master marks `DEFAULT` — which is not the CDN's
-  /// guess but our own ranked dub, stamped in by `HLSAudioLabeler` — and the legible group
-  /// starts empty. Picking a subtitle track in the system menu still overrides it; only the
-  /// automatic switch-on is gone.
+  /// So automatic criteria are off and the answer comes from the resolver instead. That is
+  /// not the same as "off": the resolver **reads the system setting** — `.alwaysOn` in
+  /// Settings › Accessibility › Subtitles & Captioning means on, and the system caption
+  /// languages seed the language order — on top of the remembered per-season choice and the
+  /// "audio in a language the viewer does not read" rule. Rules and reasons:
+  /// docs/product/playback-tracks.md. Picking something else in the system menu still wins;
+  /// only the muted-transcription reflex is gone.
+  ///
+  /// Only the legible half is here: the dub is chosen by `applyAudibleGroup`, which runs on
+  /// every platform now and knows the ledger.
   private func pinMediaSelection(on item: AVPlayerItem) {
     Task { @MainActor in
-      let audible = try? await item.asset.loadMediaSelectionGroup(for: .audible)
-      let legible = try? await item.asset.loadMediaSelectionGroup(for: .legible)
-      // The awaits above outlive a stream that was left in the meantime.
+      guard let legible = try? await item.asset.loadMediaSelectionGroup(for: .legible) else { return }
+      // The await outlives a stream that was left in the meantime.
       guard self.player.currentItem === item else { return }
-      if let audible,
-         item.currentMediaSelection.selectedMediaOption(in: audible) == nil,
-         let dub = audible.defaultOption ?? audible.options.first {
-        item.select(dub, in: audible)
-      }
-      if let legible {
-        item.select(nil, in: legible)
-      }
+      self.applyLegibleGroup(from: item, group: legible)
     }
   }
+#endif
 
   /// Told by the player screen's delegate, on every platform that has one.
   func setPictureInPictureActive(_ active: Bool) {
@@ -897,42 +913,21 @@ extension PlayerManager {
 
 #endif
 
-#if os(tvOS)
+// MARK: - Track selection
 
-// MARK: - tvOS transport bar
-
+/// **The tracks are chosen the same way on every platform.** What differs is only the
+/// surface they are applied to: tvOS also draws its own subtitle overlay and transport-bar
+/// menu, while off it the system player renders the master's own renditions.
 extension PlayerManager {
-
-  /// Hand the system player screen everything it needs: the title/subtitle for the info
-  /// panel, and the Subtitles menu for the transport bar. Called from the
-  /// `UIViewControllerRepresentable` once AVKit has made the controller.
-  func attach(to controller: AVPlayerViewController) {
-    playerViewController = controller
-    configureExternalMetadata()
-    hideSystemSubtitlePicker(on: controller)
-    if player.currentItem != nil {
-      configureDefaultAudioWhenReady()
-    }
-    rebuildTransportBarMenus()
-  }
-
-  /// The HLS legible group makes AVKit draw its own Subtitles control, so without this the
-  /// transport bar shows two — ours (dual tracks + sidecar SRT) and the system's. Emptying
-  /// the allowed-languages list removes the system one.
-  ///
-  /// Safe to drop here because kino.pub ships every subtitle as a sidecar SRT and the HLS
-  /// subtitle renditions are just its own WebVTT copies of those same files (Stream survey:
-  /// srt × 189, embed × 0, CC × 0) — so nothing the system picker could reach is missing
-  /// from ours. This only hides the picker UI.
-  private func hideSystemSubtitlePicker(on controller: AVPlayerViewController) {
-    controller.allowedSubtitleOptionLanguages = []
-  }
 
   // MARK: Audio
 
   /// AVFoundation's own default is "first rendition in the system language", which on a
   /// kino.pub HLS stream lands on an arbitrary Russian dub. We wait for the renditions to
   /// publish, then pick a good one — or the user's remembered pick — instead.
+  ///
+  /// **On every platform.** This was tvOS-only, which left the iPhone and the Mac with
+  /// whatever the master marked `DEFAULT` and a per-season memory that never applied.
   private func configureDefaultAudioWhenReady() {
     guard watchMode == .media, let item = player.currentItem else { return }
     if item.status == .readyToPlay {
@@ -968,7 +963,10 @@ extension PlayerManager {
           item.select(chosen, in: group)
         }
       }
+#if os(tvOS)
+      // The transport-bar checkmarks are tvOS chrome; the selection above is not.
       self.rebuildTransportBarMenus()
+#endif
     }
   }
 
@@ -1008,6 +1006,100 @@ extension PlayerManager {
     guard signature != recordedAudioSignature else { return }
     recordedAudioSignature = signature
     trackPreferences.recordAudio(signature, in: scopes)
+  }
+
+
+#if !os(tvOS)
+
+  // MARK: Subtitles the system player renders
+
+  /// Carry the resolver's subtitle answer to the master's own renditions, and remember the
+  /// group so a later pick can be read back.
+  ///
+  /// `nil` selects nothing, which is what a remembered "off" means and also the honest
+  /// answer when this master carries no rendition of the decided language.
+  func applyLegibleGroup(from item: AVPlayerItem, group: AVMediaSelectionGroup) {
+    legibleGroup = group
+    guard watchMode == .media else {
+      item.select(nil, in: group)
+      return
+    }
+    let index = primaryTrack.flatMap {
+      SubtitleRenditions.renditionIndex(for: $0, among: subtitleTracks, in: group.options)
+    }
+    if primaryTrack != nil, index == nil {
+      Logger.app.debug("No rendition for the decided subtitle track; opening without subtitles")
+    }
+    item.select(index.map { group.options[$0] }, in: group)
+  }
+
+  /// The subtitle showing now, written down the way a dub is.
+  ///
+  /// The system menu is the only subtitle picker off tvOS and it reports nothing, so the
+  /// watch-mark tick is where a change gets noticed — and, exactly as for audio, weight is
+  /// **episodes watched**: nothing is written until the episode passes the floor Continue
+  /// Watching uses, so a title sampled for a minute teaches the season nothing. "Off" is a
+  /// choice like any other; an item that offered no subtitles at all is not.
+  func persistSubtitleSelectionIfNeeded(at position: TimeInterval) {
+    guard watchMode == .media,
+          position >= WatchProgress.enterContinueWatchingSeconds,
+          !subtitleTracks.isEmpty,
+          let item = player.currentItem,
+          let group = legibleGroup else { return }
+    let scopes = trackScopes
+    guard !scopes.isEmpty else { return }
+
+    let selected = item.currentMediaSelection.selectedMediaOption(in: group)
+    let signature: SubtitleChoiceSignature
+    if let selected {
+      guard let index = group.options.firstIndex(where: { $0 === selected }),
+            let track = SubtitleRenditions.track(forRenditionAt: index,
+                                                 among: group.options,
+                                                 in: subtitleTracks) else {
+        // A rendition we cannot name in our own terms teaches the ledger nothing.
+        return
+      }
+      signature = SubtitleChoiceSignature(track)
+    } else {
+      signature = .off
+    }
+    guard signature != recordedSubtitleSignature else { return }
+    recordedSubtitleSignature = signature
+    trackPreferences.recordSubtitle(signature, in: scopes)
+  }
+
+#endif
+}
+
+#if os(tvOS)
+
+// MARK: - tvOS transport bar
+
+extension PlayerManager {
+
+  /// Hand the system player screen everything it needs: the title/subtitle for the info
+  /// panel, and the Subtitles menu for the transport bar. Called from the
+  /// `UIViewControllerRepresentable` once AVKit has made the controller.
+  func attach(to controller: AVPlayerViewController) {
+    playerViewController = controller
+    configureExternalMetadata()
+    hideSystemSubtitlePicker(on: controller)
+    if player.currentItem != nil {
+      configureDefaultAudioWhenReady()
+    }
+    rebuildTransportBarMenus()
+  }
+
+  /// The HLS legible group makes AVKit draw its own Subtitles control, so without this the
+  /// transport bar shows two — ours (dual tracks + sidecar SRT) and the system's. Emptying
+  /// the allowed-languages list removes the system one.
+  ///
+  /// Safe to drop here because kino.pub ships every subtitle as a sidecar SRT and the HLS
+  /// subtitle renditions are just its own WebVTT copies of those same files (Stream survey:
+  /// srt × 189, embed × 0, CC × 0) — so nothing the system picker could reach is missing
+  /// from ours. This only hides the picker UI.
+  private func hideSystemSubtitlePicker(on controller: AVPlayerViewController) {
+    controller.allowedSubtitleOptionLanguages = []
   }
 
   // MARK: Menus
@@ -1057,6 +1149,8 @@ extension PlayerManager {
 
 }
 
+#endif
+
 /// Witnesses to a public protocol from another module must be public, even though the
 /// conformance itself is only used here.
 extension AVMediaSelectionOption: AudioRendition {
@@ -1085,14 +1179,32 @@ extension AVMediaSelectionOption: AudioRendition {
     return displayName
   }
 
+}
+
+/// The subtitle half of the same bridge — what the system player is told to render off
+/// tvOS, and what a pick in its own menu is read back through. Rules and their tests:
+/// `SubtitleRenditions` in `KinoPubBackend`.
+extension AVMediaSelectionOption: SubtitleRendition {
+
   /// The rendition's language, from the option's locale, then its `LANGUAGE=` tag. Falls
-  /// back to the name so a match by language at least has something to compare.
+  /// back to the display name so a match by language at least has something to compare.
+  ///
+  /// Shared with `AudioRendition` above: one language reading for both halves.
   public var renditionLanguageCode: String {
     if let code = locale?.language.languageCode?.identifier, !code.isEmpty { return code }
     let tag = extendedLanguageTag ?? ""
     if !tag.isEmpty { return tag }
-    return kinopubTrackName
+    return displayName
+  }
+
+  /// Signage and alien dialogue only — never what "Russian subtitles" means.
+  public var isForcedRendition: Bool {
+    hasMediaCharacteristic(.containsOnlyForcedSubtitles)
+  }
+
+  /// SDH: transcribed dialogue and described sound, rather than a plain translation.
+  public var isCaptioningRendition: Bool {
+    hasMediaCharacteristic(.transcribesSpokenDialogForAccessibility)
+      || hasMediaCharacteristic(.describesMusicAndSoundForAccessibility)
   }
 }
-
-#endif

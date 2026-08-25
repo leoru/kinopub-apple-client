@@ -5,6 +5,67 @@ not belong here. Detail checklists live in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### One track system on every platform (2026-08-25)
+
+The subtitle fix above exposed the shape of the gap; this closes it.
+
+- **Audio too.** `configureDefaultAudioWhenReady` / `applyAudibleGroup` /
+  `persistAudioSelectionIfNeeded` were tvOS-only, so iPhone and Mac played
+  whatever the master marked `DEFAULT` and the per-season dub memory never
+  applied. They are unfenced, and so is `AVMediaSelectionOption: AudioRendition`.
+- **Picks made in the system menu are learned off tvOS.** There is no picker of
+  ours there and AVKit reports nothing, so the watch-mark tick reads
+  `currentMediaSelection` — the trick tvOS already used for audio, now covering
+  subtitles as well, on the same "weight is episodes watched" floor. "Off" is
+  written down; an item that offered no subtitles teaches nothing.
+- **Matching no longer rests on order.** `SubtitleRenditions` pairs within one
+  language *and* one kind (forced / SDH); position separates only tracks that
+  are otherwise identical, and is counted from both lists in the same session,
+  never carried over from an earlier episode. `SubtitleRenditions.track(forRenditionAt:)`
+  reads a pick back by index, because two renditions of one language and kind are
+  equal in everything the protocol can see.
+- **One language table.** `SubtitleTracks.languageKey` now resolves through
+  `LanguageNames` instead of keeping a second, shorter copy — the copy was
+  missing `uzb` and `phi`, both of which kino.pub ships, so those matched nothing
+  while their names rendered correctly. `phi` → `fil` added; **`ai`, their
+  machine-translated Russian, is deliberately not an alias of `ru`** (an item can
+  carry both) and gets a name of its own.
+- **Tests where the breakage was.** `PlayerTrackSelectionTests` runs in the app
+  bundle, so it covers the player wiring **on the iOS and tvOS simulators**, not
+  just macOS `swift test`; `PlayerManager` takes an injectable `PlaybackPreflight`
+  to make that possible. **CI now runs on `claude/**` pushes** — the branch that
+  broke both device platforms compiled nowhere until a PR existed.
+
+### Subtitles off tvOS follow the resolver, not nothing (2026-08-25)
+
+Turning `appliesMediaSelectionCriteriaAutomatically` off stopped the muted
+transcription on macOS, and took the legitimate half with it: a viewer whose
+system says *Closed Captions + SDH* got no subtitles at all, which
+[playback-tracks.md](docs/product/playback-tracks.md) already forbids — "with no
+history, the app mirrors the system".
+
+The gap it exposed is older than that change: **`TrackResolver` only ever
+reached the player on tvOS.** `configureSubtitles()` was fenced, so off tvOS the
+per-season memory, the system caption setting and the foreign-audio rule decided
+nothing, and AVFoundation's automatic criteria were the whole policy.
+
+- The decision is now asked for on every platform; only the rendering differs.
+  tvOS still draws sidecar SRT itself, and off tvOS the answer is carried to the
+  master's own WebVTT renditions when the item loads.
+- `SubtitleRenditions` (KinoPubBackend, tested without an asset) is the bridge:
+  the API list and the master share no id, so the pairing is **language plus
+  position within that language** — the pair `SubtitleTrack.ordinal` already
+  exists for. **Assumes a master lists a language's renditions in the API's
+  order**; when it does not, the fallbacks still land on the right language.
+  Nothing in that language means no subtitles rather than a wrong line.
+- `AVMediaSelectionOption.renditionLanguageCode` moved out of the tvOS fence: it
+  now witnesses both `AudioRendition` and the new `SubtitleRendition`.
+
+**Still tvOS-only: the audio ledger.** Off tvOS the dub remains the master's
+`DEFAULT` — `HLSAudioLabeler`'s ranked pick, not the resolver's scopes and
+weights. That is the other half of the same parity, and it needs somewhere to
+record a pick made in AVKit's own menu.
+
 ### The player now ends when you leave it, and the iPhone has sound (2026-08-21)
 
 Four reports from one device pass, all in `PlayerView` / `PlayerManager`:

@@ -127,6 +127,24 @@
         }
       }
     },
+    "Russian (AI)": {
+      "comment": "kino.pub's machine-translated Russian subtitle track (their reference list calls it РусскийAI).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Russian (AI)"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Русский (AI)"
+          }
+        }
+      }
+    },
     "Single-voice": {
       "comment": "Audio dub kind: single-voice over (VO).",
       "extractionState": "manual",

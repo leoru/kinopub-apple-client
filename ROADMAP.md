@@ -416,9 +416,26 @@ tvOS-only properties.
 - [x] `AVAudioSession` `.playback` / `.moviePlayback` around every stream (`PlaybackAudioSession`)
       and `UIBackgroundModes: audio` on the iOS SDK only. Without a category an iPhone plays
       through the Ring/Silent switch — no sound, and no volume key that can bring it back
-- [x] Automatic media selection off, so the system's caption settings stop turning subtitles on
-      by themselves; off tvOS audio pins to the master's `DEFAULT` and legible starts empty.
-      **None of these four watched on a device yet**
+- [x] Automatic media selection off, so nothing but the resolver picks a track: the *Automatic*
+      caption display type turns captions on when media is **muted**, which is the transcription
+      that appeared over a film on macOS
+- [x] **`TrackResolver` applies off tvOS too** — its subtitle answer reaches the master's own
+      renditions through `SubtitleRenditions` (language + position; tests in `KinoPubBackend`).
+      The system caption setting is an input to the resolver, not a competing authority.
+      **None of these watched on a device yet**
+- [x] **The audio half of the same parity** — `configureDefaultAudioWhenReady`,
+      `applyAudibleGroup` and `persistAudioSelectionIfNeeded` unfenced, so the ledger decides
+      the dub on every platform; a pick made in the system menu (audio or subtitles) is noticed
+      on the watch-mark tick, on the same episodes-watched floor
+- [x] Matching hardened: language + kind, position only between otherwise-identical tracks and
+      only within one session — a track added to an item later moves both lists together.
+      One language table (`LanguageNames`), so `uzb` and `phi` stop matching nothing, and `ai`
+      stays its own language
+- [x] Player tests that run on **both** simulators (`KinoPubAppleClientTests`), and CI on
+      `claude/**` pushes — a branch used to compile nowhere until a PR existed
+- [ ] The integration test still missing: a real `AVPlayerItem` from a local HLS fixture, asserting
+      `currentMediaSelection` matches what the resolver decided. Everything above it is covered
+      without an asset; this is the one seam that is not
 - [ ] PiP that survives backgrounding on iOS — the category and background mode it was waiting
       for are in; what is left is watching it work, and deciding what stopping PiP outside the
       route should restore

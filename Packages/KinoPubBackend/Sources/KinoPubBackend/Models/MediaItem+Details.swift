@@ -234,6 +234,11 @@ public extension MediaItem {
 /// 639-2 → 639-1 alias table covers codes some OS builds only resolve as ISO-1.
 public enum LanguageNames {
   /// Common bibliographic / kino.pub codes → ISO 639-1 when Locale needs the short form.
+  ///
+  /// **The one table.** `SubtitleTracks.languageKey` — and through it every audio and
+  /// subtitle match in the app — resolves codes here rather than keeping a second, shorter
+  /// copy of the same idea; the copy that used to live there was missing `uzb` and `phi`,
+  /// both of which kino.pub ships.
   private static let aliases: [String: String] = [
     "rus": "ru", "ukr": "uk", "eng": "en", "jpn": "ja", "deu": "de", "ger": "de",
     "fra": "fr", "fre": "fr", "spa": "es", "ita": "it", "zho": "zh", "chi": "zh",
@@ -255,12 +260,32 @@ public enum LanguageNames {
     "haw": "haw", "smo": "sm", "ton": "to", "mlg": "mg", "xho": "xh", "zul": "zu",
     "sna": "sn", "sot": "st", "tsn": "tn", "tso": "ts", "ven": "ve", "nbl": "nr",
     "ssw": "ss", "kin": "rw", "run": "rn", "orm": "om", "som": "so", "tir": "ti",
-    "hau": "ha", "yor": "yo", "ibo": "ig", "ful": "ff"
+    "hau": "ha", "yor": "yo", "ibo": "ig", "ful": "ff",
+    // kino.pub's own id for Filipino: `phi` is the collective code for the Philippine
+    // languages, not a language, and the master tags these `fil`.
+    "phi": "fil"
   ]
+
+  /// kino.pub's machine-translated Russian, which their reference list calls `РусскийAI`.
+  /// **Not a language and deliberately not an alias of `ru`:** an item can carry both, and
+  /// collapsing them would let a match land on the wrong one — the whole reason a track is
+  /// identified by language in the first place.
+  public static let machineTranslatedRussian = "ai"
+
+  /// The canonical form of a language code — `eng`, `en-US` and `EN` all land on `en`.
+  /// Unknown codes are returned as they came so they can still match themselves.
+  public static func canonicalCode(_ code: String) -> String {
+    let trimmed = code.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+    let base = trimmed.split(separator: "-").first.map(String.init) ?? trimmed
+    return aliases[base] ?? base
+  }
 
   public static func name(for code: String) -> String {
     let key = code.lowercased().trimmingCharacters(in: .whitespaces)
     guard !key.isEmpty else { return "" }
+    if key == machineTranslatedRussian {
+      return String(localized: "Russian (AI)", bundle: .module)
+    }
 
     let lookup = aliases[key] ?? key
     if let localized = Locale.current.localizedString(forLanguageCode: lookup)
