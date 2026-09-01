@@ -27,14 +27,11 @@ import UIKit
 
 public enum FocusLog {
 
-  /// Off in release builds; the instrumentation compiles away with it.
-  public static var isEnabled: Bool = {
-#if DEBUG
-    true
-#else
-    false
-#endif
-  }()
+  /// Off by default, DEBUG included — flip to `true` while chasing a focus bug.
+  /// The global trace walks the whole window hierarchy on *every* focus move, and
+  /// with the system player up it sweeps AVKit's own collections too, flagging them
+  /// as stranded — that sweep was the visible lag, not the logging itself.
+  public static var isEnabled = false
 
   private static let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "Kinopub Soda",

@@ -66,6 +66,14 @@ enum FeatureFlags {
   /// page there, not a subtler one.
   static let detailAmbientBackdropEnabled = false
 
+  /// The tvOS sidecar-SRT machinery: a custom transport-bar Subtitles menu (dual
+  /// tracks), our own cue overlay, and hiding the system's Subtitles control.
+  ///
+  /// **Off.** Subtitles are the system player's on every platform — the master's own
+  /// WebVTT renditions, styled by the system. The machinery stays compiled because the
+  /// dual-subtitle stage will want it; flipping this brings the whole path back.
+  static let tvOSSidecarSubtitles = false
+
   /// Our own combined IMDb + Kinopoisk score: poster plaque, hero pill, the detail
   /// "Rating" tile, and the card Rating placement / source settings. Off — IMDb and
   /// Kinopoisk show only under their own logos meanwhile.

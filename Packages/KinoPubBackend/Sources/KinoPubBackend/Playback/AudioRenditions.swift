@@ -22,8 +22,9 @@ public protocol AudioRendition {
 /// what the player can actually select.
 public enum AudioRenditions {
 
-  /// HLS forbids two identical `NAME=` in one group, so `AudioTracks.labelsForHLSRenditions`
-  /// uniques duplicates with this. Matching has to see past it.
+  /// HLS forbids two identical `NAME=` in one group, so the master rewrite
+  /// (`AudioTracks.uniquedHLSLabels`) uniques duplicates with this. Matching has to
+  /// see past it.
   static let duplicateSuffix = " ∙ "
 
   /// The menu to reason about when the API gave no track metadata — a downloaded file, or

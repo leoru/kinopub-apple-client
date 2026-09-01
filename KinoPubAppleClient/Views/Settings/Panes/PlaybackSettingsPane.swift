@@ -71,14 +71,17 @@ struct PlaybackSettingsPane: View {
                      value: PlaybackLanguagePreferences.systemWantsCaptions ? "On" : "Off")
       Toggle("Default English subtitles", isOn: $preferEnglishSubtitles)
       Toggle("Prefer non-CC / non-SDH", isOn: $preferNonCCSubtitles)
-      Toggle("Dual subtitles", isOn: $dualSubtitlesEnabled)
-      Picker("Second subtitle language", selection: $secondSubtitleLanguage) {
-        ForEach(SubtitlePreferences.secondLanguageOptions, id: \.self) { code in
-          Text(LanguageNames.name(for: code)).tag(code)
+      // The dual-subtitle stage's rows — parked with the sidecar machinery they feed.
+      if FeatureFlags.tvOSSidecarSubtitles {
+        Toggle("Dual subtitles", isOn: $dualSubtitlesEnabled)
+        Picker("Second subtitle language", selection: $secondSubtitleLanguage) {
+          ForEach(SubtitlePreferences.secondLanguageOptions, id: \.self) { code in
+            Text(LanguageNames.name(for: code)).tag(code)
+          }
         }
+        .pickerStyle(.menu)
+        .disabled(!dualSubtitlesEnabled)
       }
-      .pickerStyle(.menu)
-      .disabled(!dualSubtitlesEnabled)
     } header: {
       Text("Subtitles")
     } footer: {

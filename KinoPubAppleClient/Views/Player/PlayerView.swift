@@ -14,6 +14,11 @@ import KinoPubUI
 struct PlayerView: View {
 
   @ObservedObject private var playerManager: PlayerManager
+#if os(tvOS)
+  /// Publishes the manager swap an accepted Up Next proposal performs, so this screen
+  /// follows to the next episode instead of holding the finished one.
+  @ObservedObject private var playbackSession = PlaybackSession.shared
+#endif
   @Environment(\.dismiss) private var dismiss
   @State private var showsFailureAlert = false
 #if os(macOS)
@@ -24,15 +29,29 @@ struct PlayerView: View {
     _playerManager = ObservedObject(wrappedValue: manager)
   }
 
+  /// The manager this screen shows. On tvOS an accepted Up Next swaps the session's
+  /// manager for the next episode's; everywhere else the entry manager is the only one.
+  /// (The load-failure alert stays on the entry manager — a post-swap failure is drawn
+  /// by AVKit's own error state.)
+  private var liveManager: PlayerManager {
+#if os(tvOS)
+    playbackSession.manager ?? playerManager
+#else
+    playerManager
+#endif
+  }
+
   var body: some View {
     ZStack(alignment: .top) {
       videoPlayer
-      // Off tvOS there is no chrome of ours at all: the system player already draws a
-      // transport bar, a subtitle menu and an audio menu, and the master playlist
-      // carries every kino.pub subtitle as a real HLS rendition for it to list. Ours
-      // was a second subtitles button next to the system one.
+      // No chrome of ours anywhere: the system player draws the transport bar, the
+      // subtitle menu and the audio menu, and the master playlist carries every
+      // kino.pub subtitle as a real HLS rendition for it to list. The sidecar overlay
+      // is the dual-subtitle stage, parked behind its flag.
 #if os(tvOS)
-      subtitleLayers
+      if FeatureFlags.tvOSSidecarSubtitles {
+        subtitleLayers
+      }
 #endif
     }
     .ignoresSafeArea(.all)
@@ -41,7 +60,8 @@ struct PlayerView: View {
     // show on its own is *why* a stream failed, so that alone gets a system alert, and
     // we stay in the player rather than bouncing back to the page underneath it.
     .alert("Couldn't Load", isPresented: $showsFailureAlert, presenting: failureMessage) { _ in
-      Button("OK", role: .cancel) {}
+      Button("Try Again") { playerManager.retryAfterFailure() }
+      Button("Close", role: .cancel) { closeAfterFailure() }
     } message: { message in
       Text(message)
     }
@@ -65,14 +85,13 @@ struct PlayerView: View {
     .toolbar(.hidden, for: .tabBar)
     .onAppear(perform: {
       UIApplication.shared.isIdleTimerDisabled = true
-      UIDevice.current.setValue(UIInterfaceOrientation.landscapeLeft.rawValue, forKey: "orientation")
       AppDelegate.orientationLock = .landscape
+      Self.requestGeometryUpdate(.landscape)
     })
     .onDisappear(perform: {
       UIApplication.shared.isIdleTimerDisabled = false
       AppDelegate.orientationLock = .all
-      UIDevice.current.setValue(UIDevice.current.orientation.rawValue, forKey: "orientation")
-      Self.requestSupportedOrientationsUpdate()
+      Self.requestGeometryUpdate(.all)
     })
 #endif
 #if os(tvOS)
@@ -96,8 +115,19 @@ struct PlayerView: View {
   /// Ends the session this screen was showing — unless the viewer moved it into Picture
   /// in Picture, which is them keeping the film, not closing it.
   private func endPlayback() {
-    guard !playerManager.isPictureInPictureActive else { return }
-    forgetWindowRequest(ifSessionEnded: PlaybackSession.shared.stop(playerManager))
+    guard !liveManager.isPictureInPictureActive else { return }
+    forgetWindowRequest(ifSessionEnded: PlaybackSession.shared.stop(liveManager))
+  }
+
+  /// The failure alert's way out: end the session, then leave the way this platform's
+  /// player leaves — a route pop, or the window's own close on the Mac.
+  private func closeAfterFailure() {
+    endPlayback()
+#if os(macOS)
+    dismissWindow(id: PlaybackWindowState.windowID)
+#else
+    dismiss()
+#endif
   }
 
   /// macOS: with nothing playing, the window must not sit on a request that would start a
@@ -117,7 +147,7 @@ struct PlayerView: View {
     // The system player screen is the whole point: its transport bar is the only chrome,
     // and it's fully Siri-Remote navigable. `PlayerManager` hangs the title, subtitle and
     // the Subtitles/Audio menus off the controller.
-    TVVideoPlayer(manager: playerManager, onMenuPress: { dismiss() })
+    TVVideoPlayer(manager: liveManager, onMenuPress: { dismiss() })
       .task {
         await playerManager.preparePlayback()
         playerManager.player.play()
@@ -146,15 +176,15 @@ struct PlayerView: View {
   }
 
 #if os(iOS)
-  /// Asks the key window's top view controller to re-evaluate
-  /// `AppDelegate.supportedInterfaceOrientationsFor` after the player unlocks rotation.
-  private static func requestSupportedOrientationsUpdate() {
+  /// Rotates through the scene's `requestGeometryUpdate`, the supported API — the
+  /// `UIDevice.orientation` KVO write it replaces is rejected on iOS 26 ("BUG IN CLIENT
+  /// OF UIKIT: Setting UIDevice.orientation is not supported") and each ignored write
+  /// churned the hierarchy, tearing this screen's `.task` down and back up under a film.
+  private static func requestGeometryUpdate(_ orientations: UIInterfaceOrientationMask) {
     let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-    let window = scenes
-      .first(where: { $0.activationState == .foregroundActive })?
-      .windows.first(where: \.isKeyWindow)
-      ?? scenes.flatMap(\.windows).first(where: \.isKeyWindow)
-    var top = window?.rootViewController
+    guard let scene = scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first else { return }
+    scene.requestGeometryUpdate(.iOS(interfaceOrientations: orientations))
+    var top = scene.windows.first(where: \.isKeyWindow)?.rootViewController
     while let presented = top?.presentedViewController {
       top = presented
     }
@@ -171,8 +201,8 @@ struct PlayerView: View {
     return nil
   }
 
-  /// tvOS only. Sidecar SRT rendered by us, because the Siri Remote path still routes
-  /// subtitle choice through `transportBarCustomMenuItems`.
+  /// tvOS only, and only with `FeatureFlags.tvOSSidecarSubtitles` — the dual-subtitle
+  /// stage's sidecar SRT overlay. Off, the system player renders subtitles itself.
   @ViewBuilder
   private var subtitleLayers: some View {
     VStack {
@@ -220,6 +250,9 @@ private struct TVVideoPlayer: UIViewControllerRepresentable {
   }
 
   func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
+    // An accepted Up Next swaps the session's manager; the representable follows, and
+    // the player swap the delegate already performed is simply confirmed here.
+    context.coordinator.manager = manager
     if controller.player !== manager.player {
       controller.player = manager.player
     }
@@ -230,7 +263,8 @@ private struct TVVideoPlayer: UIViewControllerRepresentable {
   }
 
   final class Coordinator: NSObject, AVPlayerViewControllerDelegate {
-    private let manager: PlayerManager
+    /// Tracks the session's current manager — an accepted Up Next replaces it.
+    var manager: PlayerManager
     let onMenuPress: () -> Void
 
     init(manager: PlayerManager, onMenuPress: @escaping () -> Void) {
@@ -249,6 +283,51 @@ private struct TVVideoPlayer: UIViewControllerRepresentable {
 
     func playerViewControllerDidStopPictureInPicture(_ playerViewController: AVPlayerViewController) {
       manager.setPictureInPictureActive(false)
+    }
+
+    // MARK: Up Next (system content proposal)
+
+    /// The panel only exists because `PlayerManager` resolved a next episode, so the
+    /// two agree — but a swap could have happened in between, and presenting a panel
+    /// whose answer is gone is a hang.
+    func playerViewController(_ playerViewController: AVPlayerViewController,
+                              shouldPresent proposal: AVContentProposal) -> Bool {
+      manager.pendingNextEpisode != nil
+    }
+
+    /// Accepted (or the countdown ran out): swap the stream in place, same screen.
+    func playerViewController(_ playerViewController: AVPlayerViewController,
+                              didAccept proposal: AVContentProposal) {
+      // AVKit calls player delegates on the main thread; the session is main-actor
+      // state. (The methods stay nonisolated: a main-actor witness of the ObjC
+      // protocol warns in Swift 5 mode and errors in Swift 6.)
+      MainActor.assumeIsolated {
+        guard let episode = manager.pendingNextEpisode else { return }
+        let context = AppContext.shared
+        let next = PlaybackSession.shared.play(
+          item: episode,
+          mode: .media,
+          downloadedFilesDatabase: context.downloadedFilesDatabase,
+          actionsService: context.actionsService
+        )
+        next.attach(to: playerViewController)
+        // Swap immediately — waiting on the SwiftUI round-trip would hold the finished
+        // episode's last frame behind the countdown panel. `updateUIViewController`
+        // then finds the player already current and only adopts the new manager.
+        playerViewController.player = next.player
+        manager = next
+        Task {
+          await next.preparePlayback()
+          next.player.play()
+        }
+      }
+    }
+
+    /// Rejected: the header's default is to dismiss the player, but this controller is
+    /// a navigation push, not a presentation — leaving is routed the way Menu is.
+    func playerViewController(_ playerViewController: AVPlayerViewController,
+                              didReject proposal: AVContentProposal) {
+      onMenuPress()
     }
   }
 }
@@ -368,6 +447,11 @@ final class PlayerPresentationController: UIViewController {
       onPlayerDismissed?()
       return
     }
+    // A churned SwiftUI rebuild can resurrect this stage while its hierarchy is
+    // detached ("Attempt to present … whose view is not in the window hierarchy").
+    // No window → don't present, and don't mark `didPresent` either: a later real
+    // appearance must still get its player.
+    guard view.window != nil else { return }
     didPresent = true
     present(playerController, animated: true)
   }

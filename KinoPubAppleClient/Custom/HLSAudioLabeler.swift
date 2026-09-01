@@ -4,13 +4,24 @@
 //
 //  Rewrites a kino.pub HLS master so audio renditions carry useful names.
 //
-//  kino.pub puts only the language in `NAME=` on `#EXT-X-MEDIA:TYPE=AUDIO`
-//  ("Russian", "Russian", "Russian"). The API already knows the dub kind and
-//  studio, so we stamp those in. What we write arrives as the selection option's
-//  common-metadata title — read it with `AVMediaSelectionOption.kinopubTrackName`,
-//  not `displayName`, which discards it (see that property's note). Child
-//  playlist URIs are made absolute because the rewritten master is served from
-//  memory, not from the CDN.
+//  Two problems with the raw master. One: the CDN names renditions after the
+//  track ("01. Многоголосый. Rezka (RUS)"), which reads as noise in the system
+//  picker — the API already knows the dub kind and studio, so we stamp a clean
+//  label in ("Русский ∙ Многоголосый, Rezka"). Two, the expensive one: the same
+//  renditions are repeated once per video quality under per-quality GROUP-IDs
+//  (audio1080 / audio720 / audio480). AVFoundation merges every audio group into
+//  one selection group, so each track appears once per quality — identical rows,
+//  and switching between the copies changes nothing. The rewrite drops a rendition
+//  only when an earlier survivor carries the same NAME under a *different* group
+//  (the per-quality copy) or the same NAME and URI (a literal repeat): a repeated
+//  name within one group is a distinct track the CDN didn't name, and the API
+//  match gives it a real one. Survivors move into one group, and every variant
+//  stream is pointed at it.
+//
+//  What we write arrives as the selection option's common-metadata title — read
+//  it with `AVMediaSelectionOption.kinopubTrackName`, not `displayName`, which
+//  discards it (see that property's note). Child playlist URIs are made absolute
+//  because the rewritten master is served from memory, not from the CDN.
 //
 //  Delivery is `HLSMasterResourceLoader` below: AVPlayer requests the master
 //  through a custom scheme, the loader fetches and rewrites it inline, and any
@@ -53,49 +64,123 @@ enum HLSAudioLabeler {
     return total
   }
 
-  /// Pure rewrite for tests: absolute-izes relative URIs and replaces AUDIO `NAME`s.
+  /// Pure rewrite for tests: collapses per-quality audio duplicates, replaces AUDIO
+  /// `NAME`s, absolute-izes relative URIs.
   static func rewrite(_ playlist: String,
                       baseURL: URL,
                       tracks: [AudioTrackInfo],
                       preferredLanguages: [String] = Locale.preferredLanguages) -> String {
     let lines = playlist.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
     let audioIndices = lines.indices.filter { isAudioMedia(lines[$0]) }
-    guard !audioIndices.isEmpty, !tracks.isEmpty else {
+    guard !audioIndices.isEmpty else {
       return absolutize(lines, baseURL: baseURL).joined(separator: "\n")
     }
 
-    let languages = audioIndices.map { language(in: lines[$0]) }
-    let labels = AudioTracks.labelsForHLSRenditions(languages: languages, tracks: tracks)
-    let defaultIndex = bestAudioIndex(languages: languages, tracks: tracks,
-                                      preferredLanguages: preferredLanguages)
+    // Keep the first occurrence of each distinct NAME *across* groups — a repeat under
+    // another GROUP-ID is the per-quality copy of the same track. A repeated name
+    // within one group is NOT a copy: the CDN left two dubs unnamed, and the API match
+    // below gives each its real one (LostFilm next to Red Head Sound, say). A literal
+    // repeat — same NAME, same URI — is a duplicate wherever it sits. All survivors
+    // move into one group.
+    var keepers: [Int] = []
+    var keeperAttrs: [[String: String]] = []
+    var audioGroupIDs: Set<String> = []
+    var unifiedGroupID: String?
+    for index in audioIndices {
+      let attrs = attributes(in: lines[index])
+      if unifiedGroupID == nil { unifiedGroupID = attrs["GROUP-ID"] }
+      if let group = attrs["GROUP-ID"] { audioGroupIDs.insert(group) }
+      let name = attrs["NAME"] ?? ""
+      let isCopy = !name.isEmpty && keeperAttrs.contains { keeper in
+        keeper["NAME"] == name
+          && (keeper["GROUP-ID"] != attrs["GROUP-ID"] || keeper["URI"] == attrs["URI"])
+      }
+      if name.isEmpty || !isCopy {
+        keepers.append(index)
+        keeperAttrs.append(attrs)
+      }
+    }
 
-    var out = lines
-    for (offset, lineIndex) in audioIndices.enumerated() {
-      var line = replaceName(in: out[lineIndex], with: labels[offset])
-      line = setDefault(line, isDefault: offset == defaultIndex)
-      out[lineIndex] = line
+    let (labels, matched) = labelsForKeepers(keeperAttrs, tracks: tracks)
+    let defaultKeeper = bestKeeper(matched: matched, preferredLanguages: preferredLanguages)
+
+    var keeperPosition: [Int: Int] = [:]
+    for (position, index) in keepers.enumerated() { keeperPosition[index] = position }
+
+    var out: [String] = []
+    out.reserveCapacity(lines.count)
+    for (index, line) in lines.enumerated() {
+      if let position = keeperPosition[index] {
+        var line = line
+        if let unifiedGroupID {
+          line = replaceAttribute("GROUP-ID", with: unifiedGroupID, in: line)
+        }
+        line = replaceName(in: line, with: labels[position])
+        if let defaultKeeper {
+          line = setDefault(line, isDefault: position == defaultKeeper)
+        }
+        out.append(line)
+      } else if isAudioMedia(line) {
+        continue // per-quality copy of a keeper
+      } else if line.hasPrefix("#EXT-X-STREAM-INF:"),
+                let unifiedGroupID,
+                let group = attributes(in: line)["AUDIO"],
+                audioGroupIDs.contains(group) {
+        out.append(replaceAttribute("AUDIO", with: unifiedGroupID, in: line))
+      } else {
+        out.append(line)
+      }
     }
     return absolutize(out, baseURL: baseURL).joined(separator: "\n")
   }
 
+  // MARK: - Track matching
+
+  /// Matches surviving renditions to API tracks: first by the leading number the CDN
+  /// prefixes names with ("01. …" ↔ `AudioTrackInfo.index` 1), then by language —
+  /// several same-language tracks go in the site's own listing order (payload
+  /// `index`). An unmatched survivor keeps its CDN name — "01. Многоголосый.
+  /// Rezka (RUS)" says more than a bare language row.
+  private static func labelsForKeepers(_ attrs: [[String: String]],
+                                       tracks: [AudioTrackInfo]) -> (labels: [String], matched: [AudioTrackInfo?]) {
+    var remaining = tracks
+    var matched = [AudioTrackInfo?](repeating: nil, count: attrs.count)
+    for (index, attr) in attrs.enumerated() {
+      guard let trackIndex = leadingIndex(attr["NAME"] ?? ""),
+            let t = remaining.firstIndex(where: { $0.index == trackIndex }) else { continue }
+      matched[index] = remaining.remove(at: t)
+    }
+    for (index, attr) in attrs.enumerated() where matched[index] == nil {
+      let key = SubtitleTracks.languageKey(attr["LANGUAGE"] ?? "")
+      guard !key.isEmpty else { continue }
+      // Several same-language tracks and no rendition numbers: take them in payload
+      // order (`index` is the site's own listing order), not fixture order.
+      let candidates = remaining.indices.filter { SubtitleTracks.languageKey(remaining[$0].lang) == key }
+      guard let t = candidates.min(by: { remaining[$0].index < remaining[$1].index }) else { continue }
+      matched[index] = remaining.remove(at: t)
+    }
+    let labels: [String] = attrs.enumerated().map { index, attr in
+      if let track = matched[index] { return AudioTracks.baseLabel(track) }
+      if let name = attr["NAME"], !name.isEmpty { return name }
+      if let language = attr["LANGUAGE"], !language.isEmpty { return LanguageNames.name(for: language) }
+      return "Audio"
+    }
+    return (AudioTracks.uniquedHLSLabels(labels), matched)
+  }
+
+  /// Leading rendition number the CDN prefixes names with: `"01. Многоголосый…"` → 1.
+  private static func leadingIndex(_ name: String) -> Int? {
+    let digits = name.prefix(while: { $0.isNumber })
+    guard !digits.isEmpty else { return nil }
+    let rest = name.dropFirst(digits.count)
+    guard let separator = rest.first, separator == "." || separator == ")" || separator == " " else { return nil }
+    return Int(digits)
+  }
+
   // MARK: - DEFAULT pick
 
-  private static func bestAudioIndex(languages: [String?],
-                                     tracks: [AudioTrackInfo],
-                                     preferredLanguages: [String]) -> Int {
-    var queues: [String: [AudioTrackInfo]] = [:]
-    for track in tracks {
-      queues[SubtitleTracks.languageKey(track.lang), default: []].append(track)
-    }
-    let matched: [AudioTrackInfo?] = languages.map { lang in
-      let key = SubtitleTracks.languageKey(lang ?? "")
-      guard var queue = queues[key], !queue.isEmpty else { return nil }
-      let track = queue.removeFirst()
-      queues[key] = queue
-      return track
-    }
-
-    var bestIndex = 0
+  private static func bestKeeper(matched: [AudioTrackInfo?], preferredLanguages: [String]) -> Int? {
+    var bestIndex: Int?
     var bestKey: AudioTracks.SortKey?
     for (index, track) in matched.enumerated() {
       guard let track else { continue }
@@ -105,23 +190,34 @@ enum HLSAudioLabeler {
         bestIndex = index
       }
     }
+    // No API match at all: the survivors kept their own DEFAULT flags, and the CDN's
+    // pick beats a guess.
     return bestIndex
   }
 
   // MARK: - Line surgery
 
   private static func isAudioMedia(_ line: String) -> Bool {
-    let trimmed = line.trimmingCharacters(in: .whitespaces)
-    guard trimmed.hasPrefix("#EXT-X-MEDIA:") else { return false }
-    let attrs = HLSManifestParser.attributes(in: String(trimmed.dropFirst("#EXT-X-MEDIA:".count)))
-    return attrs["TYPE"] == "AUDIO"
+    attributes(in: line)["TYPE"] == "AUDIO"
   }
 
-  private static func language(in line: String) -> String? {
+  /// Attribute dictionary of an `#EXT-X-MEDIA:` or `#EXT-X-STREAM-INF:` line —
+  /// empty for anything else.
+  private static func attributes(in line: String) -> [String: String] {
     let trimmed = line.trimmingCharacters(in: .whitespaces)
-    guard trimmed.hasPrefix("#EXT-X-MEDIA:") else { return nil }
-    let attrs = HLSManifestParser.attributes(in: String(trimmed.dropFirst("#EXT-X-MEDIA:".count)))
-    return attrs["LANGUAGE"]
+    for prefix in ["#EXT-X-MEDIA:", "#EXT-X-STREAM-INF:"] {
+      if trimmed.hasPrefix(prefix) {
+        return HLSManifestParser.attributes(in: String(trimmed.dropFirst(prefix.count)))
+      }
+    }
+    return [:]
+  }
+
+  private static func replaceAttribute(_ key: String, with value: String, in line: String) -> String {
+    if let range = line.range(of: "\(key)=\"[^\"]*\"", options: .regularExpression) {
+      return line.replacingCharacters(in: range, with: "\(key)=\"\(value)\"")
+    }
+    return line
   }
 
   static func replaceName(in line: String, with name: String) -> String {
@@ -203,6 +299,9 @@ final class HLSMasterResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     self.tracks = tracks
     let configuration = URLSessionConfiguration.ephemeral
     configuration.timeoutIntervalForRequest = 15
+    // An overall cap too: a CDN that answers and then trickles never trips the
+    // per-request (inactivity) timeout, and the fetch outlives the prepare watchdog.
+    configuration.timeoutIntervalForResource = 30
     self.session = URLSession(configuration: configuration)
   }
 
@@ -220,6 +319,9 @@ final class HLSMasterResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
   }
 
   private func serve(_ request: AVAssetResourceLoadingRequest) async {
+    // Both ends are logged: a hung load is otherwise indistinguishable from a slow one
+    // in the diagnostics log — the prepare watchdog fires with no trace of where it stopped.
+    Logger.app.debug("HLS master fetch started: \(self.remote.lastPathComponent)")
     do {
       let (data, response) = try await session.data(from: remote)
       if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
@@ -231,6 +333,7 @@ final class HLSMasterResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
       request.contentInformationRequest?.isByteRangeAccessSupported = false
       request.dataRequest?.respond(with: body)
       request.finishLoading()
+      Logger.app.debug("HLS master served: \(body.count) bytes")
     } catch {
       Logger.app.error("HLS master fetch failed, failing the item: \(error.localizedDescription)")
       request.finishLoading(with: error)
@@ -238,8 +341,9 @@ final class HLSMasterResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
   }
 
   private func relabeledIfPossible(_ data: Data) -> Data {
-    guard !tracks.isEmpty,
-          let text = String(data: data, encoding: .utf8),
+    // No API tracks is not a pass-through: the per-quality group collapse below is
+    // what keeps the system Audio picker from listing every track three times.
+    guard let text = String(data: data, encoding: .utf8),
           text.contains("#EXTM3U") else { return data }
     return Data(HLSAudioLabeler.rewrite(text, baseURL: remote, tracks: tracks).utf8)
   }

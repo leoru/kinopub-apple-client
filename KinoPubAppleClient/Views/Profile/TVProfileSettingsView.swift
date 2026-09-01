@@ -179,24 +179,27 @@ struct TVProfileSettingsView: View {
       )
       .disabled(!preferEnglishSubtitles)
 
-      toggleRow(
-        title: "Dual subtitles",
-        isOn: $dualSubtitlesEnabled,
-        focus: .dual
-      )
-
-      Button {
-        path.append(SettingsRoute.secondSubtitleLanguage)
-      } label: {
-        SettingsPillLabel(
-          title: "Second subtitle language",
-          value: LanguageNames.name(for: secondSubtitleLanguage),
-          showsChevron: true
+      // The dual-subtitle stage's rows — parked with the sidecar machinery they feed.
+      if FeatureFlags.tvOSSidecarSubtitles {
+        toggleRow(
+          title: "Dual subtitles",
+          isOn: $dualSubtitlesEnabled,
+          focus: .dual
         )
+
+        Button {
+          path.append(SettingsRoute.secondSubtitleLanguage)
+        } label: {
+          SettingsPillLabel(
+            title: "Second subtitle language",
+            value: LanguageNames.name(for: secondSubtitleLanguage),
+            showsChevron: true
+          )
+        }
+        .buttonStyle(SettingsPillButtonStyle())
+        .focused($focusedItem, equals: .secondLang)
+        .disabled(!dualSubtitlesEnabled)
       }
-      .buttonStyle(SettingsPillButtonStyle())
-      .focused($focusedItem, equals: .secondLang)
-      .disabled(!dualSubtitlesEnabled)
     }
   }
 

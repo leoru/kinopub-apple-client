@@ -47,6 +47,12 @@ final class AuthState: ObservableObject {
   /// Serializes refresh attempts — startup check, backoff retry and 401-triggered
   /// refreshes must never overlap.
   private var isRefreshing = false
+  /// Set when a refresh was cut off mid-flight. **The next rejection cannot be trusted
+  /// after one of those:** the cancelled request may well have reached kino.pub and
+  /// rotated the refresh token there, in which case the following attempt presents a
+  /// token the server has already retired and gets a 400 that says nothing about the
+  /// session.
+  private var lastRefreshWasCancelled = false
 
   /// Initializes the `AuthState` with the provided services.
   /// - Parameters:
@@ -84,6 +90,14 @@ final class AuthState: ObservableObject {
       markSignedOut(reason: "no token")
       return
     }
+
+    // A re-run with the app already open (the root `.task` re-fires when the
+    // hierarchy churns — the iOS player's orientation change used to tear it down
+    // and back up under a film) must not bounce the UI to the splash: flipping
+    // `.signedIn → .resolving` tears the tab shell down with the player route still
+    // in its path, and the rebuild re-presented the player in a loop. Mid-session
+    // expiry is the 401 observer's job, not this one's.
+    guard phase != .signedIn else { return }
 
     // Stay on `.resolving` (splash) while we prove the token — do not flip to
     // signed-in optimistically.
@@ -132,23 +146,51 @@ final class AuthState: ObservableObject {
     defer { isRefreshing = false }
     Logger.app.debug("Refreshing token...")
     do {
-      try await authService.refreshToken()
+      // kino.pub rotates the refresh token on every call, so once a refresh has
+      // started it must run to completion: a SwiftUI `.task` dying mid-request used
+      // to cancel the URLSession task *after* the server had already rotated, the
+      // new token never reached the Keychain, and the next refresh presented the
+      // retired one → 400 → forced logout out of nowhere. The unstructured task is
+      // not a child of the caller, so the caller's cancellation cannot reach the
+      // request, and awaiting `value` is not itself cancellable.
+      let job = Task { try await authService.refreshToken() }
+      try await job.value
+      lastRefreshWasCancelled = false
       markSignedIn()
-    } catch let error as APIClientError where error.isFatalAuthError {
+    } catch let error as APIClientError where error.isFatalAuthError && !lastRefreshWasCancelled {
       // The backend explicitly rejected the refresh token — only now is the session
       // really over. Clear Keychain so the next launch does not revive a dead token.
       refreshRetryTask?.cancel()
       refreshRetryTask = nil
       authService.logout(userInitiated: false)
       markSignedOut(reason: "refresh rejected")
+    } catch let error as APIClientError where error.isFatalAuthError {
+      // Rejected, but right after a cancelled attempt — one grace round rather than
+      // throwing the viewer at the activation screen on our own race.
+      Logger.app.warning("Refresh rejected right after a cancelled one — keeping the session for one retry")
+      lastRefreshWasCancelled = false
+      markSignedIn()
+      scheduleRefreshRetry()
     } catch {
       // Timeout / offline / unreachable host: keep the session. The Keychain token
       // may still be valid and every screen has its own error state — logging out
       // over a network hiccup just throws the user at the activation code screen.
+      lastRefreshWasCancelled = Self.wasCancelled(error)
       Logger.app.warning("Token refresh failed transiently, keeping the session: \(error)")
       markSignedIn()
       scheduleRefreshRetry()
     }
+  }
+
+  /// A cancellation anywhere in the chain — the wrapper carries the `URLError` underneath.
+  private static func wasCancelled(_ error: Error) -> Bool {
+    if error is CancellationError { return true }
+    var stack: [NSError] = [error as NSError]
+    while let next = stack.popLast() {
+      if next.domain == NSURLErrorDomain, next.code == NSURLErrorCancelled { return true }
+      stack.append(contentsOf: next.underlyingErrors.map { $0 as NSError })
+    }
+    return false
   }
 
   /// Retries a failed refresh with backoff (5s → 10s → 20s → … capped at 2 min) so a
